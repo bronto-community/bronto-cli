@@ -1,0 +1,6 @@
+# --version prints version string and exits 0
+exec bronto --version
+stdout '^bronto dev'
+
+# unknown command exits non-zero
+! exec bronto no-such-command
