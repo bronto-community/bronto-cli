@@ -35,6 +35,7 @@ func NewRootCmd() *cobra.Command {
 	pf.Bool("quiet", false, "suppress non-data messages on stderr")
 	cmd.AddCommand(newConfigCmd())
 	cmd.AddCommand(newPingCmd())
+	cmd.AddCommand(newAPICmd())
 
 	return cmd
 }
