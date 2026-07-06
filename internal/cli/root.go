@@ -33,6 +33,7 @@ func NewRootCmd() *cobra.Command {
 	pf.StringP("output", "o", "", "output format: table|json|jsonl|raw|csv")
 	pf.Bool("no-color", false, "disable color output")
 	pf.Bool("quiet", false, "suppress non-data messages on stderr")
+	cmd.AddCommand(newConfigCmd())
 	cmd.AddCommand(newPingCmd())
 
 	return cmd
