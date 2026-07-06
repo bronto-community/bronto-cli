@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/svrnm/bronto-cli/internal/clierr"
@@ -84,5 +85,27 @@ func TestAPIRejectsBadMethod(t *testing.T) {
 	err := root.Execute()
 	if err == nil || clierr.ExitCode(err) != 2 {
 		t.Fatalf("want usage error exit 2, got %v (exit %d)", err, clierr.ExitCode(err))
+	}
+}
+
+func TestAPIInputRespectsContentTypeOverride(t *testing.T) {
+	var gotCT string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotCT = r.Header.Get("Content-Type")
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetIn(strings.NewReader("plain text payload"))
+	root.SetArgs([]string{"api", "POST", "/ingest", "--input", "-",
+		"--content-type", "text/plain", "--base-url", srv.URL, "--api-key", "k"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if gotCT != "text/plain" {
+		t.Fatalf("Content-Type = %q, want text/plain", gotCT)
 	}
 }

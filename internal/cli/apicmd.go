@@ -23,6 +23,7 @@ var allowedMethods = map[string]bool{
 func newAPICmd() *cobra.Command {
 	var fields []string
 	var input string
+	var contentType string
 	cmd := &cobra.Command{
 		Use:   "api <METHOD> <path>",
 		Short: "Make an authenticated request to any Bronto API endpoint",
@@ -109,7 +110,7 @@ func newAPICmd() *cobra.Command {
 				return err
 			}
 			if body != nil {
-				req.Header.Set("Content-Type", "application/json")
+				req.Header.Set("Content-Type", contentType)
 			}
 			resp, err := app.HTTPClient.Do(req)
 			if err != nil {
@@ -141,5 +142,6 @@ func newAPICmd() *cobra.Command {
 	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil,
 		"key=value pair: query param for GET/DELETE, JSON body field otherwise (repeatable)")
 	cmd.Flags().StringVar(&input, "input", "", "request body from file, or - for stdin")
+	cmd.Flags().StringVar(&contentType, "content-type", "application/json", "Content-Type header for request bodies")
 	return cmd
 }
