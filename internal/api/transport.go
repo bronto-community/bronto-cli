@@ -56,7 +56,16 @@ func retryableStatus(s int) bool {
 func retryDelay(resp *http.Response, attempt int) time.Duration {
 	if ra := resp.Header.Get("Retry-After"); ra != "" {
 		if secs, err := strconv.Atoi(ra); err == nil {
+			if secs < 0 {
+				return 0
+			}
 			return time.Duration(secs) * time.Second
+		}
+		if t, err := http.ParseTime(ra); err == nil {
+			if d := time.Until(t); d > 0 {
+				return d
+			}
+			return 0
 		}
 	}
 	return time.Duration(500*(1<<attempt)) * time.Millisecond

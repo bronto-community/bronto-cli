@@ -77,6 +77,54 @@ func TestTransportDoesNotRetryPOST(t *testing.T) {
 	}
 }
 
+func TestTransportRetryExhaustionReturnsFinalResponse(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer srv.Close()
+
+	tr := &Transport{APIKey: "k", UserAgent: "t", MaxRetries: 2, Sleep: func(time.Duration) {}}
+	c := &http.Client{Transport: tr}
+	resp, err := c.Get(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503", resp.StatusCode)
+	}
+	if calls.Load() != 3 {
+		t.Fatalf("calls = %d, want 3 (1 + 2 retries)", calls.Load())
+	}
+}
+
+func TestRetryDelayForms(t *testing.T) {
+	mk := func(h string) *http.Response {
+		r := &http.Response{Header: http.Header{}}
+		if h != "" {
+			r.Header.Set("Retry-After", h)
+		}
+		return r
+	}
+	if d := retryDelay(mk("2"), 0); d != 2*time.Second {
+		t.Errorf("delta-seconds: got %v", d)
+	}
+	if d := retryDelay(mk("-1"), 0); d != 0 {
+		t.Errorf("negative clamped: got %v", d)
+	}
+	if d := retryDelay(mk("Mon, 02 Jan 2006 15:04:05 GMT"), 0); d != 0 {
+		t.Errorf("past HTTP-date clamped to 0: got %v", d)
+	}
+	if d := retryDelay(mk("bogus"), 1); d != 1*time.Second {
+		t.Errorf("fallback backoff attempt 1: got %v, want 1s", d)
+	}
+	if d := retryDelay(mk(""), 0); d != 500*time.Millisecond {
+		t.Errorf("no header backoff: got %v, want 500ms", d)
+	}
+}
+
 func TestErrorFromStatus(t *testing.T) {
 	cases := []struct {
 		status   int
