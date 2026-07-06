@@ -1,0 +1,3 @@
+# usage errors (unknown flag) fail with the usage error code on stderr
+! exec bronto --definitely-not-a-flag
+stderr 'usage_invalid_flag'

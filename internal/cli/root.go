@@ -4,6 +4,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/svrnm/bronto-cli/internal/clierr"
 	"github.com/svrnm/bronto-cli/internal/version"
 )
 
@@ -19,5 +20,9 @@ func NewRootCmd() *cobra.Command {
 		Run:           func(cmd *cobra.Command, args []string) {},
 	}
 	cmd.SetVersionTemplate("{{.Version}}\n")
+	cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
+		return clierr.New("usage_invalid_flag", err.Error()).
+			WithHint("Run 'bronto --help' for usage.")
+	})
 	return cmd
 }
