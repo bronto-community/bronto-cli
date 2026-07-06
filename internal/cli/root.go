@@ -24,5 +24,16 @@ func NewRootCmd() *cobra.Command {
 		return clierr.New("usage_invalid_flag", err.Error()).
 			WithHint("Run 'bronto --help' for usage.")
 	})
+
+	pf := cmd.PersistentFlags()
+	pf.String("api-key", "", "Bronto management API key (prefer BRONTO_API_KEY env)")
+	pf.String("profile", "", "named profile to use")
+	pf.String("region", "", "Bronto region: eu or us")
+	pf.String("base-url", "", "override the API base URL")
+	pf.StringP("output", "o", "", "output format: table|json|jsonl|raw|csv")
+	pf.Bool("no-color", false, "disable color output")
+	pf.Bool("quiet", false, "suppress non-data messages on stderr")
+	cmd.AddCommand(newPingCmd())
+
 	return cmd
 }
