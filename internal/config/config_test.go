@@ -124,3 +124,22 @@ func TestProfileSelectionFromUserConfig(t *testing.T) {
 		t.Fatalf("profile override failed: %q", cfg2.BaseURL())
 	}
 }
+
+func TestBrontoConfigDirOverridesUserConfigDir(t *testing.T) {
+	override := t.TempDir()
+	ignored := t.TempDir()
+	writeFile(t, filepath.Join(override, "bronto", "config.toml"),
+		"default_profile = \"p1\"\n[profiles.p1]\nregion = \"us\"\n")
+
+	cfg, err := Load(LoadOptions{
+		Getenv:  env(map[string]string{"BRONTO_CONFIG_DIR": override}),
+		WorkDir: t.TempDir(), UserConfigDir: ignored,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, _ := cfg.Get("region")
+	if v.Val != "us" || v.Source != SourceUser {
+		t.Fatalf("got %+v, want us from user config via BRONTO_CONFIG_DIR", v)
+	}
+}
