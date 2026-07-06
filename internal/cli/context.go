@@ -14,6 +14,12 @@ import (
 	"github.com/svrnm/bronto-cli/internal/version"
 )
 
+// stdoutIsTTY reports whether the process stdout is a terminal.
+// Package-level so tests can stub the TTY-dependent output path.
+var stdoutIsTTY = func() bool {
+	return isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd())
+}
+
 // App bundles everything a command needs. Built once per invocation.
 type App struct {
 	Config      *config.Config
@@ -23,6 +29,7 @@ type App struct {
 	StdoutIsTTY bool
 	OutputFlag  string
 	Quiet       bool
+	Color       bool
 }
 
 func NewApp(cmd *cobra.Command) (*App, error) {
@@ -41,18 +48,21 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 		return nil, err
 	}
 	quiet, _ := cmd.Flags().GetBool("quiet")
+	noColor, _ := cmd.Flags().GetBool("no-color")
 	outFlag := ""
 	if v, ok := cfg.Get("output"); ok {
 		outFlag = v.Val
 	}
+	ttyNow := stdoutIsTTY()
 	return &App{
 		Config:      cfg,
 		Stdout:      cmd.OutOrStdout(),
 		Stderr:      cmd.ErrOrStderr(),
 		HTTPClient:  api.NewHTTPClient(cfg.APIKey(), version.Version),
-		StdoutIsTTY: isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()),
+		StdoutIsTTY: ttyNow,
 		OutputFlag:  outFlag,
 		Quiet:       quiet,
+		Color:       output.ColorEnabled(noColor, ttyNow, os.Getenv),
 	}, nil
 }
 
