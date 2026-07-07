@@ -46,3 +46,26 @@ func SetUserValue(dir, profile, key, value string) error {
 	}
 	return os.WriteFile(path, b, 0o600)
 }
+
+// SetDefaultProfile persists default_profile in the user config file.
+func SetDefaultProfile(dir, name string) error {
+	path := filepath.Join(dir, "bronto", "config.toml")
+	uf := userFile{Profiles: map[string]map[string]string{}}
+	if b, err := os.ReadFile(path); err == nil {
+		if err := toml.Unmarshal(b, &uf); err != nil {
+			return clierr.New("config_parse_error", "cannot parse "+path+": "+err.Error())
+		}
+		if uf.Profiles == nil {
+			uf.Profiles = map[string]map[string]string{}
+		}
+	}
+	uf.DefaultProfile = name
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	b, err := toml.Marshal(uf)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, b, 0o600)
+}

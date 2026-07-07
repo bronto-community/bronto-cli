@@ -16,11 +16,12 @@ import (
 type Source string
 
 const (
-	SourceFlag    Source = "flag"
-	SourceEnv     Source = "env"
-	SourceProject Source = "project"
-	SourceUser    Source = "user"
-	SourceDefault Source = "default"
+	SourceFlag     Source = "flag"
+	SourceEnv      Source = "env"
+	SourceProject  Source = "project"
+	SourceUser     Source = "user"
+	SourceDefault  Source = "default"
+	SourceKeychain Source = "keychain"
 )
 
 type Value struct {
@@ -164,4 +165,16 @@ func (c *Config) BaseURL() string {
 		return v.Val
 	}
 	return fmt.Sprintf("https://api.%s.bronto.io", c.values["region"].Val)
+}
+
+// Inject adds a resolved value from an out-of-band source (keychain)
+// without disturbing precedence: no-op when the key is already set.
+func (c *Config) Inject(key, val string, src Source) {
+	if val == "" {
+		return
+	}
+	if _, exists := c.values[key]; exists {
+		return
+	}
+	c.values[key] = Value{Val: val, Source: src}
 }

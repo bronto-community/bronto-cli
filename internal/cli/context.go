@@ -15,8 +15,13 @@ import (
 	"github.com/svrnm/bronto-cli/internal/clierr"
 	"github.com/svrnm/bronto-cli/internal/config"
 	"github.com/svrnm/bronto-cli/internal/output"
+	"github.com/svrnm/bronto-cli/internal/secrets"
 	"github.com/svrnm/bronto-cli/internal/version"
 )
+
+// secretLookup resolves a stored API key for a profile. Package-level so
+// tests can stub the keychain/fallback-file lookup.
+var secretLookup = secrets.Get
 
 // stdoutIsTTY reports whether the process stdout is a terminal.
 // Package-level so tests can stub the TTY-dependent output path.
@@ -52,12 +57,23 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 		return nil, err
 	}
 	quiet, _ := cmd.Flags().GetBool("quiet")
+	if cfg.APIKey() == "" {
+		if key, fb, err := secretLookup(profileOrDefault(cfg.Profile())); err == nil {
+			cfg.Inject("api_key", key, config.SourceKeychain)
+			if fb && !quiet {
+				_, _ = fmt.Fprintln(cmd.ErrOrStderr(),
+					"Warning: OS keychain unavailable — using the credentials file fallback.")
+			}
+		}
+	}
 	noColor, _ := cmd.Flags().GetBool("no-color")
 	outFlag := ""
 	if v, ok := cfg.Get("output"); ok {
 		outFlag = v.Val
 	}
 	ttyNow := stdoutIsTTY()
+	// CRITICAL: httpClient captures cfg.APIKey() at construction time, so the
+	// keychain injection above MUST happen before this line.
 	httpClient := api.NewHTTPClient(cfg.APIKey(), version.Version)
 	if v, ok := cfg.Get("timeout"); ok {
 		secs, err := strconv.Atoi(v.Val)

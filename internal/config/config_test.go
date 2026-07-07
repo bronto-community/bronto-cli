@@ -143,3 +143,36 @@ func TestBrontoConfigDirOverridesUserConfigDir(t *testing.T) {
 		t.Fatalf("got %+v, want us from user config via BRONTO_CONFIG_DIR", v)
 	}
 }
+
+func TestInjectOnlyWhenAbsent(t *testing.T) {
+	cfg, err := Load(LoadOptions{Getenv: env(map[string]string{"BRONTO_API_KEY": "envkey"}),
+		WorkDir: t.TempDir(), UserConfigDir: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.Inject("api_key", "keychain-key", SourceKeychain)
+	if cfg.APIKey() != "envkey" { // env wins; Inject must not override
+		t.Fatalf("APIKey = %q", cfg.APIKey())
+	}
+	cfg2, _ := Load(LoadOptions{Getenv: env(nil), WorkDir: t.TempDir(), UserConfigDir: t.TempDir()})
+	cfg2.Inject("api_key", "keychain-key", SourceKeychain)
+	v, _ := cfg2.Get("api_key")
+	if v.Val != "keychain-key" || v.Source != SourceKeychain {
+		t.Fatalf("injected: %+v", v)
+	}
+}
+
+func TestSetDefaultProfile(t *testing.T) {
+	dir := t.TempDir()
+	if err := SetUserValue(dir, "prod", "region", "us"); err != nil {
+		t.Fatal(err)
+	}
+	if err := SetDefaultProfile(dir, "prod"); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(LoadOptions{Getenv: func(string) string { return "" },
+		WorkDir: t.TempDir(), UserConfigDir: dir})
+	if err != nil || cfg.Profile() != "prod" {
+		t.Fatalf("profile = %q, %v", cfg.Profile(), err)
+	}
+}
