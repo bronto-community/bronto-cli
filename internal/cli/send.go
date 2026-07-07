@@ -130,6 +130,7 @@ func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSiz
 	lines := make(chan string)
 	stop := make(chan struct{})
 	defer close(stop)
+	var scanErr error
 	go func() {
 		defer close(lines)
 		for scanner.Scan() {
@@ -139,6 +140,7 @@ func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSiz
 				return
 			}
 		}
+		scanErr = scanner.Err() // nil on clean EOF
 	}()
 
 	batcher := &ingest.Batcher{MaxEvents: batchSize, MaxBytes: batchBytes}
@@ -169,11 +171,17 @@ func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSiz
 		select {
 		case line, ok := <-lines:
 			if !ok {
-				// EOF (or a scanner read error, which bufio.Scanner surfaces
-				// as a plain end-of-loop; not part of the tested contract):
-				// final flush.
+				// EOF or scanner read error: final flush first.
 				if err := flush(); err != nil {
 					return err
+				}
+				// Check if the scanner hit an error (e.g., line > 1 MiB buffer).
+				if scanErr != nil {
+					if !app.Quiet {
+						_, _ = fmt.Fprintf(app.Stderr, "Sent %d event(s) in %d batch(es) before the input error.\n", sentEvents, sentBatches)
+					}
+					return clierr.New("ingest_read_error", fmt.Sprintf("reading input failed: %v", scanErr)).
+						WithHint("Lines longer than 1 MiB cannot be sent; the events flushed before the error were delivered.")
 				}
 				summary()
 				return nil

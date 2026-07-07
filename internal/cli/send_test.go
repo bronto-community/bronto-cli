@@ -115,3 +115,31 @@ func TestSendAuthErrorPropagates(t *testing.T) {
 		t.Fatalf("want exit 3, got %v", err)
 	}
 }
+
+func TestSendOversizedLineSurfacesReadError(t *testing.T) {
+	var lines atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		lines.Add(int32(strings.Count(strings.TrimSpace(string(b)), "\n") + 1))
+	}))
+	defer srv.Close()
+
+	huge := strings.Repeat("x", 2<<20) // 2 MiB line > 1 MiB scanner buffer
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetIn(strings.NewReader("ok-line\n" + huge + "\n"))
+	root.SetArgs([]string{"send", "-d", "app", "--no-gzip", "--flush-interval", "100ms",
+		"--ingest-url", srv.URL, "--api-key", "k"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("oversized line must surface a read error, not exit 0")
+	}
+	if clierr.ExitCode(err) == 0 {
+		t.Fatalf("exit = %d", clierr.ExitCode(err))
+	}
+	// the good line before the error must still have been delivered
+	if lines.Load() != 1 {
+		t.Fatalf("delivered lines = %d, want 1", lines.Load())
+	}
+}
