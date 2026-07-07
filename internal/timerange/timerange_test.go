@@ -87,3 +87,23 @@ func TestZeroSpec(t *testing.T) {
 		t.Fatalf("got %+v, %v; want zero", got, err)
 	}
 }
+
+func TestSinceZeroPaddedNumerals(t *testing.T) {
+	got, err := Resolve("01h", "", "", testNow)
+	if err != nil || got.TimeRange != "Last 1 hour" {
+		t.Fatalf("got %+v, %v; want Last 1 hour", got, err)
+	}
+	got2, err := Resolve("007m", "", "", testNow)
+	if err != nil || got2.TimeRange != "Last 7 minutes" {
+		t.Fatalf("got %+v, %v; want Last 7 minutes", got2, err)
+	}
+}
+
+func TestSinceOverflowErrors(t *testing.T) {
+	if _, err := Resolve("99999999999999999999h", "", "", testNow); err == nil {
+		t.Fatal("overflow must error")
+	}
+	if _, err := Resolve("1h99999999999999999999m", "", "", testNow); err == nil {
+		t.Fatal("compound overflow must error")
+	}
+}

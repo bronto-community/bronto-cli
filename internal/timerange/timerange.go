@@ -7,6 +7,7 @@ package timerange
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/svrnm/bronto-cli/internal/clierr"
@@ -77,17 +78,24 @@ func resolveSince(since string, now func() time.Time) (Spec, error) {
 			WithHint("Use forms like 30s, 15m, 1h, 2d, 1w, or compounds like 1h30m.")
 	}
 	if len(tokens) == 1 {
-		n := tokens[0][1]
+		n, err := strconv.ParseInt(tokens[0][1], 10, 64)
+		if err != nil {
+			return Spec{}, clierr.New("usage_invalid_since",
+				fmt.Sprintf("cannot parse --since %q: number too large", since))
+		}
 		unit := unitName[tokens[0][2]]
-		if n != "1" {
+		if n != 1 {
 			unit += "s"
 		}
-		return Spec{TimeRange: fmt.Sprintf("Last %s %s", n, unit)}, nil
+		return Spec{TimeRange: fmt.Sprintf("Last %d %s", n, unit)}, nil
 	}
 	var total time.Duration
 	for _, tok := range tokens {
-		var n int64
-		_, _ = fmt.Sscan(tok[1], &n)
+		n, err := strconv.ParseInt(tok[1], 10, 64)
+		if err != nil {
+			return Spec{}, clierr.New("usage_invalid_since",
+				fmt.Sprintf("cannot parse --since %q: number too large", since))
+		}
 		total += time.Duration(n) * unitDur[tok[2]]
 	}
 	end := now()
