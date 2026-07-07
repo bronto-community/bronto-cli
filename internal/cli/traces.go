@@ -160,7 +160,7 @@ func newTracesAggregateCmd() *cobra.Command {
 	f.BoolVar(&allSpans, "all-spans", false, "consider all spans, not just roots")
 	cmd.MarkFlagsMutuallyExclusive("root-only", "all-spans")
 	f.StringVarP(&service, "service", "s", "", "filter by service name")
-	f.StringVar(&kind, "kind", "", "filter by span kind (server, client, ...)")
+	f.StringVarP(&kind, "kind", "k", "", "filter by span kind (server, client, ...)")
 	f.BoolVar(&errorsOnly, "errors", false, "only error spans")
 	f.StringVarP(&where, "where", "w", "", "additional raw WHERE clause")
 	f.BoolVar(&includeEmpty, "include-empty", false, "include rows where an attribute is missing")
