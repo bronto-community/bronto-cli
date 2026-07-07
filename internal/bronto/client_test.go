@@ -3,6 +3,7 @@ package bronto
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,40 @@ import (
 
 	"github.com/svrnm/bronto-cli/internal/clierr"
 )
+
+func TestDoConnectionRefusedIsRetryableNetworkError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	addr := srv.URL
+	srv.Close() // closed port: connections now refused
+
+	_, err := NewClient(http.DefaultClient, addr).Search(context.Background(), SearchRequest{})
+	if err == nil {
+		t.Fatal("want error, got nil")
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) {
+		t.Fatalf("err is not *clierr.Error: %v (%T)", err, err)
+	}
+	if ce.Code != "network_error" || !ce.Retryable {
+		t.Fatalf("code = %q, retryable = %v, want network_error/true", ce.Code, ce.Retryable)
+	}
+}
+
+func TestDoCanceledContextIsNotClierr(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := NewClient(srv.Client(), srv.URL).Search(ctx, SearchRequest{})
+	if err == nil {
+		t.Fatal("want error, got nil")
+	}
+	var ce *clierr.Error
+	if errors.As(err, &ce) {
+		t.Fatalf("err is a *clierr.Error, want raw cancellation error: %v", err)
+	}
+}
 
 func TestSearchPostsBodyAndParsesResponse(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

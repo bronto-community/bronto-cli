@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,10 +20,24 @@ func run() int {
 	cmd := cli.NewRootCmd()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := cli.Execute(ctx, cmd); err != nil {
+	err := cli.Execute(ctx, cmd)
+	code, render := exitStatus(ctx, err)
+	if render {
 		machine := !isatty.IsTerminal(os.Stderr.Fd()) && !isatty.IsCygwinTerminal(os.Stderr.Fd())
 		clierr.Render(os.Stderr, err, machine)
-		return clierr.ExitCode(err)
 	}
-	return 0
+	return code
+}
+
+// exitStatus maps the outcome of an executed command to a process exit
+// code. A run aborted by the signal context exits 130 (128+SIGINT) without
+// rendering an error — the interrupt was the user's own action.
+func exitStatus(ctx context.Context, err error) (int, bool) {
+	if err == nil {
+		return 0, false
+	}
+	if ctx.Err() != nil || errors.Is(err, context.Canceled) {
+		return 130, false
+	}
+	return clierr.ExitCode(err), true
 }

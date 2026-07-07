@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 
 	"github.com/svrnm/bronto-cli/internal/api"
+	"github.com/svrnm/bronto-cli/internal/clierr"
 )
 
 type Client struct {
@@ -53,7 +56,16 @@ func (c *Client) GetJSON(ctx context.Context, path string, params url.Values, ou
 func (c *Client) do(req *http.Request, out any) error {
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return err
+		if req.Context().Err() != nil {
+			return err // cancellation: callers detect ctx state; do not wrap
+		}
+		var ne net.Error
+		if errors.As(err, &ne) && ne.Timeout() {
+			return clierr.New("timeout", "request timed out: "+err.Error()).WithRetryable().
+				WithHint("Increase the timeout via BRONTO_TIMEOUT or 'bronto config set timeout <seconds>'.")
+		}
+		return clierr.New("network_error", err.Error()).WithRetryable().
+			WithHint("Check your network and the API base URL / region.")
 	}
 	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)

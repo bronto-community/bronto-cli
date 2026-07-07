@@ -25,12 +25,7 @@ func NewRootCmd() *cobra.Command {
 	}
 	cmd.SetVersionTemplate("{{.Version}}\n")
 	cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
-		errMsg := err.Error()
-		if strings.HasPrefix(errMsg, "required flag(s)") {
-			return clierr.New("usage_missing_flag", errMsg).
-				WithHint("Run 'bronto --help' for usage.")
-		}
-		return clierr.New("usage_invalid_flag", errMsg).
+		return clierr.New("usage_invalid_flag", err.Error()).
 			WithHint("Run 'bronto --help' for usage.")
 	})
 

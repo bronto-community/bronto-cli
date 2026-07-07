@@ -98,9 +98,26 @@ func newSearchCmd() *cobra.Command {
 					return err
 				}
 				rows := resp.GroupRows()
+				if len(rows) == 0 && len(resp.GroupsSeries) > 0 {
+					rows = resp.GroupsSeries
+				}
 				return p.PrintRows(bronto.EventColumns(rows, 0), rows)
 			default:
-				return printEvents(app, resp.EventRows())
+				events := resp.EventRows()
+				if len(events) == 0 {
+					p, err := app.Printer(false)
+					if err != nil {
+						return err
+					}
+					switch {
+					case len(resp.GroupsSeries) > 0:
+						return p.PrintRows(bronto.EventColumns(resp.GroupsSeries, 0), resp.GroupsSeries)
+					case len(resp.Totals) > 0:
+						rows := []map[string]any{resp.Totals}
+						return p.PrintRows(bronto.EventColumns(rows, 0), rows)
+					}
+				}
+				return printEvents(app, events)
 			}
 		},
 	}

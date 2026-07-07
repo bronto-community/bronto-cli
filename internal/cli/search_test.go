@@ -81,6 +81,50 @@ func TestSearchGroupsRenderAsRows(t *testing.T) {
 	}
 }
 
+func TestSearchGroupsSeriesRenderAsRows(t *testing.T) {
+	srv := searchServer(t, `{"groups_series":[{"host":"web-1","count":3,"time":"t1"},{"host":"web-2","count":5,"time":"t1"}]}`, nil)
+	defer srv.Close()
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "-d", "11111111-1111-1111-1111-111111111111",
+		"--select", "count()", "-g", "host", "--slices", "5",
+		"--base-url", srv.URL, "--api-key", "k", "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(out.Bytes(), &rows); err != nil || len(rows) != 2 {
+		t.Fatalf("out = %q err=%v", out.String(), err)
+	}
+	if rows[0]["host"] != "web-1" || rows[1]["host"] != "web-2" {
+		t.Fatalf("rows = %+v", rows)
+	}
+}
+
+func TestSearchTotalsOnlyRendersSingleRow(t *testing.T) {
+	srv := searchServer(t, `{"totals":{"count":42}}`, nil)
+	defer srv.Close()
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "-d", "11111111-1111-1111-1111-111111111111",
+		"--select", "count()",
+		"--base-url", srv.URL, "--api-key", "k", "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(out.Bytes(), &rows); err != nil || len(rows) != 1 {
+		t.Fatalf("out = %q err=%v", out.String(), err)
+	}
+	if got, ok := rows[0]["count"].(float64); !ok || got != 42 {
+		t.Fatalf("rows[0] = %+v", rows[0])
+	}
+}
+
 func TestSearchExplainOnly(t *testing.T) {
 	srv := searchServer(t, `{"explain":{"Execution time (millis)":"7"}}`, nil)
 	defer srv.Close()
