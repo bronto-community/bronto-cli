@@ -3,6 +3,7 @@ package cli
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -23,7 +24,12 @@ func NewRootCmd() *cobra.Command {
 	}
 	cmd.SetVersionTemplate("{{.Version}}\n")
 	cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
-		return clierr.New("usage_invalid_flag", err.Error()).
+		errMsg := err.Error()
+		if strings.HasPrefix(errMsg, "required flag(s)") {
+			return clierr.New("usage_missing_flag", errMsg).
+				WithHint("Run 'bronto --help' for usage.")
+		}
+		return clierr.New("usage_invalid_flag", errMsg).
 			WithHint("Run 'bronto --help' for usage.")
 	})
 
@@ -39,6 +45,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newPingCmd())
 	cmd.AddCommand(newAPICmd())
 	cmd.AddCommand(newSearchCmd())
+	cmd.AddCommand(newContextCmd())
 	cmd.AddCommand(newFieldsCmd())
 
 	wrapArgsValidators(cmd)
@@ -52,7 +59,7 @@ func NewRootCmd() *cobra.Command {
 // least N arg(s)" errors) surface as usage_invalid_args clierr.Errors. That
 // gives them the correct exit code (2, per the usage_ prefix contract)
 // instead of falling through to the generic exit code (1) that a plain
-// error produces.
+// error produces. Also sets FlagErrorFunc on subcommands to wrap flag errors.
 func wrapArgsValidators(cmd *cobra.Command) {
 	if cmd.Args != nil {
 		orig := cmd.Args
@@ -69,7 +76,35 @@ func wrapArgsValidators(cmd *cobra.Command) {
 				WithHint("Run '" + c.CommandPath() + " --help' for usage.")
 		}
 	}
+	// Set FlagErrorFunc on subcommands to wrap flag errors
+	if cmd.Parent() != nil {
+		cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
+			errMsg := err.Error()
+			if strings.HasPrefix(errMsg, "required flag(s)") {
+				return clierr.New("usage_missing_flag", errMsg).
+					WithHint("Run 'bronto --help' for usage.")
+			}
+			return clierr.New("usage_invalid_flag", errMsg).
+				WithHint("Run 'bronto --help' for usage.")
+		})
+	}
 	for _, sub := range cmd.Commands() {
 		wrapArgsValidators(sub)
 	}
+}
+
+// WrapExecuteError wraps cobra required-flag errors that surface from Execute
+// as plain errors into usage_missing_flag clierr.Errors so they exit with
+// the correct code (2). This should be called on the error returned from
+// cmd.Execute().
+func WrapExecuteError(err error) error {
+	if err == nil {
+		return nil
+	}
+	errMsg := err.Error()
+	if strings.HasPrefix(errMsg, "required flag(s)") {
+		return clierr.New("usage_missing_flag", errMsg).
+			WithHint("Run 'bronto --help' for usage.")
+	}
+	return err
 }
