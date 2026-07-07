@@ -63,9 +63,8 @@ func TraceBounds(spans []Span) (start, end, total int64) {
 	if len(spans) == 0 {
 		return 0, 0, 0
 	}
-	start = spans[0].StartNS
 	for _, s := range spans {
-		if s.StartNS < start {
+		if s.StartNS > 0 && (start == 0 || s.StartNS < start) {
 			start = s.StartNS
 		}
 		if s.EndNS > end {
@@ -131,6 +130,7 @@ type frame struct {
 func dfsOrder(spans []Span) []frame {
 	roots, children := BuildTree(spans)
 	var out []frame
+	visited := map[string]bool{}
 	stack := make([]frame, 0, len(spans))
 	for i := len(roots) - 1; i >= 0; i-- {
 		stack = append(stack, frame{roots[i], 0})
@@ -138,7 +138,16 @@ func dfsOrder(spans []Span) []frame {
 	for len(stack) > 0 {
 		f := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
+		if f.span.SpanID != "" {
+			if visited[f.span.SpanID] {
+				continue
+			}
+			visited[f.span.SpanID] = true
+		}
 		out = append(out, f)
+		if f.span.SpanID == "" {
+			continue // children map keyed "" holds roots, not children
+		}
 		kids := children[f.span.SpanID]
 		for i := len(kids) - 1; i >= 0; i-- {
 			stack = append(stack, frame{kids[i], f.depth + 1})

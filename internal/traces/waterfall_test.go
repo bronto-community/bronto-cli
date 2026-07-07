@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+	"time"
 )
 
 func testSpans() []Span {
@@ -48,7 +49,9 @@ func TestBuildTreeFallbackEarliest(t *testing.T) {
 
 func TestTraceBounds(t *testing.T) {
 	start, end, total := TraceBounds(testSpans())
-	if start != 0 || end != 100 || total != 100 {
+	// testSpans has positive StartNS: 10, 50, 5; min positive = 5 (orphan)
+	// max EndNS = 100 (root); maxDur = 100; so total = max(95, 100) = 100
+	if start != 5 || end != 100 || total != 100 {
 		t.Fatalf("bounds = %d..%d total %d", start, end, total)
 	}
 }
@@ -105,5 +108,45 @@ func TestWaterfallRowsDepthAndOrder(t *testing.T) {
 	}
 	if rows[2]["error"] != true {
 		t.Fatalf("error flag: %v", rows[2])
+	}
+}
+
+func TestWaterfallTerminatesOnCycles(t *testing.T) {
+	cyclic := []Span{
+		{SpanID: "a", ParentSpanID: "b", StartNS: 20, DurationNS: 5, Name: "a", Service: "s"},
+		{SpanID: "b", ParentSpanID: "a", StartNS: 10, DurationNS: 5, Name: "b", Service: "s"},
+	}
+	done := make(chan []map[string]any, 1)
+	go func() { done <- WaterfallRows(cyclic) }()
+	select {
+	case rows := <-done:
+		if len(rows) != 2 {
+			t.Fatalf("rows = %d, want 2 (each span once)", len(rows))
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("WaterfallRows hangs on cyclic input")
+	}
+	// self-referencing single span
+	self := []Span{{SpanID: "x", ParentSpanID: "x", StartNS: 1, DurationNS: 1}}
+	done2 := make(chan []map[string]any, 1)
+	go func() { done2 <- WaterfallRows(self) }()
+	select {
+	case rows := <-done2:
+		if len(rows) != 1 {
+			t.Fatalf("self-ref rows = %d", len(rows))
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("WaterfallRows hangs on self-referencing span")
+	}
+}
+
+func TestTraceBoundsIgnoresNonPositiveStarts(t *testing.T) {
+	spans := []Span{
+		{SpanID: "a", StartNS: -50, DurationNS: 10, EndNS: 0},
+		{SpanID: "b", StartNS: 100, DurationNS: 20, EndNS: 120},
+	}
+	start, end, total := TraceBounds(spans)
+	if start != 100 || end != 120 || total < 20 {
+		t.Fatalf("bounds = %d..%d total %d", start, end, total)
 	}
 }
