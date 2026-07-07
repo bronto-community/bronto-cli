@@ -6,10 +6,8 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
-	toml "github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
@@ -211,11 +209,7 @@ func newAuthStatusCmd() *cobra.Command {
 			if v, ok := app.Config.Get("api_key"); ok && v.Val != "" {
 				key, source = v.Val, string(v.Source)
 			}
-			maskedKey := ""
-			if key != "" {
-				n := min(8, len(key))
-				maskedKey = key[:n] + "…"
-			}
+			maskedKey := maskSecret(key)
 
 			status := "no key"
 			if key != "" {
@@ -273,7 +267,11 @@ func newAuthSwitchCmd() *cobra.Command {
 				return err
 			}
 			profile := args[0]
-			if !profileExists(profile) {
+			exists, err := profileExists(profile)
+			if err != nil {
+				return err
+			}
+			if !exists {
 				return clierr.New("profile_not_found", fmt.Sprintf("no profile named %q", profile)).
 					WithHint(fmt.Sprintf("Run 'bronto auth login --profile %s' to create it.", profile))
 			}
@@ -292,36 +290,13 @@ func newAuthSwitchCmd() *cobra.Command {
 
 // profileExists reports whether a profile has any known credentials or
 // configuration: a keychain/fallback-file entry, or a section in the user
-// config file.
-func profileExists(profile string) bool {
+// config file. A malformed user config file is a real error (propagated as
+// config_parse_error), not treated as "profile not found".
+func profileExists(profile string) (bool, error) {
 	if _, _, err := secrets.Get(profile); err == nil {
-		return true
+		return true, nil
 	}
-	return hasUserConfigSection(profile)
-}
-
-// userConfigProfiles mirrors the shape of the user config file's profile
-// sections (internal/config keeps its own equivalent type unexported).
-type userConfigProfiles struct {
-	DefaultProfile string                       `toml:"default_profile"`
-	Profiles       map[string]map[string]string `toml:"profiles"`
-}
-
-func hasUserConfigSection(profile string) bool {
-	dir, err := configDir()
-	if err != nil {
-		return false
-	}
-	b, err := os.ReadFile(filepath.Join(dir, "bronto", "config.toml"))
-	if err != nil {
-		return false
-	}
-	var uf userConfigProfiles
-	if err := toml.Unmarshal(b, &uf); err != nil {
-		return false
-	}
-	_, ok := uf.Profiles[profile]
-	return ok
+	return config.HasProfile("", profile)
 }
 
 func newAuthLogoutCmd() *cobra.Command {
@@ -345,10 +320,23 @@ func newAuthLogoutCmd() *cobra.Command {
 }
 
 // configDir resolves the parent config directory: BRONTO_CONFIG_DIR when
-// set, else the OS user config directory (same as configcmd.go's 'set').
+// set, else the OS user config directory (also used by configcmd.go's 'set').
 func configDir() (string, error) {
 	if dir := os.Getenv("BRONTO_CONFIG_DIR"); dir != "" {
 		return dir, nil
 	}
 	return os.UserConfigDir()
+}
+
+// maskSecret returns the first 8 runes of v followed by an ellipsis, never
+// splitting a multi-byte rune. Empty input stays empty.
+func maskSecret(v string) string {
+	if v == "" {
+		return ""
+	}
+	r := []rune(v)
+	if len(r) > 8 {
+		r = r[:8]
+	}
+	return string(r) + "…"
 }

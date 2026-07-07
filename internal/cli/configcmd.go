@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"sort"
 
 	"github.com/spf13/cobra"
@@ -37,7 +36,7 @@ func newConfigCmd() *cobra.Command {
 				v := vals[k]
 				val := v.Val
 				if k == "api_key" && val != "" {
-					val = val[:min(8, len(val))] + "…" // never print full secrets
+					val = maskSecret(val) // never print full secrets
 				}
 				rows = append(rows, map[string]any{"key": k, "value": val, "source": string(v.Source)})
 			}
@@ -76,13 +75,9 @@ func newConfigCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			dir := os.Getenv("BRONTO_CONFIG_DIR")
-			if dir == "" {
-				d, err := os.UserConfigDir()
-				if err != nil {
-					return err
-				}
-				dir = d
+			dir, err := configDir()
+			if err != nil {
+				return err
 			}
 			if err := config.SetUserValue(dir, app.Config.Profile(), args[0], args[1]); err != nil {
 				return err

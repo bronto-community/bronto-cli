@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/zalando/go-keyring"
 
@@ -114,6 +116,43 @@ func TestAuthSwitchAndLogout(t *testing.T) {
 	}
 	if _, _, err := secrets.Get("stage"); err == nil {
 		t.Fatal("key must be gone after logout")
+	}
+}
+
+func TestAuthSwitchCorruptConfigIsParseError(t *testing.T) {
+	keyring.MockInit()
+	dir := t.TempDir()
+	t.Setenv("BRONTO_CONFIG_DIR", dir)
+	if err := os.MkdirAll(filepath.Join(dir, "bronto"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "bronto", "config.toml"),
+		[]byte("not [valid toml =\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"auth", "switch", "ghost"})
+	err := root.Execute()
+	if clierr.ExitCode(err) != 2 {
+		t.Fatalf("want exit 2 (config_parse_error), got %d: %v", clierr.ExitCode(err), err)
+	}
+}
+
+func TestMaskSecretRuneSafe(t *testing.T) {
+	got := maskSecret("ключ-secret-key")
+	if !utf8.ValidString(got) {
+		t.Fatalf("masked key is not valid UTF-8: %q", got)
+	}
+	if r := []rune(got); len(r) != 9 || string(r[:8]) != "ключ-sec" || r[8] != '…' {
+		t.Fatalf("masked key = %q, want first 8 runes + ellipsis", got)
+	}
+	if got := maskSecret(""); got != "" {
+		t.Fatalf("maskSecret(\"\") = %q, want empty", got)
+	}
+	if got := maskSecret("short"); got != "short…" {
+		t.Fatalf("maskSecret(short) = %q", got)
 	}
 }
 

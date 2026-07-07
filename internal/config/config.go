@@ -144,6 +144,21 @@ func loadUserFile(dir string, getenv func(string) string) (*userFile, error) {
 	return &uf, nil
 }
 
+// HasProfile reports whether the user config file has a [profiles.<name>]
+// section. dir semantics match LoadOptions.UserConfigDir ("" = default,
+// BRONTO_CONFIG_DIR honored).
+func HasProfile(dir, name string) (bool, error) {
+	uf, err := loadUserFile(dir, os.Getenv)
+	if err != nil {
+		return false, err // config_parse_error propagates
+	}
+	if uf == nil {
+		return false, nil
+	}
+	_, ok := uf.Profiles[name]
+	return ok, nil
+}
+
 func (c *Config) Get(key string) (Value, bool) {
 	v, ok := c.values[key]
 	return v, ok

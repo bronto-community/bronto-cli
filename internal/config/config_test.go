@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/svrnm/bronto-cli/internal/clierr"
 )
 
 func env(m map[string]string) func(string) string {
@@ -159,6 +161,53 @@ func TestInjectOnlyWhenAbsent(t *testing.T) {
 	v, _ := cfg2.Get("api_key")
 	if v.Val != "keychain-key" || v.Source != SourceKeychain {
 		t.Fatalf("injected: %+v", v)
+	}
+}
+
+func TestHasProfile(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", "") // neutralize any ambient override
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "bronto", "config.toml"),
+		"default_profile = \"prod\"\n[profiles.prod]\nregion = \"eu\"\n")
+
+	ok, err := HasProfile(dir, "prod")
+	if err != nil || !ok {
+		t.Fatalf("HasProfile(prod) = %v, %v; want true", ok, err)
+	}
+	ok, err = HasProfile(dir, "ghost")
+	if err != nil || ok {
+		t.Fatalf("HasProfile(ghost) = %v, %v; want false", ok, err)
+	}
+	// absent config file: false without error
+	ok, err = HasProfile(t.TempDir(), "prod")
+	if err != nil || ok {
+		t.Fatalf("HasProfile(absent) = %v, %v; want false, nil", ok, err)
+	}
+}
+
+func TestHasProfileHonorsBrontoConfigDir(t *testing.T) {
+	override := t.TempDir()
+	writeFile(t, filepath.Join(override, "bronto", "config.toml"),
+		"[profiles.stage]\nregion = \"us\"\n")
+	t.Setenv("BRONTO_CONFIG_DIR", override)
+
+	ok, err := HasProfile("", "stage")
+	if err != nil || !ok {
+		t.Fatalf("HasProfile via BRONTO_CONFIG_DIR = %v, %v; want true", ok, err)
+	}
+}
+
+func TestHasProfileParseErrorPropagates(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", "")
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "bronto", "config.toml"), "not [valid toml =\n")
+
+	ok, err := HasProfile(dir, "prod")
+	if err == nil || ok {
+		t.Fatalf("HasProfile(corrupt) = %v, %v; want error", ok, err)
+	}
+	if clierr.ExitCode(err) != 2 {
+		t.Fatalf("exit code = %d, want 2 (config_parse_error)", clierr.ExitCode(err))
 	}
 }
 
