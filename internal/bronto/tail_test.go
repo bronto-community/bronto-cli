@@ -79,3 +79,18 @@ func TestSortEventsBySequenceThenTime(t *testing.T) {
 		t.Fatalf("time sort = %v", byTime)
 	}
 }
+
+func TestSortEventsMixedBatchTotalOrder(t *testing.T) {
+	evs := []map[string]any{
+		{"@sequence": float64(1), "@time": "zzz", "@raw": "e1"},
+		{"@sequence": float64(2), "@time": "aaa", "@raw": "e2"},
+		{"@time": "mmm", "@raw": "e3"}, // no sequence
+	}
+	SortEvents(evs)
+	want := []string{"e2", "e3", "e1"} // aaa < mmm < zzz
+	for i, w := range want {
+		if evs[i]["@raw"] != w {
+			t.Fatalf("pos %d = %v, want %s (order %v)", i, evs[i]["@raw"], w, evs)
+		}
+	}
+}

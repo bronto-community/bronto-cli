@@ -61,16 +61,18 @@ func (d *Dedup) Admit(key string) bool {
 	return true
 }
 
-// SortEvents orders a poll batch: numeric @sequence when present on both
-// events, @time string otherwise.
+// SortEvents orders a poll batch by @time, with numeric @sequence as the
+// tiebreaker (0 when absent). A single lexicographic key keeps the
+// ordering total even when only some events carry a sequence.
 func SortEvents(evs []map[string]any) {
 	sort.SliceStable(evs, func(i, j int) bool {
-		si, iok := numeric(evs[i]["@sequence"])
-		sj, jok := numeric(evs[j]["@sequence"])
-		if iok && jok {
-			return si < sj
+		ti, tj := fmt.Sprint(evs[i]["@time"]), fmt.Sprint(evs[j]["@time"])
+		if ti != tj {
+			return ti < tj
 		}
-		return fmt.Sprint(evs[i]["@time"]) < fmt.Sprint(evs[j]["@time"])
+		si, _ := numeric(evs[i]["@sequence"])
+		sj, _ := numeric(evs[j]["@sequence"])
+		return si < sj
 	})
 }
 
