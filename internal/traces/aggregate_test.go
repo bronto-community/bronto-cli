@@ -153,6 +153,40 @@ func TestAttributesIncludeEmptyLabelsMissing(t *testing.T) {
 	}
 }
 
+func TestAttributesDeterministicTieOrder(t *testing.T) {
+	srv, _ := aggServer(t, map[string]string{
+		"count(*)": `{"groups":[
+			{"group":["/z"],"count(*)":10},{"group":["/a"],"count(*)":10},
+			{"group":["/m"],"count(*)":10}]}`,
+	})
+	defer srv.Close()
+	var first []string
+	for i := 0; i < 10; i++ {
+		rows, _, _, err := newAgg(srv).Attributes(context.Background(), AttrOptions{
+			By: []string{"http.route"}, Limit: 10,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var order []string
+		for _, r := range rows {
+			order = append(order, r["http.route"].(string))
+		}
+		if first == nil {
+			first = order
+			continue
+		}
+		for j := range order {
+			if order[j] != first[j] {
+				t.Fatalf("iteration %d: order %v != %v", i, order, first)
+			}
+		}
+	}
+	if first[0] != "/a" || first[1] != "/m" || first[2] != "/z" {
+		t.Fatalf("tie order not alphabetical: %v", first)
+	}
+}
+
 func TestParseGroupForms(t *testing.T) {
 	if got := parseGroup([]any{"a", float64(2)}); got[0] != "a" || got[1] != "2" {
 		t.Fatalf("list form: %v", got)

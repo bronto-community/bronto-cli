@@ -219,9 +219,17 @@ func (a *Aggregator) Attributes(ctx context.Context, opts AttrOptions) ([]map[st
 	for i, g := range groupKeys {
 		attrNames[i] = strings.TrimPrefix(g, "$")
 	}
+
+	countKeys := make([]string, 0, len(counts))
+	for k := range counts {
+		countKeys = append(countKeys, k)
+	}
+	sort.Strings(countKeys)
+
 	dropped := 0
 	rows := make([]map[string]any, 0, len(counts))
-	for key, entry := range counts {
+	for _, key := range countKeys {
+		entry := counts[key]
 		vals := entry.Vals
 		for len(vals) < len(groupKeys) {
 			vals = append(vals, "")
