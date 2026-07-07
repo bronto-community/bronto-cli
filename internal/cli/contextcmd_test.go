@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -62,21 +63,8 @@ func TestContextRejectsMissingRequiredFlag(t *testing.T) {
 	root.SetOut(&bytes.Buffer{})
 	root.SetErr(&bytes.Buffer{})
 	root.SetArgs([]string{"context", "--api-key", "k"})
-	err := root.Execute()
-	err = wrapExecuteErrorForTest(err)
+	err := Execute(context.Background(), root)
 	if err == nil || clierr.ExitCode(err) != 2 {
 		t.Fatalf("want usage exit 2 for missing required flag, got %v (exit %d)", err, clierr.ExitCode(err))
 	}
-}
-
-func wrapExecuteErrorForTest(err error) error {
-	if err == nil {
-		return nil
-	}
-	errMsg := err.Error()
-	if strings.HasPrefix(errMsg, "required flag(s)") {
-		return clierr.New("usage_missing_flag", errMsg).
-			WithHint("Run 'bronto --help' for usage.")
-	}
-	return err
 }

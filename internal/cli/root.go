@@ -2,6 +2,7 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -59,7 +60,7 @@ func NewRootCmd() *cobra.Command {
 // least N arg(s)" errors) surface as usage_invalid_args clierr.Errors. That
 // gives them the correct exit code (2, per the usage_ prefix contract)
 // instead of falling through to the generic exit code (1) that a plain
-// error produces. Also sets FlagErrorFunc on subcommands to wrap flag errors.
+// error produces.
 func wrapArgsValidators(cmd *cobra.Command) {
 	if cmd.Args != nil {
 		orig := cmd.Args
@@ -76,21 +77,16 @@ func wrapArgsValidators(cmd *cobra.Command) {
 				WithHint("Run '" + c.CommandPath() + " --help' for usage.")
 		}
 	}
-	// Set FlagErrorFunc on subcommands to wrap flag errors
-	if cmd.Parent() != nil {
-		cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
-			errMsg := err.Error()
-			if strings.HasPrefix(errMsg, "required flag(s)") {
-				return clierr.New("usage_missing_flag", errMsg).
-					WithHint("Run 'bronto --help' for usage.")
-			}
-			return clierr.New("usage_invalid_flag", errMsg).
-				WithHint("Run 'bronto --help' for usage.")
-		})
-	}
 	for _, sub := range cmd.Commands() {
 		wrapArgsValidators(sub)
 	}
+}
+
+// Execute runs the command tree and normalizes cobra errors that surface
+// untyped (currently: required-flag validation) into typed usage errors.
+// All entry points — main and tests — should run commands through this.
+func Execute(ctx context.Context, cmd *cobra.Command) error {
+	return WrapExecuteError(cmd.ExecuteContext(ctx))
 }
 
 // WrapExecuteError wraps cobra required-flag errors that surface from Execute
