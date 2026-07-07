@@ -277,7 +277,7 @@ func newTracesShowCmd() *cobra.Command {
 // format, streaming rows (jsonl/raw) or a full rows dump (json/csv)
 // otherwise — mirroring search.go's printEvents format branching.
 func printWaterfall(app *App, spans []traces.Span, barWidth int) error {
-	f, err := output.DetectFormat(app.OutputFlag, app.StdoutIsTTY, true)
+	f, err := app.DetectFormat(true)
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,10 @@ func printWaterfall(app *App, spans []traces.Span, barWidth int) error {
 		traces.RenderWaterfall(app.Stdout, spans, barWidth, app.Color)
 		return nil
 	}
-	p := output.NewPrinter(app.Stdout, f)
+	p, err := app.PrinterFor(f)
+	if err != nil {
+		return err
+	}
 	rows := traces.WaterfallRows(spans)
 	if f == output.FormatJSONL || f == output.FormatRaw {
 		for _, r := range rows {
@@ -359,7 +362,7 @@ func newTracesShapeCmd() *cobra.Command {
 					fmt.Sprintf("no shape buckets have at least %d traces", minTraces)).
 					WithHint("Lower --min-traces or increase --sample.")
 			}
-			f, err := output.DetectFormat(app.OutputFlag, app.StdoutIsTTY, true)
+			f, err := app.DetectFormat(true)
 			if err != nil {
 				return err
 			}
@@ -367,7 +370,10 @@ func newTracesShapeCmd() *cobra.Command {
 				traces.RenderShape(app.Stdout, visible, tracesUsed, len(spans), barWidth, app.Color)
 				return nil
 			}
-			p := output.NewPrinter(app.Stdout, f)
+			p, err := app.PrinterFor(f)
+			if err != nil {
+				return err
+			}
 			rows := traces.ShapeRows(visible)
 			if f == output.FormatJSONL || f == output.FormatRaw {
 				for _, r := range rows {

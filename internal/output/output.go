@@ -243,7 +243,25 @@ func (p *Printer) PrintRow(columns []string, row map[string]any) error {
 	}
 }
 
+// filterJSONValue applies the --fields filter to a PrintJSON payload. A
+// map[string]any is filtered directly; a []map[string]any has the filter
+// applied element-wise. Any other shape (scalars, []any, nested structures)
+// passes through unchanged — there's no single well-defined key set to filter.
+func filterJSONValue(v any, fields []string) any {
+	switch t := v.(type) {
+	case map[string]any:
+		return filterRow(t, fields)
+	case []map[string]any:
+		return filterRows(t, fields)
+	default:
+		return v
+	}
+}
+
 func (p *Printer) PrintJSON(v any) error {
+	if len(p.fields) > 0 {
+		v = filterJSONValue(v, p.fields)
+	}
 	if p.jq != nil {
 		return runJQ(p.w, p.jq, v)
 	}

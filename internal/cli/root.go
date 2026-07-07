@@ -37,7 +37,8 @@ func NewRootCmd() *cobra.Command {
 	pf.StringP("output", "o", "", "output format: table|json|jsonl|raw|csv")
 	pf.Bool("no-color", false, "disable color output")
 	pf.Bool("quiet", false, "suppress non-data messages on stderr")
-	pf.String("jq", "", "jq expression applied to json/jsonl output (each result prints on its own line)")
+	pf.String("jq", "", "jq expression applied to json/jsonl output (each result prints on its own line); "+
+		"values that fail the expression are skipped")
 	pf.StringSlice("fields", nil, "select specific fields (comma-separated); use '?' to list available field names")
 	cmd.AddCommand(newConfigCmd())
 	cmd.AddCommand(newAuthCmd())

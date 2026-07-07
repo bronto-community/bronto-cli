@@ -181,6 +181,49 @@ func TestJQSkipsErroringValuesAndExitsClean(t *testing.T) {
 	}
 }
 
+// TestJQSkipsOneErroringRowAmongThree pins: when the expression errors on
+// only one of several values, the others still print — a single bad row
+// does not abort the whole command.
+func TestJQSkipsOneErroringRowAmongThree(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSONL)
+	code, err := CompileJQ(".x | ascii_downcase") // errors when x isn't a string
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.SetJQ(code)
+	input := []map[string]any{
+		{"x": "AAA"},
+		{"x": 42}, // errors: ascii_downcase requires a string
+		{"x": "CCC"},
+	}
+	for _, r := range input {
+		if err := p.PrintRow(nil, r); err != nil {
+			t.Fatalf("jq runtime error must not surface: %v", err)
+		}
+	}
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 2 || lines[0] != `"aaa"` || lines[1] != `"ccc"` {
+		t.Fatalf("got %q, want the two non-erroring rows' results only", buf.String())
+	}
+}
+
+func TestPrintJSONAppliesFieldFilter(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetFieldFilter([]string{"name"})
+	if err := p.PrintJSON(map[string]any{"name": "web", "count": 3}); err != nil {
+		t.Fatal(err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
+		t.Fatalf("not JSON: %v (%q)", err, buf.String())
+	}
+	if len(got) != 1 || got["name"] != "web" {
+		t.Fatalf("got %+v, want only {name: web}", got)
+	}
+}
+
 func TestCompileJQInvalidExpressionIsUsageError(t *testing.T) {
 	if _, err := CompileJQ("this is not jq {{{"); err == nil {
 		t.Fatal("want error for invalid jq expression")

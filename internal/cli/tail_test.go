@@ -106,6 +106,39 @@ func TestTailFollowStopsOnContextCancel(t *testing.T) {
 	}
 }
 
+// TestTailAppliesJQFilter pins: tail builds its printer through
+// App.PrinterFor (not output.NewPrinter directly), so --jq is honored
+// instead of silently ignored — output lines are the jq results, not the
+// full event objects.
+func TestTailAppliesJQFilter(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"events":[
+			{"@sequence":1,"@raw":"first","@time":"t1"},
+			{"@sequence":2,"@raw":"second","@time":"t2"}
+		]}`))
+	}))
+	defer srv.Close()
+
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"tail", "--no-follow", "--jq", `."@raw"`,
+		"-d", "11111111-1111-1111-1111-111111111111", "--base-url", srv.URL, "--api-key", "k"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("want 2 lines, got %q", out.String())
+	}
+	for i, want := range []string{`"first"`, `"second"`} {
+		if lines[i] != want {
+			t.Fatalf("line %d = %q, want %q (jq filter must apply, not the full row)", i, lines[i], want)
+		}
+	}
+}
+
 func TestTailRejectsNonStreamingFormats(t *testing.T) {
 	for _, f := range []string{"json", "csv"} {
 		root := NewRootCmd()

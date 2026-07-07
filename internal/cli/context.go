@@ -137,16 +137,25 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 	}, nil
 }
 
-func (a *App) Printer(streaming bool) (*output.Printer, error) {
-	f, err := output.DetectFormat(a.OutputFlag, a.StdoutIsTTY, streaming)
-	if err != nil {
-		return nil, err
-	}
-	if a.JQ != nil && f != output.FormatJSON && f != output.FormatJSONL {
+// DetectFormat resolves the effective output format for this invocation.
+// Commands that need to branch on the format themselves (tail, traces
+// show/shape) call this instead of output.DetectFormat directly, then hand
+// the result to PrinterFor — keeping format detection defined in one place.
+func (a *App) DetectFormat(streaming bool) (output.Format, error) {
+	return output.DetectFormat(a.OutputFlag, a.StdoutIsTTY, streaming)
+}
+
+// PrinterFor returns a printer for an already-detected format with the
+// session's --fields/--jq/--fields=? tools applied. This is the required
+// path for commands that branch on the format themselves instead of going
+// straight through Printer: calling output.NewPrinter directly bypasses
+// --fields and --jq silently.
+func (a *App) PrinterFor(format output.Format) (*output.Printer, error) {
+	if a.JQ != nil && format != output.FormatJSON && format != output.FormatJSONL {
 		return nil, clierr.New("usage_invalid_flags", "--jq requires -o json or jsonl").
 			WithHint("Pass -o json or -o jsonl alongside --jq.")
 	}
-	p := output.NewPrinter(a.Stdout, f)
+	p := output.NewPrinter(a.Stdout, format)
 	if a.ListFieldsOnly {
 		p.SetListFields(true)
 	} else if len(a.FieldFilter) > 0 {
@@ -156,4 +165,12 @@ func (a *App) Printer(streaming bool) (*output.Printer, error) {
 		p.SetJQ(a.JQ)
 	}
 	return p, nil
+}
+
+func (a *App) Printer(streaming bool) (*output.Printer, error) {
+	f, err := a.DetectFormat(streaming)
+	if err != nil {
+		return nil, err
+	}
+	return a.PrinterFor(f)
 }

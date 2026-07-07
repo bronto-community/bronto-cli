@@ -67,7 +67,7 @@ func newTailCmd() *cobra.Command {
 				where = args[0]
 			}
 
-			format, err := output.DetectFormat(app.OutputFlag, app.StdoutIsTTY, true)
+			format, err := app.DetectFormat(true)
 			if err != nil {
 				return err
 			}
@@ -75,7 +75,10 @@ func newTailCmd() *cobra.Command {
 				return clierr.New("usage_invalid_output_format",
 					fmt.Sprintf("tail streams events and cannot produce %s; use jsonl, raw, or table", format))
 			}
-			p := output.NewPrinter(app.Stdout, format)
+			p, err := app.PrinterFor(format)
+			if err != nil {
+				return err
+			}
 			humanMode := format == output.FormatTable // table format: TTY default or explicit -o table; PrintRow cannot render tables
 			if !app.Quiet {
 				_, _ = fmt.Fprintf(app.Stderr, "Tailing every %s (window %s). Ctrl-C to stop.\n", interval, window)

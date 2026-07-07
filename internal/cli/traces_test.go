@@ -110,6 +110,45 @@ func TestTracesShowStreamsRows(t *testing.T) {
 	}
 }
 
+// TestTracesShowAppliesFieldsFilter pins: printWaterfall builds its printer
+// through App.PrinterFor (not output.NewPrinter directly), so --fields is
+// honored instead of silently ignored — each streamed row has only the
+// selected keys.
+func TestTracesShowAppliesFieldsFilter(t *testing.T) {
+	srv := tracesServer(t, map[string]string{
+		"@time": `{"result":[
+			{"$span.trace_id":"tr1","$span.span_id":"a","$span.name":"root","$service.name":"cart",
+			 "$span.start_time_unix_nano":100,"$span.duration_nano":50,"$span.status_code":"STATUS_CODE_OK"},
+			{"$span.trace_id":"tr1","$span.span_id":"b","$span.parent_span_id":"a","$span.name":"child",
+			 "$service.name":"cart","$span.start_time_unix_nano":110,"$span.duration_nano":20,
+			 "$span.status_code":"STATUS_CODE_UNSET"}]}`,
+	})
+	defer srv.Close()
+	out, err := runTraces(t, srv, "show", "tr1", "--fields", "service,operation")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("want 2 jsonl rows, got %q", out)
+	}
+	for _, line := range lines {
+		var row map[string]any
+		if err := json.Unmarshal([]byte(line), &row); err != nil {
+			t.Fatalf("line %q not JSON: %v", line, err)
+		}
+		if len(row) != 2 {
+			t.Fatalf("row has keys beyond the field filter: %+v", row)
+		}
+		if _, ok := row["service"]; !ok {
+			t.Fatalf("row missing service: %+v", row)
+		}
+		if _, ok := row["operation"]; !ok {
+			t.Fatalf("row missing operation: %+v", row)
+		}
+	}
+}
+
 func TestTracesShowNotFound(t *testing.T) {
 	srv := tracesServer(t, nil) // empty result
 	defer srv.Close()
