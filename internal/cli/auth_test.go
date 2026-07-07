@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -69,6 +70,11 @@ func TestAuthLoginRejectsBadKey(t *testing.T) {
 
 func TestAuthLoginNonTTYWithoutKeyStdinIsUsageError(t *testing.T) {
 	keyring.MockInit()
+	oldOut, oldIn := stdoutIsTTY, stdinIsTTY
+	stdoutIsTTY = func() bool { return false }
+	stdinIsTTY = func() bool { return false }
+	t.Cleanup(func() { stdoutIsTTY, stdinIsTTY = oldOut, oldIn })
+
 	root := NewRootCmd()
 	root.SetOut(&bytes.Buffer{})
 	root.SetErr(&bytes.Buffer{})
@@ -76,6 +82,27 @@ func TestAuthLoginNonTTYWithoutKeyStdinIsUsageError(t *testing.T) {
 	err := root.Execute()
 	if err == nil || clierr.ExitCode(err) != 2 {
 		t.Fatalf("want usage exit 2, got %v", err)
+	}
+}
+
+func TestAuthLoginPromptRequiresStdinTTYToo(t *testing.T) {
+	keyring.MockInit()
+	oldOut, oldIn := stdoutIsTTY, stdinIsTTY
+	stdoutIsTTY = func() bool { return true }
+	stdinIsTTY = func() bool { return false }
+	t.Cleanup(func() { stdoutIsTTY, stdinIsTTY = oldOut, oldIn })
+
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"auth", "login"})
+	err := root.Execute()
+	if err == nil || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage exit 2 (usage_key_required) when stdin is not a TTY, got %v", err)
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "usage_key_required" {
+		t.Fatalf("want usage_key_required, got %v", err)
 	}
 }
 
@@ -151,8 +178,39 @@ func TestMaskSecretRuneSafe(t *testing.T) {
 	if got := maskSecret(""); got != "" {
 		t.Fatalf("maskSecret(\"\") = %q, want empty", got)
 	}
-	if got := maskSecret("short"); got != "short…" {
-		t.Fatalf("maskSecret(short) = %q", got)
+	if got := maskSecret("short"); got != "…" {
+		t.Fatalf("maskSecret(short) = %q, want bare ellipsis for <12-rune secrets", got)
+	}
+}
+
+func TestAuthTokenPrintsResolvedKey(t *testing.T) {
+	keyring.MockInit()
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"auth", "token", "--api-key", "the-full-key"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if got := out.String(); got != "the-full-key\n" {
+		t.Fatalf("auth token output = %q, want %q", got, "the-full-key\n")
+	}
+}
+
+func TestAuthTokenNoKeyExitsThree(t *testing.T) {
+	keyring.MockInit()
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"auth", "token"})
+	err := root.Execute()
+	if err == nil || clierr.ExitCode(err) != 3 {
+		t.Fatalf("want exit 3 (auth_missing_key), got %v", err)
 	}
 }
 

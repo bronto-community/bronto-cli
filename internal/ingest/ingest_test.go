@@ -42,6 +42,11 @@ func TestLineToEvent(t *testing.T) {
 	if ev4["message"] != "[1,2]" {
 		t.Fatalf("non-object: %v", ev4)
 	}
+	line5 := `{"message": 123}`
+	ev5 := LineToEvent(line5, fixedNow) // non-string message -> backfilled with raw line
+	if ev5["message"] != line5 {
+		t.Fatalf("non-string message: %v", ev5)
+	}
 }
 
 func TestSendNDJSONHeadersAndGzip(t *testing.T) {

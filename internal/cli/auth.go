@@ -22,12 +22,17 @@ import (
 // echoing it. Package-level so tests can stub the TTY prompt.
 var readPassword = term.ReadPassword
 
+// stdinIsTTY reports whether the process stdin is a terminal. Package-level
+// so tests can stub the TTY-dependent interactive-prompt path. The prompt
+// must never fire when stdin is not a TTY, regardless of stdout.
+var stdinIsTTY = func() bool { return term.IsTerminal(int(os.Stdin.Fd())) }
+
 func newAuthCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "auth",
 		Short: "Manage Bronto credentials and profiles",
 	}
-	cmd.AddCommand(newAuthLoginCmd(), newAuthStatusCmd(), newAuthSwitchCmd(), newAuthLogoutCmd())
+	cmd.AddCommand(newAuthLoginCmd(), newAuthStatusCmd(), newAuthSwitchCmd(), newAuthLogoutCmd(), newAuthTokenCmd())
 	return cmd
 }
 
@@ -110,12 +115,12 @@ func acquireKey(cmd *cobra.Command, keyStdin bool) (string, error) {
 			return "", err
 		}
 		key = strings.TrimSpace(string(b))
-	case stdoutIsTTY():
+	case stdoutIsTTY() && stdinIsTTY():
 		_, _ = fmt.Fprint(cmd.ErrOrStderr(), "Bronto management API key: ")
 		b, err := readPassword(int(os.Stdin.Fd()))
 		_, _ = fmt.Fprintln(cmd.ErrOrStderr())
 		if err != nil {
-			return "", err
+			return "", errUsageKeyRequired()
 		}
 		key = strings.TrimSpace(string(b))
 	default:
@@ -319,6 +324,28 @@ func newAuthLogoutCmd() *cobra.Command {
 	}
 }
 
+func newAuthTokenCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "token",
+		Short:   "Print the resolved API key (for scripting)",
+		Args:    cobra.NoArgs,
+		Example: "  export BRONTO_API_KEY=$(bronto auth token)",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			app, err := NewApp(cmd)
+			if err != nil {
+				return err
+			}
+			key := app.Config.APIKey()
+			if key == "" {
+				return clierr.New("auth_missing_key", "no API key configured").
+					WithHint("Run 'bronto auth login', or set BRONTO_API_KEY / --api-key.")
+			}
+			_, _ = fmt.Fprintln(app.Stdout, key)
+			return nil
+		},
+	}
+}
+
 // configDir resolves the parent config directory: BRONTO_CONFIG_DIR when
 // set, else the OS user config directory (also used by configcmd.go's 'set').
 func configDir() (string, error) {
@@ -329,14 +356,16 @@ func configDir() (string, error) {
 }
 
 // maskSecret returns the first 8 runes of v followed by an ellipsis, never
-// splitting a multi-byte rune. Empty input stays empty.
+// splitting a multi-byte rune. Secrets shorter than 12 runes reveal nothing
+// (a partial prefix of a short secret still meaningfully narrows it down),
+// masking to a bare ellipsis instead. Empty input stays empty.
 func maskSecret(v string) string {
 	if v == "" {
 		return ""
 	}
 	r := []rune(v)
-	if len(r) > 8 {
-		r = r[:8]
+	if len(r) < 12 {
+		return "…"
 	}
-	return string(r) + "…"
+	return string(r[:8]) + "…"
 }

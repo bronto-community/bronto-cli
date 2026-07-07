@@ -67,6 +67,26 @@ func TestConfigGetUnknownKeyExitsTwo(t *testing.T) {
 	}
 }
 
+func TestConfigGetAPIKeyIsMasked(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"config", "get", "api_key", "--api-key", "abcdefgh12345"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	got := strings.TrimSpace(out.String())
+	if !strings.Contains(got, "…") {
+		t.Fatalf("want masked output containing an ellipsis, got %q", got)
+	}
+	if strings.Contains(got, "abcdefgh12345") {
+		t.Fatalf("config get api_key must not print the full key, got %q", got)
+	}
+}
+
 func TestConfigSetThenGetRoundTrip(t *testing.T) {
 	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
 

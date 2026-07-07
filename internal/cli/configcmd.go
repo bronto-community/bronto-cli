@@ -61,7 +61,11 @@ func newConfigCmd() *cobra.Command {
 			if !ok {
 				return clierr.New("config_unknown_key", fmt.Sprintf("no value for %q", args[0]))
 			}
-			_, _ = fmt.Fprintln(app.Stdout, v.Val)
+			val := v.Val
+			if args[0] == "api_key" && val != "" {
+				val = maskSecret(val) // never print the full secret; use 'bronto auth token' for scripting
+			}
+			_, _ = fmt.Fprintln(app.Stdout, val)
 			return nil
 		},
 	}

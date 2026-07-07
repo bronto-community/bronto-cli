@@ -25,7 +25,8 @@ func URL(region, override string) string {
 
 // LineToEvent converts one input line into an ingestion event. JSON objects
 // pass through (timestamp added when absent; message backfilled with the
-// raw line when absent); anything else becomes {"message": line, "timestamp": now}.
+// raw line when absent or not a non-empty string); anything else becomes
+// {"message": line, "timestamp": now}.
 func LineToEvent(line string, now func() time.Time) map[string]any {
 	if now == nil {
 		now = time.Now
@@ -35,7 +36,7 @@ func LineToEvent(line string, now func() time.Time) map[string]any {
 		if _, ok := obj["timestamp"]; !ok {
 			obj["timestamp"] = now().UTC().Format(time.RFC3339)
 		}
-		if _, ok := obj["message"]; !ok {
+		if msg, ok := obj["message"].(string); !ok || msg == "" {
 			obj["message"] = line
 		}
 		return obj
