@@ -52,6 +52,14 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newTracesCmd())
 	cmd.AddCommand(newSendCmd())
 
+	for _, d := range resourceRegistry {
+		if d.Name == "monitors" {
+			cmd.AddCommand(newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd(), newMonitorTestCmd()))
+			continue
+		}
+		cmd.AddCommand(newResourceCmd(d))
+	}
+
 	wrapArgsValidators(cmd)
 
 	return cmd

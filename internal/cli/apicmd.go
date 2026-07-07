@@ -58,28 +58,16 @@ func newAPICmd() *cobra.Command {
 			switch {
 			case input != "" && len(fields) > 0 && hasBodyMethod:
 				return clierr.New("usage_conflicting_flags", "--input and --field are mutually exclusive for body requests")
-			case input == "-":
-				body = cmd.InOrStdin()
 			case input != "":
-				f, err := os.Open(input)
+				b, err := readBodyInput(cmd, input)
 				if err != nil {
-					return clierr.New("usage_input_file", err.Error())
+					return err
 				}
-				defer func() { _ = f.Close() }()
-				body = f
+				body = bytes.NewReader(b)
 			case hasBodyMethod && len(fields) > 0:
-				obj := map[string]any{}
-				for _, kv := range fields {
-					k, v, ok := strings.Cut(kv, "=")
-					if !ok {
-						return clierr.New("usage_invalid_field", fmt.Sprintf("--field %q is not key=value", kv))
-					}
-					var parsed any
-					if err := json.Unmarshal([]byte(v), &parsed); err == nil {
-						obj[k] = parsed
-					} else {
-						obj[k] = v
-					}
+				obj, err := parseFieldArgs(fields)
+				if err != nil {
+					return err
 				}
 				b, err := json.Marshal(obj)
 				if err != nil {
@@ -144,4 +132,41 @@ func newAPICmd() *cobra.Command {
 	cmd.Flags().StringVar(&input, "input", "", "request body from file, or - for stdin")
 	cmd.Flags().StringVar(&contentType, "content-type", "application/json", "Content-Type header for request bodies")
 	return cmd
+}
+
+// parseFieldArgs turns repeated key=value pairs into a JSON body object.
+// Each value is tried as JSON first (so `-f limit=10` produces a number and
+// `-f enabled=true` a bool); anything that doesn't parse as JSON is kept as
+// a plain string. Shared by the api escape hatch and the generic resource
+// commands (resources.go).
+func parseFieldArgs(fields []string) (map[string]any, error) {
+	obj := map[string]any{}
+	for _, kv := range fields {
+		k, v, ok := strings.Cut(kv, "=")
+		if !ok {
+			return nil, clierr.New("usage_invalid_field", fmt.Sprintf("--field %q is not key=value", kv))
+		}
+		var parsed any
+		if err := json.Unmarshal([]byte(v), &parsed); err == nil {
+			obj[k] = parsed
+		} else {
+			obj[k] = v
+		}
+	}
+	return obj, nil
+}
+
+// readBodyInput reads a request body from a file path, or from stdin when
+// input is "-". Shared by the api escape hatch and the generic resource
+// commands (resources.go).
+func readBodyInput(cmd *cobra.Command, input string) ([]byte, error) {
+	if input == "-" {
+		return io.ReadAll(cmd.InOrStdin())
+	}
+	f, err := os.Open(input)
+	if err != nil {
+		return nil, clierr.New("usage_input_file", err.Error())
+	}
+	defer func() { _ = f.Close() }()
+	return io.ReadAll(f)
 }
