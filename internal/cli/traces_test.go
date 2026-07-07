@@ -140,6 +140,33 @@ func TestTracesShapeJSON(t *testing.T) {
 	}
 }
 
+func TestTracesAggregateRejectsNonPositiveLimit(t *testing.T) {
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"traces", "aggregate", "--by", "http.route", "-n", "-1", "--api-key", "k"})
+	err := root.Execute()
+	if err == nil || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage exit 2 (not a panic), got %v", err)
+	}
+}
+
+func TestTracesShapeRejectsNonPositiveSample(t *testing.T) {
+	for _, args := range [][]string{
+		{"traces", "shape", "--sample", "0", "--api-key", "k"},
+		{"traces", "shape", "--min-traces", "0", "--api-key", "k"},
+	} {
+		root := NewRootCmd()
+		root.SetOut(&bytes.Buffer{})
+		root.SetErr(&bytes.Buffer{})
+		root.SetArgs(args)
+		err := root.Execute()
+		if err == nil || clierr.ExitCode(err) != 2 {
+			t.Fatalf("%v: want usage exit 2, got %v", args, err)
+		}
+	}
+}
+
 func TestTracesListColumns(t *testing.T) {
 	srv := tracesServer(t, map[string]string{
 		"@time": `{"result":[{"@time":"t1","$span.trace_id":"tr","$span.span_id":"sp",
@@ -154,5 +181,38 @@ func TestTracesListColumns(t *testing.T) {
 	var rows []map[string]any
 	if err := json.Unmarshal([]byte(out), &rows); err != nil || rows[0]["duration"] != "3.00ms" {
 		t.Fatalf("out = %q", out)
+	}
+}
+
+func TestTracesListPipedDefaultIsJSONL(t *testing.T) {
+	srv := tracesServer(t, map[string]string{
+		"@time": `{"result":[
+			{"@time":"t1","$span.trace_id":"tr1","$span.span_id":"sp1",
+			 "$span.name":"op1","$service.name":"svc","$span.duration_nano":1000000,
+			 "$span.status_code":"STATUS_CODE_OK"},
+			{"@time":"t2","$span.trace_id":"tr2","$span.span_id":"sp2",
+			 "$span.name":"op2","$service.name":"svc","$span.duration_nano":2000000,
+			 "$span.status_code":"STATUS_CODE_OK"}]}`,
+	})
+	defer srv.Close()
+	// No -o flag: piped (non-TTY) stdout must default to JSONL, like search.
+	out, err := runTraces(t, srv, "list")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("want 2 jsonl lines, got %q", out)
+	}
+	for _, line := range lines {
+		var row map[string]any
+		if err := json.Unmarshal([]byte(line), &row); err != nil {
+			t.Fatalf("line %q not valid JSON: %v", line, err)
+		}
+	}
+	var row0 map[string]any
+	_ = json.Unmarshal([]byte(lines[0]), &row0)
+	if row0["duration"] != "1.00ms" {
+		t.Fatalf("row0 = %v", row0)
 	}
 }

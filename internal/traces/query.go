@@ -44,7 +44,8 @@ func AndJoin(clauses ...string) string {
 }
 
 // Quote single-quotes a literal for the query language, doubling
-// embedded quotes ('O”Brien').
+// embedded single quotes (SQL-style escaping) so values like O'Brien
+// are quoted safely.
 func Quote(v string) string {
 	return "'" + strings.ReplaceAll(v, "'", "''") + "'"
 }

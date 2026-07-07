@@ -260,7 +260,7 @@ func (a *Aggregator) Attributes(ctx context.Context, opts AttrOptions) ([]map[st
 	sort.SliceStable(rows, func(i, j int) bool {
 		return rows[i]["spans"].(int64) > rows[j]["spans"].(int64)
 	})
-	if len(rows) > opts.Limit {
+	if opts.Limit > 0 && len(rows) > opts.Limit {
 		rows = rows[:opts.Limit]
 	}
 	columns := append([]string{}, attrNames...)

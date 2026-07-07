@@ -22,6 +22,15 @@ func newTracesCmd() *cobra.Command {
 	return cmd
 }
 
+// validatePositive rejects non-positive numeric flags with a typed usage error.
+func validatePositive(name string, v int) error {
+	if v < 1 {
+		return clierr.New("usage_invalid_flag",
+			fmt.Sprintf("--%s must be at least 1, got %d", name, v))
+	}
+	return nil
+}
+
 // tracesAgg builds the shared App + Aggregator pair.
 func tracesAgg(cmd *cobra.Command, since, defaultSince string) (*App, *traces.Aggregator, error) {
 	app, err := NewApp(cmd)
@@ -126,6 +135,9 @@ func newTracesAggregateCmd() *cobra.Command {
 				return clierr.New("usage_missing_flag", "at least one --by attribute is required").
 					WithHint("Example: --by http.route")
 			}
+			if err := validatePositive("limit", limit); err != nil {
+				return err
+			}
 			app, agg, err := tracesAgg(cmd, since, "15m")
 			if err != nil {
 				return err
@@ -192,7 +204,10 @@ func newTracesListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			p, err := app.Printer(false)
+			// Piped default is JSONL, consistent with `bronto search`
+			// (streaming=true only changes the no-flag/piped default;
+			// table/csv/json/jsonl all still print the fixed columns below).
+			p, err := app.Printer(true)
 			if err != nil {
 				return err
 			}
@@ -295,6 +310,12 @@ func newTracesShapeCmd() *cobra.Command {
 			"  bronto traces shape --any-span --operation 'SELECT users'",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := validatePositive("sample", sample); err != nil {
+				return err
+			}
+			if err := validatePositive("min-traces", minTraces); err != nil {
+				return err
+			}
 			app, agg, err := tracesAgg(cmd, since, "1h")
 			if err != nil {
 				return err
