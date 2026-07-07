@@ -85,13 +85,13 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 		return cw.Error()
 	default: // table
 		tw := tabwriter.NewWriter(p.w, 2, 4, 2, ' ', 0)
-		fmt.Fprintln(tw, strings.ToUpper(strings.Join(columns, "\t")))
+		_, _ = fmt.Fprintln(tw, strings.ToUpper(strings.Join(columns, "\t")))
 		for _, r := range rows {
 			vals := make([]string, len(columns))
 			for i, c := range columns {
 				vals[i] = fmt.Sprint(r[c])
 			}
-			fmt.Fprintln(tw, strings.Join(vals, "\t"))
+			_, _ = fmt.Fprintln(tw, strings.Join(vals, "\t"))
 		}
 		return tw.Flush()
 	}

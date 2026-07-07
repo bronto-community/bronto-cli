@@ -38,7 +38,7 @@ func newPingCmd() *cobra.Command {
 				return clierr.New("api_unreachable", fmt.Sprintf("cannot reach %s: %v", app.Config.BaseURL(), err)).
 					WithHint("Check your network and the region (--region eu|us).")
 			}
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			body, _ := io.ReadAll(resp.Body)
 			if apiErr := api.ErrorFromStatus(resp.StatusCode, body); apiErr != nil {
 				return apiErr
@@ -49,7 +49,7 @@ func newPingCmd() *cobra.Command {
 				return err
 			}
 			if app.StdoutIsTTY && app.OutputFlag == "" {
-				fmt.Fprintf(app.Stdout, "OK — %s (%dms)\n", app.Config.BaseURL(), latency)
+				_, _ = fmt.Fprintf(app.Stdout, "OK — %s (%dms)\n", app.Config.BaseURL(), latency)
 				return nil
 			}
 			return p.PrintJSON(map[string]any{

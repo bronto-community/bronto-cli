@@ -20,7 +20,7 @@ func execPing(t *testing.T, srvStatus int) (stdout string, err error) {
 			t.Errorf("ping hit %s, want /logs", r.URL.Path)
 		}
 		w.WriteHeader(srvStatus)
-		w.Write([]byte(`{}`))
+		_, _ = w.Write([]byte(`{}`))
 	}))
 	defer srv.Close()
 
@@ -66,7 +66,7 @@ func TestPingHumanOutputOnTTY(t *testing.T) {
 	t.Cleanup(func() { stdoutIsTTY = old })
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{}`))
+		_, _ = w.Write([]byte(`{}`))
 	}))
 	defer srv.Close()
 

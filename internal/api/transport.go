@@ -43,7 +43,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		if !idempotent || attempt >= t.MaxRetries || !retryableStatus(resp.StatusCode) {
 			return resp, nil
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		sleep(retryDelay(resp, attempt))
 	}
 }

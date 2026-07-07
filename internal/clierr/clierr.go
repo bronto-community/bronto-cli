@@ -19,10 +19,10 @@ type Error struct {
 
 func New(code, message string) *Error { return &Error{Code: code, Message: message} }
 
-func (e *Error) WithHint(h string) *Error    { e.Hint = h; return e }
-func (e *Error) WithDocs(u string) *Error    { e.DocsURL = u; return e }
-func (e *Error) WithRetryable() *Error       { e.Retryable = true; return e }
-func (e *Error) Error() string               { return e.Message }
+func (e *Error) WithHint(h string) *Error { e.Hint = h; return e }
+func (e *Error) WithDocs(u string) *Error { e.DocsURL = u; return e }
+func (e *Error) WithRetryable() *Error    { e.Retryable = true; return e }
+func (e *Error) Error() string            { return e.Message }
 
 func (e *Error) ExitCode() int {
 	switch {
@@ -77,14 +77,14 @@ func Render(w io.Writer, err error, machineMode bool) {
 			"code": ce.Code, "message": ce.Message, "retryable": ce.Retryable,
 		}}
 		b, _ := json.Marshal(env)
-		fmt.Fprintln(w, string(b))
+		_, _ = fmt.Fprintln(w, string(b))
 		return
 	}
-	fmt.Fprintf(w, "Error: %s (%s)\n", ce.Message, ce.Code)
+	_, _ = fmt.Fprintf(w, "Error: %s (%s)\n", ce.Message, ce.Code)
 	if ce.Hint != "" {
-		fmt.Fprintf(w, "Hint: %s\n", ce.Hint)
+		_, _ = fmt.Fprintf(w, "Hint: %s\n", ce.Hint)
 	}
 	if ce.DocsURL != "" {
-		fmt.Fprintf(w, "Docs: %s\n", ce.DocsURL)
+		_, _ = fmt.Fprintf(w, "Docs: %s\n", ce.DocsURL)
 	}
 }

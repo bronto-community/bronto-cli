@@ -65,7 +65,7 @@ func newAPICmd() *cobra.Command {
 				if err != nil {
 					return clierr.New("usage_input_file", err.Error())
 				}
-				defer f.Close()
+				defer func() { _ = f.Close() }()
 				body = f
 			case hasBodyMethod && len(fields) > 0:
 				obj := map[string]any{}
@@ -116,7 +116,7 @@ func newAPICmd() *cobra.Command {
 			if err != nil {
 				return clierr.New("api_unreachable", err.Error())
 			}
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 			respBody, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return err

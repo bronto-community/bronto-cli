@@ -32,7 +32,7 @@ func TestAPIGetWithQueryFields(t *testing.T) {
 		if r.Method != "GET" || r.URL.Path != "/logs" || r.URL.Query().Get("limit") != "5" {
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL)
 		}
-		w.Write([]byte(`{"logs":[]}`))
+		_, _ = w.Write([]byte(`{"logs":[]}`))
 	}, "GET", "/logs", "-f", "limit=5")
 	if err != nil {
 		t.Fatal(err)
@@ -57,7 +57,7 @@ func TestAPIPostBuildsJSONBody(t *testing.T) {
 		if r.Header.Get("Content-Type") != "application/json" {
 			t.Error("missing content type")
 		}
-		w.Write([]byte(`{}`))
+		_, _ = w.Write([]byte(`{}`))
 	}, "POST", "/search", "-f", "limit=10", "-f", "name=x")
 	if err != nil {
 		t.Fatal(err)
@@ -67,7 +67,7 @@ func TestAPIPostBuildsJSONBody(t *testing.T) {
 func TestAPINon2xxIsTypedError(t *testing.T) {
 	_, err := runAPI(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(`{"message":"no such monitor"}`))
+		_, _ = w.Write([]byte(`{"message":"no such monitor"}`))
 	}, "GET", "/monitors/nope")
 	if err == nil {
 		t.Fatal("want error")
@@ -92,7 +92,7 @@ func TestAPIInputRespectsContentTypeOverride(t *testing.T) {
 	var gotCT string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotCT = r.Header.Get("Content-Type")
-		w.Write([]byte(`{}`))
+		_, _ = w.Write([]byte(`{}`))
 	}))
 	defer srv.Close()
 

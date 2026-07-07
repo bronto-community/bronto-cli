@@ -21,7 +21,7 @@ func TestTransportSetsHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if gotKey != "test-key" {
 		t.Fatalf("api key header = %q", gotKey)
 	}
@@ -48,7 +48,7 @@ func TestTransportRetriesOn429ThenSucceeds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d", resp.StatusCode)
 	}
@@ -71,7 +71,7 @@ func TestTransportDoesNotRetryPOST(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if calls.Load() != 1 {
 		t.Fatalf("POST retried: calls = %d, want 1", calls.Load())
 	}
@@ -91,7 +91,7 @@ func TestTransportRetryExhaustionReturnsFinalResponse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusServiceUnavailable {
 		t.Fatalf("status = %d, want 503", resp.StatusCode)
 	}
@@ -127,9 +127,9 @@ func TestRetryDelayForms(t *testing.T) {
 
 func TestErrorFromStatus(t *testing.T) {
 	cases := []struct {
-		status   int
-		code     string
-		exit     int
+		status    int
+		code      string
+		exit      int
 		retryable bool
 	}{
 		{401, "auth_invalid_key", 3, false},

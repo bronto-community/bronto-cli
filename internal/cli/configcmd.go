@@ -62,7 +62,7 @@ func newConfigCmd() *cobra.Command {
 			if !ok {
 				return clierr.New("config_key_not_found", fmt.Sprintf("no value for %q", args[0]))
 			}
-			fmt.Fprintln(app.Stdout, v.Val)
+			_, _ = fmt.Fprintln(app.Stdout, v.Val)
 			return nil
 		},
 	}
@@ -87,7 +87,7 @@ func newConfigCmd() *cobra.Command {
 			if err := config.SetUserValue(dir, app.Config.Profile(), args[0], args[1]); err != nil {
 				return err
 			}
-			fmt.Fprintf(app.Stderr, "Set %s in profile %q\n", args[0], profileOrDefault(app.Config.Profile()))
+			_, _ = fmt.Fprintf(app.Stderr, "Set %s in profile %q\n", args[0], profileOrDefault(app.Config.Profile()))
 			return nil
 		},
 	}
