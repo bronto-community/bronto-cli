@@ -8,8 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/itchyny/gojq"
 
 	"github.com/svrnm/bronto-cli/internal/clierr"
 )
@@ -50,9 +53,34 @@ func DetectFormat(flagVal string, stdoutIsTTY, streaming bool) (Format, error) {
 type Printer struct {
 	w      io.Writer
 	format Format
+
+	fields     []string // SetFieldFilter: table/csv column override, json/jsonl key filter
+	jq         *gojq.Code
+	listFields bool                // SetListFields: print field names instead of data
+	seenFields map[string]struct{} // streaming PrintRow "?" mode: keys already printed
 }
 
 func NewPrinter(w io.Writer, f Format) *Printer { return &Printer{w: w, format: f} }
+
+// SetFieldFilter restricts output to the given fields. For table/csv the
+// fields become the columns, overriding whatever columns the caller passed
+// to PrintRows. For json/jsonl each row is filtered down to those keys.
+// Applied before any jq expression (SetJQ).
+func (p *Printer) SetFieldFilter(fields []string) { p.fields = fields }
+
+// SetJQ makes json/jsonl output run every emitted document through code,
+// printing each result gojq yields as its own compact JSON line (jq
+// semantics). For PrintRows/PrintRow that means one document per row; for
+// PrintJSON the whole payload is the document. Callers are responsible for
+// rejecting this combination with table/csv/raw formats (spec: --jq
+// requires -o json or jsonl).
+func (p *Printer) SetJQ(code *gojq.Code) { p.jq = code }
+
+// SetListFields switches PrintRows/PrintRow into "--fields ?" mode: instead
+// of data, they print the sorted union of row keys, one per line.
+// PrintRows sees every row up front and prints one pass; streaming
+// PrintRow prints newly-seen keys as they appear across calls.
+func (p *Printer) SetListFields(v bool) { p.listFields = v }
 
 func cell(row map[string]any, col string) string {
 	v, ok := row[col]
@@ -62,15 +90,96 @@ func cell(row map[string]any, col string) string {
 	return fmt.Sprint(v)
 }
 
+func filterRow(row map[string]any, fields []string) map[string]any {
+	out := make(map[string]any, len(fields))
+	for _, f := range fields {
+		if v, ok := row[f]; ok {
+			out[f] = v
+		}
+	}
+	return out
+}
+
+func filterRows(rows []map[string]any, fields []string) []map[string]any {
+	out := make([]map[string]any, len(rows))
+	for i, r := range rows {
+		out[i] = filterRow(r, fields)
+	}
+	return out
+}
+
+// printFieldUnion implements "--fields ?" for PrintRows: the sorted union
+// of every row's keys, one per line, in place of the data.
+func (p *Printer) printFieldUnion(rows []map[string]any) error {
+	seen := map[string]struct{}{}
+	for _, r := range rows {
+		for k := range r {
+			seen[k] = struct{}{}
+		}
+	}
+	names := make([]string, 0, len(seen))
+	for k := range seen {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	for _, n := range names {
+		if _, err := fmt.Fprintln(p.w, n); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// printNewFields implements "--fields ?" for streaming PrintRow: rows
+// arrive one at a time, so the union can't be computed ahead of time. Each
+// call prints only the keys not already seen in a previous call.
+func (p *Printer) printNewFields(row map[string]any) error {
+	if p.seenFields == nil {
+		p.seenFields = map[string]struct{}{}
+	}
+	var keys []string
+	for k := range row {
+		if _, ok := p.seenFields[k]; !ok {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		p.seenFields[k] = struct{}{}
+		if _, err := fmt.Fprintln(p.w, k); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
+	if p.listFields {
+		return p.printFieldUnion(rows)
+	}
+	if len(p.fields) > 0 {
+		columns = p.fields
+	}
 	switch p.format {
 	case FormatJSON:
-		if rows == nil {
-			rows = []map[string]any{}
+		filtered := rows
+		if len(p.fields) > 0 {
+			filtered = filterRows(rows, p.fields)
+		}
+		if filtered == nil {
+			filtered = []map[string]any{}
+		}
+		if p.jq != nil {
+			for _, r := range filtered {
+				if err := runJQ(p.w, p.jq, r); err != nil {
+					return err
+				}
+			}
+			return nil
 		}
 		enc := json.NewEncoder(p.w)
 		enc.SetIndent("", "  ")
-		return enc.Encode(rows)
+		return enc.Encode(filtered)
 	case FormatJSONL, FormatRaw:
 		for _, r := range rows {
 			if err := p.PrintRow(columns, r); err != nil {
@@ -109,6 +218,9 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 }
 
 func (p *Printer) PrintRow(columns []string, row map[string]any) error {
+	if p.listFields {
+		return p.printNewFields(row)
+	}
 	switch p.format {
 	case FormatRaw:
 		if raw, ok := row["@raw"]; ok {
@@ -117,7 +229,14 @@ func (p *Printer) PrintRow(columns []string, row map[string]any) error {
 		}
 		return json.NewEncoder(p.w).Encode(row)
 	case FormatJSONL:
-		return json.NewEncoder(p.w).Encode(row)
+		r := row
+		if len(p.fields) > 0 {
+			r = filterRow(row, p.fields)
+		}
+		if p.jq != nil {
+			return runJQ(p.w, p.jq, r)
+		}
+		return json.NewEncoder(p.w).Encode(r)
 	default:
 		return clierr.New("internal_output_misuse",
 			fmt.Sprintf("PrintRow requires a streaming format, got %q", p.format))
@@ -125,6 +244,9 @@ func (p *Printer) PrintRow(columns []string, row map[string]any) error {
 }
 
 func (p *Printer) PrintJSON(v any) error {
+	if p.jq != nil {
+		return runJQ(p.w, p.jq, v)
+	}
 	enc := json.NewEncoder(p.w)
 	if p.format == FormatTable { // human context: pretty-print
 		enc.SetIndent("", "  ")

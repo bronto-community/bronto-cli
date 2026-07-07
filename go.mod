@@ -3,6 +3,7 @@ module github.com/svrnm/bronto-cli
 go 1.25.0
 
 require (
+	github.com/itchyny/gojq v0.12.19
 	github.com/mattn/go-isatty v0.0.22
 	github.com/oapi-codegen/runtime v1.4.2
 	github.com/pelletier/go-toml/v2 v2.4.3
@@ -22,6 +23,7 @@ require (
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/itchyny/timefmt-go v0.1.8 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.9.1 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect

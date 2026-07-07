@@ -133,6 +133,133 @@ func TestJSONEmptyRowsIsEmptyArray(t *testing.T) {
 	}
 }
 
+func TestJQOnPrintRowJSONL(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSONL)
+	code, err := CompileJQ(".name")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.SetJQ(code)
+	if err := p.PrintRow(nil, map[string]any{"name": "web", "x": 1}); err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != "\"web\"\n" {
+		t.Fatalf("got %q", buf.String())
+	}
+}
+
+func TestJQOnPrintRowsJSONMultipleResultsPerRow(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	code, err := CompileJQ(".name")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.SetJQ(code)
+	if err := p.PrintRows([]string{"name", "count"}, rows); err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 2 || lines[0] != `"web"` || lines[1] != `"db"` {
+		t.Fatalf("got %q", buf.String())
+	}
+}
+
+func TestJQSkipsErroringValuesAndExitsClean(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSONL)
+	code, err := CompileJQ(".name.x") // .name is a string; indexing it with .x is a jq runtime error
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.SetJQ(code)
+	for _, r := range rows {
+		if err := p.PrintRow(nil, r); err != nil {
+			t.Fatalf("jq runtime error must not surface: %v", err)
+		}
+	}
+}
+
+func TestCompileJQInvalidExpressionIsUsageError(t *testing.T) {
+	if _, err := CompileJQ("this is not jq {{{"); err == nil {
+		t.Fatal("want error for invalid jq expression")
+	}
+}
+
+func TestFieldFilterOnJSONArray(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetFieldFilter([]string{"name"})
+	if err := p.PrintRows([]string{"name", "count"}, rows); err != nil {
+		t.Fatal(err)
+	}
+	var got []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
+		t.Fatalf("not JSON: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("got %+v", got)
+	}
+	for _, r := range got {
+		if _, ok := r["count"]; ok {
+			t.Fatalf("count should be filtered out: %+v", r)
+		}
+		if _, ok := r["name"]; !ok {
+			t.Fatalf("name should be present: %+v", r)
+		}
+	}
+}
+
+func TestFieldFilterOverridesTableColumns(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatTable)
+	p.SetFieldFilter([]string{"name"})
+	if err := p.PrintRows([]string{"name", "count"}, rows); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if strings.Contains(out, "COUNT") {
+		t.Fatalf("count column should be dropped: %q", out)
+	}
+	if !strings.Contains(out, "NAME") {
+		t.Fatalf("name column missing: %q", out)
+	}
+}
+
+func TestListFieldsPrintsSortedUnionForPrintRows(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetListFields(true)
+	rows := []map[string]any{
+		{"b": 1, "a": 2},
+		{"c": 3, "a": 2},
+	}
+	if err := p.PrintRows(nil, rows); err != nil {
+		t.Fatal(err)
+	}
+	want := "a\nb\nc\n"
+	if buf.String() != want {
+		t.Fatalf("got %q want %q", buf.String(), want)
+	}
+}
+
+func TestListFieldsPrintsNewKeysForStreamingPrintRow(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSONL)
+	p.SetListFields(true)
+	if err := p.PrintRow(nil, map[string]any{"b": 1, "a": 2}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.PrintRow(nil, map[string]any{"a": 2, "c": 3}); err != nil {
+		t.Fatal(err)
+	}
+	want := "a\nb\nc\n"
+	if buf.String() != want {
+		t.Fatalf("got %q want %q", buf.String(), want)
+	}
+}
+
 func TestPrintRowRejectsNonStreamingFormats(t *testing.T) {
 	for _, f := range []Format{FormatTable, FormatJSON, FormatCSV} {
 		if err := NewPrinter(&bytes.Buffer{}, f).PrintRow(nil, map[string]any{"x": 1}); err == nil {
