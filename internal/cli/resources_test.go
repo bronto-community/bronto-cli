@@ -117,7 +117,7 @@ func TestResourcesCreateRequiresBodySource(t *testing.T) {
 	}
 }
 
-func TestResourcesUpdateUsesPatch(t *testing.T) {
+func TestResourcesUpdateUsesPut(t *testing.T) {
 	var gotMethod, gotPath string
 	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
 		gotMethod, gotPath = r.Method, r.URL.Path
@@ -126,8 +126,8 @@ func TestResourcesUpdateUsesPatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if gotMethod != http.MethodPatch || gotPath != "/monitors/m1" {
-		t.Fatalf("method/path = %s %s", gotMethod, gotPath)
+	if gotMethod != http.MethodPut || gotPath != "/monitors/m1" {
+		t.Fatalf("method/path = %s %s, want PUT /monitors/m1", gotMethod, gotPath)
 	}
 }
 

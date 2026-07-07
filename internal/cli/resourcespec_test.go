@@ -64,12 +64,8 @@ var specCreatePathExceptions = map[string]bool{
 }
 
 // specIDBaseExceptions documents descriptors with no per-ID path in this
-// vendored spec.
-var specIDBaseExceptions = map[string]bool{
-	// /tags has no ID segment at all: PUT/POST/DELETE all target the bare
-	// /tags collection, with the tag identified by request body.
-	"/tags": true,
-}
+// vendored spec. (Currently empty; tags is no longer in the registry.)
+var specIDBaseExceptions = map[string]bool{}
 
 func TestResourceRegistryMatchesSpec(t *testing.T) {
 	paths := specPaths(t)

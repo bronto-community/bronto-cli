@@ -73,16 +73,17 @@ func (d resourceDesc) singular() string {
 // resourceRegistry is the single source of truth for every uniform Bronto
 // management resource. resourcespec_test.go asserts each entry's Base,
 // CreatePath, and IDBase correspond to real api/openapi.yaml paths (modulo
-// the two documented exceptions there).
+// the documented exceptions there).
 var resourceRegistry = []resourceDesc{
-	{Name: "monitors", Base: "/monitors"},
+	{Name: "monitors", Base: "/monitors", UpdateMethod: http.MethodPut},
 	{Name: "dashboards", Base: "/dashboards"},
 	{Name: "saved-searches", Base: "/saved-searches", Singular: "saved search"},
-	// The vendored spec has no GET /parsers/{parser_id}: only create, patch,
-	// and delete are documented for a single parser.
+	// The vendored spec has no GET /parsers/{parser_id}: only patch and
+	// delete are documented for a single parser.
 	{Name: "parsers", Base: "/parsers", NoGet: true},
-	{Name: "api-keys", Base: "/api-keys", Singular: "API key"},
-	{Name: "tags", Base: "/tags"},
+	{Name: "api-keys", Base: "/api-keys", Singular: "API key", NoGet: true},
+	// Tags are served by `bronto api` until a bespoke command models its
+	// base-path PUT/DELETE semantics (+ /tags/search).
 	{Name: "datasets", Base: "/logs", CreatePath: "/datasets", UpdateMethod: http.MethodPut},
 }
 
