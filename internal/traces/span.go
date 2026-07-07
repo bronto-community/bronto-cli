@@ -103,3 +103,21 @@ func toInt64(v any) int64 {
 	}
 	return 0
 }
+
+// toFloat tolerantly coerces API numbers that may arrive as float64,
+// int64, int, or numeric strings. Unparseable values become 0 (v1 semantics).
+func toFloat(v any) float64 {
+	switch n := v.(type) {
+	case float64:
+		return n
+	case int64:
+		return float64(n)
+	case int:
+		return float64(n)
+	case string:
+		if f, err := strconv.ParseFloat(n, 64); err == nil {
+			return f
+		}
+	}
+	return 0
+}
