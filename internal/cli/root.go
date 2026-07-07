@@ -44,6 +44,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newContextCmd())
 	cmd.AddCommand(newFieldsCmd())
 	cmd.AddCommand(newTailCmd())
+	cmd.AddCommand(newTracesCmd())
 
 	wrapArgsValidators(cmd)
 
