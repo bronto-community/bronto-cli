@@ -1,0 +1,130 @@
+package cli
+
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/svrnm/bronto-cli/internal/clierr"
+)
+
+func searchServer(t *testing.T, respond string, capture *map[string]any) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/search" {
+			t.Errorf("path = %s", r.URL.Path)
+		}
+		b, _ := io.ReadAll(r.Body)
+		if capture != nil {
+			_ = json.Unmarshal(b, capture)
+		}
+		_, _ = w.Write([]byte(respond))
+	}))
+}
+
+func TestSearchEventsJSONLWhenPiped(t *testing.T) {
+	var body map[string]any
+	srv := searchServer(t, `{"events":[{"@raw":"e1","@time":"t1"},{"@raw":"e2","@time":"t2"}]}`, &body)
+	defer srv.Close()
+
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "status >= 500", "-d", "11111111-1111-1111-1111-111111111111",
+		"--base-url", srv.URL, "--api-key", "k"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("want 2 jsonl lines, got %d: %q", len(lines), out.String())
+	}
+	var ev map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &ev); err != nil || ev["@raw"] != "e1" {
+		t.Fatalf("line0 = %q", lines[0])
+	}
+	// request body assertions
+	if body["where"] != "status >= 500" || body["time_range"] != "Last 15 minutes" {
+		t.Fatalf("body = %v", body)
+	}
+	sel, _ := body["select"].([]any)
+	if len(sel) != 2 || sel[0] != "@time" || sel[1] != "@raw" {
+		t.Fatalf("default select = %v", sel)
+	}
+	from, _ := body["from"].([]any)
+	if len(from) != 1 {
+		t.Fatalf("from = %v", body["from"])
+	}
+}
+
+func TestSearchGroupsRenderAsRows(t *testing.T) {
+	srv := searchServer(t, `{"groups":[{"group":{"host":"web-1"},"count":3}]}`, nil)
+	defer srv.Close()
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "-d", "11111111-1111-1111-1111-111111111111",
+		"--select", "count()", "-g", "host",
+		"--base-url", srv.URL, "--api-key", "k", "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(out.Bytes(), &rows); err != nil || rows[0]["host"] != "web-1" {
+		t.Fatalf("out = %q err=%v", out.String(), err)
+	}
+}
+
+func TestSearchExplainOnly(t *testing.T) {
+	srv := searchServer(t, `{"explain":{"Execution time (millis)":"7"}}`, nil)
+	defer srv.Close()
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "--explain-only", "-d", "11111111-1111-1111-1111-111111111111",
+		"--base-url", srv.URL, "--api-key", "k"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(out.Bytes(), &doc); err != nil || doc["Execution time (millis)"] != "7" {
+		t.Fatalf("out = %q", out.String())
+	}
+}
+
+func TestSearchQueryFromStdin(t *testing.T) {
+	var body map[string]any
+	srv := searchServer(t, `{"events":[]}`, &body)
+	defer srv.Close()
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetIn(strings.NewReader("level = 'error'\n"))
+	root.SetArgs([]string{"search", "-", "-d", "11111111-1111-1111-1111-111111111111",
+		"--base-url", srv.URL, "--api-key", "k"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if body["where"] != "level = 'error'" {
+		t.Fatalf("where = %v", body["where"])
+	}
+}
+
+func TestSearchMissingDatasetIsUsageError(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "x", "--api-key", "k"})
+	err := root.Execute()
+	if err == nil || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage exit 2, got %v (%d)", err, clierr.ExitCode(err))
+	}
+}
