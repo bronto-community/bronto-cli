@@ -1,6 +1,19 @@
 package cli
 
-import "testing"
+import (
+	"os"
+	"testing"
+
+	"github.com/svrnm/bronto-cli/internal/secrets"
+)
+
+func TestMain(m *testing.M) {
+	// Keep the package's tests hermetic: never touch the real OS keychain.
+	// Individual tests that need a specific lookup stub it themselves
+	// (with save/restore), composing cleanly with this default.
+	secretLookup = func(string) (string, bool, error) { return "", false, secrets.ErrNotFound }
+	os.Exit(m.Run())
+}
 
 func TestNewAppFallsBackToKeychain(t *testing.T) {
 	t.Setenv("BRONTO_API_KEY", "")
