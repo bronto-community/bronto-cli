@@ -1,14 +1,18 @@
 package cli
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 
 	"github.com/svrnm/bronto-cli/internal/api"
+	"github.com/svrnm/bronto-cli/internal/clierr"
 	"github.com/svrnm/bronto-cli/internal/config"
 	"github.com/svrnm/bronto-cli/internal/output"
 	"github.com/svrnm/bronto-cli/internal/version"
@@ -54,11 +58,20 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 		outFlag = v.Val
 	}
 	ttyNow := stdoutIsTTY()
+	httpClient := api.NewHTTPClient(cfg.APIKey(), version.Version)
+	if v, ok := cfg.Get("timeout"); ok {
+		secs, err := strconv.Atoi(v.Val)
+		if err != nil || secs <= 0 {
+			return nil, clierr.New("config_invalid_timeout",
+				fmt.Sprintf("timeout must be a positive integer (seconds), got %q", v.Val))
+		}
+		httpClient.Timeout = time.Duration(secs) * time.Second
+	}
 	return &App{
 		Config:      cfg,
 		Stdout:      cmd.OutOrStdout(),
 		Stderr:      cmd.ErrOrStderr(),
-		HTTPClient:  api.NewHTTPClient(cfg.APIKey(), version.Version),
+		HTTPClient:  httpClient,
 		StdoutIsTTY: ttyNow,
 		OutputFlag:  outFlag,
 		Quiet:       quiet,

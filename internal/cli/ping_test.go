@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -130,5 +131,22 @@ func TestNoColorFlagDisablesColor(t *testing.T) {
 	}
 	if !appColor.Color {
 		t.Fatal("Color must be true on TTY without --no-color")
+	}
+}
+
+func TestTimeoutConfigAppliesToHTTPClient(t *testing.T) {
+	t.Setenv("BRONTO_TIMEOUT", "5")
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	cmd := NewRootCmd()
+	pingCmd, _, err := cmd.Find([]string{"ping"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	app, err := NewApp(pingCmd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if app.HTTPClient.Timeout != 5*time.Second {
+		t.Fatalf("timeout = %v, want 5s", app.HTTPClient.Timeout)
 	}
 }

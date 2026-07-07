@@ -105,3 +105,43 @@ func TestRawPrintsRawField(t *testing.T) {
 		t.Fatalf("got %q", buf.String())
 	}
 }
+
+func TestMissingColumnValuesRenderEmpty(t *testing.T) {
+	rows := []map[string]any{{"name": "web"}} // no "count" key
+	var tbl, csvBuf bytes.Buffer
+	if err := NewPrinter(&tbl, FormatTable).PrintRows([]string{"name", "count"}, rows); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(tbl.String(), "<nil>") {
+		t.Fatalf("table renders <nil>: %q", tbl.String())
+	}
+	if err := NewPrinter(&csvBuf, FormatCSV).PrintRows([]string{"name", "count"}, rows); err != nil {
+		t.Fatal(err)
+	}
+	if csvBuf.String() != "name,count\nweb,\n" {
+		t.Fatalf("csv = %q", csvBuf.String())
+	}
+}
+
+func TestJSONEmptyRowsIsEmptyArray(t *testing.T) {
+	var buf bytes.Buffer
+	if err := NewPrinter(&buf, FormatJSON).PrintRows([]string{"a"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(buf.String()) != "[]" {
+		t.Fatalf("got %q, want []", buf.String())
+	}
+}
+
+func TestPrintRowRejectsNonStreamingFormats(t *testing.T) {
+	for _, f := range []Format{FormatTable, FormatJSON, FormatCSV} {
+		if err := NewPrinter(&bytes.Buffer{}, f).PrintRow(nil, map[string]any{"x": 1}); err == nil {
+			t.Errorf("PrintRow(%s) must error", f)
+		}
+	}
+	for _, f := range []Format{FormatJSONL, FormatRaw} {
+		if err := NewPrinter(&bytes.Buffer{}, f).PrintRow(nil, map[string]any{"@raw": "x"}); err != nil {
+			t.Errorf("PrintRow(%s) errored: %v", f, err)
+		}
+	}
+}

@@ -44,6 +44,7 @@ var envKeys = map[string]string{
 	"api_key": "BRONTO_API_KEY",
 	"profile": "BRONTO_PROFILE",
 	"region":  "BRONTO_REGION",
+	"timeout": "BRONTO_TIMEOUT",
 }
 
 // Keys settable from files (project and user profile sections). api_key is

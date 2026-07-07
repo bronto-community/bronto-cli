@@ -54,9 +54,20 @@ type Printer struct {
 
 func NewPrinter(w io.Writer, f Format) *Printer { return &Printer{w: w, format: f} }
 
+func cell(row map[string]any, col string) string {
+	v, ok := row[col]
+	if !ok || v == nil {
+		return ""
+	}
+	return fmt.Sprint(v)
+}
+
 func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 	switch p.format {
 	case FormatJSON:
+		if rows == nil {
+			rows = []map[string]any{}
+		}
 		enc := json.NewEncoder(p.w)
 		enc.SetIndent("", "  ")
 		return enc.Encode(rows)
@@ -75,7 +86,7 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 		for _, r := range rows {
 			rec := make([]string, len(columns))
 			for i, c := range columns {
-				rec[i] = fmt.Sprint(r[c])
+				rec[i] = cell(r, c)
 			}
 			if err := cw.Write(rec); err != nil {
 				return err
@@ -89,7 +100,7 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 		for _, r := range rows {
 			vals := make([]string, len(columns))
 			for i, c := range columns {
-				vals[i] = fmt.Sprint(r[c])
+				vals[i] = cell(r, c)
 			}
 			_, _ = fmt.Fprintln(tw, strings.Join(vals, "\t"))
 		}
@@ -104,9 +115,12 @@ func (p *Printer) PrintRow(columns []string, row map[string]any) error {
 			_, err := fmt.Fprintln(p.w, raw)
 			return err
 		}
-		fallthrough
-	default:
 		return json.NewEncoder(p.w).Encode(row)
+	case FormatJSONL:
+		return json.NewEncoder(p.w).Encode(row)
+	default:
+		return clierr.New("internal_output_misuse",
+			fmt.Sprintf("PrintRow requires a streaming format, got %q", p.format))
 	}
 }
 
