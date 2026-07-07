@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -87,6 +88,21 @@ func TestSendStructuredPassthrough(t *testing.T) {
 	_ = json.Unmarshal([]byte(strings.TrimSpace(body)), &ev)
 	if ev["level"] != "warn" {
 		t.Fatalf("passthrough lost fields: %q", body)
+	}
+}
+
+func TestSendEmptyMessageFlagIsUsageError(t *testing.T) {
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"send", "-d", "app", "-m", "", "--api-key", "k"})
+	err := root.Execute()
+	if err == nil || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage exit 2 (usage_missing_message) for -m \"\", got %v", err)
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "usage_missing_message" {
+		t.Fatalf("want usage_missing_message, got %v", err)
 	}
 }
 

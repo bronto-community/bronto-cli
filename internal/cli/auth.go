@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -167,24 +168,30 @@ func regionCandidates(cfg *config.Config, regionFlag, baseURLFlag string) []regi
 }
 
 // detectRegion probes each candidate base URL with the given key via GET
-// /logs and returns the first that accepts it. All candidates failing is an
-// auth_invalid_key error (exit 3).
+// /logs and returns the first that accepts it. Each probe gets its own
+// bounded 5s context so an unreachable host can't hang the command.
+//
+// If no candidate ever produced an HTTP response (every attempt failed at
+// the network layer — DNS, connection refused, timeout, ...), the failure
+// says nothing about the key itself: it's a network_error (retryable, exit
+// 1). Only once at least one candidate answered — even with a rejection
+// like 401/403 — do we conclude the key was checked and rejected:
+// auth_invalid_key (exit 3).
 func detectRegion(ctx context.Context, cfg *config.Config, key, regionFlag, baseURLFlag string) (region, baseURL string, err error) {
+	if regionFlag != "" && regionFlag != "eu" && regionFlag != "us" {
+		return "", "", clierr.New("usage_invalid_region",
+			fmt.Sprintf("--region must be \"eu\" or \"us\", got %q", regionFlag))
+	}
 	var lastErr error
+	var sawResponse bool
 	for _, c := range regionCandidates(cfg, regionFlag, baseURLFlag) {
-		client := api.NewHTTPClient(key, version.Version)
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/logs", nil)
-		if err != nil {
-			return "", "", err
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			lastErr = err
+		apiErr, netErr := probeRegion(ctx, c, key)
+		if netErr != nil {
+			lastErr = netErr
 			continue
 		}
-		body, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
-		if apiErr := api.ErrorFromStatus(resp.StatusCode, body); apiErr != nil {
+		sawResponse = true
+		if apiErr != nil {
 			lastErr = apiErr
 			continue
 		}
@@ -194,9 +201,37 @@ func detectRegion(ctx context.Context, cfg *config.Config, key, regionFlag, base
 	if lastErr != nil {
 		msg = fmt.Sprintf("%s (%v)", msg, lastErr)
 	}
+	if !sawResponse {
+		return "", "", clierr.New("network_error", msg).WithRetryable().
+			WithHint("Check your network connection and the --base-url / --region.")
+	}
 	return "", "", clierr.New("auth_invalid_key", msg).
 		WithHint("You are likely using an ingestion key. This CLI needs a management key (Settings → API Keys in the Bronto UI).").
 		WithDocs("https://docs.bronto.io/api-reference/api-keys/overview")
+}
+
+// probeRegion issues one bounded GET /logs against a single candidate.
+// netErr is a network-layer failure (no HTTP response at all was
+// received); apiErr is a non-2xx HTTP response translated to a typed
+// error. At most one of the two is non-nil.
+func probeRegion(ctx context.Context, c regionCandidate, key string) (apiErr, netErr error) {
+	probeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	client := api.NewHTTPClient(key, version.Version)
+	req, err := http.NewRequestWithContext(probeCtx, http.MethodGet, c.baseURL+"/logs", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	body, _ := io.ReadAll(resp.Body)
+	if ae := api.ErrorFromStatus(resp.StatusCode, body); ae != nil {
+		return ae, nil
+	}
+	return nil, nil
 }
 
 func newAuthStatusCmd() *cobra.Command {

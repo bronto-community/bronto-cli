@@ -68,6 +68,42 @@ func TestAuthLoginRejectsBadKey(t *testing.T) {
 	}
 }
 
+func TestAuthLoginUnreachableBaseURLIsNetworkError(t *testing.T) {
+	keyring.MockInit()
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetIn(strings.NewReader("some-key\n"))
+	root.SetArgs([]string{"auth", "login", "--key-stdin", "--region", "eu", "--base-url", "http://127.0.0.1:1"})
+	err := root.Execute()
+	if err == nil || clierr.ExitCode(err) != 1 {
+		t.Fatalf("want exit 1 (network_error), got %v", err)
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "network_error" || !ce.Retryable {
+		t.Fatalf("want retryable network_error, got %v", err)
+	}
+}
+
+func TestAuthLoginInvalidRegionIsUsageError(t *testing.T) {
+	keyring.MockInit()
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetIn(strings.NewReader("some-key\n"))
+	root.SetArgs([]string{"auth", "login", "--key-stdin", "--region", "apac"})
+	err := root.Execute()
+	if err == nil || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage exit 2 (usage_invalid_region), got %v", err)
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "usage_invalid_region" {
+		t.Fatalf("want usage_invalid_region, got %v", err)
+	}
+}
+
 func TestAuthLoginNonTTYWithoutKeyStdinIsUsageError(t *testing.T) {
 	keyring.MockInit()
 	oldOut, oldIn := stdoutIsTTY, stdinIsTTY

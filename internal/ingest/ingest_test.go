@@ -49,6 +49,13 @@ func TestLineToEvent(t *testing.T) {
 	}
 }
 
+func TestLineToEventTrimsLeadingWhitespace(t *testing.T) {
+	ev := LineToEvent("  \t{\"message\":\"m\",\"level\":\"warn\"}", fixedNow)
+	if ev["level"] != "warn" || ev["message"] != "m" {
+		t.Fatalf("leading whitespace before '{' must still parse as JSON: %v", ev)
+	}
+}
+
 func TestSendNDJSONHeadersAndGzip(t *testing.T) {
 	var gotBody string
 	var gotHdr http.Header
@@ -90,6 +97,32 @@ func TestSendNDJSONHeadersAndGzip(t *testing.T) {
 		gotHdr.Get("Content-Type") != "application/json" ||
 		gotHdr.Get("Content-Encoding") != "gzip" {
 		t.Fatalf("headers = %v", gotHdr)
+	}
+}
+
+func TestSendDoesNotEscapeHTML(t *testing.T) {
+	var gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+	}))
+	defer srv.Close()
+
+	s := &Sender{HTTP: srv.Client(), URL: srv.URL}
+	msg := `<b>bold</b> & angles <>`
+	err := s.Send(context.Background(), []map[string]any{{"message": msg}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(gotBody, "<b>bold</b>") || !strings.Contains(gotBody, " & angles <>") {
+		t.Fatalf("body must contain the message's raw, unescaped <>&, got %q", gotBody)
+	}
+	if strings.Contains(gotBody, `\u003c`) || strings.Contains(gotBody, `\u003e`) || strings.Contains(gotBody, `\u0026`) {
+		t.Fatalf("<>& must not be escaped to \\uXXXX, got %q", gotBody)
+	}
+	var ev map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(gotBody)), &ev); err != nil || ev["message"] != msg {
+		t.Fatalf("round-trip: %v", ev)
 	}
 }
 

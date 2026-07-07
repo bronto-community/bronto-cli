@@ -64,11 +64,8 @@ func newSendCmd() *cobra.Command {
 				}
 			}
 			if url == "" {
-				region := "eu"
-				if v, ok := app.Config.Get("region"); ok && v.Val != "" {
-					region = v.Val
-				}
-				url = ingest.URL(region, "")
+				v, _ := app.Config.Get("region") // config always has a "region" default ("eu")
+				url = ingest.URL(v.Val, "")
 			}
 
 			sender := &ingest.Sender{
@@ -80,7 +77,7 @@ func newSendCmd() *cobra.Command {
 				Gzip:       !noGzip,
 			}
 
-			if message != "" {
+			if cmd.Flags().Changed("message") {
 				ev := ingest.LineToEvent(message, nil)
 				if err := sender.Send(cmd.Context(), []map[string]any{ev}); err != nil {
 					return err

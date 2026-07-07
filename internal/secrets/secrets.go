@@ -10,6 +10,8 @@ import (
 
 	toml "github.com/pelletier/go-toml/v2"
 	"github.com/zalando/go-keyring"
+
+	"github.com/svrnm/bronto-cli/internal/clierr"
 )
 
 const service = "bronto-cli"
@@ -51,16 +53,25 @@ func Get(profile string) (string, bool, error) {
 	return key, true, nil
 }
 
+// Delete removes the stored credential for profile from both the keyring
+// and the fallback file, and is idempotent (deleting twice, or deleting a
+// profile that was never stored, is not an error).
+//
+// The file store is treated as the source of truth: a genuine file I/O
+// error (a corrupt or unreadable credentials file) always surfaces,
+// regardless of what the keyring did. The keyring side, on the other hand,
+// is never fatal on its own — "not found", "unsupported platform", and a
+// wholesale-unavailable backend (e.g. no D-Bus / Secret Service on a
+// headless box) are all indistinguishable from Delete's point of view, and
+// none of them should block logout when the file confirms there is
+// nothing left to remove.
 func Delete(profile string) error {
-	kerr := keyring.Delete(service, account(profile))
+	_ = keyring.Delete(service, account(profile))
 	ferr := fileDelete(account(profile))
-	if kerr == nil || ferr == nil {
-		return nil
+	if ferr != nil && !errors.Is(ferr, ErrNotFound) {
+		return ferr // genuine file I/O error: never mask this
 	}
-	if errors.Is(kerr, keyring.ErrNotFound) && errors.Is(ferr, ErrNotFound) {
-		return nil // nothing stored anywhere: deleting is idempotent
-	}
-	return kerr
+	return nil
 }
 
 func credentialsPath() (string, error) {
@@ -75,14 +86,26 @@ func credentialsPath() (string, error) {
 	return filepath.Join(dir, "bronto", "credentials"), nil
 }
 
+// readFileMap loads the fallback credentials file. A missing file is not an
+// error (an empty map is returned); an existing file that cannot be read or
+// parsed is a genuine, typed error — callers must not silently treat it as
+// empty, since doing so and then rewriting it would drop every other
+// profile's credentials.
 func readFileMap() (map[string]string, string, error) {
 	path, err := credentialsPath()
 	if err != nil {
 		return nil, "", err
 	}
 	m := map[string]string{}
-	if b, err := os.ReadFile(path); err == nil {
-		_ = toml.Unmarshal(b, &m)
+	b, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return m, path, nil
+		}
+		return nil, "", err
+	}
+	if err := toml.Unmarshal(b, &m); err != nil {
+		return nil, "", clierr.New("config_parse_error", "cannot parse "+path+": "+err.Error())
 	}
 	return m, path, nil
 }
@@ -100,7 +123,14 @@ func fileStore(account, key string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, b, 0o600)
+	if err := os.WriteFile(path, b, 0o600); err != nil {
+		return err
+	}
+	// os.WriteFile only applies the given mode when creating a new file; an
+	// existing file keeps its prior (possibly looser) permissions. Repair
+	// that here so the credentials file is never left world/group readable.
+	_ = os.Chmod(path, 0o600)
+	return nil
 }
 
 func fileGet(account string) (string, error) {
@@ -128,5 +158,9 @@ func fileDelete(account string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, b, 0o600)
+	if err := os.WriteFile(path, b, 0o600); err != nil {
+		return err
+	}
+	_ = os.Chmod(path, 0o600)
+	return nil
 }

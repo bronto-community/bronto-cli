@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/svrnm/bronto-cli/internal/api"
@@ -32,7 +33,8 @@ func LineToEvent(line string, now func() time.Time) map[string]any {
 		now = time.Now
 	}
 	var obj map[string]any
-	if len(line) > 0 && line[0] == '{' && json.Unmarshal([]byte(line), &obj) == nil && obj != nil {
+	trimmed := strings.TrimLeft(line, " \t")
+	if len(trimmed) > 0 && trimmed[0] == '{' && json.Unmarshal([]byte(line), &obj) == nil && obj != nil {
 		if _, ok := obj["timestamp"]; !ok {
 			obj["timestamp"] = now().UTC().Format(time.RFC3339)
 		}
@@ -62,6 +64,7 @@ func (s *Sender) Send(ctx context.Context, events []map[string]any) error {
 	}
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf) // Encode appends \n after each object -> NDJSON
+	enc.SetEscapeHTML(false)     // messages are log text, not embedded in HTML; don't mangle <>&"'
 	for _, ev := range events {
 		msg, ok := ev["message"].(string)
 		if !ok || msg == "" {
