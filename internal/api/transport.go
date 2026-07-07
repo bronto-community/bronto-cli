@@ -25,26 +25,54 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if base == nil {
 		base = http.DefaultTransport
 	}
-	sleep := t.Sleep
-	if sleep == nil {
-		sleep = time.Sleep
-	}
-	req.Header.Set("X-BRONTO-API-KEY", t.APIKey)
-	req.Header.Set("User-Agent", t.UserAgent)
 
 	idempotent := req.Method == http.MethodGet || req.Method == http.MethodHead
+	replayable := req.Body == nil || req.GetBody != nil
+
+	body := req.Body
 	var resp *http.Response
 	var err error
 	for attempt := 0; ; attempt++ {
-		resp, err = base.RoundTrip(req)
+		attemptReq := req.Clone(req.Context())
+		attemptReq.Body = body
+		attemptReq.Header.Set("X-BRONTO-API-KEY", t.APIKey)
+		attemptReq.Header.Set("User-Agent", t.UserAgent)
+
+		resp, err = base.RoundTrip(attemptReq)
 		if err != nil {
 			return nil, err
 		}
-		if !idempotent || attempt >= t.MaxRetries || !retryableStatus(resp.StatusCode) {
+		if !idempotent || !replayable || attempt >= t.MaxRetries || !retryableStatus(resp.StatusCode) {
 			return resp, nil
 		}
 		_ = resp.Body.Close()
-		sleep(retryDelay(resp, attempt))
+
+		if req.GetBody != nil {
+			body, err = req.GetBody()
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if err := t.wait(req, retryDelay(resp, attempt)); err != nil {
+			return nil, err
+		}
+	}
+}
+
+// wait blocks for d, or returns early with the context's error if req's
+// context is canceled first. If Sleep is set (tests), it is used unconditionally
+// and is not context-aware.
+func (t *Transport) wait(req *http.Request, d time.Duration) error {
+	if t.Sleep != nil {
+		t.Sleep(d)
+		return nil
+	}
+	select {
+	case <-time.After(d):
+		return nil
+	case <-req.Context().Done():
+		return req.Context().Err()
 	}
 }
 
@@ -54,6 +82,14 @@ func retryableStatus(s int) bool {
 }
 
 func retryDelay(resp *http.Response, attempt int) time.Duration {
+	d := computeRetryDelay(resp, attempt)
+	if d > 30*time.Second {
+		d = 30 * time.Second
+	}
+	return d
+}
+
+func computeRetryDelay(resp *http.Response, attempt int) time.Duration {
 	if ra := resp.Header.Get("Retry-After"); ra != "" {
 		if secs, err := strconv.Atoi(ra); err == nil {
 			if secs < 0 {

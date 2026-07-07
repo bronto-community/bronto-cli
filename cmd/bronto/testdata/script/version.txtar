@@ -4,3 +4,7 @@ stdout '^bronto dev'
 
 # unknown command exits non-zero
 ! exec bronto no-such-command
+
+# bare invocation shows help and exits 0
+exec bronto
+stdout 'Usage:'

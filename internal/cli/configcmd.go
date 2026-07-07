@@ -60,7 +60,7 @@ func newConfigCmd() *cobra.Command {
 			}
 			v, ok := app.Config.Get(args[0])
 			if !ok {
-				return clierr.New("config_key_not_found", fmt.Sprintf("no value for %q", args[0]))
+				return clierr.New("config_unknown_key", fmt.Sprintf("no value for %q", args[0]))
 			}
 			_, _ = fmt.Fprintln(app.Stdout, v.Val)
 			return nil

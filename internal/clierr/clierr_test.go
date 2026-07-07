@@ -16,6 +16,7 @@ func TestExitCodeMapping(t *testing.T) {
 		{"api_error", 1},
 		{"usage_invalid_flag", 2},
 		{"config_secret_in_project_file", 2},
+		{"config_unknown_key", 2},
 		{"auth_invalid_key", 3},
 		{"auth_insufficient_role", 3},
 		{"dataset_not_found", 4},
@@ -52,6 +53,23 @@ func TestRenderMachineMode(t *testing.T) {
 		t.Fatalf("not JSON: %v (%q)", err, buf.String())
 	}
 	if env.Error.Code != "rate_limited" || !env.Error.Retryable {
+		t.Fatalf("bad envelope: %+v", env)
+	}
+}
+
+func TestRenderMachineModePlainErrorFallsBackToUnknownError(t *testing.T) {
+	var buf bytes.Buffer
+	Render(&buf, errors.New("boom"), true)
+	var env struct {
+		Error struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &env); err != nil {
+		t.Fatalf("not JSON: %v (%q)", err, buf.String())
+	}
+	if env.Error.Code != "unknown_error" || env.Error.Message != "boom" {
 		t.Fatalf("bad envelope: %+v", env)
 	}
 }

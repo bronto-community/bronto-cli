@@ -70,7 +70,7 @@ func asCLIError(err error, target **Error) bool {
 func Render(w io.Writer, err error, machineMode bool) {
 	var ce *Error
 	if !asCLIError(err, &ce) {
-		ce = New("error", err.Error())
+		ce = New("unknown_error", err.Error())
 	}
 	if machineMode {
 		env := map[string]any{"error": map[string]any{

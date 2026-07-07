@@ -51,6 +51,22 @@ func TestConfigSetRejectsAPIKey(t *testing.T) {
 	}
 }
 
+func TestConfigGetUnknownKeyExitsTwo(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"config", "get", "nosuchkey"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("want error for unknown config key")
+	}
+	if clierr.ExitCode(err) != 2 {
+		t.Fatalf("exit = %d, want 2", clierr.ExitCode(err))
+	}
+}
+
 func TestConfigSetThenGetRoundTrip(t *testing.T) {
 	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
 

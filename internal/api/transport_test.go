@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -97,6 +98,48 @@ func TestTransportRetryExhaustionReturnsFinalResponse(t *testing.T) {
 	}
 	if calls.Load() != 3 {
 		t.Fatalf("calls = %d, want 3 (1 + 2 retries)", calls.Load())
+	}
+}
+
+func TestTransportCanceledContextAbortsRetryWaitPromptly(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.Header().Set("Retry-After", "30")
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer srv.Close()
+
+	tr := &Transport{APIKey: "k", UserAgent: "t", MaxRetries: 2}
+	c := &http.Client{Transport: tr}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	time.AfterFunc(20*time.Millisecond, cancel)
+
+	start := time.Now()
+	_, err = c.Do(req)
+	elapsed := time.Since(start)
+	if err == nil {
+		t.Fatal("want context error, got nil")
+	}
+	if elapsed > 5*time.Second {
+		t.Fatalf("RoundTrip took %v, want it to return promptly after context cancellation", elapsed)
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("calls = %d, want 1 (no retry attempt should complete after cancellation)", calls.Load())
+	}
+}
+
+func TestRetryDelayAboveCapIsClamped(t *testing.T) {
+	r := &http.Response{Header: http.Header{}}
+	r.Header.Set("Retry-After", "3600")
+	if d := retryDelay(r, 0); d != 30*time.Second {
+		t.Fatalf("retryDelay = %v, want clamped to 30s", d)
 	}
 }
 

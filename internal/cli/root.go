@@ -2,6 +2,8 @@
 package cli
 
 import (
+	"errors"
+
 	"github.com/spf13/cobra"
 
 	"github.com/svrnm/bronto-cli/internal/clierr"
@@ -17,7 +19,7 @@ func NewRootCmd() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       version.String(),
-		Run:           func(cmd *cobra.Command, args []string) {},
+		Run:           func(cmd *cobra.Command, _ []string) { _ = cmd.Help() },
 	}
 	cmd.SetVersionTemplate("{{.Version}}\n")
 	cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
@@ -37,5 +39,35 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newPingCmd())
 	cmd.AddCommand(newAPICmd())
 
+	wrapArgsValidators(cmd)
+
 	return cmd
+}
+
+// wrapArgsValidators walks the command tree and wraps every command's Args
+// validator so positional-argument validation failures (e.g. cobra's
+// "accepts N arg(s), received M" / "unknown command ..." / "requires at
+// least N arg(s)" errors) surface as usage_invalid_args clierr.Errors. That
+// gives them the correct exit code (2, per the usage_ prefix contract)
+// instead of falling through to the generic exit code (1) that a plain
+// error produces.
+func wrapArgsValidators(cmd *cobra.Command) {
+	if cmd.Args != nil {
+		orig := cmd.Args
+		cmd.Args = func(c *cobra.Command, args []string) error {
+			err := orig(c, args)
+			if err == nil {
+				return nil
+			}
+			var ce *clierr.Error
+			if errors.As(err, &ce) {
+				return err
+			}
+			return clierr.New("usage_invalid_args", err.Error()).
+				WithHint("Run '" + c.CommandPath() + " --help' for usage.")
+		}
+	}
+	for _, sub := range cmd.Commands() {
+		wrapArgsValidators(sub)
+	}
 }
