@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -10,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"context"
+	"github.com/svrnm/bronto-cli/internal/clierr"
 )
 
 func TestTailNoFollowSinglePollDedupSorted(t *testing.T) {
@@ -102,5 +103,19 @@ func TestTailFollowStopsOnContextCancel(t *testing.T) {
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("tail did not stop on context cancellation")
+	}
+}
+
+func TestTailRejectsNonStreamingFormats(t *testing.T) {
+	for _, f := range []string{"json", "csv"} {
+		root := NewRootCmd()
+		root.SetOut(&bytes.Buffer{})
+		root.SetErr(&bytes.Buffer{})
+		root.SetArgs([]string{"tail", "--no-follow", "-o", f,
+			"-d", "11111111-1111-1111-1111-111111111111", "--api-key", "k"})
+		err := root.Execute()
+		if err == nil || clierr.ExitCode(err) != 2 {
+			t.Fatalf("-o %s: want usage exit 2, got %v (%d)", f, err, clierr.ExitCode(err))
+		}
 	}
 }
