@@ -74,6 +74,17 @@ func TestTracesAggregateRequiresBy(t *testing.T) {
 	}
 }
 
+func TestTracesAggregateRejectsBadKind(t *testing.T) {
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"traces", "aggregate", "--by", "x", "--kind", "sideways", "--api-key", "k"})
+	err := root.Execute()
+	if err == nil || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage exit 2 (no network), got %v", err)
+	}
+}
+
 func TestTracesShowStreamsRows(t *testing.T) {
 	srv := tracesServer(t, map[string]string{
 		"@time": `{"result":[

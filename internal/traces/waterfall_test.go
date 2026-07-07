@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 func testSpans() []Span {
@@ -137,6 +138,19 @@ func TestWaterfallTerminatesOnCycles(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("WaterfallRows hangs on self-referencing span")
+	}
+}
+
+func TestRuneAwarePadding(t *testing.T) {
+	if got := padTo("héllo", 8); utf8.RuneCountInString(got) != 8 {
+		t.Fatalf("padTo rune width = %d (%q)", utf8.RuneCountInString(got), got)
+	}
+	if got := truncateTo("héllö-wörld", 6); utf8.RuneCountInString(got) != 6 ||
+		!strings.HasSuffix(got, "…") || !utf8.ValidString(got) {
+		t.Fatalf("truncateTo = %q", got)
+	}
+	if got := truncateTo("ok", 6); got != "ok" {
+		t.Fatalf("short strings unchanged: %q", got)
 	}
 }
 

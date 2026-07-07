@@ -9,6 +9,15 @@ import (
 
 const RootOnlyClause = "NOT EXISTS $span.parent_span_id"
 
+// ErrorsClause is the WHERE fragment matching error-status spans.
+const ErrorsClause = "$span.status_code = 'STATUS_CODE_ERROR'"
+
+// validKinds are the OpenTelemetry span kinds accepted by KindClause,
+// bare (server) or SPAN_KIND_-prefixed (SPAN_KIND_SERVER), case-insensitive.
+var validKinds = map[string]bool{
+	"SERVER": true, "CLIENT": true, "INTERNAL": true, "PRODUCER": true, "CONSUMER": true,
+}
+
 // NormalizeAttr turns a user-supplied attribute into query form:
 // leading $ added unless present. http.route -> $http.route.
 func NormalizeAttr(attr string) (string, error) {
@@ -24,13 +33,17 @@ func NormalizeAttr(attr string) (string, error) {
 
 // KindClause builds the span-kind filter. Accepts bare (server) or
 // prefixed (SPAN_KIND_SERVER) forms; where-clauses always use the
-// full SPAN_KIND_* wire form (extraction §5.3).
-func KindClause(kind string) string {
+// full SPAN_KIND_* wire form (extraction §5.3). Unknown kinds error
+// rather than silently building a clause that can never match.
+func KindClause(kind string) (string, error) {
 	k := strings.ToUpper(strings.TrimSpace(kind))
-	if !strings.HasPrefix(k, "SPAN_KIND_") {
-		k = "SPAN_KIND_" + k
+	bare := strings.TrimPrefix(k, "SPAN_KIND_")
+	if !validKinds[bare] {
+		return "", clierr.New("usage_invalid_kind",
+			fmt.Sprintf("unknown span kind %q", kind)).
+			WithHint("Valid kinds: server, client, internal, producer, consumer.")
 	}
-	return fmt.Sprintf("$span.kind = '%s'", k)
+	return fmt.Sprintf("$span.kind = 'SPAN_KIND_%s'", bare), nil
 }
 
 func AndJoin(clauses ...string) string {

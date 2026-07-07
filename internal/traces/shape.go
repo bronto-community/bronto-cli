@@ -5,6 +5,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 const (
@@ -387,7 +388,7 @@ func RenderShape(w io.Writer, buckets map[string]*ShapeBucket, tracesUsed, total
 
 	maxLabel := 0
 	for _, b := range buckets {
-		if l := len(b.Service) + len(b.Name) + 1 + 2*b.Depth(); l > maxLabel {
+		if l := utf8.RuneCountInString(b.Service) + utf8.RuneCountInString(b.Name) + 1 + 2*b.Depth(); l > maxLabel {
 			maxLabel = l
 		}
 	}
@@ -417,10 +418,7 @@ func RenderShape(w io.Writer, buckets map[string]*ShapeBucket, tracesUsed, total
 		f := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		b := f.b
-		label := strings.Repeat("  ", f.depth) + b.Service + "/" + b.Name
-		if len(label) > nameCol {
-			label = label[:nameCol-1] + "…"
-		}
+		label := truncateTo(strings.Repeat("  ", f.depth)+b.Service+"/"+b.Name, nameCol)
 		presence := fmt.Sprintf("%d", b.NTraces())
 		if b.NTraces() < tracesUsed {
 			presence = fmt.Sprintf("%d/%d", b.NTraces(), tracesUsed)
@@ -429,7 +427,9 @@ func RenderShape(w io.Writer, buckets map[string]*ShapeBucket, tracesUsed, total
 		if anyErrors && b.Errors > 0 {
 			errCell = fmt.Sprintf(" %d", b.Errors)
 		}
-		_, _ = fmt.Fprintf(w, "%-*s %s %9s %9s %7s%s\n", nameCol, label,
+		// %-*s pads by byte width; padTo pads by rune width so multi-byte
+		// labels still line up in the name column.
+		_, _ = fmt.Fprintf(w, "%s %s %9s %9s %7s%s\n", padTo(label, nameCol),
 			RenderShapeBar(b, axisEnd, width, color),
 			FormatDurationNS(b.AvgDuration()), FormatDurationNS(b.AvgOffset()),
 			presence, errCell)

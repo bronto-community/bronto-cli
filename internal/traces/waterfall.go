@@ -5,6 +5,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 const (
@@ -156,12 +157,32 @@ func dfsOrder(spans []Span) []frame {
 	return out
 }
 
+// padTo right-pads s with spaces to the given rune width (not byte
+// length), so multi-byte runes don't throw off column alignment.
+func padTo(s string, width int) string {
+	n := width - utf8.RuneCountInString(s)
+	if n <= 0 {
+		return s
+	}
+	return s + strings.Repeat(" ", n)
+}
+
+// truncateTo shortens s to width runes, appending "…" when truncated.
+// Rune-aware so multi-byte characters are never split mid-encoding.
+func truncateTo(s string, width int) string {
+	if utf8.RuneCountInString(s) <= width || width <= 0 {
+		return s
+	}
+	r := []rune(s)
+	return string(r[:width-1]) + "…"
+}
+
 func RenderWaterfall(w io.Writer, spans []Span, width int, color bool) {
 	services := map[string]bool{}
 	maxLabel := 0
 	for _, s := range spans {
 		services[s.Service] = true
-		if l := len(s.Service) + len(s.Name) + 1; l > maxLabel {
+		if l := utf8.RuneCountInString(s.Service) + utf8.RuneCountInString(s.Name) + 1; l > maxLabel {
 			maxLabel = l
 		}
 	}
@@ -176,9 +197,10 @@ func RenderWaterfall(w io.Writer, spans []Span, width int, color bool) {
 	for _, f := range dfsOrder(spans) {
 		indent := strings.Repeat("  ", f.depth)
 		labelPlain := f.span.Service + "/" + f.span.Name
-		pad := nameCol - len(indent) - len(labelPlain)
-		if pad < 1 {
-			pad = 1
+		full := indent + labelPlain
+		padded := padTo(full, nameCol)
+		if utf8.RuneCountInString(padded) == utf8.RuneCountInString(full) {
+			padded += " " // always keep at least one gap before the bar
 		}
 		bar := RenderBar(f.span, start, total, width, color)
 		status := ""
@@ -197,8 +219,7 @@ func RenderWaterfall(w io.Writer, spans []Span, width int, color bool) {
 				status = " " + st
 			}
 		}
-		_, _ = fmt.Fprintf(w, "%s%s%s%s %s%s\n", indent, labelPlain,
-			strings.Repeat(" ", pad), bar, FormatDurationNS(f.span.DurationNS), status)
+		_, _ = fmt.Fprintf(w, "%s%s %s%s\n", padded, bar, FormatDurationNS(f.span.DurationNS), status)
 	}
 }
 

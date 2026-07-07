@@ -259,6 +259,10 @@ func newTracesShowCmd() *cobra.Command {
 			for _, r := range eventRows {
 				spans = append(spans, traces.RowToSpan(r))
 			}
+			if len(spans) == limit && app.StdoutIsTTY && !app.Quiet {
+				_, _ = fmt.Fprintf(app.Stderr,
+					"Showing the first %d spans — the trace may be larger; raise -n to see more.\n", limit)
+			}
 			return printWaterfall(app, spans, barWidth)
 		},
 	}
@@ -324,7 +328,10 @@ func newTracesShapeCmd() *cobra.Command {
 			if anySpan {
 				useEntry = false
 			}
-			sampleWhere := shapeSampleWhere(useEntry, service, operation, errorsOnly, minDurationMS, where)
+			sampleWhere, err := shapeSampleWhere(useEntry, service, operation, errorsOnly, minDurationMS, where)
+			if err != nil {
+				return err
+			}
 			traceIDs, err := agg.FindSampleTraceIDs(cmd.Context(), sampleWhere, sample)
 			if err != nil {
 				return err
@@ -394,10 +401,14 @@ func newTracesShapeCmd() *cobra.Command {
 // shapeSampleWhere builds the sample-selection WHERE clause: an entry
 // (server-span) kind filter unless --any-span, plus service/operation/
 // errors/duration filters and a parenthesized raw --where (extraction §4.1).
-func shapeSampleWhere(entry bool, service, operation string, errorsOnly bool, minDurationMS float64, rawWhere string) string {
+func shapeSampleWhere(entry bool, service, operation string, errorsOnly bool, minDurationMS float64, rawWhere string) (string, error) {
 	var clauses []string
 	if entry {
-		clauses = append(clauses, traces.KindClause("server"))
+		kindClause, err := traces.KindClause("server")
+		if err != nil {
+			return "", err
+		}
+		clauses = append(clauses, kindClause)
 	}
 	if service != "" {
 		clauses = append(clauses, "$service.name = "+traces.Quote(service))
@@ -406,7 +417,7 @@ func shapeSampleWhere(entry bool, service, operation string, errorsOnly bool, mi
 		clauses = append(clauses, "$span.name = "+traces.Quote(operation))
 	}
 	if errorsOnly {
-		clauses = append(clauses, "$span.status_code = 'STATUS_CODE_ERROR'")
+		clauses = append(clauses, traces.ErrorsClause)
 	}
 	if minDurationMS > 0 {
 		clauses = append(clauses, fmt.Sprintf("$span.duration_nano > %d", int64(minDurationMS*1e6)))
@@ -414,5 +425,5 @@ func shapeSampleWhere(entry bool, service, operation string, errorsOnly bool, mi
 	if rawWhere != "" {
 		clauses = append(clauses, "("+rawWhere+")")
 	}
-	return traces.AndJoin(clauses...)
+	return traces.AndJoin(clauses...), nil
 }

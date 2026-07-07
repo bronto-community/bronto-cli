@@ -15,11 +15,26 @@ func TestNormalizeAttr(t *testing.T) {
 }
 
 func TestKindClause(t *testing.T) {
-	if got := KindClause("server"); got != "$span.kind = 'SPAN_KIND_SERVER'" {
-		t.Fatalf("got %q", got)
+	if got, err := KindClause("server"); err != nil || got != "$span.kind = 'SPAN_KIND_SERVER'" {
+		t.Fatalf("got %q, err %v", got, err)
 	}
-	if got := KindClause("SPAN_KIND_CLIENT"); got != "$span.kind = 'SPAN_KIND_CLIENT'" {
-		t.Fatalf("got %q", got)
+	if got, err := KindClause("SPAN_KIND_CLIENT"); err != nil || got != "$span.kind = 'SPAN_KIND_CLIENT'" {
+		t.Fatalf("got %q, err %v", got, err)
+	}
+}
+
+func TestKindClauseValidation(t *testing.T) {
+	for _, ok := range []string{"server", "SPAN_KIND_CLIENT", "Internal", "producer", "CONSUMER"} {
+		if _, err := KindClause(ok); err != nil {
+			t.Errorf("KindClause(%q) errored: %v", ok, err)
+		}
+	}
+	if _, err := KindClause("sideways"); err == nil {
+		t.Error("unknown kind must error")
+	}
+	got, _ := KindClause("server")
+	if got != "$span.kind = 'SPAN_KIND_SERVER'" {
+		t.Fatalf("clause = %q", got)
 	}
 }
 

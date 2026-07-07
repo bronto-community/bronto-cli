@@ -11,10 +11,9 @@ import (
 )
 
 const (
-	aggCount     = "count(*)"
-	aggAvg       = "avg($span.duration_nano)"
-	aggMax       = "max($span.duration_nano)"
-	errorsClause = "$span.status_code = 'STATUS_CODE_ERROR'"
+	aggCount = "count(*)"
+	aggAvg   = "avg($span.duration_nano)"
+	aggMax   = "max($span.duration_nano)"
 )
 
 type Aggregator struct {
@@ -95,7 +94,7 @@ func parseGroup(v any) []string {
 func (a *Aggregator) Services(ctx context.Context, errorsOnly bool, limit int) ([]map[string]any, error) {
 	where := ""
 	if errorsOnly {
-		where = errorsClause
+		where = ErrorsClause
 	}
 	return a.threeWayRows(ctx, []string{"$service.name"}, where, limit,
 		func(vals []string) map[string]any {
@@ -109,7 +108,7 @@ func (a *Aggregator) Operations(ctx context.Context, service string, errorsOnly 
 		svcClause = "$service.name = " + Quote(service)
 	}
 	if errorsOnly {
-		errClause = errorsClause
+		errClause = ErrorsClause
 	}
 	return a.threeWayRows(ctx, []string{"$service.name", "$span.name"},
 		AndJoin(svcClause, errClause), limit,
@@ -180,10 +179,14 @@ func (a *Aggregator) Attributes(ctx context.Context, opts AttrOptions) ([]map[st
 		clauses = append(clauses, "$service.name = "+Quote(opts.Service))
 	}
 	if opts.Kind != "" {
-		clauses = append(clauses, KindClause(opts.Kind))
+		kindClause, err := KindClause(opts.Kind)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		clauses = append(clauses, kindClause)
 	}
 	if opts.ErrorsOnly {
-		clauses = append(clauses, errorsClause)
+		clauses = append(clauses, ErrorsClause)
 	}
 	if opts.Where != "" {
 		clauses = append(clauses, "("+opts.Where+")")
@@ -209,7 +212,7 @@ func (a *Aggregator) Attributes(ctx context.Context, opts AttrOptions) ([]map[st
 	var errCounts map[string]aggEntry
 	if !opts.ErrorsOnly {
 		errCounts, err = a.groupAggregate(ctx, aggCount, groupKeys,
-			AndJoin(where, errorsClause), fetchLimit)
+			AndJoin(where, ErrorsClause), fetchLimit)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -272,9 +275,15 @@ func (a *Aggregator) Attributes(ctx context.Context, opts AttrOptions) ([]map[st
 	return rows, columns, dropped, nil
 }
 
+// isMissingValue reports whether a group-by value stands in for "no
+// attribute" — either truly absent or one of the API's null spellings.
+func isMissingValue(v string) bool {
+	return v == "" || v == "null" || v == "None"
+}
+
 func hasMissing(vals []string) bool {
 	for _, v := range vals {
-		if v == "" || v == "null" || v == "None" {
+		if isMissingValue(v) {
 			return true
 		}
 	}
@@ -282,7 +291,7 @@ func hasMissing(vals []string) bool {
 }
 
 func labelGroupValue(v string) string {
-	if v == "" || v == "null" || v == "None" {
+	if isMissingValue(v) {
 		return "<missing>"
 	}
 	return v

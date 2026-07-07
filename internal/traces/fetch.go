@@ -28,7 +28,7 @@ func (a *Aggregator) ListSpans(ctx context.Context, opts ListOptions) ([]map[str
 		clauses = append(clauses, fmt.Sprintf("$span.duration_nano > %d", int64(opts.MinDurationMS*1e6)))
 	}
 	if opts.ErrorsOnly {
-		clauses = append(clauses, errorsClause)
+		clauses = append(clauses, ErrorsClause)
 	}
 	mrf := true
 	resp, err := a.Client.Search(ctx, bronto.SearchRequest{
