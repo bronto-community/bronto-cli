@@ -15,6 +15,7 @@ func main() {
 func run() int {
 	cmd := cli.NewRootCmd()
 	if err := cmd.Execute(); err != nil {
+		err = cli.WrapExecuteError(err)
 		machine := !isatty.IsTerminal(os.Stderr.Fd()) && !isatty.IsCygwinTerminal(os.Stderr.Fd())
 		clierr.Render(os.Stderr, err, machine)
 		return clierr.ExitCode(err)
