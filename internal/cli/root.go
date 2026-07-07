@@ -38,6 +38,8 @@ func NewRootCmd() *cobra.Command {
 	pf.Bool("no-color", false, "disable color output")
 	pf.Bool("quiet", false, "suppress non-data messages on stderr")
 	cmd.AddCommand(newConfigCmd())
+	cmd.AddCommand(newAuthCmd())
+	cmd.AddCommand(newLoginAliasCmd())
 	cmd.AddCommand(newPingCmd())
 	cmd.AddCommand(newAPICmd())
 	cmd.AddCommand(newSearchCmd())
