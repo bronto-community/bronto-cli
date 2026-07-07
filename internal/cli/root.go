@@ -39,6 +39,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newPingCmd())
 	cmd.AddCommand(newAPICmd())
 	cmd.AddCommand(newSearchCmd())
+	cmd.AddCommand(newFieldsCmd())
 
 	wrapArgsValidators(cmd)
 
