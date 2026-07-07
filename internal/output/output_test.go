@@ -315,3 +315,22 @@ func TestPrintRowRejectsNonStreamingFormats(t *testing.T) {
 		}
 	}
 }
+
+func TestPrintJSONFieldFilterOnUnmarshaledArray(t *testing.T) {
+	var doc any
+	if err := json.Unmarshal([]byte(`[{"name":"a","x":1},{"name":"b","x":2}]`), &doc); err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetFieldFilter([]string{"name"})
+	if err := p.PrintJSON(doc); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(buf.String(), `"x"`) {
+		t.Fatalf("filter not applied to []any: %s", buf.String())
+	}
+	if !strings.Contains(buf.String(), `"name"`) {
+		t.Fatalf("names missing: %s", buf.String())
+	}
+}
