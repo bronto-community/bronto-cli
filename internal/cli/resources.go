@@ -85,6 +85,11 @@ var resourceRegistry = []resourceDesc{
 	{Name: "parsers", Base: "/parsers", NoGet: true},
 	{Name: "api-keys", Base: "/api-keys", Singular: "API key", NoGet: true},
 	{Name: "datasets", Base: "/logs", CreatePath: "/datasets", UpdateMethod: http.MethodPut},
+	// exports has no update verb; its create is hand-written (exports.go) to
+	// support the convenience flags / --wait / --download workflow and
+	// replaces the generic factory create (see newResourceCmd's extras
+	// override rule).
+	{Name: "exports", Singular: "export", Base: "/exports", NoUpdate: true},
 }
 
 // doJSONRequest issues an authenticated request against the resolved base

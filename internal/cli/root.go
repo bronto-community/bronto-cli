@@ -51,13 +51,17 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newTailCmd())
 	cmd.AddCommand(newTracesCmd())
 	cmd.AddCommand(newSendCmd())
+	cmd.AddCommand(newUsageCmd())
 
 	for _, d := range resourceRegistry {
-		if d.Name == "monitors" {
+		switch d.Name {
+		case "monitors":
 			cmd.AddCommand(newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd(), newMonitorTestCmd()))
-			continue
+		case "exports":
+			cmd.AddCommand(newResourceCmd(d, newExportsCreateCmd()))
+		default:
+			cmd.AddCommand(newResourceCmd(d))
 		}
-		cmd.AddCommand(newResourceCmd(d))
 	}
 
 	wrapArgsValidators(cmd)
