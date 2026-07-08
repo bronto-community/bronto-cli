@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+FROM golang:1.25-alpine AS builder
+ARG VERSION=dev
+ARG COMMIT=none
+ARG DATE=unknown
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -trimpath \
+	-ldflags "-s -w \
+	-X github.com/svrnm/bronto-cli/internal/version.Version=${VERSION} \
+	-X github.com/svrnm/bronto-cli/internal/version.Commit=${COMMIT} \
+	-X github.com/svrnm/bronto-cli/internal/version.Date=${DATE}" \
+	-o /out/bronto ./cmd/bronto
+
+FROM scratch
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /out/bronto /bronto
+ENTRYPOINT ["/bronto"]

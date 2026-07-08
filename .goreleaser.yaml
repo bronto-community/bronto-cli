@@ -1,0 +1,119 @@
+version: 2
+
+project_name: bronto
+
+before:
+  hooks:
+    - go mod tidy
+    - sh -c "./scripts/completions.sh"
+
+builds:
+  - id: bronto
+    main: ./cmd/bronto
+    binary: bronto
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/svrnm/bronto-cli/internal/version.Version={{ .Version }}
+      - -X github.com/svrnm/bronto-cli/internal/version.Commit={{ .ShortCommit }}
+      - -X github.com/svrnm/bronto-cli/internal/version.Date={{ .Date }}
+
+archives:
+  - id: bronto
+    ids:
+      - bronto
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE
+      - README.md
+      - src: completions/bronto.bash
+        dst: completions/bronto.bash
+      - src: completions/bronto.zsh
+        dst: completions/bronto.zsh
+      - src: completions/bronto.fish
+        dst: completions/bronto.fish
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
+
+nfpms:
+  - id: bronto
+    ids:
+      - bronto
+    package_name: bronto
+    vendor: bronto-cli contributors
+    homepage: https://github.com/svrnm/bronto-cli
+    maintainer: bronto-cli contributors <noreply@github.com>
+    description: Community CLI for the Bronto observability platform.
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    contents:
+      - src: completions/bronto.bash
+        dst: /usr/share/bash-completion/completions/bronto
+      - src: completions/bronto.zsh
+        dst: /usr/share/zsh/site-functions/_bronto
+      - src: completions/bronto.fish
+        dst: /usr/share/fish/vendor_completions.d/bronto.fish
+      - src: LICENSE
+        dst: /usr/share/doc/bronto/LICENSE
+
+homebrew_casks:
+  - name: bronto
+    ids:
+      - bronto
+    binaries:
+      - bronto
+    completions:
+      bash: completions/bronto.bash
+      zsh: completions/bronto.zsh
+      fish: completions/bronto.fish
+    repository:
+      owner: svrnm
+      name: homebrew-tap
+    skip_upload: auto
+    homepage: https://github.com/svrnm/bronto-cli
+    description: Community CLI for the Bronto observability platform.
+
+release:
+  github:
+    owner: svrnm
+    name: bronto-cli
+  draft: false
+  prerelease: auto

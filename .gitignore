@@ -1,4 +1,5 @@
 /bronto
 /dist/
+/completions/
 *.test
 .env
