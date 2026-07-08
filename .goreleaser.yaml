@@ -107,7 +107,10 @@ homebrew_casks:
     repository:
       owner: svrnm
       name: homebrew-tap
-    skip_upload: auto
+    # Cross-repo pushes need a PAT (the default GITHUB_TOKEN cannot write to
+    # homebrew-tap). Flip to "auto" once the tap repo exists and a
+    # HOMEBREW_TAP_TOKEN secret is wired into release.yml.
+    skip_upload: true
     homepage: https://github.com/svrnm/bronto-cli
     description: Community CLI for the Bronto observability platform.
 
