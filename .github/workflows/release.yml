@@ -32,10 +32,27 @@ jobs:
       - name: Set image build metadata
         id: meta
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          SCRATCH_TAGS="ghcr.io/svrnm/bronto-cli:${VERSION}"
+          DISTROLESS_TAGS="ghcr.io/svrnm/bronto-cli:${VERSION}-distroless"
+          # Only stable releases (no pre-release suffix like -rc.1) move :latest.
+          case "$GITHUB_REF_NAME" in
+            *-*) ;;
+            *)
+              SCRATCH_TAGS="${SCRATCH_TAGS}"$'\n'"ghcr.io/svrnm/bronto-cli:latest"
+              DISTROLESS_TAGS="${DISTROLESS_TAGS}"$'\n'"ghcr.io/svrnm/bronto-cli:latest-distroless"
+              ;;
+          esac
           {
-            echo "version=${GITHUB_REF_NAME#v}"
+            echo "version=${VERSION}"
             echo "commit=${GITHUB_SHA}"
             echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "scratch_tags<<TAGS_$GITHUB_SHA"
+            echo "$SCRATCH_TAGS"
+            echo "TAGS_$GITHUB_SHA"
+            echo "distroless_tags<<TAGS_$GITHUB_SHA"
+            echo "$DISTROLESS_TAGS"
+            echo "TAGS_$GITHUB_SHA"
           } >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-qemu-action@v3
@@ -59,9 +76,7 @@ jobs:
             VERSION=${{ steps.meta.outputs.version }}
             COMMIT=${{ steps.meta.outputs.commit }}
             DATE=${{ steps.meta.outputs.date }}
-          tags: |
-            ghcr.io/svrnm/bronto-cli:latest
-            ghcr.io/svrnm/bronto-cli:${{ steps.meta.outputs.version }}
+          tags: ${{ steps.meta.outputs.scratch_tags }}
 
       - name: Build and push (distroless image)
         uses: docker/build-push-action@v6
@@ -74,6 +89,4 @@ jobs:
             VERSION=${{ steps.meta.outputs.version }}
             COMMIT=${{ steps.meta.outputs.commit }}
             DATE=${{ steps.meta.outputs.date }}
-          tags: |
-            ghcr.io/svrnm/bronto-cli:latest-distroless
-            ghcr.io/svrnm/bronto-cli:${{ steps.meta.outputs.version }}-distroless
+          tags: ${{ steps.meta.outputs.distroless_tags }}

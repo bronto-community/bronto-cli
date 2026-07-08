@@ -55,10 +55,13 @@ jobs:
         if: steps.check.outputs.skip == 'false' && steps.diff.outputs.changed == 'true'
         run: |
           go run github.com/oasdiff/oasdiff@latest breaking api/openapi.yaml /tmp/openapi.upstream.yaml > /tmp/oasdiff-report.txt 2>&1 || true
+          # Unique delimiter guards against output injection if the report
+          # text ever contains the delimiter line itself.
+          EOF_MARK="OASDIFF_EOF_$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
           {
-            echo "report<<OASDIFF_EOF"
+            echo "report<<${EOF_MARK}"
             cat /tmp/oasdiff-report.txt
-            echo "OASDIFF_EOF"
+            echo "${EOF_MARK}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Stage upstream spec artifact
