@@ -63,6 +63,30 @@ func TestExportsCreateConvenienceFlagsBodyShape(t *testing.T) {
 	}
 }
 
+func TestExportsCreateConvenienceFlagsWhereAlwaysPresent(t *testing.T) {
+	var gotBody map[string]any
+	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"CREATED"}`))
+	}, "", "exports", "create",
+		"--dataset", "ds-1", "--since", "1h")
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+	details, ok := gotBody["search_details"].(map[string]any)
+	if !ok {
+		t.Fatalf("body missing search_details: %v", gotBody)
+	}
+	where, ok := details["where"].(string)
+	if !ok {
+		t.Fatalf("search_details.where missing or not a string: %v", details["where"])
+	}
+	if where != "" {
+		t.Fatalf("search_details.where = %q, want empty string when flag omitted", where)
+	}
+}
+
 func TestExportsCreateBodyVsConvenienceConflict(t *testing.T) {
 	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("server should not be contacted")

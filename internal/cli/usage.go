@@ -13,14 +13,16 @@ import (
 // newUsageCmd implements "bronto usage": GET /usage with a time_range query
 // param (same single-unit rule as the fields command — the endpoint only
 // accepts relative ranges, so a compound --since that resolves to absolute
-// from_ts/to_ts bounds is rejected) and log_id when --dataset is given.
+// from_ts/to_ts bounds is rejected).
 func newUsageCmd() *cobra.Command {
-	var dataset, since string
+	var since string
 	cmd := &cobra.Command{
 		Use:   "usage",
 		Short: "Show ingestion/search/export usage over a time period",
+		Long: "Show ingestion/search/export usage over a time period.\n\n" +
+			"For per-dataset usage, use: bronto api GET /usage/organizations/logs",
 		Example: "  bronto usage --since 7d\n" +
-			"  bronto usage --since 1h --dataset <dataset-uuid>",
+			"  bronto usage --since 1h",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			app, err := NewApp(cmd)
@@ -40,9 +42,6 @@ func newUsageCmd() *cobra.Command {
 					WithHint("The /usage endpoint accepts relative ranges only.")
 			}
 			params := url.Values{"time_range": []string{spec.TimeRange}}
-			if dataset != "" {
-				params.Set("log_id", dataset)
-			}
 			var payload any
 			client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
 			if err := client.GetJSON(cmd.Context(), "/usage", params, &payload); err != nil {
@@ -56,7 +55,6 @@ func newUsageCmd() *cobra.Command {
 			return p.PrintRows(bronto.EventColumns(rows, 8), rows)
 		},
 	}
-	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset UUID (omit for usage across all datasets)")
 	cmd.Flags().StringVar(&since, "since", "7d", "relative lookback (single unit: 1h, 7d)")
 	return cmd
 }

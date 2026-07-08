@@ -132,7 +132,8 @@ func exportRequestBody(cmd *cobra.Command, input string, fields []string, datase
 
 // exportSearchDetails builds the search_details object, mirroring
 // bronto.SearchRequest.Body()'s from/time_range-or-from_ts+to_ts/where
-// layout (see internal/bronto/search.go).
+// layout (see internal/bronto/search.go). Per ExportDetails schema, where
+// is always present (empty string if not provided).
 func exportSearchDetails(dataset, where string, spec timerange.Spec) map[string]any {
 	d := map[string]any{}
 	if dataset != "" {
@@ -144,9 +145,7 @@ func exportSearchDetails(dataset, where string, spec timerange.Spec) map[string]
 		d["from_ts"] = spec.FromTs
 		d["to_ts"] = spec.ToTs
 	}
-	if where != "" {
-		d["where"] = where
-	}
+	d["where"] = where
 	return d
 }
 
