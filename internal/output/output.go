@@ -111,18 +111,7 @@ func filterRows(rows []map[string]any, fields []string) []map[string]any {
 // printFieldUnion implements "--fields ?" for PrintRows: the sorted union
 // of every row's keys, one per line, in place of the data.
 func (p *Printer) printFieldUnion(rows []map[string]any) error {
-	seen := map[string]struct{}{}
-	for _, r := range rows {
-		for k := range r {
-			seen[k] = struct{}{}
-		}
-	}
-	names := make([]string, 0, len(seen))
-	for k := range seen {
-		names = append(names, k)
-	}
-	sort.Strings(names)
-	for _, n := range names {
+	for _, n := range unionKeys(rows) {
 		if _, err := fmt.Fprintln(p.w, n); err != nil {
 			return err
 		}
@@ -270,7 +259,63 @@ func filterJSONValue(v any, fields []string) any {
 	}
 }
 
+// jsonFieldUnion computes the sorted union of keys for "--fields ?" on a
+// PrintJSON payload: a map[string]any contributes its own keys; []any and
+// []map[string]any contribute the union of their map elements' keys. Any
+// other shape (scalars, nested structures) has no well-defined key set, so
+// it yields no names.
+func jsonFieldUnion(v any) []string {
+	switch t := v.(type) {
+	case map[string]any:
+		return sortedKeys(t)
+	case []map[string]any:
+		return unionKeys(t)
+	case []any:
+		rows := make([]map[string]any, 0, len(t))
+		for _, item := range t {
+			if m, ok := item.(map[string]any); ok {
+				rows = append(rows, m)
+			}
+		}
+		return unionKeys(rows)
+	default:
+		return nil
+	}
+}
+
+func sortedKeys(m map[string]any) []string {
+	names := make([]string, 0, len(m))
+	for k := range m {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	return names
+}
+
+func unionKeys(rows []map[string]any) []string {
+	seen := map[string]struct{}{}
+	for _, r := range rows {
+		for k := range r {
+			seen[k] = struct{}{}
+		}
+	}
+	names := make([]string, 0, len(seen))
+	for k := range seen {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	return names
+}
+
 func (p *Printer) PrintJSON(v any) error {
+	if p.listFields {
+		for _, n := range jsonFieldUnion(v) {
+			if _, err := fmt.Fprintln(p.w, n); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 	if len(p.fields) > 0 {
 		v = filterJSONValue(v, p.fields)
 	}

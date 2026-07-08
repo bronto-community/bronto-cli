@@ -122,6 +122,24 @@ func TestResourcesCreateViaFields(t *testing.T) {
 	}
 }
 
+// TestResourcesConnectionFailureIsNetworkError pins that doJSONRequest maps
+// connection failures (server unreachable) the same way bronto.Client does:
+// a retryable network_error, not api_unreachable.
+func TestResourcesConnectionFailureIsNetworkError(t *testing.T) {
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"monitors", "get", "m1", "--base-url", "http://127.0.0.1:1", "--api-key", "k"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("want error")
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "network_error" || !ce.Retryable {
+		t.Fatalf("want retryable network_error, got %v", err)
+	}
+}
+
 func TestResourcesCreateRequiresBodySource(t *testing.T) {
 	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("server should not be contacted")

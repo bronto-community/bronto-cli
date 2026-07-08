@@ -316,6 +316,64 @@ func TestPrintRowRejectsNonStreamingFormats(t *testing.T) {
 	}
 }
 
+func TestListFieldsPrintsSortedKeysForPrintJSONMap(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetListFields(true)
+	if err := p.PrintJSON(map[string]any{"b": 1, "a": 2, "c": 3}); err != nil {
+		t.Fatal(err)
+	}
+	want := "a\nb\nc\n"
+	if buf.String() != want {
+		t.Fatalf("got %q want %q", buf.String(), want)
+	}
+}
+
+func TestListFieldsPrintsSortedUnionForPrintJSONArray(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetListFields(true)
+	if err := p.PrintJSON([]map[string]any{
+		{"b": 1, "a": 2},
+		{"c": 3, "a": 2},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	want := "a\nb\nc\n"
+	if buf.String() != want {
+		t.Fatalf("got %q want %q", buf.String(), want)
+	}
+}
+
+func TestListFieldsOnPrintJSONUnmarshaledArray(t *testing.T) {
+	var doc any
+	if err := json.Unmarshal([]byte(`[{"name":"a","x":1},{"name":"b"}]`), &doc); err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetListFields(true)
+	if err := p.PrintJSON(doc); err != nil {
+		t.Fatal(err)
+	}
+	want := "name\nx\n"
+	if buf.String() != want {
+		t.Fatalf("got %q want %q", buf.String(), want)
+	}
+}
+
+func TestListFieldsOnPrintJSONScalarPrintsNothing(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetListFields(true)
+	if err := p.PrintJSON("just a string"); err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != "" {
+		t.Fatalf("got %q want empty", buf.String())
+	}
+}
+
 func TestPrintJSONFieldFilterOnUnmarshaledArray(t *testing.T) {
 	var doc any
 	if err := json.Unmarshal([]byte(`[{"name":"a","x":1},{"name":"b","x":2}]`), &doc); err != nil {

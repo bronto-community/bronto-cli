@@ -14,9 +14,10 @@ import (
 
 func NewRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "bronto",
-		Short:         "CLI for the Bronto observability platform",
-		Long:          "bronto is a command-line client for the Bronto observability platform.\nDocs: https://docs.bronto.io",
+		Use:   "bronto",
+		Short: "CLI for the Bronto observability platform",
+		Long: "bronto is a command-line client for the Bronto observability platform.\nDocs: https://docs.bronto.io\n\n" +
+			"plugins: an executable named bronto-<name> on PATH is invoked when <name> is the first argument.",
 		Args:          cobra.NoArgs,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -101,14 +102,17 @@ func wrapArgsValidators(cmd *cobra.Command) {
 // Execute runs the command tree and normalizes cobra errors that surface
 // untyped (currently: required-flag validation) into typed usage errors.
 // It also implements kubectl/gh-style exec plugin dispatch: before letting
-// cobra parse argv at all, it checks whether the attempted top-level
-// command (`bronto foo ...`) is NOT one of bronto's own commands, and if a
-// `bronto-foo` executable exists on PATH, runs it with the remaining args
-// instead — returning a *PluginExit carrying the plugin's own exit code.
-// This has to happen before cobra's own parsing: cobra would otherwise try
-// (and fail, with an unrelated "unknown flag" error) to parse flags meant
-// for the plugin against the root command's flag set. See
-// tryPluginDispatch (plugins.go) for the full decision logic.
+// cobra parse argv at all, it checks whether argv[0] — the first argument,
+// with no flags preceding it — is NOT one of bronto's own commands, and if
+// a `bronto-<argv[0]>` executable exists on PATH, runs it with the
+// remaining args instead — returning a *PluginExit carrying the plugin's
+// own exit code. This has to happen before cobra's own parsing: cobra
+// would otherwise try (and fail, with an unrelated "unknown flag" error)
+// to parse flags meant for the plugin against the root command's flag
+// set. Global flags before the plugin name are NOT recognized as
+// belonging to it (matching kubectl/gh): `bronto --profile prod myplug`
+// does not dispatch to bronto-myplug. See tryPluginDispatch (plugins.go)
+// for the full decision logic.
 //
 // argv is the raw argument vector the root command was invoked with (e.g.
 // os.Args[1:], or a test's SetArgs slice) — it is used to recover the

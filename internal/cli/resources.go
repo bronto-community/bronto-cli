@@ -111,7 +111,8 @@ func doJSONRequest(ctx context.Context, app *App, method, path string, body []by
 	}
 	resp, err := app.HTTPClient.Do(req)
 	if err != nil {
-		return nil, clierr.New("api_unreachable", err.Error())
+		return nil, clierr.New("network_error", err.Error()).WithRetryable().
+			WithHint("Check your network and the API base URL / region.")
 	}
 	defer func() { _ = resp.Body.Close() }()
 	respBody, err := io.ReadAll(resp.Body)

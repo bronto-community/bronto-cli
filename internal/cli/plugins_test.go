@@ -142,23 +142,21 @@ func TestExecuteRunPluginFailureSurfacesAsPluginExecError(t *testing.T) {
 }
 
 func TestPluginDispatchArgsFindsFirstNonFlagToken(t *testing.T) {
-	root := NewRootCmd()
-	name, rest, ok := pluginDispatchArgs(root, []string{"foo", "--bar", "baz"})
+	name, rest, ok := pluginDispatchArgs([]string{"foo", "--bar", "baz"})
 	if !ok || name != "foo" || len(rest) != 2 || rest[0] != "--bar" || rest[1] != "baz" {
 		t.Fatalf("got (%q, %v, %v)", name, rest, ok)
 	}
-	if _, _, ok := pluginDispatchArgs(root, nil); ok {
+	if _, _, ok := pluginDispatchArgs(nil); ok {
 		t.Fatal("empty argv should report ok=false")
 	}
-	if _, _, ok := pluginDispatchArgs(root, []string{"--only-flags"}); ok {
+	if _, _, ok := pluginDispatchArgs([]string{"--only-flags"}); ok {
 		t.Fatal("all-flags argv should report ok=false")
 	}
 }
 
-// TestPluginDispatchSkipsFlagValues pins the fix for a flag-arity-blind
-// plugin dispatch: "--region us search foo" must never treat "us" (the
-// VALUE of --region) as a candidate plugin name. "search" is a real
-// subcommand, so this must not even reach lookPath.
+// TestPluginDispatchSkipsFlagValues pins the first-token-only dispatch
+// contract: a plugin name must be argv[0] itself. "--region" starts with a
+// flag, so this never even reaches lookPath, regardless of what follows.
 func TestPluginDispatchSkipsFlagValues(t *testing.T) {
 	oldLook := lookPath
 	var looked []string
@@ -168,7 +166,6 @@ func TestPluginDispatchSkipsFlagValues(t *testing.T) {
 	root := NewRootCmd()
 	root.SetOut(&bytes.Buffer{})
 	root.SetErr(&bytes.Buffer{})
-	// "us" is a flag VALUE; "search" is a real command -> NO plugin lookup at all
 	argv := []string{"--region", "us", "search", "x", "--api-key", "k", "--base-url", "http://127.0.0.1:9"}
 	root.SetArgs(argv)
 	_ = Execute(context.Background(), root, argv)
@@ -177,14 +174,18 @@ func TestPluginDispatchSkipsFlagValues(t *testing.T) {
 			t.Fatalf("flag value dispatched as plugin: %v", looked)
 		}
 	}
+	if len(looked) != 0 {
+		t.Fatalf("no plugin lookup should happen when argv[0] is a flag, got: %v", looked)
+	}
 }
 
-// TestPluginDispatchFindsNameAfterGlobalFlagValue pins that a genuine
-// plugin name is still correctly discovered when it's preceded by a global
-// flag+value pair that isn't a real subcommand: "myplug" is not a bronto
-// command, so it must be treated as a plugin candidate, and only the args
-// AFTER "myplug" ("arg") must be forwarded to it.
-func TestPluginDispatchFindsNameAfterGlobalFlagValue(t *testing.T) {
+// TestPluginDispatchRequiresFirstToken pins the kubectl/gh-style contract:
+// dispatch ONLY happens when the plugin name is argv[0]. A global flag
+// preceding it (e.g. "--region us myplug arg") means dispatch does NOT
+// apply, even though "myplug" is not a real bronto command — the plugin
+// lookup never even happens, and execution falls through to cobra's normal
+// (usage) error handling for the unknown "--region"-led invocation.
+func TestPluginDispatchRequiresFirstToken(t *testing.T) {
 	rec := stubPlugin(t,
 		func(name string) (string, error) {
 			if name == "bronto-myplug" {
@@ -205,17 +206,11 @@ func TestPluginDispatchFindsNameAfterGlobalFlagValue(t *testing.T) {
 	err := Execute(context.Background(), root, argv)
 
 	var pe *PluginExit
-	if !errors.As(err, &pe) {
-		t.Fatalf("want *PluginExit, got %T: %v", err, err)
+	if errors.As(err, &pe) {
+		t.Fatalf("want no plugin dispatch when a flag precedes the name, got *PluginExit{%d}", pe.Code)
 	}
-	if pe.Code != 3 {
-		t.Fatalf("PluginExit.Code = %d, want 3", pe.Code)
-	}
-	if rec.ranPath != "/usr/local/bin/bronto-myplug" {
-		t.Fatalf("ran path = %q", rec.ranPath)
-	}
-	if len(rec.ranArgs) != 1 || rec.ranArgs[0] != "arg" {
-		t.Fatalf("ran args = %v, want [arg]", rec.ranArgs)
+	if len(rec.lookedUp) != 0 {
+		t.Fatalf("lookPath must not be called, got: %v", rec.lookedUp)
 	}
 }
 
