@@ -1,0 +1,28 @@
+# bronto-cli
+
+A command-line client for the Bronto observability platform: search and
+tail logs, explore OpenTelemetry traces, send events, and manage Bronto
+resources (datasets, monitors, dashboards, parsers, exports, API keys)
+via a REST-backed CLI. Designed to be scriptable and agent-friendly:
+JSONL by default when piped, typed errors, stable exit codes.
+
+## Install
+
+curl -fsSL https://raw.githubusercontent.com/svrnm/bronto-cli/main/scripts/install.sh | sh
+
+## Auth (CI / agents)
+
+export BRONTO_API_KEY=...
+export BRONTO_REGION=eu   # or us
+
+## Examples
+
+bronto search "status >= 500" --since 1h -o jsonl
+bronto tail "level = 'error'" --window 5m
+bronto send -d app -m 'hello world'
+
+## More
+
+- Agent usage guide: ./skill.md
+- Full reference: `bronto --help` and `bronto <command> --help`
+- Docs: https://docs.bronto.io
