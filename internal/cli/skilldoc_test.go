@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-// skillDocFiles lists the repo-root docs the doc-rot guard covers. Task 5
-// (README + CONTRIBUTING) is expected to append "README.md" here.
-var skillDocFiles = []string{"skill.md"}
+// skillDocFiles lists the repo-root docs the doc-rot guard covers.
+var skillDocFiles = []string{"skill.md", "README.md"}
 
 // brontoInvocation captures the first token after a "bronto " prefix in a
 // code span, e.g. "bronto auth login" -> "auth", "bronto --help" -> "--help".
@@ -33,16 +33,23 @@ const ignoreMarker = "skilldoc:ignore"
 // and fenced ``` blocks (one span per line) — that start with "bronto ",
 // and asserts the first token after "bronto" is either:
 //
-//   - a registered top-level command (from NewRootCmd().Commands(); only
-//     the first token is checked, so "bronto auth login" checks "auth",
-//     not "login"), or
+//   - a registered top-level command (from NewRootCmd().Commands()), or
 //   - a registered long flag, "--x" form (from the root's full flag set,
 //     which includes persistent flags plus cobra's auto-added
 //     help/version).
 //
-// Two kinds of tokens are exempt: placeholders written as "<...>" (e.g.
-// "bronto <resource> list"), and any span on a line carrying the
-// "skilldoc:ignore" marker comment.
+// When the first token resolves to a command GROUP (has subcommands and
+// is not itself runnable, e.g. "traces" or "auth"), checkDeeperTokens
+// additionally walks subsequent bare-word tokens as long as they keep
+// resolving to a registered subcommand, so "bronto traces frobnicate"
+// fails even though "traces" alone is valid — it stops at the first
+// leaf/runnable command, flag, placeholder, or quoted-string start,
+// since anything past that point is an ordinary argument, not a
+// subcommand.
+//
+// Two kinds of tokens are exempt everywhere: placeholders written as
+// "<...>" (e.g. "bronto <resource> list"), and any span on a line
+// carrying the "skilldoc:ignore" marker comment.
 //
 // The matcher is deliberately simple: a doc author who wants a "bronto
 // foo" example excluded from the check either uses a "<...>" placeholder
@@ -52,9 +59,9 @@ func TestSkillDocCommandsAreReal(t *testing.T) {
 	root.InitDefaultHelpFlag()
 	root.InitDefaultVersionFlag()
 
-	commands := map[string]bool{}
+	commands := map[string]*cobra.Command{}
 	for _, c := range root.Commands() {
-		commands[c.Name()] = true
+		commands[c.Name()] = c
 	}
 	flags := map[string]bool{}
 	root.Flags().VisitAll(func(f *pflag.Flag) { flags["--"+f.Name] = true })
@@ -89,10 +96,46 @@ func TestSkillDocCommandsAreReal(t *testing.T) {
 				}
 				continue
 			}
-			if !commands[token] {
+			cmd, ok := commands[token]
+			if !ok {
 				t.Errorf("%s: %q is not a registered command (from code span %q)", docFile, token, span.text)
+				continue
 			}
+			checkDeeperTokens(t, docFile, span, cmd)
 		}
+	}
+}
+
+// checkDeeperTokens resolves the code span's tokens past the first one,
+// descending through the command tree via cobra's own Command.Find as
+// long as the current command is a non-runnable group (HasSubCommands
+// and not Runnable). It stops — treating everything from there on as
+// ordinary positional args/flags rather than further subcommands — at
+// the first token that is a flag ("-..."), a "<placeholder>", the start
+// of a quoted string ('"' or '\''), or once the resolved command is
+// runnable (a leaf, or a group with its own default action).
+func checkDeeperTokens(t *testing.T, docFile string, span codeSpan, cmd *cobra.Command) {
+	t.Helper()
+	words := strings.Fields(span.text)
+	if len(words) < 3 { // "bronto" + first token + at least one more
+		return
+	}
+	cur := cmd
+	for _, w := range words[2:] {
+		if !cur.HasSubCommands() || cur.Runnable() {
+			return
+		}
+		if strings.HasPrefix(w, "-") || strings.HasPrefix(w, "<") ||
+			strings.HasPrefix(w, `"`) || strings.HasPrefix(w, "'") {
+			return
+		}
+		next, _, _ := cur.Find([]string{w})
+		if next == cur {
+			t.Errorf("%s: %q is not a registered subcommand of %q (from code span %q)",
+				docFile, w, cur.CommandPath(), span.text)
+			return
+		}
+		cur = next
 	}
 }
 
