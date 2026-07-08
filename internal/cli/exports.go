@@ -216,7 +216,8 @@ func downloadExport(ctx context.Context, app *App, location, path string) error 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return clierr.New("api_unreachable", err.Error())
+		return clierr.New("network_error", err.Error()).WithRetryable().
+			WithHint("Check your network; the download URL may also have expired.")
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
