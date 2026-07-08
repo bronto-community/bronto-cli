@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -73,7 +74,8 @@ func (d resourceDesc) singular() string {
 // resourceRegistry is the single source of truth for every uniform Bronto
 // management resource. resourcespec_test.go asserts each entry's Base,
 // CreatePath, and IDBase correspond to real api/openapi.yaml paths (modulo
-// the documented exceptions there).
+// the documented exceptions there). Tags is intentionally absent: the API
+// models it as base-path PUT/DELETE + /tags/search; use `bronto api`.
 var resourceRegistry = []resourceDesc{
 	{Name: "monitors", Base: "/monitors", UpdateMethod: http.MethodPut},
 	{Name: "dashboards", Base: "/dashboards"},
@@ -82,8 +84,6 @@ var resourceRegistry = []resourceDesc{
 	// delete are documented for a single parser.
 	{Name: "parsers", Base: "/parsers", NoGet: true},
 	{Name: "api-keys", Base: "/api-keys", Singular: "API key", NoGet: true},
-	// Tags are served by `bronto api` until a bespoke command models its
-	// base-path PUT/DELETE semantics (+ /tags/search).
 	{Name: "datasets", Base: "/logs", CreatePath: "/datasets", UpdateMethod: http.MethodPut},
 }
 
@@ -319,7 +319,7 @@ func newResourceGetCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, desc.idBase()+"/"+args[0], nil)
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, desc.idBase()+"/"+url.PathEscape(args[0]), nil)
 			if err != nil {
 				return err
 			}
@@ -384,7 +384,7 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			payload, err := doJSONRequest(cmd.Context(), app, desc.updateMethod(), desc.idBase()+"/"+args[0], body)
+			payload, err := doJSONRequest(cmd.Context(), app, desc.updateMethod(), desc.idBase()+"/"+url.PathEscape(args[0]), body)
 			if err != nil {
 				return err
 			}
@@ -420,7 +420,7 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 				}
 				return err
 			}
-			if _, err := doJSONRequest(cmd.Context(), app, http.MethodDelete, desc.idBase()+"/"+args[0], nil); err != nil {
+			if _, err := doJSONRequest(cmd.Context(), app, http.MethodDelete, desc.idBase()+"/"+url.PathEscape(args[0]), nil); err != nil {
 				return err
 			}
 			_, _ = fmt.Fprintf(app.Stderr, "Deleted %s %s.\n", desc.singular(), args[0])
@@ -446,7 +446,7 @@ func newMonitorEventsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, "/monitors/"+args[0]+"/events", nil)
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, "/monitors/"+url.PathEscape(args[0])+"/events", nil)
 			if err != nil {
 				return err
 			}
@@ -471,7 +471,7 @@ func newMonitorMuteCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if _, err := doJSONRequest(cmd.Context(), app, http.MethodPost, "/monitors/"+args[0]+"/mute", nil); err != nil {
+			if _, err := doJSONRequest(cmd.Context(), app, http.MethodPost, "/monitors/"+url.PathEscape(args[0])+"/mute", nil); err != nil {
 				return err
 			}
 			_, _ = fmt.Fprintf(app.Stderr, "Muted monitor %s.\n", args[0])

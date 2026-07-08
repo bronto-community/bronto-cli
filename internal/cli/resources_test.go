@@ -84,6 +84,20 @@ func TestResourcesGet(t *testing.T) {
 	}
 }
 
+func TestResourcesGetEscapesID(t *testing.T) {
+	var gotPath string
+	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.EscapedPath()
+		_, _ = w.Write([]byte(`{"id":"a/b"}`))
+	}, "", "monitors", "get", "a/b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/monitors/a%2Fb" {
+		t.Fatalf("escaped path = %q, want /monitors/a%%2Fb", gotPath)
+	}
+}
+
 func TestResourcesCreateViaFields(t *testing.T) {
 	var gotMethod, gotPath string
 	var gotBody map[string]any

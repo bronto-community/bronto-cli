@@ -38,13 +38,12 @@ func specPaths(t *testing.T) map[string]bool {
 	return paths
 }
 
-// pathExists reports whether want is a declared spec path, or a prefix of
-// one (used for the IDBase+"/{" check, since parameter names vary per
-// resource: "/monitors/{monitorId}", "/parsers/{parser_id}", ...).
-func pathExists(paths map[string]bool, want string) bool {
-	if paths[want] {
-		return true
-	}
+// pathPrefixExists reports whether want is a prefix of a declared spec path.
+// Only the IDBase+"/{" check uses this, because parameter names vary per
+// resource ("/monitors/{monitorId}", "/parsers/{parser_id}", ...). Base and
+// CreatePath must EXACT-match a spec path (a plain paths[want] lookup), so a
+// near-miss like "/monitor" can't be satisfied by "/monitors" existing.
+func pathPrefixExists(paths map[string]bool, want string) bool {
 	for p := range paths {
 		if strings.HasPrefix(p, want) {
 			return true
@@ -70,13 +69,13 @@ var specIDBaseExceptions = map[string]bool{}
 func TestResourceRegistryMatchesSpec(t *testing.T) {
 	paths := specPaths(t)
 	for _, d := range resourceRegistry {
-		if !pathExists(paths, d.Base) {
+		if !paths[d.Base] {
 			t.Errorf("%s: Base %q not found in api/openapi.yaml", d.Name, d.Base)
 		}
-		if cp := d.createPath(); !specCreatePathExceptions[cp] && !pathExists(paths, cp) {
+		if cp := d.createPath(); !specCreatePathExceptions[cp] && !paths[cp] {
 			t.Errorf("%s: CreatePath %q not found in api/openapi.yaml", d.Name, cp)
 		}
-		if idb := d.idBase(); !specIDBaseExceptions[idb] && !pathExists(paths, idb+"/{") {
+		if idb := d.idBase(); !specIDBaseExceptions[idb] && !pathPrefixExists(paths, idb+"/{") {
 			t.Errorf("%s: IDBase %q has no matching '.../{...}' path in api/openapi.yaml", d.Name, idb)
 		}
 	}
