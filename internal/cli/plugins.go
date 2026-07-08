@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/svrnm/bronto-cli/internal/clierr"
 )
@@ -75,16 +76,37 @@ var reservedTopLevelNames = map[string]bool{
 // about) never reach cobra's flag parser and blow up as "unknown flag"
 // instead of giving the plugin a chance to run. See Execute (root.go).
 //
-// It returns nil (dispatch to a plugin does not apply) when: argv has no
-// non-flag token to treat as a command name; that name is already a known
-// top-level command (real subcommands, including ones cobra registers
-// lazily like "help"/"completion", always win over a same-named plugin);
-// the name fails pluginNamePattern; or no `bronto-<name>` executable is
-// found on PATH. In all of those cases the caller proceeds with normal
-// cobra execution, which produces whatever error (or success) it always
-// would have.
+// It first calls cobra's own exported cmd.Find, which walks the command
+// tree the same way cobra's real dispatch does: flag-arity-aware (a flag
+// like --region consumes its value token and that value is never mistaken
+// for a command name) and without invoking ParseFlags (so plugin-only
+// flags can't blow up parsing here). If Find resolves argv to any command
+// other than rootCmd itself, a REAL subcommand matched (e.g. "search" in
+// "--region us search foo") and this is never plugin territory — even
+// though "us" precedes "search" and isn't itself a valid token, Find's
+// traversal already proved "search" is the intended command, so no
+// plugin lookup happens at all, for "us" or otherwise.
+//
+// Only when Find finds no real subcommand (found == rootCmd) do we go on
+// to extract a plugin-name candidate ourselves (pluginDispatchArgs), since
+// Find does not hand back a flag-stripped arg list in that case (it
+// returns argv unchanged) — see pluginDispatchArgs for why that scan is
+// still needed and how it stays flag-arity-aware.
+//
+// It returns nil (dispatch to a plugin does not apply) when: Find errors
+// (e.g. an ambiguous parse); Find resolves to a real subcommand; argv has
+// no non-flag token left to treat as a command name; that name is a
+// reserved top-level name (cobra registers "help"/"completion" lazily, so
+// they may not appear in rootCmd.Commands() yet here); the name fails
+// pluginNamePattern; or no `bronto-<name>` executable is found on PATH. In
+// all of those cases the caller proceeds with normal cobra execution,
+// which produces whatever error (or success) it always would have.
 func tryPluginDispatch(rootCmd *cobra.Command, argv []string) error {
-	name, rest, ok := pluginDispatchArgs(argv)
+	found, _, ferr := rootCmd.Find(argv)
+	if ferr != nil || found != rootCmd {
+		return nil
+	}
+	name, rest, ok := pluginDispatchArgs(rootCmd, argv)
 	if !ok || isKnownTopLevelCommand(rootCmd, name) || !pluginNamePattern.MatchString(name) {
 		return nil
 	}
@@ -120,14 +142,49 @@ func isKnownTopLevelCommand(rootCmd *cobra.Command, name string) bool {
 // trailing args from the raw argv the process was invoked with, e.g.
 // ["foo", "--bar", "baz"] -> ("foo", ["--bar", "baz"], true). Returns
 // ok=false if argv has no non-flag element (nothing to dispatch on).
-func pluginDispatchArgs(argv []string) (name string, rest []string, ok bool) {
-	for i, a := range argv {
-		if strings.HasPrefix(a, "-") {
-			continue
+//
+// Only called once cmd.Find (in tryPluginDispatch) has already established
+// argv doesn't resolve to a real subcommand, i.e. cmd is rootCmd itself.
+// cmd.Find does not return a flag-stripped arg list for that case (it
+// hands back argv unchanged), so this reimplements cobra's own flag-arity
+// rule directly against cmd's flags (already merged with persistent flags
+// as a side effect of the Find call): a flag token consumes the next argv
+// element as its value UNLESS the flag has a NoOptDefVal (e.g. bool
+// flags, which can appear bare). This is what keeps a flag's VALUE (e.g.
+// "us" in "--region us") from ever being mistaken for the command name.
+func pluginDispatchArgs(cmd *cobra.Command, argv []string) (name string, rest []string, ok bool) {
+	flags := cmd.Flags()
+	for i := 0; i < len(argv); i++ {
+		a := argv[i]
+		switch {
+		case a == "--":
+			return "", nil, false
+		case strings.HasPrefix(a, "--") && !strings.Contains(a, "=") && !flagHasNoOptDefVal(flags, a[2:]):
+			i++ // a's value is the next token; skip both
+		case strings.HasPrefix(a, "-") && len(a) == 2 && !strings.Contains(a, "=") && !flagShorthandHasNoOptDefVal(flags, a[1:]):
+			i++
+		case a != "" && !strings.HasPrefix(a, "-"):
+			return a, argv[i+1:], true
 		}
-		return a, argv[i+1:], true
 	}
 	return "", nil, false
+}
+
+// flagHasNoOptDefVal and flagShorthandHasNoOptDefVal mirror cobra's own
+// (unexported) hasNoOptDefVal/shortHasNoOptDefVal helpers, using pflag's
+// exported Flag.NoOptDefVal to answer: can this flag appear on the command
+// line without a following value token?
+func flagHasNoOptDefVal(flags *pflag.FlagSet, name string) bool {
+	f := flags.Lookup(name)
+	return f != nil && f.NoOptDefVal != ""
+}
+
+func flagShorthandHasNoOptDefVal(flags *pflag.FlagSet, name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	f := flags.ShorthandLookup(name[:1])
+	return f != nil && f.NoOptDefVal != ""
 }
 
 func newPluginsCmd() *cobra.Command {

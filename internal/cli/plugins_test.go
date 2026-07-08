@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -141,15 +142,80 @@ func TestExecuteRunPluginFailureSurfacesAsPluginExecError(t *testing.T) {
 }
 
 func TestPluginDispatchArgsFindsFirstNonFlagToken(t *testing.T) {
-	name, rest, ok := pluginDispatchArgs([]string{"foo", "--bar", "baz"})
+	root := NewRootCmd()
+	name, rest, ok := pluginDispatchArgs(root, []string{"foo", "--bar", "baz"})
 	if !ok || name != "foo" || len(rest) != 2 || rest[0] != "--bar" || rest[1] != "baz" {
 		t.Fatalf("got (%q, %v, %v)", name, rest, ok)
 	}
-	if _, _, ok := pluginDispatchArgs(nil); ok {
+	if _, _, ok := pluginDispatchArgs(root, nil); ok {
 		t.Fatal("empty argv should report ok=false")
 	}
-	if _, _, ok := pluginDispatchArgs([]string{"--only-flags"}); ok {
+	if _, _, ok := pluginDispatchArgs(root, []string{"--only-flags"}); ok {
 		t.Fatal("all-flags argv should report ok=false")
+	}
+}
+
+// TestPluginDispatchSkipsFlagValues pins the fix for a flag-arity-blind
+// plugin dispatch: "--region us search foo" must never treat "us" (the
+// VALUE of --region) as a candidate plugin name. "search" is a real
+// subcommand, so this must not even reach lookPath.
+func TestPluginDispatchSkipsFlagValues(t *testing.T) {
+	oldLook := lookPath
+	var looked []string
+	lookPath = func(name string) (string, error) { looked = append(looked, name); return "", exec.ErrNotFound }
+	t.Cleanup(func() { lookPath = oldLook })
+
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	// "us" is a flag VALUE; "search" is a real command -> NO plugin lookup at all
+	argv := []string{"--region", "us", "search", "x", "--api-key", "k", "--base-url", "http://127.0.0.1:9"}
+	root.SetArgs(argv)
+	_ = Execute(context.Background(), root, argv)
+	for _, n := range looked {
+		if n == "bronto-us" {
+			t.Fatalf("flag value dispatched as plugin: %v", looked)
+		}
+	}
+}
+
+// TestPluginDispatchFindsNameAfterGlobalFlagValue pins that a genuine
+// plugin name is still correctly discovered when it's preceded by a global
+// flag+value pair that isn't a real subcommand: "myplug" is not a bronto
+// command, so it must be treated as a plugin candidate, and only the args
+// AFTER "myplug" ("arg") must be forwarded to it.
+func TestPluginDispatchFindsNameAfterGlobalFlagValue(t *testing.T) {
+	rec := stubPlugin(t,
+		func(name string) (string, error) {
+			if name == "bronto-myplug" {
+				return "/usr/local/bin/bronto-myplug", nil
+			}
+			return "", errors.New("not found")
+		},
+		func(path string, args []string, _ io.Reader, _, _ io.Writer) (int, error) {
+			return 3, nil
+		},
+	)
+
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	argv := []string{"--region", "us", "myplug", "arg"}
+	root.SetArgs(argv)
+	err := Execute(context.Background(), root, argv)
+
+	var pe *PluginExit
+	if !errors.As(err, &pe) {
+		t.Fatalf("want *PluginExit, got %T: %v", err, err)
+	}
+	if pe.Code != 3 {
+		t.Fatalf("PluginExit.Code = %d, want 3", pe.Code)
+	}
+	if rec.ranPath != "/usr/local/bin/bronto-myplug" {
+		t.Fatalf("ran path = %q", rec.ranPath)
+	}
+	if len(rec.ranArgs) != 1 || rec.ranArgs[0] != "arg" {
+		t.Fatalf("ran args = %v, want [arg]", rec.ranArgs)
 	}
 }
 
