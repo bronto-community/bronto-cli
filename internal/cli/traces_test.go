@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/svrnm/bronto-cli/internal/clierr"
@@ -155,16 +156,18 @@ func TestTracesShowAppliesFieldsFilter(t *testing.T) {
 // human view that draws bars directly, bypassing the Printer's --fields
 // support entirely. Silently ignoring --fields there would look like a bug
 // (the flag would have zero effect); reject it instead, same as -o raw.
+// The guard must fire before any network call.
 func TestTracesShowRejectsFieldsOnTTYWaterfall(t *testing.T) {
 	old := stdoutIsTTY
 	stdoutIsTTY = func() bool { return true }
 	t.Cleanup(func() { stdoutIsTTY = old })
 
-	srv := tracesServer(t, map[string]string{
-		"@time": `{"result":[
-			{"$span.trace_id":"tr1","$span.span_id":"a","$span.name":"root","$service.name":"cart",
-			 "$span.start_time_unix_nano":100,"$span.duration_nano":50,"$span.status_code":"STATUS_CODE_OK"}]}`,
-	})
+	var networkCallCount atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		networkCallCount.Add(1)
+		t.Error("unexpected network call when guard should have fired early")
+		_, _ = w.Write([]byte(`{"result":[]}`))
+	}))
 	defer srv.Close()
 	_, err := runTraces(t, srv, "show", "tr1", "--fields", "service")
 	if err == nil || clierr.ExitCode(err) != 2 {
@@ -176,6 +179,9 @@ func TestTracesShowRejectsFieldsOnTTYWaterfall(t *testing.T) {
 	}
 	if !strings.Contains(ce.Hint, "json") {
 		t.Fatalf("hint = %q, want it to mention -o json/jsonl", ce.Hint)
+	}
+	if networkCallCount.Load() != 0 {
+		t.Fatalf("want no network calls, got %d", networkCallCount.Load())
 	}
 }
 
@@ -223,13 +229,16 @@ func TestTracesShapeJSON(t *testing.T) {
 // TestTracesShapeRejectsFieldsOnTTYRender mirrors
 // TestTracesShowRejectsFieldsOnTTYWaterfall for 'traces shape', whose TTY
 // render (traces.RenderShape) is likewise a bespoke view that bypasses the
-// Printer's --fields support.
+// Printer's --fields support. The guard must fire before any network call.
 func TestTracesShapeRejectsFieldsOnTTYRender(t *testing.T) {
 	old := stdoutIsTTY
 	stdoutIsTTY = func() bool { return true }
 	t.Cleanup(func() { stdoutIsTTY = old })
 
+	var networkCallCount atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		networkCallCount.Add(1)
+		t.Error("unexpected network call when guard should have fired early")
 		b, _ := io.ReadAll(r.Body)
 		var body map[string]any
 		_ = json.Unmarshal(b, &body)
@@ -252,6 +261,9 @@ func TestTracesShapeRejectsFieldsOnTTYRender(t *testing.T) {
 	}
 	if !strings.Contains(ce.Hint, "json") {
 		t.Fatalf("hint = %q, want it to mention -o json/jsonl", ce.Hint)
+	}
+	if networkCallCount.Load() != 0 {
+		t.Fatalf("want no network calls, got %d", networkCallCount.Load())
 	}
 }
 

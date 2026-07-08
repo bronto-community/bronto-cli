@@ -239,6 +239,15 @@ func newTracesShowCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			f, err := app.DetectFormat(true)
+			if err != nil {
+				return err
+			}
+			if f == output.FormatTable {
+				if err := rejectFieldsForCustomRender(app); err != nil {
+					return err
+				}
+			}
 			mrf := false
 			resp, err := agg.Client.Search(cmd.Context(), bronto.SearchRequest{
 				FromExpr: traces.FromExpr, Time: agg.Time,
@@ -276,15 +285,14 @@ func newTracesShowCmd() *cobra.Command {
 // printWaterfall renders a trace's spans: a human waterfall for table
 // format, streaming rows (jsonl/raw) or a full rows dump (json/csv)
 // otherwise — mirroring search.go's printEvents format branching.
+// Note: rejectFieldsForCustomRender must be called before this function
+// to guard against --fields on TTY table renders, before any network calls.
 func printWaterfall(app *App, spans []traces.Span, barWidth int) error {
 	f, err := app.DetectFormat(true)
 	if err != nil {
 		return err
 	}
 	if f == output.FormatTable {
-		if err := rejectFieldsForCustomRender(app); err != nil {
-			return err
-		}
 		traces.RenderWaterfall(app.Stdout, spans, barWidth, app.Color)
 		return nil
 	}
@@ -344,6 +352,15 @@ func newTracesShapeCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			f, err := app.DetectFormat(true)
+			if err != nil {
+				return err
+			}
+			if f == output.FormatTable {
+				if err := rejectFieldsForCustomRender(app); err != nil {
+					return err
+				}
+			}
 			useEntry := entry
 			if anySpan {
 				useEntry = false
@@ -379,14 +396,7 @@ func newTracesShapeCmd() *cobra.Command {
 					fmt.Sprintf("no shape buckets have at least %d traces", minTraces)).
 					WithHint("Lower --min-traces or increase --sample.")
 			}
-			f, err := app.DetectFormat(true)
-			if err != nil {
-				return err
-			}
 			if f == output.FormatTable {
-				if err := rejectFieldsForCustomRender(app); err != nil {
-					return err
-				}
 				traces.RenderShape(app.Stdout, visible, tracesUsed, len(spans), barWidth, app.Color)
 				return nil
 			}
