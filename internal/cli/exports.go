@@ -136,7 +136,7 @@ func exportRequestBody(cmd *cobra.Command, input string, fields []string, datase
 func exportSearchDetails(dataset, where string, spec timerange.Spec) map[string]any {
 	d := map[string]any{}
 	if dataset != "" {
-		d["from"] = []string{dataset}
+		d["from"] = dataset
 	}
 	if spec.TimeRange != "" {
 		d["time_range"] = spec.TimeRange
@@ -150,17 +150,17 @@ func exportSearchDetails(dataset, where string, spec timerange.Spec) map[string]
 	return d
 }
 
-// exportID extracts the created export's id. The brief's wire contract
-// keys it "id"; "export_id" (the vendored openapi.yaml's Export schema
-// field) is accepted as a fallback for the real API's response shape.
+// exportID extracts the created export's id. The vendored openapi.yaml's
+// Export schema keys it "export_id"; "id" is accepted as a fallback for
+// defensive compatibility.
 func exportID(obj map[string]any) string {
 	if obj == nil {
 		return ""
 	}
-	if id, ok := obj["id"].(string); ok && id != "" {
+	if id, ok := obj["export_id"].(string); ok && id != "" {
 		return id
 	}
-	if id, ok := obj["export_id"].(string); ok {
+	if id, ok := obj["id"].(string); ok {
 		return id
 	}
 	return ""
@@ -169,7 +169,10 @@ func exportID(obj map[string]any) string {
 // waitForExport polls GET /exports/{id} every exportPollInterval (ctx-aware,
 // same select-on-context-Done-or-timer shape as tail.go's poll loop) until
 // status is COMPLETE (returns the final payload) or FAILED (returns a typed
-// export_failed error, exit code 1).
+// export_failed error, exit code 1). Any other status (CREATED, IN_PROGRESS)
+// continues polling.
+// Note: FAILED is not in the vendored spec's status enum (CREATED/IN_PROGRESS/COMPLETE)
+// but is handled defensively as a real-world edge case.
 func waitForExport(ctx context.Context, app *App, id string) (map[string]any, error) {
 	for {
 		payload, err := doJSONRequest(ctx, app, http.MethodGet, "/exports/"+url.PathEscape(id), nil)
@@ -188,6 +191,7 @@ func waitForExport(ctx context.Context, app *App, id string) (map[string]any, er
 			}
 			return obj, clierr.New("export_failed", msg)
 		}
+		// CREATED, IN_PROGRESS, or other statuses continue polling
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()

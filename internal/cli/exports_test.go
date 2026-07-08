@@ -34,7 +34,7 @@ func TestExportsCreateConvenienceFlagsBodyShape(t *testing.T) {
 			t.Errorf("missing content type")
 		}
 		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":"exp-1","status":"CREATED"}`))
+		_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"CREATED"}`))
 	}, "", "exports", "create",
 		"--dataset", "ds-1", "--where", "status=500", "--since", "1h", "-o", "json")
 	if err != nil {
@@ -47,9 +47,9 @@ func TestExportsCreateConvenienceFlagsBodyShape(t *testing.T) {
 	if !ok {
 		t.Fatalf("body missing search_details: %v", gotBody)
 	}
-	fromArr, ok := details["from"].([]any)
-	if !ok || len(fromArr) != 1 || fromArr[0] != "ds-1" {
-		t.Fatalf("search_details.from = %v", details["from"])
+	from, ok := details["from"].(string)
+	if !ok || from != "ds-1" {
+		t.Fatalf("search_details.from = %v (expected string)", details["from"])
 	}
 	if details["time_range"] != "Last 1 hour" {
 		t.Fatalf("search_details.time_range = %v", details["time_range"])
@@ -58,7 +58,7 @@ func TestExportsCreateConvenienceFlagsBodyShape(t *testing.T) {
 		t.Fatalf("search_details.where = %v", details["where"])
 	}
 	var doc map[string]any
-	if err := json.Unmarshal([]byte(out), &doc); err != nil || doc["id"] != "exp-1" {
+	if err := json.Unmarshal([]byte(out), &doc); err != nil || doc["export_id"] != "exp-1" {
 		t.Fatalf("stdout = %q, err = %v", out, err)
 	}
 }
@@ -91,14 +91,14 @@ func TestExportsCreateWaitPollsUntilComplete(t *testing.T) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/exports":
 			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":"exp-1","status":"IN_PROGRESS"}`))
+			_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"CREATED"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/exports/exp-1":
 			n := atomic.AddInt32(&getCount, 1)
 			if n == 1 {
-				_, _ = w.Write([]byte(`{"id":"exp-1","status":"IN_PROGRESS"}`))
+				_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"IN_PROGRESS"}`))
 				return
 			}
-			_, _ = w.Write([]byte(`{"id":"exp-1","status":"COMPLETE","location":"http://example.invalid/file"}`))
+			_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"COMPLETE","location":"http://example.invalid/file"}`))
 		default:
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
@@ -121,9 +121,10 @@ func TestExportsCreateWaitFailedExitsOne(t *testing.T) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/exports":
 			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":"exp-1","status":"IN_PROGRESS"}`))
+			// Test fallback path: use "id" instead of "export_id"
+			_, _ = w.Write([]byte(`{"id":"exp-1","status":"CREATED"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/exports/exp-1":
-			_, _ = w.Write([]byte(`{"id":"exp-1","status":"FAILED","failure_detail":"boom"}`))
+			_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"FAILED","failure_detail":"boom"}`))
 		default:
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
@@ -162,9 +163,9 @@ func TestExportsCreateDownloadWritesFileWithoutAuthHeaderOnLocation(t *testing.T
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/exports":
 			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":"exp-1","status":"IN_PROGRESS"}`))
+			_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"CREATED"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/exports/exp-1":
-			_, _ = w.Write([]byte(`{"id":"exp-1","status":"COMPLETE","location":"` + locSrv.URL + `"}`))
+			_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"COMPLETE","location":"` + locSrv.URL + `"}`))
 		default:
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
@@ -204,10 +205,10 @@ func TestExportsCreateDownloadImpliesWaitWithoutFlag(t *testing.T) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/exports":
 			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":"exp-1","status":"CREATED"}`))
+			_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"CREATED"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/exports/exp-1":
 			getHit = true
-			_, _ = w.Write([]byte(`{"id":"exp-1","status":"COMPLETE","location":"` + locSrv.URL + `"}`))
+			_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"COMPLETE","location":"` + locSrv.URL + `"}`))
 		default:
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
