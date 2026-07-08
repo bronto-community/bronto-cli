@@ -41,6 +41,8 @@ archives:
     files:
       - LICENSE
       - README.md
+      - skill.md
+      - llms.txt
       - src: completions/bronto.bash
         dst: completions/bronto.bash
       - src: completions/bronto.zsh

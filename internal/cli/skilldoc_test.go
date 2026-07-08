@@ -13,7 +13,7 @@ import (
 )
 
 // skillDocFiles lists the repo-root docs the doc-rot guard covers.
-var skillDocFiles = []string{"skill.md", "README.md"}
+var skillDocFiles = []string{"skill.md", "README.md", "llms.txt"}
 
 // brontoInvocation captures the first token after a "bronto " prefix in a
 // code span, e.g. "bronto auth login" -> "auth", "bronto --help" -> "--help".
@@ -112,7 +112,7 @@ func TestSkillDocCommandsAreReal(t *testing.T) {
 // and not Runnable). It stops — treating everything from there on as
 // ordinary positional args/flags rather than further subcommands — at
 // the first token that is a flag ("-..."), a "<placeholder>", the start
-// of a quoted string ('"' or '\''), or once the resolved command is
+// of a quoted string (double or single quote), or once the resolved command is
 // runnable (a leaf, or a group with its own default action).
 func checkDeeperTokens(t *testing.T, docFile string, span codeSpan, cmd *cobra.Command) {
 	t.Helper()
