@@ -1,0 +1,3 @@
+# cobra's built-in completion command is wired up and functional
+exec bronto completion bash
+stdout 'bronto'

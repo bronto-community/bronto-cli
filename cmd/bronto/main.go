@@ -20,7 +20,7 @@ func run() int {
 	cmd := cli.NewRootCmd()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	err := cli.Execute(ctx, cmd)
+	err := cli.Execute(ctx, cmd, os.Args[1:])
 	code, render := exitStatus(ctx, err)
 	if render {
 		machine := !isatty.IsTerminal(os.Stderr.Fd()) && !isatty.IsCygwinTerminal(os.Stderr.Fd())
@@ -31,10 +31,16 @@ func run() int {
 
 // exitStatus maps the outcome of an executed command to a process exit
 // code. A run aborted by the signal context exits 130 (128+SIGINT) without
-// rendering an error — the interrupt was the user's own action.
+// rendering an error — the interrupt was the user's own action. An exec
+// plugin's own exit code passes through verbatim, unrendered: plugins own
+// their exit codes and their own output.
 func exitStatus(ctx context.Context, err error) (int, bool) {
 	if err == nil {
 		return 0, false
+	}
+	var pe *cli.PluginExit
+	if errors.As(err, &pe) {
+		return pe.Code, false
 	}
 	if ctx.Err() != nil || errors.Is(err, context.Canceled) {
 		return 130, false

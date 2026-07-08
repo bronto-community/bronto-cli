@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/svrnm/bronto-cli/internal/cli"
 	"github.com/svrnm/bronto-cli/internal/clierr"
 )
 
@@ -46,5 +47,15 @@ func TestExitStatusUsageErrorIsTwoRender(t *testing.T) {
 	code, render := exitStatus(context.Background(), err)
 	if code != 2 || !render {
 		t.Fatalf("exitStatus(live, usage error) = (%d, %v), want (2, true)", code, render)
+	}
+}
+
+// TestExitStatusPluginExitPassesCodeThroughUnrendered pins the exec-plugin
+// exit-code contract: a plugin's own exit code passes through verbatim,
+// with no clierr rendering (the plugin already wrote its own output).
+func TestExitStatusPluginExitPassesCodeThroughUnrendered(t *testing.T) {
+	code, render := exitStatus(context.Background(), &cli.PluginExit{Code: 7})
+	if code != 7 || render {
+		t.Fatalf("exitStatus(live, PluginExit{7}) = (%d, %v), want (7, false)", code, render)
 	}
 }

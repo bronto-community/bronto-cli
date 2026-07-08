@@ -62,8 +62,9 @@ func TestContextRejectsMissingRequiredFlag(t *testing.T) {
 	root := NewRootCmd()
 	root.SetOut(&bytes.Buffer{})
 	root.SetErr(&bytes.Buffer{})
-	root.SetArgs([]string{"context", "--api-key", "k"})
-	err := Execute(context.Background(), root)
+	argv := []string{"context", "--api-key", "k"}
+	root.SetArgs(argv)
+	err := Execute(context.Background(), root, argv)
 	if err == nil || clierr.ExitCode(err) != 2 {
 		t.Fatalf("want usage exit 2 for missing required flag, got %v (exit %d)", err, clierr.ExitCode(err))
 	}

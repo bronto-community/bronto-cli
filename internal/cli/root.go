@@ -52,6 +52,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newTracesCmd())
 	cmd.AddCommand(newSendCmd())
 	cmd.AddCommand(newUsageCmd())
+	cmd.AddCommand(newPluginsCmd())
 
 	for _, d := range resourceRegistry {
 		switch d.Name {
@@ -99,8 +100,24 @@ func wrapArgsValidators(cmd *cobra.Command) {
 
 // Execute runs the command tree and normalizes cobra errors that surface
 // untyped (currently: required-flag validation) into typed usage errors.
-// All entry points — main and tests — should run commands through this.
-func Execute(ctx context.Context, cmd *cobra.Command) error {
+// It also implements kubectl/gh-style exec plugin dispatch: before letting
+// cobra parse argv at all, it checks whether the attempted top-level
+// command (`bronto foo ...`) is NOT one of bronto's own commands, and if a
+// `bronto-foo` executable exists on PATH, runs it with the remaining args
+// instead — returning a *PluginExit carrying the plugin's own exit code.
+// This has to happen before cobra's own parsing: cobra would otherwise try
+// (and fail, with an unrelated "unknown flag" error) to parse flags meant
+// for the plugin against the root command's flag set. See
+// tryPluginDispatch (plugins.go) for the full decision logic.
+//
+// argv is the raw argument vector the root command was invoked with (e.g.
+// os.Args[1:], or a test's SetArgs slice) — it is used to recover the
+// attempted command name and its trailing args for plugin dispatch. All
+// entry points — main and tests — should run commands through this.
+func Execute(ctx context.Context, cmd *cobra.Command, argv []string) error {
+	if err := tryPluginDispatch(cmd, argv); err != nil {
+		return err
+	}
 	return WrapExecuteError(cmd.ExecuteContext(ctx))
 }
 
