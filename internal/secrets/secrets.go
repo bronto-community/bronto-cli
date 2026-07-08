@@ -32,6 +32,12 @@ func Store(profile, key string) (bool, error) {
 	return false, nil
 }
 
+// Get resolves the stored credential for profile: the OS keychain first,
+// falling back to the credentials file when the keychain has no entry (or
+// is unavailable). A corrupt fallback file is a genuine, typed error (a
+// config_parse_error from fileGet) and is surfaced as such — never
+// flattened to ErrNotFound, which would make it indistinguishable from "no
+// key configured" to callers such as NewApp and 'auth status'.
 func Get(profile string) (string, bool, error) {
 	key, err := keyring.Get(service, account(profile))
 	if err == nil {
@@ -42,13 +48,19 @@ func Get(profile string) (string, bool, error) {
 		// (a credential stored under fallback earlier must stay readable).
 		key, ferr := fileGet(account(profile))
 		if ferr != nil {
-			return "", false, ErrNotFound
+			if errors.Is(ferr, ErrNotFound) {
+				return "", false, ErrNotFound
+			}
+			return "", false, ferr
 		}
 		return key, true, nil
 	}
 	key, ferr := fileGet(account(profile))
 	if ferr != nil {
-		return "", true, ErrNotFound
+		if errors.Is(ferr, ErrNotFound) {
+			return "", true, ErrNotFound
+		}
+		return "", true, ferr
 	}
 	return key, true, nil
 }

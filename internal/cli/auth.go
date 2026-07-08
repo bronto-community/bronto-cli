@@ -252,8 +252,14 @@ func newAuthStatusCmd() *cobra.Command {
 			maskedKey := maskSecret(key)
 
 			status := "no key"
-			if key != "" {
+			switch {
+			case key != "":
 				status = checkLiveStatus(cmd.Context(), app)
+			case app.SecretLookupErr != nil:
+				// A genuine credential-lookup failure (e.g. a corrupt
+				// credentials file) is not the same as "nothing configured"
+				// — surface it instead of reporting a plain "no key".
+				status = app.SecretLookupErr.Error()
 			}
 
 			region := ""

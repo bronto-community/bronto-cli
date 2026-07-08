@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -49,6 +50,14 @@ type App struct {
 	// JQ is the compiled --jq expression, or nil. Compiled here (before any
 	// network call) so a bad expression fails fast as a usage error.
 	JQ *gojq.Code
+
+	// SecretLookupErr holds a genuine (non-"not found") error from the
+	// keychain/credentials-file lookup — e.g. a corrupt credentials file.
+	// NewApp treats this as "no stored key" (never fails the command over
+	// it) and warns once on stderr, but callers such as 'auth status' that
+	// need to surface the underlying problem instead of reporting a plain
+	// "no key" can check this field.
+	SecretLookupErr error
 }
 
 func NewApp(cmd *cobra.Command) (*App, error) {
@@ -67,12 +76,27 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 		return nil, err
 	}
 	quiet, _ := cmd.Flags().GetBool("quiet")
+	var secretLookupErr error
 	if cfg.APIKey() == "" {
-		if key, fb, err := secretLookup(profileOrDefault(cfg.Profile())); err == nil {
+		switch key, fb, err := secretLookup(profileOrDefault(cfg.Profile())); {
+		case err == nil:
 			cfg.Inject("api_key", key, config.SourceKeychain)
 			if fb && !quiet {
 				_, _ = fmt.Fprintln(cmd.ErrOrStderr(),
 					"Warning: OS keychain unavailable — using the credentials file fallback.")
+			}
+		case errors.Is(err, secrets.ErrNotFound):
+			// nothing stored under this profile; not an error.
+		default:
+			// A genuine lookup error (e.g. a corrupt credentials file):
+			// treat it as "no stored key" so the command still runs (an
+			// env/flag key, or no key at all, still works), but don't let
+			// it pass silently — warn once, and expose it on App for
+			// callers like 'auth status' that want to surface it.
+			secretLookupErr = err
+			if !quiet {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(),
+					"Warning: could not read stored credentials: %v\n", err)
 			}
 		}
 	}
@@ -84,6 +108,15 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 	var fieldFilter []string
 	listFieldsOnly := false
 	if f := cmd.Flags().Lookup("fields"); f != nil && f.Changed {
+		// -o raw ignores --fields entirely (its whole point is to print the
+		// @raw value / whole row verbatim), so silently accepting the
+		// combination would just mean --fields is quietly a no-op. Mirror
+		// the --jq check below and reject it up front instead.
+		if outFlag == string(output.FormatRaw) {
+			return nil, clierr.New("usage_invalid_flags",
+				"--fields is not supported with -o raw").
+				WithHint("Pass -o json, jsonl, csv, or table alongside --fields, or drop --fields.")
+		}
 		vals, _ := cmd.Flags().GetStringSlice("fields")
 		if len(vals) == 1 && vals[0] == "?" {
 			listFieldsOnly = true
@@ -123,17 +156,18 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 		httpClient.Timeout = time.Duration(secs) * time.Second
 	}
 	return &App{
-		Config:         cfg,
-		Stdout:         cmd.OutOrStdout(),
-		Stderr:         cmd.ErrOrStderr(),
-		HTTPClient:     httpClient,
-		StdoutIsTTY:    ttyNow,
-		OutputFlag:     outFlag,
-		Quiet:          quiet,
-		FieldFilter:    fieldFilter,
-		ListFieldsOnly: listFieldsOnly,
-		JQ:             jqCode,
-		Color:          output.ColorEnabled(noColor, ttyNow, os.Getenv),
+		Config:          cfg,
+		Stdout:          cmd.OutOrStdout(),
+		Stderr:          cmd.ErrOrStderr(),
+		HTTPClient:      httpClient,
+		StdoutIsTTY:     ttyNow,
+		OutputFlag:      outFlag,
+		Quiet:           quiet,
+		FieldFilter:     fieldFilter,
+		ListFieldsOnly:  listFieldsOnly,
+		JQ:              jqCode,
+		SecretLookupErr: secretLookupErr,
+		Color:           output.ColorEnabled(noColor, ttyNow, os.Getenv),
 	}, nil
 }
 

@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -149,6 +150,35 @@ func TestTracesShowAppliesFieldsFilter(t *testing.T) {
 	}
 }
 
+// TestTracesShowRejectsFieldsOnTTYWaterfall pins: the waterfall renderer
+// (chosen when stdout is a TTY and no -o override applies) is a bespoke
+// human view that draws bars directly, bypassing the Printer's --fields
+// support entirely. Silently ignoring --fields there would look like a bug
+// (the flag would have zero effect); reject it instead, same as -o raw.
+func TestTracesShowRejectsFieldsOnTTYWaterfall(t *testing.T) {
+	old := stdoutIsTTY
+	stdoutIsTTY = func() bool { return true }
+	t.Cleanup(func() { stdoutIsTTY = old })
+
+	srv := tracesServer(t, map[string]string{
+		"@time": `{"result":[
+			{"$span.trace_id":"tr1","$span.span_id":"a","$span.name":"root","$service.name":"cart",
+			 "$span.start_time_unix_nano":100,"$span.duration_nano":50,"$span.status_code":"STATUS_CODE_OK"}]}`,
+	})
+	defer srv.Close()
+	_, err := runTraces(t, srv, "show", "tr1", "--fields", "service")
+	if err == nil || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage exit 2, got %v", err)
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "usage_invalid_flags" {
+		t.Fatalf("want usage_invalid_flags, got %v", err)
+	}
+	if !strings.Contains(ce.Hint, "json") {
+		t.Fatalf("hint = %q, want it to mention -o json/jsonl", ce.Hint)
+	}
+}
+
 func TestTracesShowNotFound(t *testing.T) {
 	srv := tracesServer(t, nil) // empty result
 	defer srv.Close()
@@ -187,6 +217,41 @@ func TestTracesShapeJSON(t *testing.T) {
 	}
 	if rows[0]["traces"] != float64(2) || rows[0]["name"] != "POST /x" {
 		t.Fatalf("row = %v", rows[0])
+	}
+}
+
+// TestTracesShapeRejectsFieldsOnTTYRender mirrors
+// TestTracesShowRejectsFieldsOnTTYWaterfall for 'traces shape', whose TTY
+// render (traces.RenderShape) is likewise a bespoke view that bypasses the
+// Printer's --fields support.
+func TestTracesShapeRejectsFieldsOnTTYRender(t *testing.T) {
+	old := stdoutIsTTY
+	stdoutIsTTY = func() bool { return true }
+	t.Cleanup(func() { stdoutIsTTY = old })
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		var body map[string]any
+		_ = json.Unmarshal(b, &body)
+		if body["limit"] == float64(5000) {
+			_, _ = w.Write([]byte(`{"result":[
+				{"$span.trace_id":"t1","$span.span_id":"a1","$span.name":"POST /x","$service.name":"web",
+				 "$span.kind":"SPAN_KIND_SERVER","$span.start_time_unix_nano":100,"$span.duration_nano":50}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"result":[{"$span.trace_id":"t1"}]}`))
+	}))
+	defer srv.Close()
+	_, err := runTraces(t, srv, "shape", "--sample", "1", "--fields", "name")
+	if err == nil || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage exit 2, got %v", err)
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "usage_invalid_flags" {
+		t.Fatalf("want usage_invalid_flags, got %v", err)
+	}
+	if !strings.Contains(ce.Hint, "json") {
+		t.Fatalf("hint = %q, want it to mention -o json/jsonl", ce.Hint)
 	}
 }
 

@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -58,6 +59,26 @@ func TestPingForbiddenIsTypedAuthError(t *testing.T) {
 	}
 	if clierr.ExitCode(err) != 3 {
 		t.Fatalf("exit code = %d, want 3", clierr.ExitCode(err))
+	}
+}
+
+// TestPingUnreachableIsRetryableNetworkError pins the machine contract: an
+// unreachable base URL is a retryable network_error (exit 1), aligned with
+// how bronto.Client and the resources/apicmd request paths classify the same
+// failure — not the bespoke, non-retryable api_unreachable code ping used
+// to return.
+func TestPingUnreachableIsRetryableNetworkError(t *testing.T) {
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"ping", "--base-url", "http://127.0.0.1:1", "--api-key", "k"})
+	err := root.Execute()
+	if err == nil || clierr.ExitCode(err) != 1 {
+		t.Fatalf("want exit 1 (network_error), got %v", err)
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "network_error" || !ce.Retryable {
+		t.Fatalf("want retryable network_error, got %v", err)
 	}
 }
 

@@ -203,6 +203,35 @@ func TestAuthSwitchCorruptConfigIsParseError(t *testing.T) {
 	}
 }
 
+// TestAuthStatusShowsCorruptCredentialsParseError pins: when the credential
+// lookup fails with a genuine parse error (not "no key"), 'auth status'
+// surfaces the problem in its status cell instead of reporting "no key" as
+// if nothing were stored.
+func TestAuthStatusShowsCorruptCredentialsParseError(t *testing.T) {
+	t.Setenv("BRONTO_API_KEY", "")
+	old := secretLookup
+	parseErr := clierr.New("config_parse_error", "cannot parse /x/credentials: bad toml")
+	secretLookup = func(string) (string, bool, error) { return "", false, parseErr }
+	t.Cleanup(func() { secretLookup = old })
+
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"auth", "status", "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(out.Bytes(), &rows); err != nil || len(rows) != 1 {
+		t.Fatalf("out = %q, err = %v", out.String(), err)
+	}
+	status, _ := rows[0]["status"].(string)
+	if !strings.Contains(status, "cannot parse") {
+		t.Fatalf("status cell = %q, want it to surface the parse error", status)
+	}
+}
+
 func TestMaskSecretRuneSafe(t *testing.T) {
 	got := maskSecret("ключ-secret-key")
 	if !utf8.ValidString(got) {

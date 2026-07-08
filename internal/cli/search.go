@@ -144,11 +144,11 @@ func printEvents(app *App, events []map[string]any) error {
 	for _, e := range events {
 		rows = append(rows, bronto.Flatten(e))
 	}
-	p, err := app.Printer(true)
+	f, err := app.DetectFormat(true)
 	if err != nil {
 		return err
 	}
-	f, err := output.DetectFormat(app.OutputFlag, app.StdoutIsTTY, true)
+	p, err := app.PrinterFor(f)
 	if err != nil {
 		return err
 	}

@@ -35,8 +35,9 @@ func newPingCmd() *cobra.Command {
 			}
 			resp, err := app.HTTPClient.Do(req)
 			if err != nil {
-				return clierr.New("api_unreachable", fmt.Sprintf("cannot reach %s: %v", app.Config.BaseURL(), err)).
-					WithHint("Check your network and the region (--region eu|us).")
+				return clierr.New("network_error", fmt.Sprintf("cannot reach %s: %v", app.Config.BaseURL(), err)).
+					WithRetryable().
+					WithHint("Check your network and the API base URL / region.")
 			}
 			defer func() { _ = resp.Body.Close() }()
 			body, _ := io.ReadAll(resp.Body)

@@ -282,6 +282,9 @@ func printWaterfall(app *App, spans []traces.Span, barWidth int) error {
 		return err
 	}
 	if f == output.FormatTable {
+		if err := rejectFieldsForCustomRender(app); err != nil {
+			return err
+		}
 		traces.RenderWaterfall(app.Stdout, spans, barWidth, app.Color)
 		return nil
 	}
@@ -300,6 +303,20 @@ func printWaterfall(app *App, spans []traces.Span, barWidth int) error {
 	}
 	columns := []string{"depth", "service", "operation", "duration", "status", "trace_id", "span_id", "parent_span_id"}
 	return p.PrintRows(columns, rows)
+}
+
+// rejectFieldsForCustomRender guards the bespoke TTY renderers (the trace
+// waterfall and the shape tree) that draw directly to app.Stdout instead of
+// going through a Printer: --fields would silently have zero effect there,
+// which looks like a bug. Reject the combination up front, same as --fields
+// with -o raw, and point the user at a format where --fields works.
+func rejectFieldsForCustomRender(app *App) error {
+	if len(app.FieldFilter) == 0 && !app.ListFieldsOnly {
+		return nil
+	}
+	return clierr.New("usage_invalid_flags",
+		"--fields is not supported by this view").
+		WithHint("use -o json/jsonl for field selection")
 }
 
 func newTracesShapeCmd() *cobra.Command {
@@ -367,6 +384,9 @@ func newTracesShapeCmd() *cobra.Command {
 				return err
 			}
 			if f == output.FormatTable {
+				if err := rejectFieldsForCustomRender(app); err != nil {
+					return err
+				}
 				traces.RenderShape(app.Stdout, visible, tracesUsed, len(spans), barWidth, app.Color)
 				return nil
 			}

@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/zalando/go-keyring"
+
+	"github.com/svrnm/bronto-cli/internal/clierr"
 )
 
 // writeCredentialsFile writes raw bytes at BRONTO_CONFIG_DIR/bronto/credentials
@@ -120,6 +122,45 @@ func TestDeleteSemantics(t *testing.T) {
 			t.Fatalf("want a genuine parse error, not ErrNotFound: %v", err)
 		}
 	})
+}
+
+// TestGetSurfacesCorruptFileAsTypedError pins that Get, like Store/Delete,
+// treats a corrupt fallback file as a genuine typed error — not ErrNotFound.
+// Swallowing it as ErrNotFound would make a corrupt file indistinguishable
+// from "no key configured" to callers.
+func TestGetSurfacesCorruptFileAsTypedError(t *testing.T) {
+	keyring.MockInitWithError(errors.New("no keyring"))
+	dir := t.TempDir()
+	t.Setenv("BRONTO_CONFIG_DIR", dir)
+	writeCredentialsFile(t, dir, []byte("not [valid toml =\n"), 0o600)
+
+	_, _, err := Get("prod")
+	if err == nil {
+		t.Fatal("want error")
+	}
+	if errors.Is(err, ErrNotFound) {
+		t.Fatalf("want a typed parse error, not ErrNotFound: %v", err)
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "config_parse_error" {
+		t.Fatalf("want config_parse_error, got %v (%T)", err, err)
+	}
+}
+
+// TestGetSurfacesCorruptFileWhenKeyringHasNoEntry covers the other branch of
+// Get: the keychain works but has no entry for this profile, so Get still
+// consults the fallback file — which is corrupt.
+func TestGetSurfacesCorruptFileWhenKeyringHasNoEntry(t *testing.T) {
+	keyring.MockInit() // keychain works, but has no entry -> keyring.ErrNotFound
+	dir := t.TempDir()
+	t.Setenv("BRONTO_CONFIG_DIR", dir)
+	writeCredentialsFile(t, dir, []byte("not [valid toml =\n"), 0o600)
+
+	_, _, err := Get("prod")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "config_parse_error" {
+		t.Fatalf("want config_parse_error, got %v (%T)", err, err)
+	}
 }
 
 func TestFileStoreRefusesToRewriteCorruptFile(t *testing.T) {
