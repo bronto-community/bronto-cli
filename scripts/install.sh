@@ -32,6 +32,7 @@ need_cmd() {
 
 need_cmd curl
 need_cmd tar
+need_cmd install
 
 detect_os() {
 	os=$(uname -s)
@@ -109,11 +110,14 @@ fi
 [ -f "$WORKDIR/$BIN_NAME" ] || fail "extracted archive did not contain $BIN_NAME"
 chmod +x "$WORKDIR/$BIN_NAME"
 
-if [ -w "$BINDIR" ]; then
+if [ -d "$BINDIR" ] && [ -w "$BINDIR" ]; then
+	install -m 0755 "$WORKDIR/$BIN_NAME" "$BINDIR/$BIN_NAME"
+elif mkdir -p "$BINDIR" 2>/dev/null && [ -w "$BINDIR" ]; then
 	install -m 0755 "$WORKDIR/$BIN_NAME" "$BINDIR/$BIN_NAME"
 else
 	log "No write access to $BINDIR, retrying with sudo..."
 	need_cmd sudo
+	sudo mkdir -p "$BINDIR"
 	sudo install -m 0755 "$WORKDIR/$BIN_NAME" "$BINDIR/$BIN_NAME"
 fi
 
