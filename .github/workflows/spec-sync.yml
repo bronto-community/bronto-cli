@@ -1,0 +1,103 @@
+name: Spec Sync
+
+on:
+  schedule:
+    # Weekly, Monday 06:00 UTC.
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check SPEC_URL configuration
+        id: check
+        env:
+          SPEC_URL: ${{ vars.SPEC_URL }}
+        run: |
+          if [ -z "$SPEC_URL" ]; then
+            echo "::notice title=spec-sync skipped::The 'SPEC_URL' repository variable is not set. Configure vars.SPEC_URL to the canonical Bronto OpenAPI spec URL (TODO: confirm the public spec URL) to enable automatic spec-sync PRs. Skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch upstream spec
+        if: steps.check.outputs.skip == 'false'
+        env:
+          SPEC_URL: ${{ vars.SPEC_URL }}
+        run: curl -fsSL "$SPEC_URL" -o /tmp/openapi.upstream.yaml
+
+      - name: Diff against vendored spec
+        id: diff
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          if diff -q api/openapi.yaml /tmp/openapi.upstream.yaml > /dev/null 2>&1; then
+            echo "::notice title=spec-sync no-op::Upstream spec matches api/openapi.yaml. Nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-go@v5
+        if: steps.check.outputs.skip == 'false' && steps.diff.outputs.changed == 'true'
+        with:
+          go-version-file: go.mod
+
+      - name: oasdiff breaking-changes report
+        id: oasdiff
+        if: steps.check.outputs.skip == 'false' && steps.diff.outputs.changed == 'true'
+        run: |
+          go run github.com/oasdiff/oasdiff@latest breaking api/openapi.yaml /tmp/openapi.upstream.yaml > /tmp/oasdiff-report.txt 2>&1 || true
+          {
+            echo "report<<OASDIFF_EOF"
+            cat /tmp/oasdiff-report.txt
+            echo "OASDIFF_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Stage upstream spec artifact
+        if: steps.check.outputs.skip == 'false' && steps.diff.outputs.changed == 'true'
+        run: cp /tmp/openapi.upstream.yaml api/openapi.upstream.yaml
+
+      - name: Open pull request
+        if: steps.check.outputs.skip == 'false' && steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          add-paths: api/openapi.upstream.yaml
+          commit-message: "chore: attach upstream OpenAPI spec update"
+          branch: spec-sync/update
+          delete-branch: true
+          labels: |
+            spec-sync
+            needs-vendor-patch
+          title: "spec-sync: upstream OpenAPI spec changed"
+          body: |
+            The upstream Bronto OpenAPI spec at `${{ vars.SPEC_URL }}` differs from the
+            vendored `api/openapi.yaml`. This PR attaches the raw fetched spec as
+            `api/openapi.upstream.yaml` for review — it does **not** overwrite the
+            vendored spec automatically, because `api/openapi.yaml` carries hand-applied
+            vendor patches (see `api/oapi-codegen.yaml` and the three
+            `NOTE(bronto-cli vendor patch)` blocks in `api/openapi.yaml`).
+
+            ### oasdiff breaking-changes report
+
+            ```
+            ${{ steps.oasdiff.outputs.report }}
+            ```
+
+            ### Checklist to land this update
+
+            - [ ] Review `api/openapi.upstream.yaml` against `api/openapi.yaml`
+            - [ ] Re-apply the three vendor patches (search both files for
+                  `bronto-cli vendor patch`)
+            - [ ] Replace `api/openapi.yaml` with the patched upstream spec
+            - [ ] Run `make generate` and commit the regenerated code
+            - [ ] Run `go test ./...` and resolve any conformance failures
+            - [ ] Delete `api/openapi.upstream.yaml` before merging
+            - [ ] Review the oasdiff breaking-changes report above for client-facing impact
