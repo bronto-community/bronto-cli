@@ -14,7 +14,7 @@ func TestFieldsListsTopKeys(t *testing.T) {
 			t.Errorf("path = %s", r.URL.Path)
 		}
 		q := r.URL.Query()
-		if q.Get("time_range") != "Last 1 hour" || q.Get("log_id") != "ds-1" || q.Get("limit") != "10" {
+		if q.Get("time_range") != "Last 1 hour" || q.Get("log_id") != "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" || q.Get("limit") != "10" {
 			t.Errorf("query = %v", q)
 		}
 		_, _ = w.Write([]byte(`{"top_keys":[{"key":"status","count":42},{"key":"host","count":7}]}`))
@@ -25,7 +25,7 @@ func TestFieldsListsTopKeys(t *testing.T) {
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&bytes.Buffer{})
-	root.SetArgs([]string{"fields", "-d", "ds-1", "--since", "1h", "-n", "10",
+	root.SetArgs([]string{"fields", "-d", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "--since", "1h", "-n", "10",
 		"--base-url", srv.URL, "--api-key", "k", "-o", "json"})
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)

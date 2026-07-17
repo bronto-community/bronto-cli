@@ -18,7 +18,7 @@ func newFieldsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fields",
 		Short: "Discover field names (top keys) in a dataset",
-		Example: "  bronto fields -d <dataset-uuid> --since 1h\n" +
+		Example: "  bronto fields -d <dataset> --since 1h\n" +
 			"  bronto fields --since 15m -n 20",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -40,7 +40,11 @@ func newFieldsCmd() *cobra.Command {
 			}
 			params := url.Values{"time_range": []string{spec.TimeRange}}
 			if dataset != "" {
-				params.Set("log_id", dataset)
+				logID, err := resolveDatasetRef(cmd.Context(), app, dataset)
+				if err != nil {
+					return err
+				}
+				params.Set("log_id", logID)
 			}
 			if limit > 0 {
 				params.Set("limit", strconv.Itoa(limit))
@@ -58,7 +62,7 @@ func newFieldsCmd() *cobra.Command {
 			return p.PrintRows([]string{"key", "count"}, rows)
 		},
 	}
-	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset UUID (omit for all datasets)")
+	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset name or UUID (omit for all datasets)")
 	cmd.Flags().StringVar(&since, "since", "1h", "relative lookback (single unit: 30s, 15m, 1h, 2d)")
 	cmd.Flags().IntVarP(&limit, "limit", "n", 0, "maximum keys to return")
 	return cmd

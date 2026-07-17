@@ -51,7 +51,7 @@ func newSearchCmd() *cobra.Command {
 					where = strings.TrimSpace(string(b))
 				}
 			}
-			ids, expr, err := resolveDataset(app, datasets, fromExpr)
+			ids, expr, err := resolveDataset(cmd.Context(), app, datasets, fromExpr)
 			if err != nil {
 				return err
 			}
@@ -122,7 +122,7 @@ func newSearchCmd() *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
-	f.StringArrayVarP(&datasets, "dataset", "d", nil, "dataset UUID to search (repeatable)")
+	f.StringArrayVarP(&datasets, "dataset", "d", nil, "dataset name or UUID to search (repeatable)")
 	f.StringVar(&fromExpr, "from-expr", "", "dataset selector expression, e.g. \"log_id = '<uuid>'\"")
 	f.StringVar(&since, "since", "", "relative lookback: 30s, 15m, 1h, 2d, 1w, 1h30m")
 	f.StringVar(&from, "from", "", "absolute start (RFC3339)")

@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -163,12 +164,25 @@ func TestSearchQueryFromStdin(t *testing.T) {
 
 func TestSearchMissingDatasetIsUsageError(t *testing.T) {
 	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	// With nothing selected and several datasets in the account, search
+	// must fail usage-style, naming the datasets (see resolveDataset).
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/logs" {
+			t.Errorf("unexpected path %s", r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"logs":[{"log":"web","log_id":"11111111-1111-1111-1111-111111111111"},{"log":"app","log_id":"22222222-2222-2222-2222-222222222222"}]}`))
+	}))
+	defer srv.Close()
 	root := NewRootCmd()
 	root.SetOut(&bytes.Buffer{})
 	root.SetErr(&bytes.Buffer{})
-	root.SetArgs([]string{"search", "x", "--api-key", "k"})
+	root.SetArgs([]string{"search", "x", "--api-key", "k", "--base-url", srv.URL})
 	err := root.Execute()
 	if err == nil || clierr.ExitCode(err) != 2 {
 		t.Fatalf("want usage exit 2, got %v (%d)", err, clierr.ExitCode(err))
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || !strings.Contains(ce.Hint, "web") {
+		t.Fatalf("hint must list the account's datasets: %v", err)
 	}
 }

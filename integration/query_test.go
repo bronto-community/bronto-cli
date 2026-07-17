@@ -83,6 +83,31 @@ func TestQuery_FieldsFlagFiltersColumns(t *testing.T) {
 	}
 }
 
+// TestQuery_DatasetByName asserts -d accepts a dataset NAME (resolved to
+// its log id via /logs, see internal/cli/dataset.go) — the first-run UX:
+// nobody should need to copy a UUID for an interactive query.
+func TestQuery_DatasetByName(t *testing.T) {
+	key := skipIfNoCreds(t)
+	dataset, marker := seededData(t)
+	r := NewRunner(t, key)
+
+	res, err := r.Run(t.Context(), "", "search", fmt.Sprintf("ci_marker = '%s'", marker),
+		"-d", dataset, "--since", "1h", "-o", "json", "-n", "1")
+	if err != nil {
+		t.Fatalf("running search by dataset name: %v", err)
+	}
+	if res.ExitCode != 0 {
+		t.Fatalf("search -d <name> exited %d\nstdout: %s\nstderr: %s", res.ExitCode, res.Stdout, res.Stderr)
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal([]byte(res.Stdout), &rows); err != nil {
+		t.Fatalf("search -o json did not parse: %v\noutput: %s", err, res.Stdout)
+	}
+	if len(rows) == 0 {
+		t.Fatal("search by dataset name returned no rows for the seeded marker")
+	}
+}
+
 // TestQuery_JQExpression asserts --jq applies to json output.
 func TestQuery_JQExpression(t *testing.T) {
 	key := skipIfNoCreds(t)
