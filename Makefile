@@ -30,15 +30,12 @@ coverage-baseline:
 	go tool cover -func=coverage.filtered.txt | tail -1 | awk '{gsub("%","",$$NF); print $$NF}' > .github/coverage-baseline.txt
 	@echo "baseline updated to $$(cat .github/coverage-baseline.txt)%"
 
-# it runs the black-box integration suite against a live Bronto test
-# account (see integration/, added in a follow-up task). Requires
-# BRONTO_IT_MGMT_KEY (and friends) to be set.
+# it runs the black-box integration suite. Without BRONTO_IT_MGMT_KEY set,
+# every credentialed test skips itself visibly (and the hermetic checks —
+# binary builds, --help — still run). With it set, it runs live against a
+# Bronto test account (see integration/).
 it:
-	@if [ -d integration ]; then \
-		go test -count=1 ./integration/; \
-	else \
-		echo "integration/ does not exist yet (coverage overhaul task 3); nothing to run"; \
-	fi
+	go test -count=1 ./integration/
 
 # release-dry validates the goreleaser config without building anything.
 release-dry:
