@@ -6,9 +6,13 @@
 # "removed required property message from the 4xx response" once per
 # endpoint — hundreds of lines that drown the real story).
 #
-# Usage: spec-digest.sh <diff.json> <breaking.json> <out.md>
-#   diff.json:     `oasdiff diff <base> <upstream> -f json`
-#   breaking.json: `oasdiff breaking <base> <upstream> -f json`
+# Usage: spec-digest.sh <diff.json> <breaking.json> <out.md> [cli-endpoints.json]
+#   diff.json:          `oasdiff diff <base> <upstream> -f json`
+#   breaking.json:      `oasdiff breaking <base> <upstream> -f json`
+#   cli-endpoints.json: `go run ./internal/tools/endpointmap` — when given,
+#                       a "CLI impact" section classifies added/removed/
+#                       modified endpoints by which bronto command (if any)
+#                       calls them.
 # Missing/empty/invalid inputs degrade to a note rather than failing, so a
 # partial digest still gets published.
 set -euo pipefail
@@ -16,6 +20,7 @@ set -euo pipefail
 diff_json=$1
 breaking_json=$2
 out=$3
+cli_json=${4:-}
 
 # list <file> <jq-expr> [cap] — newline list as markdown bullets, capped.
 list() {
@@ -30,6 +35,41 @@ count() {
 }
 
 {
+  # --- CLI impact: the section maintainers act on. Classifies every
+  # added/removed/modified endpoint by whether a bronto command calls it
+  # (param names normalized: {monitorId} == {*} == {}; keep the `norm`
+  # helper in sync with normalizeParams in resourcespec_test.go).
+  if [ -n "$cli_json" ] && jq -e 'type == "array"' "$cli_json" >/dev/null 2>&1 \
+      && jq -e . "$diff_json" >/dev/null 2>&1; then
+    printf '#### CLI impact\n\n'
+    jq -r --slurpfile pats "$cli_json" '
+      def norm: gsub("\\{[^}]*\\}"; "{}");
+      ($pats[0] | map({p: (.pattern | norm), c: .command})) as $P |
+      def cmds($x): [$P[] | select(.p == ($x | norm)) | .c] | unique | join(", ");
+      (.paths.added // [] | sort) as $add |
+      (.paths.deleted // [] | sort) as $del |
+      (.paths.modified // {} | keys | sort) as $mod |
+      ($add | map(select(cmds(.) == ""))) as $newUncov |
+      ($del | map({path: ., c: cmds(.)} | select(.c != ""))) as $delCov |
+      ($mod | map({path: ., c: cmds(.)} | select(.c != ""))) as $modCov |
+      (if ($delCov | length) > 0 then
+        "**⚠ Removed from the spec but used by the CLI (\($delCov | length))** — verify these still work live (integration suite) before re-vendoring; if one 404s, drop the command:\n\n"
+        + ($delCov | map("- `\(.path)` — \(.c)") | join("\n")) + "\n"
+      else "No removed endpoint is used by the CLI.\n" end),
+      (if ($newUncov | length) > 0 then
+        "\n**New endpoints with no CLI coverage (\($newUncov | length))** — candidates for new commands; reachable today via `bronto api <method> <path>`:\n\n"
+        + ($newUncov | map("- `\(.)`") | join("\n")) + "\n"
+      else "" end),
+      (if ($modCov | length) > 0 then
+        "\n**Modified endpoints backing existing commands (\($modCov | length))** — re-check request/response shapes:\n\n"
+        + ($modCov | map("- `\(.path)` — \(.c)") | join("\n")) + "\n"
+      else "" end)
+    ' "$diff_json"
+    printf '\n'
+  elif [ -n "$cli_json" ]; then
+    printf '#### CLI impact\n\n_endpointmap or oasdiff produced no usable JSON; see the workflow run artifacts/logs._\n\n'
+  fi
+
   if jq -e . "$diff_json" >/dev/null 2>&1; then
     pa=$(count '.paths.added' "$diff_json")
     pd=$(count '.paths.deleted' "$diff_json")
