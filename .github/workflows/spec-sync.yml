@@ -14,7 +14,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check SPEC_URL configuration
         id: check
@@ -45,7 +45,7 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         if: steps.check.outputs.skip == 'false' && steps.diff.outputs.changed == 'true'
         with:
           go-version-file: go.mod
@@ -70,7 +70,7 @@ jobs:
 
       - name: Open pull request
         if: steps.check.outputs.skip == 'false' && steps.diff.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           add-paths: api/openapi.upstream.yaml
           commit-message: "chore: attach upstream OpenAPI spec update"
