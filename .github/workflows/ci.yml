@@ -27,6 +27,8 @@ jobs:
   # `coverage` as a required check later.
   coverage:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -78,6 +80,85 @@ jobs:
           path: |
             coverage.html
             coverage.filtered.txt
+          if-no-files-found: warn
+
+  # integration runs the black-box suite (integration/) against a dedicated,
+  # throwaway Bronto test org (see docs/superpowers/plans for the full
+  # rationale). It lives here in ci.yml rather than a separately-triggered
+  # workflow: a workflow that never fires leaves any required check pending
+  # forever, which would wedge every PR once this becomes required.
+  #
+  # It must SKIP GRACEFULLY when secrets are empty: every credentialed test
+  # in integration/ self-skips via skipIfNoCreds (visible t.Skip, not a
+  # failure), so `go test ./integration/` exits 0 with all-skips and this
+  # job goes green even on a fork PR or before the bronto-it environment's
+  # secrets exist. That's what lets `integration` become a required check
+  # later without hanging fork PRs (a job skipped via `if:` also counts as
+  # satisfied for required-check purposes).
+  integration:
+    # Fork guard: same-repo PRs and every push/other event run this job
+    # (same-repo PR authors already have write access, so environment
+    # secrets add no real marginal risk there — see the plan's security
+    # rationale). A fork PR can't see environment secrets anyway; skipping
+    # it outright avoids a job that's guaranteed to no-op.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: bronto-it
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: integration-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          # Audit mode during burn-in (2-4 weeks watching flake rate and the
+          # observed endpoint list per the plan's rollout order) -> flip to
+          # `block` with an explicit egress allowlist once that list is
+          # confirmed. Expected: api.<region>.bronto.io and
+          # ingestion.<region>.bronto.io, plus GitHub's own endpoints and the
+          # Go module proxy.
+          #
+          # TRAP: `exports create --download` (exports_test.go) follows a
+          # presigned object-store URL (S3-style host, NOT *.bronto.io) to
+          # fetch the completed export. Audit mode is what surfaces that
+          # host before switching to block mode — going straight to block
+          # would fail TestExports_CreateWaitDownload with an opaque egress
+          # denial instead of a clear assertion failure.
+          egress-policy: audit
+
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build instrumented binary
+        run: go build -cover -covermode=atomic -coverpkg=./... -o bronto.itest ./cmd/bronto
+
+      - name: Run integration suite
+        env:
+          BRONTO_IT_BIN: ${{ github.workspace }}/bronto.itest
+          GOCOVERDIR: ${{ github.workspace }}/covdata/int
+          BRONTO_IT_MGMT_KEY: ${{ secrets.BRONTO_IT_MGMT_KEY }}
+          BRONTO_IT_INGEST_KEY: ${{ secrets.BRONTO_IT_INGEST_KEY }}
+          BRONTO_IT_REGION: ${{ vars.BRONTO_IT_REGION || 'eu' }}
+        run: |
+          mkdir -p "$GOCOVERDIR"
+          go test -count=1 ./integration/
+
+      # Collected for later adoption only: the ratchet gate (the `coverage`
+      # job above) stays unit-only for now. Merging this PR-run's covdata
+      # into that gate is a step-5 item, after burn-in confirms the
+      # integration leg is stable enough to factor into a hard coverage
+      # number.
+      - name: Upload integration covdata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-covdata
+          path: covdata/int
           if-no-files-found: warn
 
   lint:
