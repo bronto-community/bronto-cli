@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -36,6 +37,34 @@ func TestExitCodeUnknownError(t *testing.T) {
 	}
 	if got := ExitCode(nil); got != 0 {
 		t.Fatalf("ExitCode(nil) = %d, want 0", got)
+	}
+}
+
+func TestErrorReturnsMessage(t *testing.T) {
+	if got := New("some_code", "boom happened").Error(); got != "boom happened" {
+		t.Fatalf("Error() = %q, want %q", got, "boom happened")
+	}
+}
+
+// nilUnwrapError implements error and Unwrap() error (returning nil), but is
+// never itself a *Error. It pins asCLIError's unwrap loop: it must follow
+// Unwrap once (finding no *Error), then exit the loop cleanly via the
+// err != nil loop condition rather than the "no Unwrap method" early return.
+type nilUnwrapError struct{ msg string }
+
+func (e nilUnwrapError) Error() string { return e.msg }
+func (e nilUnwrapError) Unwrap() error { return nil }
+
+func TestExitCodeUnwrapsChainWithNoTerminalError(t *testing.T) {
+	if got := ExitCode(nilUnwrapError{msg: "wrapped, never a *Error"}); got != 1 {
+		t.Fatalf("ExitCode = %d, want 1 (falls back to unknown_error mapping)", got)
+	}
+}
+
+func TestExitCodeFindsWrappedError(t *testing.T) {
+	wrapped := fmt.Errorf("context: %w", New("rate_limited", "slow down"))
+	if got := ExitCode(wrapped); got != 5 {
+		t.Fatalf("ExitCode(wrapped rate_limited) = %d, want 5", got)
 	}
 }
 

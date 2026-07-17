@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"hash/fnv"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -136,6 +138,94 @@ func TestTailAppliesJQFilter(t *testing.T) {
 		if lines[i] != want {
 			t.Fatalf("line %d = %q, want %q (jq filter must apply, not the full row)", i, lines[i], want)
 		}
+	}
+}
+
+// originColorCode replicates renderTailLine's fnv-hash-based color pick so
+// tests can assert the exact ANSI sequence without duplicating internals.
+func originColorCode(origin string) string {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(origin))
+	return originColors[h.Sum32()%uint32(len(originColors))]
+}
+
+func TestRenderTailLine(t *testing.T) {
+	matching := []*regexp.Regexp{regexp.MustCompile(`err\w*`)}
+	nonMatching := []*regexp.Regexp{regexp.MustCompile(`nope`)}
+
+	cases := []struct {
+		name       string
+		color      bool
+		origin     string
+		highlights []*regexp.Regexp
+		want       string
+	}{
+		{
+			name: "no color, no origin",
+			want: "t1 an error",
+		},
+		{
+			name:   "no color, with origin",
+			origin: "svc-a",
+			want:   "t1 svc-a an error",
+		},
+		{
+			name:       "no color, highlight is irrelevant when color is off",
+			highlights: matching,
+			want:       "t1 an error",
+		},
+		{
+			name:  "color, no origin, no highlight match",
+			color: true,
+			want:  "\x1b[2mt1\x1b[0m an error",
+		},
+		{
+			name:       "color, no origin, highlight matches",
+			color:      true,
+			highlights: matching,
+			want:       "\x1b[2mt1\x1b[0m an \x1b[1;33merror\x1b[0m",
+		},
+		{
+			name:       "color, no origin, highlight does not match",
+			color:      true,
+			highlights: nonMatching,
+			want:       "\x1b[2mt1\x1b[0m an error",
+		},
+		{
+			name:   "color, with origin, no highlight",
+			color:  true,
+			origin: "svc-a",
+			want:   "\x1b[2mt1\x1b[0m \x1b[" + originColorCode("svc-a") + "msvc-a\x1b[0m an error",
+		},
+		{
+			name:       "color, with origin, highlight matches",
+			color:      true,
+			origin:     "svc-b",
+			highlights: matching,
+			want: "\x1b[2mt1\x1b[0m \x1b[" + originColorCode("svc-b") +
+				"msvc-b\x1b[0m an \x1b[1;33merror\x1b[0m",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ev := map[string]any{"@time": "t1"}
+			if c.origin != "" {
+				ev["@origin"] = c.origin
+			}
+			got := renderTailLine(ev, "an error", c.highlights, c.color)
+			if got != c.want {
+				t.Fatalf("renderTailLine = %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
+// TestRenderTailLineOriginAbsentVsNil pins: a present-but-nil @origin is
+// treated the same as an absent one (no origin segment rendered).
+func TestRenderTailLineOriginAbsentVsNil(t *testing.T) {
+	got := renderTailLine(map[string]any{"@time": "t1", "@origin": nil}, "raw", nil, false)
+	if got != "t1 raw" {
+		t.Fatalf("nil @origin should be treated as absent, got %q", got)
 	}
 }
 

@@ -34,6 +34,29 @@ func TestRowToSpanCoercionAndBackfills(t *testing.T) {
 	}
 }
 
+func TestToFloatCoercion(t *testing.T) {
+	cases := []struct {
+		name string
+		in   any
+		want float64
+	}{
+		{"float64", float64(3.5), 3.5},
+		{"int64", int64(42), 42},
+		{"int", 7, 7},
+		{"numeric string", "12.25", 12.25},
+		{"unparseable string", "not-a-number", 0},
+		{"unsupported type", true, 0},
+		{"nil", nil, 0},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := toFloat(c.in); got != c.want {
+				t.Errorf("toFloat(%#v) = %v, want %v", c.in, got, c.want)
+			}
+		})
+	}
+}
+
 func TestFormatDurationNS(t *testing.T) {
 	cases := []struct {
 		ns   int64

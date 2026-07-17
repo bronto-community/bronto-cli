@@ -80,6 +80,30 @@ func TestSortEventsBySequenceThenTime(t *testing.T) {
 	}
 }
 
+func TestNumericCoercion(t *testing.T) {
+	cases := []struct {
+		name    string
+		in      any
+		wantVal float64
+		wantOK  bool
+	}{
+		{"float64", float64(3.5), 3.5, true},
+		{"int64", int64(42), 42, true},
+		{"int", 7, 7, true},
+		{"string is not numeric", "7", 0, false},
+		{"nil is not numeric", nil, 0, false},
+		{"bool is not numeric", true, 0, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			v, ok := numeric(c.in)
+			if v != c.wantVal || ok != c.wantOK {
+				t.Errorf("numeric(%#v) = (%v, %v), want (%v, %v)", c.in, v, ok, c.wantVal, c.wantOK)
+			}
+		})
+	}
+}
+
 func TestSortEventsMixedBatchTotalOrder(t *testing.T) {
 	evs := []map[string]any{
 		{"@sequence": float64(1), "@time": "zzz", "@raw": "e1"},

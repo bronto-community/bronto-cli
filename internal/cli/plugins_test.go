@@ -10,7 +10,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
@@ -273,5 +276,111 @@ func TestDiscoverPluginsFirstMatchOnPATHWins(t *testing.T) {
 	rows := discoverPlugins(dir1 + string(os.PathListSeparator) + dir2)
 	if len(rows) != 1 || rows[0]["path"] != filepath.Join(dir1, "bronto-dup") {
 		t.Fatalf("rows = %+v", rows)
+	}
+}
+
+// writeScript creates an executable POSIX shell script in t.TempDir() and
+// returns its path.
+func writeScript(t *testing.T, body string) string {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "script.sh")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestDefaultRunPluginWiresStdioAndReturnsZeroExit(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("posix exec-bit semantics assumed")
+	}
+	path := writeScript(t, "cat\necho err-output 1>&2\nexit 0\n")
+
+	var stdout, stderr bytes.Buffer
+	code, err := defaultRunPlugin(path, nil, bytes.NewBufferString("hello-stdin"), &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("code = %d, want 0", code)
+	}
+	if stdout.String() != "hello-stdin" {
+		t.Fatalf("stdout = %q, want stdin echoed through", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "err-output") {
+		t.Fatalf("stderr = %q, want it wired through", stderr.String())
+	}
+}
+
+func TestDefaultRunPluginPassesThroughNonzeroExitCode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("posix exec-bit semantics assumed")
+	}
+	path := writeScript(t, "exit 7\n")
+
+	code, err := defaultRunPlugin(path, nil, nil, &bytes.Buffer{}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatalf("a plugin exiting non-zero must not be reported as a run error: %v", err)
+	}
+	if code != 7 {
+		t.Fatalf("code = %d, want 7", code)
+	}
+}
+
+func TestDefaultRunPluginPassesArgs(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("posix exec-bit semantics assumed")
+	}
+	path := writeScript(t, "printf '%s|%s' \"$1\" \"$2\"\n")
+
+	var stdout bytes.Buffer
+	code, err := defaultRunPlugin(path, []string{"foo", "bar"}, nil, &stdout, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code != 0 {
+		t.Fatalf("code = %d, want 0", code)
+	}
+	if stdout.String() != "foo|bar" {
+		t.Fatalf("stdout = %q, want args forwarded", stdout.String())
+	}
+}
+
+func TestDefaultRunPluginMissingExecutableIsRunError(t *testing.T) {
+	code, err := defaultRunPlugin(filepath.Join(t.TempDir(), "does-not-exist"), nil, nil, &bytes.Buffer{}, &bytes.Buffer{})
+	if err == nil {
+		t.Fatal("want error for a nonexistent executable")
+	}
+	if code != 0 {
+		t.Fatalf("code = %d, want 0 (error case never returns a real exit code)", code)
+	}
+}
+
+func TestPluginExitErrorMessage(t *testing.T) {
+	pe := &PluginExit{Code: 3}
+	if got := pe.Error(); got != "plugin exited with status 3" {
+		t.Fatalf("Error() = %q", got)
+	}
+}
+
+// TestIsKnownTopLevelCommandMatchesAliases pins the alias-matching loop: a
+// name that only matches a subcommand's Alias (not its Use name) must still
+// count as "known" so an exec plugin never shadows it.
+func TestIsKnownTopLevelCommandMatchesAliases(t *testing.T) {
+	root := &cobra.Command{Use: "root"}
+	root.AddCommand(&cobra.Command{Use: "foo", Aliases: []string{"bar"}})
+
+	if !isKnownTopLevelCommand(root, "foo") {
+		t.Error("direct name must be known")
+	}
+	if !isKnownTopLevelCommand(root, "bar") {
+		t.Error("alias must be known")
+	}
+	if isKnownTopLevelCommand(root, "baz") {
+		t.Error("unrelated name must not be known")
+	}
+	if !isKnownTopLevelCommand(root, "help") {
+		t.Error("reserved name must be known even when absent from Commands()")
 	}
 }

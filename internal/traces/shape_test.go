@@ -25,6 +25,40 @@ func shapeSpans() []Span {
 	}
 }
 
+func TestEntryMatchMatches(t *testing.T) {
+	errSpan := Span{Kind: "SERVER", Service: "cart", Name: "POST /add", DurationNS: 50_000_000,
+		Status: "STATUS_CODE_ERROR"}
+	okSpan := Span{Kind: "CLIENT", Service: "cart", Name: "HGET", DurationNS: 5_000_000,
+		Status: "STATUS_CODE_OK"}
+
+	cases := []struct {
+		name  string
+		match EntryMatch
+		span  Span
+		want  bool
+	}{
+		{"EntryOnly rejects non-SERVER", EntryMatch{EntryOnly: true}, okSpan, false},
+		{"EntryOnly accepts SERVER", EntryMatch{EntryOnly: true}, errSpan, true},
+		{"Service mismatch rejects", EntryMatch{Service: "checkout"}, okSpan, false},
+		{"Service match accepts", EntryMatch{Service: "cart"}, okSpan, true},
+		{"Operation mismatch rejects", EntryMatch{Operation: "GET /x"}, okSpan, false},
+		{"Operation match accepts", EntryMatch{Operation: "HGET"}, okSpan, true},
+		{"ErrorsOnly rejects non-error", EntryMatch{ErrorsOnly: true}, okSpan, false},
+		{"ErrorsOnly accepts error", EntryMatch{ErrorsOnly: true}, errSpan, true},
+		{"MinDurationMS rejects shorter span", EntryMatch{MinDurationMS: 10}, okSpan, false},
+		{"MinDurationMS accepts longer span", EntryMatch{MinDurationMS: 10}, errSpan, true},
+		{"zero-value match accepts everything", EntryMatch{}, okSpan, true},
+		{"combined filters all satisfied", EntryMatch{Service: "cart", ErrorsOnly: true, MinDurationMS: 1}, errSpan, true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := c.match.Matches(c.span); got != c.want {
+				t.Errorf("Matches() = %v, want %v", got, c.want)
+			}
+		})
+	}
+}
+
 func TestComputeShapeBucketsAndStats(t *testing.T) {
 	buckets, used := ComputeShape(shapeSpans(), EntryMatch{EntryOnly: true})
 	if used != 2 {
@@ -117,6 +151,78 @@ func TestRenderShapeBarGlyphs(t *testing.T) {
 	bar := RenderShapeBar(b, 100, 10, false)
 	if bar != "··▒██▒····" {
 		t.Fatalf("bar = %q", bar)
+	}
+}
+
+func TestRenderShapeBarColorNoErrorsIsGreen(t *testing.T) {
+	b := &ShapeBucket{Offsets: []int64{20, 40}, Durations: []int64{20, 20},
+		TraceIDs: map[string]bool{"t1": true, "t2": true}}
+	bar := RenderShapeBar(b, 100, 10, true)
+	if !strings.Contains(bar, ansiGreen+"█"+ansiReset) {
+		t.Fatalf("bar = %q, want a green avg segment", bar)
+	}
+	if strings.Contains(bar, ansiRed) {
+		t.Fatalf("bar = %q, must not use red when Errors == 0", bar)
+	}
+	if !strings.Contains(bar, ansiDim+ansiCyan+"▒"+ansiReset) {
+		t.Fatalf("bar = %q, want a dim cyan band segment", bar)
+	}
+	if !strings.Contains(bar, ansiDim+"·"+ansiReset) {
+		t.Fatalf("bar = %q, want dim outside-band dots", bar)
+	}
+}
+
+func TestRenderShapeBarColorWithErrorsIsRed(t *testing.T) {
+	b := &ShapeBucket{Offsets: []int64{20, 40}, Durations: []int64{20, 20},
+		TraceIDs: map[string]bool{"t1": true, "t2": true}, Errors: 1}
+	bar := RenderShapeBar(b, 100, 10, true)
+	if !strings.Contains(bar, ansiRed+"█"+ansiReset) {
+		t.Fatalf("bar = %q, want a red avg segment when Errors > 0", bar)
+	}
+}
+
+func TestRenderShapeBarClampsZeroAxisEnd(t *testing.T) {
+	b := &ShapeBucket{Offsets: []int64{0}, Durations: []int64{0},
+		TraceIDs: map[string]bool{"t1": true}}
+	// axisEnd <= 0 must be clamped to 1 rather than dividing by zero.
+	bar := RenderShapeBar(b, 0, 5, false)
+	if len([]rune(bar)) != 5 {
+		t.Fatalf("bar = %q, want length 5 even with axisEnd=0", bar)
+	}
+}
+
+func TestRenderShapeBarClampsZeroAvgDurationToOneCell(t *testing.T) {
+	b := &ShapeBucket{Offsets: []int64{10}, Durations: []int64{0},
+		TraceIDs: map[string]bool{"t1": true}}
+	bar := RenderShapeBar(b, 100, 10, false)
+	if !strings.Contains(bar, "█") {
+		t.Fatalf("bar = %q, want at least one avg cell even when AvgDuration()==0", bar)
+	}
+}
+
+func TestRenderShapeBarClampsNegativeMinOffset(t *testing.T) {
+	// Bypass ShapeBucket.add's own clamp by constructing the struct directly,
+	// so MinOffset() itself can return negative and exercise RenderShapeBar's
+	// clamp instead.
+	b := &ShapeBucket{Offsets: []int64{-50, 10}, Durations: []int64{5, 5},
+		TraceIDs: map[string]bool{"t1": true}}
+	if b.MinOffset() >= 0 {
+		t.Fatalf("test setup: MinOffset() = %d, want negative", b.MinOffset())
+	}
+	bar := RenderShapeBar(b, 100, 10, false)
+	if len([]rune(bar)) != 10 {
+		t.Fatalf("bar = %q, want length 10 (no panic/out-of-range from the negative offset)", bar)
+	}
+}
+
+func TestRenderShapeBarClampsBandBeyondWidth(t *testing.T) {
+	// axisEnd deliberately smaller than the bucket's own offsets forces the
+	// computed band cells past the bar's width, exercising both clamps.
+	b := &ShapeBucket{Offsets: []int64{100}, Durations: []int64{5},
+		TraceIDs: map[string]bool{"t1": true}}
+	bar := RenderShapeBar(b, 50, 10, false)
+	if len([]rune(bar)) != 10 {
+		t.Fatalf("bar = %q, want length 10 (band clamped into range)", bar)
 	}
 }
 

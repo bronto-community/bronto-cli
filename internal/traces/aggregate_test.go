@@ -187,6 +187,31 @@ func TestAttributesDeterministicTieOrder(t *testing.T) {
 	}
 }
 
+func TestEntryValsPrefersFirstMapWithNonEmptyVals(t *testing.T) {
+	maps := []map[string]aggEntry{
+		{"k1": {Vals: nil}},
+		{"k1": {Vals: []string{"a", "b"}}},
+	}
+	got := entryVals("k1", maps...)
+	if len(got) != 2 || got[0] != "a" || got[1] != "b" {
+		t.Fatalf("entryVals = %v, want the second map's non-empty Vals", got)
+	}
+}
+
+func TestEntryValsEmptyKeyWithNoMatchReturnsNil(t *testing.T) {
+	got := entryVals("", map[string]aggEntry{"other": {Vals: []string{"x"}}})
+	if got != nil {
+		t.Fatalf("entryVals(\"\") = %v, want nil", got)
+	}
+}
+
+func TestEntryValsFallsBackToSplittingTheKey(t *testing.T) {
+	got := entryVals("svc\x1fop", map[string]aggEntry{})
+	if len(got) != 2 || got[0] != "svc" || got[1] != "op" {
+		t.Fatalf("entryVals fallback = %v, want [svc op]", got)
+	}
+}
+
 func TestParseGroupForms(t *testing.T) {
 	if got := parseGroup([]any{"a", float64(2)}); got[0] != "a" || got[1] != "2" {
 		t.Fatalf("list form: %v", got)

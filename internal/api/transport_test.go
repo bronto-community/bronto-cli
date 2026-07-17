@@ -2,8 +2,11 @@ package api
 
 import (
 	"context"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -135,6 +138,79 @@ func TestTransportCanceledContextAbortsRetryWaitPromptly(t *testing.T) {
 	}
 }
 
+// erroringRoundTripper always fails at the transport layer (no HTTP
+// response at all), exercising RoundTrip's base.RoundTrip error passthrough.
+type erroringRoundTripper struct{ err error }
+
+func (e erroringRoundTripper) RoundTrip(*http.Request) (*http.Response, error) { return nil, e.err }
+
+func TestTransportBaseRoundTripErrorPropagates(t *testing.T) {
+	wantErr := errors.New("connection reset")
+	tr := &Transport{APIKey: "k", UserAgent: "t", Base: erroringRoundTripper{err: wantErr}}
+	c := &http.Client{Transport: tr}
+	_, err := c.Get("http://127.0.0.1:0")
+	if err == nil || !strings.Contains(err.Error(), wantErr.Error()) {
+		t.Fatalf("err = %v, want it to wrap %v", err, wantErr)
+	}
+}
+
+func TestTransportGetBodyErrorDuringRetryAbortsRoundTrip(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer srv.Close()
+
+	req, err := http.NewRequest(http.MethodGet, srv.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantErr := errors.New("getbody boom")
+	req.GetBody = func() (io.ReadCloser, error) { return nil, wantErr }
+
+	tr := &Transport{APIKey: "k", UserAgent: "t", MaxRetries: 2, Sleep: func(time.Duration) {}}
+	_, err = tr.RoundTrip(req)
+	if err == nil || !strings.Contains(err.Error(), wantErr.Error()) {
+		t.Fatalf("err = %v, want it to surface the GetBody error", err)
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("calls = %d, want 1 (aborted before a second attempt)", calls.Load())
+	}
+}
+
+// TestTransportWaitsRealTimerWhenSleepNil pins the wait() path taken in
+// production (Sleep unset): it must actually block on time.After rather
+// than returning immediately, and still complete the retry once the timer
+// fires (as opposed to the context.Done() early-exit path, covered by
+// TestTransportCanceledContextAbortsRetryWaitPromptly).
+func TestTransportWaitsRealTimerWhenSleepNil(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if calls.Add(1) == 1 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	tr := &Transport{APIKey: "k", UserAgent: "t", MaxRetries: 2} // Sleep left nil
+	c := &http.Client{Transport: tr}
+	resp, err := c.Get(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d", resp.StatusCode)
+	}
+	if calls.Load() != 2 {
+		t.Fatalf("calls = %d, want 2", calls.Load())
+	}
+}
+
 func TestRetryDelayAboveCapIsClamped(t *testing.T) {
 	r := &http.Response{Header: http.Header{}}
 	r.Header.Set("Retry-After", "3600")
@@ -159,6 +235,10 @@ func TestRetryDelayForms(t *testing.T) {
 	}
 	if d := retryDelay(mk("Mon, 02 Jan 2006 15:04:05 GMT"), 0); d != 0 {
 		t.Errorf("past HTTP-date clamped to 0: got %v", d)
+	}
+	future := time.Now().UTC().Add(10 * time.Second)
+	if d := retryDelay(mk(future.Format(http.TimeFormat)), 0); d <= 0 || d > 10*time.Second {
+		t.Errorf("future HTTP-date: got %v, want a positive delay close to 10s", d)
 	}
 	if d := retryDelay(mk("bogus"), 1); d != 1*time.Second {
 		t.Errorf("fallback backoff attempt 1: got %v, want 1s", d)
