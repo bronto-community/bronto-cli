@@ -24,16 +24,43 @@ const (
 
 // Defines values for ActionType.
 const (
-	EMAIL       ActionType = "EMAIL"
-	INTEGRATION ActionType = "INTEGRATION"
+	ActionTypeEMAIL       ActionType = "EMAIL"
+	ActionTypeINTEGRATION ActionType = "INTEGRATION"
 )
 
 // Valid indicates whether the value is a known member of the ActionType enum.
 func (e ActionType) Valid() bool {
 	switch e {
-	case EMAIL:
+	case ActionTypeEMAIL:
 		return true
-	case INTEGRATION:
+	case ActionTypeINTEGRATION:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AiAssistantSseType.
+const (
+	AIRESPONSEDELTA   AiAssistantSseType = "AI_RESPONSE_DELTA"
+	ERROR             AiAssistantSseType = "ERROR"
+	LOADINGMESSAGE    AiAssistantSseType = "LOADING_MESSAGE"
+	QUERYRESPONSE     AiAssistantSseType = "QUERY_RESPONSE"
+	RESPONSECOMPLETED AiAssistantSseType = "RESPONSE_COMPLETED"
+)
+
+// Valid indicates whether the value is a known member of the AiAssistantSseType enum.
+func (e AiAssistantSseType) Valid() bool {
+	switch e {
+	case AIRESPONSEDELTA:
+		return true
+	case ERROR:
+		return true
+	case LOADINGMESSAGE:
+		return true
+	case QUERYRESPONSE:
+		return true
+	case RESPONSECOMPLETED:
 		return true
 	default:
 		return false
@@ -79,111 +106,15 @@ func (e ContextConditionOperator) Valid() bool {
 	}
 }
 
-// Defines values for ContractsBillingCCycleDetailsBillingCycle.
+// Defines values for CreateEncryptionKeyRequestProvider.
 const (
-	ANNUALLY ContractsBillingCCycleDetailsBillingCycle = "ANNUALLY"
-	MONTHLY  ContractsBillingCCycleDetailsBillingCycle = "MONTHLY"
+	CreateEncryptionKeyRequestProviderAWSKMS CreateEncryptionKeyRequestProvider = "AWS_KMS"
 )
 
-// Valid indicates whether the value is a known member of the ContractsBillingCCycleDetailsBillingCycle enum.
-func (e ContractsBillingCCycleDetailsBillingCycle) Valid() bool {
+// Valid indicates whether the value is a known member of the CreateEncryptionKeyRequestProvider enum.
+func (e CreateEncryptionKeyRequestProvider) Valid() bool {
 	switch e {
-	case ANNUALLY:
-		return true
-	case MONTHLY:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ContractsBillingProvider.
-const (
-	AWSMARKETPLACE ContractsBillingProvider = "AWS_MARKETPLACE"
-	STRIPE         ContractsBillingProvider = "STRIPE"
-)
-
-// Valid indicates whether the value is a known member of the ContractsBillingProvider enum.
-func (e ContractsBillingProvider) Valid() bool {
-	switch e {
-	case AWSMARKETPLACE:
-		return true
-	case STRIPE:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ContractsContractStatus.
-const (
-	ACTIVE           ContractsContractStatus = "ACTIVE"
-	INACTIVE         ContractsContractStatus = "INACTIVE"
-	UNDERNEGOTIATION ContractsContractStatus = "UNDER_NEGOTIATION"
-)
-
-// Valid indicates whether the value is a known member of the ContractsContractStatus enum.
-func (e ContractsContractStatus) Valid() bool {
-	switch e {
-	case ACTIVE:
-		return true
-	case INACTIVE:
-		return true
-	case UNDERNEGOTIATION:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ContractsCostDetailsCurrency.
-const (
-	USD ContractsCostDetailsCurrency = "USD"
-)
-
-// Valid indicates whether the value is a known member of the ContractsCostDetailsCurrency enum.
-func (e ContractsCostDetailsCurrency) Valid() bool {
-	switch e {
-	case USD:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ContractsLimitsRetentionPeriod.
-const (
-	ONEMONTH ContractsLimitsRetentionPeriod = "ONE_MONTH"
-	ONEYEAR  ContractsLimitsRetentionPeriod = "ONE_YEAR"
-	TWOYEARS ContractsLimitsRetentionPeriod = "TWO_YEARS"
-)
-
-// Valid indicates whether the value is a known member of the ContractsLimitsRetentionPeriod enum.
-func (e ContractsLimitsRetentionPeriod) Valid() bool {
-	switch e {
-	case ONEMONTH:
-		return true
-	case ONEYEAR:
-		return true
-	case TWOYEARS:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CreateIdpProviderType.
-const (
-	CreateIdpProviderTypeOIDC CreateIdpProviderType = "OIDC"
-	CreateIdpProviderTypeSAML CreateIdpProviderType = "SAML"
-)
-
-// Valid indicates whether the value is a known member of the CreateIdpProviderType enum.
-func (e CreateIdpProviderType) Valid() bool {
-	switch e {
-	case CreateIdpProviderTypeOIDC:
-		return true
-	case CreateIdpProviderTypeSAML:
+	case CreateEncryptionKeyRequestProviderAWSKMS:
 		return true
 	default:
 		return false
@@ -253,6 +184,75 @@ func (e CreateLimitRequestUnit) Valid() bool {
 	}
 }
 
+// Defines values for CreateMonitorDowntimeRequestAlertStrategy.
+const (
+	CreateMonitorDowntimeRequestAlertStrategyDELAY CreateMonitorDowntimeRequestAlertStrategy = "DELAY"
+	CreateMonitorDowntimeRequestAlertStrategyDROP  CreateMonitorDowntimeRequestAlertStrategy = "DROP"
+)
+
+// Valid indicates whether the value is a known member of the CreateMonitorDowntimeRequestAlertStrategy enum.
+func (e CreateMonitorDowntimeRequestAlertStrategy) Valid() bool {
+	switch e {
+	case CreateMonitorDowntimeRequestAlertStrategyDELAY:
+		return true
+	case CreateMonitorDowntimeRequestAlertStrategyDROP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays.
+const (
+	CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysFriday    CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Friday"
+	CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysMonday    CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Monday"
+	CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysSaturday  CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Saturday"
+	CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysSunday    CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Sunday"
+	CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysThursday  CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Thursday"
+	CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysTuesday   CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Tuesday"
+	CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysWednesday CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Wednesday"
+)
+
+// Valid indicates whether the value is a known member of the CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays enum.
+func (e CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays) Valid() bool {
+	switch e {
+	case CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysFriday:
+		return true
+	case CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysMonday:
+		return true
+	case CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysSaturday:
+		return true
+	case CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysSunday:
+		return true
+	case CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysThursday:
+		return true
+	case CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysTuesday:
+		return true
+	case CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDaysWednesday:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateMonitorRequestChangeType.
+const (
+	CreateMonitorRequestChangeTypeDIFFERENCE CreateMonitorRequestChangeType = "DIFFERENCE"
+	CreateMonitorRequestChangeTypePERCENTAGE CreateMonitorRequestChangeType = "PERCENTAGE"
+)
+
+// Valid indicates whether the value is a known member of the CreateMonitorRequestChangeType enum.
+func (e CreateMonitorRequestChangeType) Valid() bool {
+	switch e {
+	case CreateMonitorRequestChangeTypeDIFFERENCE:
+		return true
+	case CreateMonitorRequestChangeTypePERCENTAGE:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateMonitorRequestComparisonOperator.
 const (
 	CreateMonitorRequestComparisonOperatorABOVE        CreateMonitorRequestComparisonOperator = "ABOVE"
@@ -307,45 +307,18 @@ func (e CreateMonitorRequestNoDataStatus) Valid() bool {
 	}
 }
 
-// Defines values for CreateMonitorRequestStat.
-const (
-	CreateMonitorRequestStatAVERAGE CreateMonitorRequestStat = "AVERAGE"
-	CreateMonitorRequestStatAVG     CreateMonitorRequestStat = "AVG"
-	CreateMonitorRequestStatCOUNT   CreateMonitorRequestStat = "COUNT"
-	CreateMonitorRequestStatMAX     CreateMonitorRequestStat = "MAX"
-	CreateMonitorRequestStatMIN     CreateMonitorRequestStat = "MIN"
-	CreateMonitorRequestStatSUM     CreateMonitorRequestStat = "SUM"
-)
-
-// Valid indicates whether the value is a known member of the CreateMonitorRequestStat enum.
-func (e CreateMonitorRequestStat) Valid() bool {
-	switch e {
-	case CreateMonitorRequestStatAVERAGE:
-		return true
-	case CreateMonitorRequestStatAVG:
-		return true
-	case CreateMonitorRequestStatCOUNT:
-		return true
-	case CreateMonitorRequestStatMAX:
-		return true
-	case CreateMonitorRequestStatMIN:
-		return true
-	case CreateMonitorRequestStatSUM:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for CreateMonitorRequestType.
 const (
-	CreateMonitorRequestTypePATTERN CreateMonitorRequestType = "PATTERN"
-	CreateMonitorRequestTypeUSAGE   CreateMonitorRequestType = "USAGE"
+	CreateMonitorRequestTypeCHANGEDETECTION CreateMonitorRequestType = "CHANGE_DETECTION"
+	CreateMonitorRequestTypePATTERN         CreateMonitorRequestType = "PATTERN"
+	CreateMonitorRequestTypeUSAGE           CreateMonitorRequestType = "USAGE"
 )
 
 // Valid indicates whether the value is a known member of the CreateMonitorRequestType enum.
 func (e CreateMonitorRequestType) Valid() bool {
 	switch e {
+	case CreateMonitorRequestTypeCHANGEDETECTION:
+		return true
 	case CreateMonitorRequestTypePATTERN:
 		return true
 	case CreateMonitorRequestTypeUSAGE:
@@ -355,63 +328,147 @@ func (e CreateMonitorRequestType) Valid() bool {
 	}
 }
 
-// Defines values for CreateOrgRequestRegion.
+// Defines values for CreateMonitorTemplateRequestChangeType.
 const (
-	CreateOrgRequestRegionEU CreateOrgRequestRegion = "EU"
-	CreateOrgRequestRegionUS CreateOrgRequestRegion = "US"
+	CreateMonitorTemplateRequestChangeTypeDIFFERENCE CreateMonitorTemplateRequestChangeType = "DIFFERENCE"
+	CreateMonitorTemplateRequestChangeTypePERCENTAGE CreateMonitorTemplateRequestChangeType = "PERCENTAGE"
 )
 
-// Valid indicates whether the value is a known member of the CreateOrgRequestRegion enum.
-func (e CreateOrgRequestRegion) Valid() bool {
+// Valid indicates whether the value is a known member of the CreateMonitorTemplateRequestChangeType enum.
+func (e CreateMonitorTemplateRequestChangeType) Valid() bool {
 	switch e {
-	case CreateOrgRequestRegionEU:
+	case CreateMonitorTemplateRequestChangeTypeDIFFERENCE:
 		return true
-	case CreateOrgRequestRegionUS:
+	case CreateMonitorTemplateRequestChangeTypePERCENTAGE:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for CreatePolicyRequestPolicyType.
+// Defines values for CreateMonitorTemplateRequestComparisonOperator.
 const (
-	CreatePolicyRequestPolicyTypeCUSTOM    CreatePolicyRequestPolicyType = "CUSTOM"
-	CreatePolicyRequestPolicyTypeLOGFORBID CreatePolicyRequestPolicyType = "LOG_FORBID"
-	CreatePolicyRequestPolicyTypeLOGPERMIT CreatePolicyRequestPolicyType = "LOG_PERMIT"
-	CreatePolicyRequestPolicyTypeROLEBASED CreatePolicyRequestPolicyType = "ROLE_BASED"
+	CreateMonitorTemplateRequestComparisonOperatorABOVE        CreateMonitorTemplateRequestComparisonOperator = "ABOVE"
+	CreateMonitorTemplateRequestComparisonOperatorABOVEOREQUAL CreateMonitorTemplateRequestComparisonOperator = "ABOVE_OR_EQUAL"
+	CreateMonitorTemplateRequestComparisonOperatorBELOW        CreateMonitorTemplateRequestComparisonOperator = "BELOW"
+	CreateMonitorTemplateRequestComparisonOperatorBELOWOREQUAL CreateMonitorTemplateRequestComparisonOperator = "BELOW_OR_EQUAL"
+	CreateMonitorTemplateRequestComparisonOperatorEQUAL        CreateMonitorTemplateRequestComparisonOperator = "EQUAL"
+	CreateMonitorTemplateRequestComparisonOperatorNOTEQUAL     CreateMonitorTemplateRequestComparisonOperator = "NOT_EQUAL"
 )
 
-// Valid indicates whether the value is a known member of the CreatePolicyRequestPolicyType enum.
-func (e CreatePolicyRequestPolicyType) Valid() bool {
+// Valid indicates whether the value is a known member of the CreateMonitorTemplateRequestComparisonOperator enum.
+func (e CreateMonitorTemplateRequestComparisonOperator) Valid() bool {
 	switch e {
-	case CreatePolicyRequestPolicyTypeCUSTOM:
+	case CreateMonitorTemplateRequestComparisonOperatorABOVE:
 		return true
-	case CreatePolicyRequestPolicyTypeLOGFORBID:
+	case CreateMonitorTemplateRequestComparisonOperatorABOVEOREQUAL:
 		return true
-	case CreatePolicyRequestPolicyTypeLOGPERMIT:
+	case CreateMonitorTemplateRequestComparisonOperatorBELOW:
 		return true
-	case CreatePolicyRequestPolicyTypeROLEBASED:
+	case CreateMonitorTemplateRequestComparisonOperatorBELOWOREQUAL:
+		return true
+	case CreateMonitorTemplateRequestComparisonOperatorEQUAL:
+		return true
+	case CreateMonitorTemplateRequestComparisonOperatorNOTEQUAL:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for CreatePolicyRequestPrincipalPrincipalType.
+// Defines values for CreateMonitorTemplateRequestNoDataStatus.
 const (
-	CreatePolicyRequestPrincipalPrincipalTypeAPIKEY CreatePolicyRequestPrincipalPrincipalType = "APIKEY"
-	CreatePolicyRequestPrincipalPrincipalTypeROLE   CreatePolicyRequestPrincipalPrincipalType = "ROLE"
-	CreatePolicyRequestPrincipalPrincipalTypeUSER   CreatePolicyRequestPrincipalPrincipalType = "USER"
+	CreateMonitorTemplateRequestNoDataStatusALERT  CreateMonitorTemplateRequestNoDataStatus = "ALERT"
+	CreateMonitorTemplateRequestNoDataStatusNODATA CreateMonitorTemplateRequestNoDataStatus = "NO_DATA"
+	CreateMonitorTemplateRequestNoDataStatusOK     CreateMonitorTemplateRequestNoDataStatus = "OK"
+	CreateMonitorTemplateRequestNoDataStatusWARN   CreateMonitorTemplateRequestNoDataStatus = "WARN"
 )
 
-// Valid indicates whether the value is a known member of the CreatePolicyRequestPrincipalPrincipalType enum.
-func (e CreatePolicyRequestPrincipalPrincipalType) Valid() bool {
+// Valid indicates whether the value is a known member of the CreateMonitorTemplateRequestNoDataStatus enum.
+func (e CreateMonitorTemplateRequestNoDataStatus) Valid() bool {
 	switch e {
-	case CreatePolicyRequestPrincipalPrincipalTypeAPIKEY:
+	case CreateMonitorTemplateRequestNoDataStatusALERT:
 		return true
-	case CreatePolicyRequestPrincipalPrincipalTypeROLE:
+	case CreateMonitorTemplateRequestNoDataStatusNODATA:
 		return true
-	case CreatePolicyRequestPrincipalPrincipalTypeUSER:
+	case CreateMonitorTemplateRequestNoDataStatusOK:
+		return true
+	case CreateMonitorTemplateRequestNoDataStatusWARN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateMonitorTemplateRequestType.
+const (
+	CreateMonitorTemplateRequestTypeCHANGEDETECTION CreateMonitorTemplateRequestType = "CHANGE_DETECTION"
+	CreateMonitorTemplateRequestTypePATTERN         CreateMonitorTemplateRequestType = "PATTERN"
+	CreateMonitorTemplateRequestTypeUSAGE           CreateMonitorTemplateRequestType = "USAGE"
+)
+
+// Valid indicates whether the value is a known member of the CreateMonitorTemplateRequestType enum.
+func (e CreateMonitorTemplateRequestType) Valid() bool {
+	switch e {
+	case CreateMonitorTemplateRequestTypeCHANGEDETECTION:
+		return true
+	case CreateMonitorTemplateRequestTypePATTERN:
+		return true
+	case CreateMonitorTemplateRequestTypeUSAGE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EncryptionKeyProvider.
+const (
+	EncryptionKeyProviderAWSKMS EncryptionKeyProvider = "AWS_KMS"
+)
+
+// Valid indicates whether the value is a known member of the EncryptionKeyProvider enum.
+func (e EncryptionKeyProvider) Valid() bool {
+	switch e {
+	case EncryptionKeyProviderAWSKMS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EncryptionKeyStatus.
+const (
+	EncryptionKeyStatusACTIVE               EncryptionKeyStatus = "ACTIVE"
+	EncryptionKeyStatusCREATED              EncryptionKeyStatus = "CREATED"
+	EncryptionKeyStatusDISABLED             EncryptionKeyStatus = "DISABLED"
+	EncryptionKeyStatusKEYSTATUSUNSPECIFIED EncryptionKeyStatus = "KEY_STATUS_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the EncryptionKeyStatus enum.
+func (e EncryptionKeyStatus) Valid() bool {
+	switch e {
+	case EncryptionKeyStatusACTIVE:
+		return true
+	case EncryptionKeyStatusCREATED:
+		return true
+	case EncryptionKeyStatusDISABLED:
+		return true
+	case EncryptionKeyStatusKEYSTATUSUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EncryptionKeyUpdateRequestStatus.
+const (
+	EncryptionKeyUpdateRequestStatusACTIVE EncryptionKeyUpdateRequestStatus = "ACTIVE"
+)
+
+// Valid indicates whether the value is a known member of the EncryptionKeyUpdateRequestStatus enum.
+func (e EncryptionKeyUpdateRequestStatus) Valid() bool {
+	switch e {
+	case EncryptionKeyUpdateRequestStatusACTIVE:
 		return true
 	default:
 		return false
@@ -420,11 +477,12 @@ func (e CreatePolicyRequestPrincipalPrincipalType) Valid() bool {
 
 // Defines values for EntityType.
 const (
-	EntityTypeApiKey    EntityType = "api_key"
-	EntityTypeDashboard EntityType = "dashboard"
-	EntityTypeLog       EntityType = "log"
-	EntityTypeUser      EntityType = "user"
-	EntityTypeWidget    EntityType = "widget"
+	EntityTypeApiKey      EntityType = "api_key"
+	EntityTypeDashboard   EntityType = "dashboard"
+	EntityTypeLog         EntityType = "log"
+	EntityTypeSavedSearch EntityType = "saved_search"
+	EntityTypeUser        EntityType = "user"
+	EntityTypeWidget      EntityType = "widget"
 )
 
 // Valid indicates whether the value is a known member of the EntityType enum.
@@ -435,6 +493,8 @@ func (e EntityType) Valid() bool {
 	case EntityTypeDashboard:
 		return true
 	case EntityTypeLog:
+		return true
+	case EntityTypeSavedSearch:
 		return true
 	case EntityTypeUser:
 		return true
@@ -447,19 +507,19 @@ func (e EntityType) Valid() bool {
 
 // Defines values for ExportStatus.
 const (
-	COMPLETE   ExportStatus = "COMPLETE"
-	CREATED    ExportStatus = "CREATED"
-	INPROGRESS ExportStatus = "IN_PROGRESS"
+	ExportStatusCOMPLETE   ExportStatus = "COMPLETE"
+	ExportStatusCREATED    ExportStatus = "CREATED"
+	ExportStatusINPROGRESS ExportStatus = "IN_PROGRESS"
 )
 
 // Valid indicates whether the value is a known member of the ExportStatus enum.
 func (e ExportStatus) Valid() bool {
 	switch e {
-	case COMPLETE:
+	case ExportStatusCOMPLETE:
 		return true
-	case CREATED:
+	case ExportStatusCREATED:
 		return true
-	case INPROGRESS:
+	case ExportStatusINPROGRESS:
 		return true
 	default:
 		return false
@@ -544,66 +604,18 @@ func (e ForwardConfigRequestCompression) Valid() bool {
 	}
 }
 
-// Defines values for IdpProviderType.
+// Defines values for IdentityType.
 const (
-	IdpProviderTypeOIDC IdpProviderType = "OIDC"
-	IdpProviderTypeSAML IdpProviderType = "SAML"
+	APIKEYID IdentityType = "API_KEY_ID"
+	USERID   IdentityType = "USER_ID"
 )
 
-// Valid indicates whether the value is a known member of the IdpProviderType enum.
-func (e IdpProviderType) Valid() bool {
+// Valid indicates whether the value is a known member of the IdentityType enum.
+func (e IdentityType) Valid() bool {
 	switch e {
-	case IdpProviderTypeOIDC:
+	case APIKEYID:
 		return true
-	case IdpProviderTypeSAML:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for InsightCategory.
-const (
-	VerboseLogging InsightCategory = "verbose_logging"
-)
-
-// Valid indicates whether the value is a known member of the InsightCategory enum.
-func (e InsightCategory) Valid() bool {
-	switch e {
-	case VerboseLogging:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for InsightEntityType.
-const (
-	InsightEntityTypeLog InsightEntityType = "log"
-)
-
-// Valid indicates whether the value is a known member of the InsightEntityType enum.
-func (e InsightEntityType) Valid() bool {
-	switch e {
-	case InsightEntityTypeLog:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for InsightName.
-const (
-	DebugLogsReceived    InsightName = "debug_logs_received"
-	ParserConfigMismatch InsightName = "parser_config_mismatch"
-)
-
-// Valid indicates whether the value is a known member of the InsightName enum.
-func (e InsightName) Valid() bool {
-	switch e {
-	case DebugLogsReceived:
-		return true
-	case ParserConfigMismatch:
+	case USERID:
 		return true
 	default:
 		return false
@@ -613,12 +625,21 @@ func (e InsightName) Valid() bool {
 // Defines values for LimitCategory.
 const (
 	LimitCategoryINGESTIONLIMITS LimitCategory = "INGESTION_LIMITS"
+	LimitCategoryLBMLIMITS       LimitCategory = "LBM_LIMITS"
+	LimitCategoryMONITORLIMITS   LimitCategory = "MONITOR_LIMITS"
+	LimitCategorySEARCHLIMITS    LimitCategory = "SEARCH_LIMITS"
 )
 
 // Valid indicates whether the value is a known member of the LimitCategory enum.
 func (e LimitCategory) Valid() bool {
 	switch e {
 	case LimitCategoryINGESTIONLIMITS:
+		return true
+	case LimitCategoryLBMLIMITS:
+		return true
+	case LimitCategoryMONITORLIMITS:
+		return true
+	case LimitCategorySEARCHLIMITS:
 		return true
 	default:
 		return false
@@ -645,13 +666,34 @@ func (e LimitTarget) Valid() bool {
 
 // Defines values for LimitTimeWindow.
 const (
+	LimitTimeWindowNOWINDOW LimitTimeWindow = "NO_WINDOW"
 	LimitTimeWindowPERMONTH LimitTimeWindow = "PER_MONTH"
 )
 
 // Valid indicates whether the value is a known member of the LimitTimeWindow enum.
 func (e LimitTimeWindow) Valid() bool {
 	switch e {
+	case LimitTimeWindowNOWINDOW:
+		return true
 	case LimitTimeWindowPERMONTH:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitType.
+const (
+	SYSTEM      LimitType = "SYSTEM"
+	USERDEFINED LimitType = "USER_DEFINED"
+)
+
+// Valid indicates whether the value is a known member of the LimitType enum.
+func (e LimitType) Valid() bool {
+	switch e {
+	case SYSTEM:
+		return true
+	case USERDEFINED:
 		return true
 	default:
 		return false
@@ -661,6 +703,8 @@ func (e LimitTimeWindow) Valid() bool {
 // Defines values for LimitUnit.
 const (
 	LimitUnitBYTES LimitUnit = "BYTES"
+	LimitUnitCOUNT LimitUnit = "COUNT"
+	LimitUnitRATIO LimitUnit = "RATIO"
 )
 
 // Valid indicates whether the value is a known member of the LimitUnit enum.
@@ -668,50 +712,42 @@ func (e LimitUnit) Valid() bool {
 	switch e {
 	case LimitUnitBYTES:
 		return true
+	case LimitUnitCOUNT:
+		return true
+	case LimitUnitRATIO:
+		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for LogLevel.
+// Defines values for ListComponentType.
 const (
-	LogLevelAlert     LogLevel = "alert"
-	LogLevelCritical  LogLevel = "critical"
-	LogLevelDebug     LogLevel = "debug"
-	LogLevelEmergency LogLevel = "emergency"
-	LogLevelError     LogLevel = "error"
-	LogLevelFatal     LogLevel = "fatal"
-	LogLevelInfo      LogLevel = "info"
-	LogLevelNotice    LogLevel = "notice"
-	LogLevelSevere    LogLevel = "severe"
-	LogLevelTrace     LogLevel = "trace"
-	LogLevelWarning   LogLevel = "warning"
+	Table ListComponentType = "table"
 )
 
-// Valid indicates whether the value is a known member of the LogLevel enum.
-func (e LogLevel) Valid() bool {
+// Valid indicates whether the value is a known member of the ListComponentType enum.
+func (e ListComponentType) Valid() bool {
 	switch e {
-	case LogLevelAlert:
+	case Table:
 		return true
-	case LogLevelCritical:
+	default:
+		return false
+	}
+}
+
+// Defines values for MonitorChangeType.
+const (
+	MonitorChangeTypeDIFFERENCE MonitorChangeType = "DIFFERENCE"
+	MonitorChangeTypePERCENTAGE MonitorChangeType = "PERCENTAGE"
+)
+
+// Valid indicates whether the value is a known member of the MonitorChangeType enum.
+func (e MonitorChangeType) Valid() bool {
+	switch e {
+	case MonitorChangeTypeDIFFERENCE:
 		return true
-	case LogLevelDebug:
-		return true
-	case LogLevelEmergency:
-		return true
-	case LogLevelError:
-		return true
-	case LogLevelFatal:
-		return true
-	case LogLevelInfo:
-		return true
-	case LogLevelNotice:
-		return true
-	case LogLevelSevere:
-		return true
-	case LogLevelTrace:
-		return true
-	case LogLevelWarning:
+	case MonitorChangeTypePERCENTAGE:
 		return true
 	default:
 		return false
@@ -796,36 +832,6 @@ func (e MonitorNoDataStatus) Valid() bool {
 	}
 }
 
-// Defines values for MonitorStat.
-const (
-	MonitorStatAVERAGE MonitorStat = "AVERAGE"
-	MonitorStatAVG     MonitorStat = "AVG"
-	MonitorStatCOUNT   MonitorStat = "COUNT"
-	MonitorStatMAX     MonitorStat = "MAX"
-	MonitorStatMIN     MonitorStat = "MIN"
-	MonitorStatSUM     MonitorStat = "SUM"
-)
-
-// Valid indicates whether the value is a known member of the MonitorStat enum.
-func (e MonitorStat) Valid() bool {
-	switch e {
-	case MonitorStatAVERAGE:
-		return true
-	case MonitorStatAVG:
-		return true
-	case MonitorStatCOUNT:
-		return true
-	case MonitorStatMAX:
-		return true
-	case MonitorStatMIN:
-		return true
-	case MonitorStatSUM:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for MonitorStatus.
 const (
 	MonitorStatusALERT  MonitorStatus = "ALERT"
@@ -852,16 +858,70 @@ func (e MonitorStatus) Valid() bool {
 
 // Defines values for MonitorType.
 const (
-	MonitorTypePATTERN MonitorType = "PATTERN"
-	MonitorTypeUSAGE   MonitorType = "USAGE"
+	MonitorTypeCHANGEDETECTION MonitorType = "CHANGE_DETECTION"
+	MonitorTypePATTERN         MonitorType = "PATTERN"
+	MonitorTypeUSAGE           MonitorType = "USAGE"
 )
 
 // Valid indicates whether the value is a known member of the MonitorType enum.
 func (e MonitorType) Valid() bool {
 	switch e {
+	case MonitorTypeCHANGEDETECTION:
+		return true
 	case MonitorTypePATTERN:
 		return true
 	case MonitorTypeUSAGE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MonitorDowntimeAlertStrategy.
+const (
+	MonitorDowntimeAlertStrategyDELAY MonitorDowntimeAlertStrategy = "DELAY"
+	MonitorDowntimeAlertStrategyDROP  MonitorDowntimeAlertStrategy = "DROP"
+)
+
+// Valid indicates whether the value is a known member of the MonitorDowntimeAlertStrategy enum.
+func (e MonitorDowntimeAlertStrategy) Valid() bool {
+	switch e {
+	case MonitorDowntimeAlertStrategyDELAY:
+		return true
+	case MonitorDowntimeAlertStrategyDROP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MonitorDowntimeDynamicTimeRangeRepeatDays.
+const (
+	MonitorDowntimeDynamicTimeRangeRepeatDaysFriday    MonitorDowntimeDynamicTimeRangeRepeatDays = "Friday"
+	MonitorDowntimeDynamicTimeRangeRepeatDaysMonday    MonitorDowntimeDynamicTimeRangeRepeatDays = "Monday"
+	MonitorDowntimeDynamicTimeRangeRepeatDaysSaturday  MonitorDowntimeDynamicTimeRangeRepeatDays = "Saturday"
+	MonitorDowntimeDynamicTimeRangeRepeatDaysSunday    MonitorDowntimeDynamicTimeRangeRepeatDays = "Sunday"
+	MonitorDowntimeDynamicTimeRangeRepeatDaysThursday  MonitorDowntimeDynamicTimeRangeRepeatDays = "Thursday"
+	MonitorDowntimeDynamicTimeRangeRepeatDaysTuesday   MonitorDowntimeDynamicTimeRangeRepeatDays = "Tuesday"
+	MonitorDowntimeDynamicTimeRangeRepeatDaysWednesday MonitorDowntimeDynamicTimeRangeRepeatDays = "Wednesday"
+)
+
+// Valid indicates whether the value is a known member of the MonitorDowntimeDynamicTimeRangeRepeatDays enum.
+func (e MonitorDowntimeDynamicTimeRangeRepeatDays) Valid() bool {
+	switch e {
+	case MonitorDowntimeDynamicTimeRangeRepeatDaysFriday:
+		return true
+	case MonitorDowntimeDynamicTimeRangeRepeatDaysMonday:
+		return true
+	case MonitorDowntimeDynamicTimeRangeRepeatDaysSaturday:
+		return true
+	case MonitorDowntimeDynamicTimeRangeRepeatDaysSunday:
+		return true
+	case MonitorDowntimeDynamicTimeRangeRepeatDaysThursday:
+		return true
+	case MonitorDowntimeDynamicTimeRangeRepeatDaysTuesday:
+		return true
+	case MonitorDowntimeDynamicTimeRangeRepeatDaysWednesday:
 		return true
 	default:
 		return false
@@ -916,6 +976,219 @@ func (e MonitorEventPreviousStatus) Valid() bool {
 	}
 }
 
+// Defines values for MonitorGroupHistoryHistoryStatus.
+const (
+	MonitorGroupHistoryHistoryStatusALERT  MonitorGroupHistoryHistoryStatus = "ALERT"
+	MonitorGroupHistoryHistoryStatusNODATA MonitorGroupHistoryHistoryStatus = "NO_DATA"
+	MonitorGroupHistoryHistoryStatusOK     MonitorGroupHistoryHistoryStatus = "OK"
+	MonitorGroupHistoryHistoryStatusWARN   MonitorGroupHistoryHistoryStatus = "WARN"
+)
+
+// Valid indicates whether the value is a known member of the MonitorGroupHistoryHistoryStatus enum.
+func (e MonitorGroupHistoryHistoryStatus) Valid() bool {
+	switch e {
+	case MonitorGroupHistoryHistoryStatusALERT:
+		return true
+	case MonitorGroupHistoryHistoryStatusNODATA:
+		return true
+	case MonitorGroupHistoryHistoryStatusOK:
+		return true
+	case MonitorGroupHistoryHistoryStatusWARN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MonitorNotificationMonitorStatus.
+const (
+	MonitorNotificationMonitorStatusALERT  MonitorNotificationMonitorStatus = "ALERT"
+	MonitorNotificationMonitorStatusNODATA MonitorNotificationMonitorStatus = "NO_DATA"
+	MonitorNotificationMonitorStatusOK     MonitorNotificationMonitorStatus = "OK"
+	MonitorNotificationMonitorStatusWARN   MonitorNotificationMonitorStatus = "WARN"
+)
+
+// Valid indicates whether the value is a known member of the MonitorNotificationMonitorStatus enum.
+func (e MonitorNotificationMonitorStatus) Valid() bool {
+	switch e {
+	case MonitorNotificationMonitorStatusALERT:
+		return true
+	case MonitorNotificationMonitorStatusNODATA:
+		return true
+	case MonitorNotificationMonitorStatusOK:
+		return true
+	case MonitorNotificationMonitorStatusWARN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MonitorNotificationStatus.
+const (
+	MonitorNotificationStatusFAILED     MonitorNotificationStatus = "FAILED"
+	MonitorNotificationStatusINPROGRESS MonitorNotificationStatus = "IN_PROGRESS"
+	MonitorNotificationStatusSENT       MonitorNotificationStatus = "SENT"
+)
+
+// Valid indicates whether the value is a known member of the MonitorNotificationStatus enum.
+func (e MonitorNotificationStatus) Valid() bool {
+	switch e {
+	case MonitorNotificationStatusFAILED:
+		return true
+	case MonitorNotificationStatusINPROGRESS:
+		return true
+	case MonitorNotificationStatusSENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MonitorNotificationType.
+const (
+	MonitorNotificationTypeEMAIL   MonitorNotificationType = "EMAIL"
+	MonitorNotificationTypeSLACK   MonitorNotificationType = "SLACK"
+	MonitorNotificationTypeWEBHOOK MonitorNotificationType = "WEBHOOK"
+)
+
+// Valid indicates whether the value is a known member of the MonitorNotificationType enum.
+func (e MonitorNotificationType) Valid() bool {
+	switch e {
+	case MonitorNotificationTypeEMAIL:
+		return true
+	case MonitorNotificationTypeSLACK:
+		return true
+	case MonitorNotificationTypeWEBHOOK:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MonitorTemplateChangeType.
+const (
+	MonitorTemplateChangeTypeDIFFERENCE MonitorTemplateChangeType = "DIFFERENCE"
+	MonitorTemplateChangeTypePERCENTAGE MonitorTemplateChangeType = "PERCENTAGE"
+)
+
+// Valid indicates whether the value is a known member of the MonitorTemplateChangeType enum.
+func (e MonitorTemplateChangeType) Valid() bool {
+	switch e {
+	case MonitorTemplateChangeTypeDIFFERENCE:
+		return true
+	case MonitorTemplateChangeTypePERCENTAGE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MonitorTemplateComparisonOperator.
+const (
+	MonitorTemplateComparisonOperatorABOVE        MonitorTemplateComparisonOperator = "ABOVE"
+	MonitorTemplateComparisonOperatorABOVEOREQUAL MonitorTemplateComparisonOperator = "ABOVE_OR_EQUAL"
+	MonitorTemplateComparisonOperatorBELOW        MonitorTemplateComparisonOperator = "BELOW"
+	MonitorTemplateComparisonOperatorBELOWOREQUAL MonitorTemplateComparisonOperator = "BELOW_OR_EQUAL"
+	MonitorTemplateComparisonOperatorEQUAL        MonitorTemplateComparisonOperator = "EQUAL"
+	MonitorTemplateComparisonOperatorNOTEQUAL     MonitorTemplateComparisonOperator = "NOT_EQUAL"
+)
+
+// Valid indicates whether the value is a known member of the MonitorTemplateComparisonOperator enum.
+func (e MonitorTemplateComparisonOperator) Valid() bool {
+	switch e {
+	case MonitorTemplateComparisonOperatorABOVE:
+		return true
+	case MonitorTemplateComparisonOperatorABOVEOREQUAL:
+		return true
+	case MonitorTemplateComparisonOperatorBELOW:
+		return true
+	case MonitorTemplateComparisonOperatorBELOWOREQUAL:
+		return true
+	case MonitorTemplateComparisonOperatorEQUAL:
+		return true
+	case MonitorTemplateComparisonOperatorNOTEQUAL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MonitorTemplateNoDataStatus.
+const (
+	MonitorTemplateNoDataStatusALERT  MonitorTemplateNoDataStatus = "ALERT"
+	MonitorTemplateNoDataStatusNODATA MonitorTemplateNoDataStatus = "NO_DATA"
+	MonitorTemplateNoDataStatusOK     MonitorTemplateNoDataStatus = "OK"
+	MonitorTemplateNoDataStatusWARN   MonitorTemplateNoDataStatus = "WARN"
+)
+
+// Valid indicates whether the value is a known member of the MonitorTemplateNoDataStatus enum.
+func (e MonitorTemplateNoDataStatus) Valid() bool {
+	switch e {
+	case MonitorTemplateNoDataStatusALERT:
+		return true
+	case MonitorTemplateNoDataStatusNODATA:
+		return true
+	case MonitorTemplateNoDataStatusOK:
+		return true
+	case MonitorTemplateNoDataStatusWARN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MonitorTemplateType.
+const (
+	MonitorTemplateTypeCHANGEDETECTION MonitorTemplateType = "CHANGE_DETECTION"
+	MonitorTemplateTypePATTERN         MonitorTemplateType = "PATTERN"
+	MonitorTemplateTypeUSAGE           MonitorTemplateType = "USAGE"
+)
+
+// Valid indicates whether the value is a known member of the MonitorTemplateType enum.
+func (e MonitorTemplateType) Valid() bool {
+	switch e {
+	case MonitorTemplateTypeCHANGEDETECTION:
+		return true
+	case MonitorTemplateTypePATTERN:
+		return true
+	case MonitorTemplateTypeUSAGE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MultiOrgUserStatus.
+const (
+	MultiOrgUserStatusACTIVE      MultiOrgUserStatus = "ACTIVE"
+	MultiOrgUserStatusDEACTIVATED MultiOrgUserStatus = "DEACTIVATED"
+	MultiOrgUserStatusINACTIVE    MultiOrgUserStatus = "INACTIVE"
+	MultiOrgUserStatusINVITED     MultiOrgUserStatus = "INVITED"
+	MultiOrgUserStatusMIGRATED    MultiOrgUserStatus = "MIGRATED"
+	MultiOrgUserStatusREMOVED     MultiOrgUserStatus = "REMOVED"
+)
+
+// Valid indicates whether the value is a known member of the MultiOrgUserStatus enum.
+func (e MultiOrgUserStatus) Valid() bool {
+	switch e {
+	case MultiOrgUserStatusACTIVE:
+		return true
+	case MultiOrgUserStatusDEACTIVATED:
+		return true
+	case MultiOrgUserStatusINACTIVE:
+		return true
+	case MultiOrgUserStatusINVITED:
+		return true
+	case MultiOrgUserStatusMIGRATED:
+		return true
+	case MultiOrgUserStatusREMOVED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OrgAccessMembersType.
 const (
 	OrgAccessMembersTypeGroup OrgAccessMembersType = "group"
@@ -934,57 +1207,39 @@ func (e OrgAccessMembersType) Valid() bool {
 	}
 }
 
+// Defines values for OrganizationContractType.
+const (
+	FREE  OrganizationContractType = "FREE"
+	PAID  OrganizationContractType = "PAID"
+	TRIAL OrganizationContractType = "TRIAL"
+)
+
+// Valid indicates whether the value is a known member of the OrganizationContractType enum.
+func (e OrganizationContractType) Valid() bool {
+	switch e {
+	case FREE:
+		return true
+	case PAID:
+		return true
+	case TRIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OrganizationRegion.
 const (
-	OrganizationRegionEU OrganizationRegion = "EU"
-	OrganizationRegionUS OrganizationRegion = "US"
+	EU OrganizationRegion = "EU"
+	US OrganizationRegion = "US"
 )
 
 // Valid indicates whether the value is a known member of the OrganizationRegion enum.
 func (e OrganizationRegion) Valid() bool {
 	switch e {
-	case OrganizationRegionEU:
+	case EU:
 		return true
-	case OrganizationRegionUS:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ParserScope.
-const (
-	ParserScopeORGANISATION ParserScope = "ORGANISATION"
-	ParserScopeSYSTEM       ParserScope = "SYSTEM"
-)
-
-// Valid indicates whether the value is a known member of the ParserScope enum.
-func (e ParserScope) Valid() bool {
-	switch e {
-	case ParserScopeORGANISATION:
-		return true
-	case ParserScopeSYSTEM:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ParserType.
-const (
-	DISSECT ParserType = "DISSECT"
-	GROK    ParserType = "GROK"
-	JAVA    ParserType = "JAVA"
-)
-
-// Valid indicates whether the value is a known member of the ParserType enum.
-func (e ParserType) Valid() bool {
-	switch e {
-	case DISSECT:
-		return true
-	case GROK:
-		return true
-	case JAVA:
+	case US:
 		return true
 	default:
 		return false
@@ -993,22 +1248,22 @@ func (e ParserType) Valid() bool {
 
 // Defines values for PolicyPolicyType.
 const (
-	PolicyPolicyTypeCUSTOM    PolicyPolicyType = "CUSTOM"
-	PolicyPolicyTypeLOGFORBID PolicyPolicyType = "LOG_FORBID"
-	PolicyPolicyTypeLOGPERMIT PolicyPolicyType = "LOG_PERMIT"
-	PolicyPolicyTypeROLEBASED PolicyPolicyType = "ROLE_BASED"
+	CUSTOM    PolicyPolicyType = "CUSTOM"
+	LOGFORBID PolicyPolicyType = "LOG_FORBID"
+	LOGPERMIT PolicyPolicyType = "LOG_PERMIT"
+	ROLEBASED PolicyPolicyType = "ROLE_BASED"
 )
 
 // Valid indicates whether the value is a known member of the PolicyPolicyType enum.
 func (e PolicyPolicyType) Valid() bool {
 	switch e {
-	case PolicyPolicyTypeCUSTOM:
+	case CUSTOM:
 		return true
-	case PolicyPolicyTypeLOGFORBID:
+	case LOGFORBID:
 		return true
-	case PolicyPolicyTypeLOGPERMIT:
+	case LOGPERMIT:
 		return true
-	case PolicyPolicyTypeROLEBASED:
+	case ROLEBASED:
 		return true
 	default:
 		return false
@@ -1057,6 +1312,30 @@ func (e PrincipalPrincipalType) Valid() bool {
 	}
 }
 
+// Defines values for ReduceTo.
+const (
+	ReduceToAvg ReduceTo = "avg"
+	ReduceToMax ReduceTo = "max"
+	ReduceToMin ReduceTo = "min"
+	ReduceToSum ReduceTo = "sum"
+)
+
+// Valid indicates whether the value is a known member of the ReduceTo enum.
+func (e ReduceTo) Valid() bool {
+	switch e {
+	case ReduceToAvg:
+		return true
+	case ReduceToMax:
+		return true
+	case ReduceToMin:
+		return true
+	case ReduceToSum:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ResourceResourceType.
 const (
 	ResourceResourceTypeAPIKEY    ResourceResourceType = "APIKEY"
@@ -1087,147 +1366,60 @@ func (e ResourceResourceType) Valid() bool {
 	}
 }
 
-// Defines values for SendTestNotificationsRequestComparisonOperator.
+// Defines values for SearchCompletedLinksAsyncEnabled0Rel.
 const (
-	SendTestNotificationsRequestComparisonOperatorABOVE        SendTestNotificationsRequestComparisonOperator = "ABOVE"
-	SendTestNotificationsRequestComparisonOperatorABOVEOREQUAL SendTestNotificationsRequestComparisonOperator = "ABOVE_OR_EQUAL"
-	SendTestNotificationsRequestComparisonOperatorBELOW        SendTestNotificationsRequestComparisonOperator = "BELOW"
-	SendTestNotificationsRequestComparisonOperatorBELOWOREQUAL SendTestNotificationsRequestComparisonOperator = "BELOW_OR_EQUAL"
-	SendTestNotificationsRequestComparisonOperatorEQUAL        SendTestNotificationsRequestComparisonOperator = "EQUAL"
-	SendTestNotificationsRequestComparisonOperatorNOTEQUAL     SendTestNotificationsRequestComparisonOperator = "NOT_EQUAL"
+	Next SearchCompletedLinksAsyncEnabled0Rel = "next"
 )
 
-// Valid indicates whether the value is a known member of the SendTestNotificationsRequestComparisonOperator enum.
-func (e SendTestNotificationsRequestComparisonOperator) Valid() bool {
+// Valid indicates whether the value is a known member of the SearchCompletedLinksAsyncEnabled0Rel enum.
+func (e SearchCompletedLinksAsyncEnabled0Rel) Valid() bool {
 	switch e {
-	case SendTestNotificationsRequestComparisonOperatorABOVE:
-		return true
-	case SendTestNotificationsRequestComparisonOperatorABOVEOREQUAL:
-		return true
-	case SendTestNotificationsRequestComparisonOperatorBELOW:
-		return true
-	case SendTestNotificationsRequestComparisonOperatorBELOWOREQUAL:
-		return true
-	case SendTestNotificationsRequestComparisonOperatorEQUAL:
-		return true
-	case SendTestNotificationsRequestComparisonOperatorNOTEQUAL:
+	case Next:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for SendTestNotificationsRequestStat.
+// Defines values for SearchCompletedLinksAsyncEnabled1Rel.
 const (
-	SendTestNotificationsRequestStatAVERAGE SendTestNotificationsRequestStat = "AVERAGE"
-	SendTestNotificationsRequestStatAVG     SendTestNotificationsRequestStat = "AVG"
-	SendTestNotificationsRequestStatCOUNT   SendTestNotificationsRequestStat = "COUNT"
-	SendTestNotificationsRequestStatMAX     SendTestNotificationsRequestStat = "MAX"
-	SendTestNotificationsRequestStatMIN     SendTestNotificationsRequestStat = "MIN"
-	SendTestNotificationsRequestStatSUM     SendTestNotificationsRequestStat = "SUM"
+	Prev SearchCompletedLinksAsyncEnabled1Rel = "prev"
 )
 
-// Valid indicates whether the value is a known member of the SendTestNotificationsRequestStat enum.
-func (e SendTestNotificationsRequestStat) Valid() bool {
+// Valid indicates whether the value is a known member of the SearchCompletedLinksAsyncEnabled1Rel enum.
+func (e SearchCompletedLinksAsyncEnabled1Rel) Valid() bool {
 	switch e {
-	case SendTestNotificationsRequestStatAVERAGE:
-		return true
-	case SendTestNotificationsRequestStatAVG:
-		return true
-	case SendTestNotificationsRequestStatCOUNT:
-		return true
-	case SendTestNotificationsRequestStatMAX:
-		return true
-	case SendTestNotificationsRequestStatMIN:
-		return true
-	case SendTestNotificationsRequestStatSUM:
+	case Prev:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for SendTestNotificationsRequestStateTransitions.
+// Defines values for SearchCompletedLinksAsyncEnabled2Rel.
 const (
-	SendTestNotificationsRequestStateTransitionsALERT          SendTestNotificationsRequestStateTransitions = "ALERT"
-	SendTestNotificationsRequestStateTransitionsALERTRECOVERY  SendTestNotificationsRequestStateTransitions = "ALERT_RECOVERY"
-	SendTestNotificationsRequestStateTransitionsALERTTOWARN    SendTestNotificationsRequestStateTransitions = "ALERT_TO_WARN"
-	SendTestNotificationsRequestStateTransitionsNODATA         SendTestNotificationsRequestStateTransitions = "NO_DATA"
-	SendTestNotificationsRequestStateTransitionsNODATARECOVERY SendTestNotificationsRequestStateTransitions = "NO_DATA_RECOVERY"
-	SendTestNotificationsRequestStateTransitionsWARN           SendTestNotificationsRequestStateTransitions = "WARN"
-	SendTestNotificationsRequestStateTransitionsWARNRECOVERY   SendTestNotificationsRequestStateTransitions = "WARN_RECOVERY"
+	First SearchCompletedLinksAsyncEnabled2Rel = "first"
 )
 
-// Valid indicates whether the value is a known member of the SendTestNotificationsRequestStateTransitions enum.
-func (e SendTestNotificationsRequestStateTransitions) Valid() bool {
+// Valid indicates whether the value is a known member of the SearchCompletedLinksAsyncEnabled2Rel enum.
+func (e SearchCompletedLinksAsyncEnabled2Rel) Valid() bool {
 	switch e {
-	case SendTestNotificationsRequestStateTransitionsALERT:
-		return true
-	case SendTestNotificationsRequestStateTransitionsALERTRECOVERY:
-		return true
-	case SendTestNotificationsRequestStateTransitionsALERTTOWARN:
-		return true
-	case SendTestNotificationsRequestStateTransitionsNODATA:
-		return true
-	case SendTestNotificationsRequestStateTransitionsNODATARECOVERY:
-		return true
-	case SendTestNotificationsRequestStateTransitionsWARN:
-		return true
-	case SendTestNotificationsRequestStateTransitionsWARNRECOVERY:
+	case First:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for SubscriptionIntervalFrq.
+// Defines values for SearchCompletedLinksAsyncEnabled3Rel.
 const (
-	Month SubscriptionIntervalFrq = "month"
-	Year  SubscriptionIntervalFrq = "year"
+	Status SearchCompletedLinksAsyncEnabled3Rel = "status"
 )
 
-// Valid indicates whether the value is a known member of the SubscriptionIntervalFrq enum.
-func (e SubscriptionIntervalFrq) Valid() bool {
+// Valid indicates whether the value is a known member of the SearchCompletedLinksAsyncEnabled3Rel enum.
+func (e SearchCompletedLinksAsyncEnabled3Rel) Valid() bool {
 	switch e {
-	case Month:
-		return true
-	case Year:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SubscriptionStatus.
-const (
-	SubscriptionStatusActive            SubscriptionStatus = "active"
-	SubscriptionStatusCanceled          SubscriptionStatus = "canceled"
-	SubscriptionStatusIncomplete        SubscriptionStatus = "incomplete"
-	SubscriptionStatusIncompleteExpired SubscriptionStatus = "incomplete_expired"
-	SubscriptionStatusPastDue           SubscriptionStatus = "past_due"
-	SubscriptionStatusPaused            SubscriptionStatus = "paused"
-	SubscriptionStatusTrialing          SubscriptionStatus = "trialing"
-	SubscriptionStatusUnpaid            SubscriptionStatus = "unpaid"
-)
-
-// Valid indicates whether the value is a known member of the SubscriptionStatus enum.
-func (e SubscriptionStatus) Valid() bool {
-	switch e {
-	case SubscriptionStatusActive:
-		return true
-	case SubscriptionStatusCanceled:
-		return true
-	case SubscriptionStatusIncomplete:
-		return true
-	case SubscriptionStatusIncompleteExpired:
-		return true
-	case SubscriptionStatusPastDue:
-		return true
-	case SubscriptionStatusPaused:
-		return true
-	case SubscriptionStatusTrialing:
-		return true
-	case SubscriptionStatusUnpaid:
+	case Status:
 		return true
 	default:
 		return false
@@ -1236,11 +1428,12 @@ func (e SubscriptionStatus) Valid() bool {
 
 // Defines values for TagEntityTypeType.
 const (
-	TagEntityTypeTypeApiKey    TagEntityTypeType = "api_key"
-	TagEntityTypeTypeDashboard TagEntityTypeType = "dashboard"
-	TagEntityTypeTypeLog       TagEntityTypeType = "log"
-	TagEntityTypeTypeUser      TagEntityTypeType = "user"
-	TagEntityTypeTypeWidget    TagEntityTypeType = "widget"
+	TagEntityTypeTypeApiKey      TagEntityTypeType = "api_key"
+	TagEntityTypeTypeDashboard   TagEntityTypeType = "dashboard"
+	TagEntityTypeTypeLog         TagEntityTypeType = "log"
+	TagEntityTypeTypeSavedSearch TagEntityTypeType = "saved_search"
+	TagEntityTypeTypeUser        TagEntityTypeType = "user"
+	TagEntityTypeTypeWidget      TagEntityTypeType = "widget"
 )
 
 // Valid indicates whether the value is a known member of the TagEntityTypeType enum.
@@ -1252,6 +1445,8 @@ func (e TagEntityTypeType) Valid() bool {
 		return true
 	case TagEntityTypeTypeLog:
 		return true
+	case TagEntityTypeTypeSavedSearch:
+		return true
 	case TagEntityTypeTypeUser:
 		return true
 	case TagEntityTypeTypeWidget:
@@ -1261,54 +1456,129 @@ func (e TagEntityTypeType) Valid() bool {
 	}
 }
 
-// Defines values for TopKeysPerLogFieldType.
+// Defines values for TemplateParameterType.
 const (
-	TopKeysPerLogFieldTypeMessageKVP TopKeysPerLogFieldType = "Message KVP"
-	TopKeysPerLogFieldTypeTags       TopKeysPerLogFieldType = "Tags"
+	TemplateParameterTypeBOOLEAN    TemplateParameterType = "BOOLEAN"
+	TemplateParameterTypeDOUBLE     TemplateParameterType = "DOUBLE"
+	TemplateParameterTypeOBJECTLIST TemplateParameterType = "OBJECT_LIST"
+	TemplateParameterTypeSTRING     TemplateParameterType = "STRING"
+	TemplateParameterTypeSTRINGLIST TemplateParameterType = "STRING_LIST"
 )
 
-// Valid indicates whether the value is a known member of the TopKeysPerLogFieldType enum.
-func (e TopKeysPerLogFieldType) Valid() bool {
+// Valid indicates whether the value is a known member of the TemplateParameterType enum.
+func (e TemplateParameterType) Valid() bool {
 	switch e {
-	case TopKeysPerLogFieldTypeMessageKVP:
+	case TemplateParameterTypeBOOLEAN:
 		return true
-	case TopKeysPerLogFieldTypeTags:
+	case TemplateParameterTypeDOUBLE:
+		return true
+	case TemplateParameterTypeOBJECTLIST:
+		return true
+	case TemplateParameterTypeSTRING:
+		return true
+	case TemplateParameterTypeSTRINGLIST:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for TopKeysPerLogType.
+// Defines values for TimeFunction.
 const (
-	BOOLEAN TopKeysPerLogType = "BOOLEAN"
-	NUMBER  TopKeysPerLogType = "NUMBER"
-	STRING  TopKeysPerLogType = "STRING"
+	TimeFunctionAverage TimeFunction = "average"
+	TimeFunctionAvg     TimeFunction = "avg"
+	TimeFunctionCount   TimeFunction = "count"
+	TimeFunctionMax     TimeFunction = "max"
+	TimeFunctionMean    TimeFunction = "mean"
+	TimeFunctionMedian  TimeFunction = "median"
+	TimeFunctionMin     TimeFunction = "min"
+	TimeFunctionP75     TimeFunction = "p75"
+	TimeFunctionP90     TimeFunction = "p90"
+	TimeFunctionP95     TimeFunction = "p95"
+	TimeFunctionP99     TimeFunction = "p99"
+	TimeFunctionSum     TimeFunction = "sum"
 )
 
-// Valid indicates whether the value is a known member of the TopKeysPerLogType enum.
-func (e TopKeysPerLogType) Valid() bool {
+// Valid indicates whether the value is a known member of the TimeFunction enum.
+func (e TimeFunction) Valid() bool {
 	switch e {
-	case BOOLEAN:
+	case TimeFunctionAverage:
 		return true
-	case NUMBER:
+	case TimeFunctionAvg:
 		return true
-	case STRING:
+	case TimeFunctionCount:
+		return true
+	case TimeFunctionMax:
+		return true
+	case TimeFunctionMean:
+		return true
+	case TimeFunctionMedian:
+		return true
+	case TimeFunctionMin:
+		return true
+	case TimeFunctionP75:
+		return true
+	case TimeFunctionP90:
+		return true
+	case TimeFunctionP95:
+		return true
+	case TimeFunctionP99:
+		return true
+	case TimeFunctionSum:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for UpdateIdpProvider.
+// Defines values for TimelineComponentType.
 const (
-	SAML UpdateIdpProvider = "SAML"
+	Timeline TimelineComponentType = "timeline"
 )
 
-// Valid indicates whether the value is a known member of the UpdateIdpProvider enum.
-func (e UpdateIdpProvider) Valid() bool {
+// Valid indicates whether the value is a known member of the TimelineComponentType enum.
+func (e TimelineComponentType) Valid() bool {
 	switch e {
-	case SAML:
+	case Timeline:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TopKeysPerLogOrMetricFieldType.
+const (
+	ATTRIBUTE  TopKeysPerLogOrMetricFieldType = "ATTRIBUTE"
+	MESSAGEKVP TopKeysPerLogOrMetricFieldType = "MESSAGE_KVP"
+)
+
+// Valid indicates whether the value is a known member of the TopKeysPerLogOrMetricFieldType enum.
+func (e TopKeysPerLogOrMetricFieldType) Valid() bool {
+	switch e {
+	case ATTRIBUTE:
+		return true
+	case MESSAGEKVP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TopKeysPerLogOrMetricType.
+const (
+	TopKeysPerLogOrMetricTypeBOOLEAN TopKeysPerLogOrMetricType = "BOOLEAN"
+	TopKeysPerLogOrMetricTypeNUMBER  TopKeysPerLogOrMetricType = "NUMBER"
+	TopKeysPerLogOrMetricTypeSTRING  TopKeysPerLogOrMetricType = "STRING"
+)
+
+// Valid indicates whether the value is a known member of the TopKeysPerLogOrMetricType enum.
+func (e TopKeysPerLogOrMetricType) Valid() bool {
+	switch e {
+	case TopKeysPerLogOrMetricTypeBOOLEAN:
+		return true
+	case TopKeysPerLogOrMetricTypeNUMBER:
+		return true
+	case TopKeysPerLogOrMetricTypeSTRING:
 		return true
 	default:
 		return false
@@ -1332,16 +1602,16 @@ func (e UpdateLimitRequestCategory) Valid() bool {
 
 // Defines values for UpdateLimitRequestTarget.
 const (
-	UpdateLimitRequestTargetORGANISATION UpdateLimitRequestTarget = "ORGANISATION"
-	UpdateLimitRequestTargetTEAM         UpdateLimitRequestTarget = "TEAM"
+	ORGANISATION UpdateLimitRequestTarget = "ORGANISATION"
+	TEAM         UpdateLimitRequestTarget = "TEAM"
 )
 
 // Valid indicates whether the value is a known member of the UpdateLimitRequestTarget enum.
 func (e UpdateLimitRequestTarget) Valid() bool {
 	switch e {
-	case UpdateLimitRequestTargetORGANISATION:
+	case ORGANISATION:
 		return true
-	case UpdateLimitRequestTargetTEAM:
+	case TEAM:
 		return true
 	default:
 		return false
@@ -1378,45 +1648,69 @@ func (e UpdateLimitRequestUnit) Valid() bool {
 	}
 }
 
-// Defines values for UpdateLogRequestLevel.
+// Defines values for UpdateMonitorDowntimeRequestAlertStrategy.
 const (
-	UpdateLogRequestLevelAlert     UpdateLogRequestLevel = "alert"
-	UpdateLogRequestLevelCritical  UpdateLogRequestLevel = "critical"
-	UpdateLogRequestLevelDebug     UpdateLogRequestLevel = "debug"
-	UpdateLogRequestLevelEmergency UpdateLogRequestLevel = "emergency"
-	UpdateLogRequestLevelError     UpdateLogRequestLevel = "error"
-	UpdateLogRequestLevelFatal     UpdateLogRequestLevel = "fatal"
-	UpdateLogRequestLevelInfo      UpdateLogRequestLevel = "info"
-	UpdateLogRequestLevelNotice    UpdateLogRequestLevel = "notice"
-	UpdateLogRequestLevelSevere    UpdateLogRequestLevel = "severe"
-	UpdateLogRequestLevelTrace     UpdateLogRequestLevel = "trace"
-	UpdateLogRequestLevelWarning   UpdateLogRequestLevel = "warning"
+	DELAY UpdateMonitorDowntimeRequestAlertStrategy = "DELAY"
+	DROP  UpdateMonitorDowntimeRequestAlertStrategy = "DROP"
 )
 
-// Valid indicates whether the value is a known member of the UpdateLogRequestLevel enum.
-func (e UpdateLogRequestLevel) Valid() bool {
+// Valid indicates whether the value is a known member of the UpdateMonitorDowntimeRequestAlertStrategy enum.
+func (e UpdateMonitorDowntimeRequestAlertStrategy) Valid() bool {
 	switch e {
-	case UpdateLogRequestLevelAlert:
+	case DELAY:
 		return true
-	case UpdateLogRequestLevelCritical:
+	case DROP:
 		return true
-	case UpdateLogRequestLevelDebug:
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays.
+const (
+	Friday    UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Friday"
+	Monday    UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Monday"
+	Saturday  UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Saturday"
+	Sunday    UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Sunday"
+	Thursday  UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Thursday"
+	Tuesday   UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Tuesday"
+	Wednesday UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays = "Wednesday"
+)
+
+// Valid indicates whether the value is a known member of the UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays enum.
+func (e UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays) Valid() bool {
+	switch e {
+	case Friday:
 		return true
-	case UpdateLogRequestLevelEmergency:
+	case Monday:
 		return true
-	case UpdateLogRequestLevelError:
+	case Saturday:
 		return true
-	case UpdateLogRequestLevelFatal:
+	case Sunday:
 		return true
-	case UpdateLogRequestLevelInfo:
+	case Thursday:
 		return true
-	case UpdateLogRequestLevelNotice:
+	case Tuesday:
 		return true
-	case UpdateLogRequestLevelSevere:
+	case Wednesday:
 		return true
-	case UpdateLogRequestLevelTrace:
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateMonitorRequestChangeType.
+const (
+	UpdateMonitorRequestChangeTypeDIFFERENCE UpdateMonitorRequestChangeType = "DIFFERENCE"
+	UpdateMonitorRequestChangeTypePERCENTAGE UpdateMonitorRequestChangeType = "PERCENTAGE"
+)
+
+// Valid indicates whether the value is a known member of the UpdateMonitorRequestChangeType enum.
+func (e UpdateMonitorRequestChangeType) Valid() bool {
+	switch e {
+	case UpdateMonitorRequestChangeTypeDIFFERENCE:
 		return true
-	case UpdateLogRequestLevelWarning:
+	case UpdateMonitorRequestChangeTypePERCENTAGE:
 		return true
 	default:
 		return false
@@ -1477,93 +1771,144 @@ func (e UpdateMonitorRequestNoDataStatus) Valid() bool {
 	}
 }
 
-// Defines values for UpdateMonitorRequestStat.
-const (
-	UpdateMonitorRequestStatAVERAGE UpdateMonitorRequestStat = "AVERAGE"
-	UpdateMonitorRequestStatAVG     UpdateMonitorRequestStat = "AVG"
-	UpdateMonitorRequestStatCOUNT   UpdateMonitorRequestStat = "COUNT"
-	UpdateMonitorRequestStatMAX     UpdateMonitorRequestStat = "MAX"
-	UpdateMonitorRequestStatMIN     UpdateMonitorRequestStat = "MIN"
-	UpdateMonitorRequestStatSUM     UpdateMonitorRequestStat = "SUM"
-)
-
-// Valid indicates whether the value is a known member of the UpdateMonitorRequestStat enum.
-func (e UpdateMonitorRequestStat) Valid() bool {
-	switch e {
-	case UpdateMonitorRequestStatAVERAGE:
-		return true
-	case UpdateMonitorRequestStatAVG:
-		return true
-	case UpdateMonitorRequestStatCOUNT:
-		return true
-	case UpdateMonitorRequestStatMAX:
-		return true
-	case UpdateMonitorRequestStatMIN:
-		return true
-	case UpdateMonitorRequestStatSUM:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for UpdateMonitorRequestType.
 const (
-	PATTERN UpdateMonitorRequestType = "PATTERN"
-	USAGE   UpdateMonitorRequestType = "USAGE"
+	UpdateMonitorRequestTypeCHANGEDETECTION UpdateMonitorRequestType = "CHANGE_DETECTION"
+	UpdateMonitorRequestTypePATTERN         UpdateMonitorRequestType = "PATTERN"
+	UpdateMonitorRequestTypeUSAGE           UpdateMonitorRequestType = "USAGE"
 )
 
 // Valid indicates whether the value is a known member of the UpdateMonitorRequestType enum.
 func (e UpdateMonitorRequestType) Valid() bool {
 	switch e {
-	case PATTERN:
+	case UpdateMonitorRequestTypeCHANGEDETECTION:
 		return true
-	case USAGE:
+	case UpdateMonitorRequestTypePATTERN:
 		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for UpdatePolicyRequestPolicyType.
-const (
-	CUSTOM    UpdatePolicyRequestPolicyType = "CUSTOM"
-	LOGFORBID UpdatePolicyRequestPolicyType = "LOG_FORBID"
-	LOGPERMIT UpdatePolicyRequestPolicyType = "LOG_PERMIT"
-	ROLEBASED UpdatePolicyRequestPolicyType = "ROLE_BASED"
-)
-
-// Valid indicates whether the value is a known member of the UpdatePolicyRequestPolicyType enum.
-func (e UpdatePolicyRequestPolicyType) Valid() bool {
-	switch e {
-	case CUSTOM:
-		return true
-	case LOGFORBID:
-		return true
-	case LOGPERMIT:
-		return true
-	case ROLEBASED:
+	case UpdateMonitorRequestTypeUSAGE:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for UpdatePolicyRequestPrincipalPrincipalType.
+// Defines values for UpdateMonitorTemplateRequestChangeType.
 const (
-	UpdatePolicyRequestPrincipalPrincipalTypeAPIKEY UpdatePolicyRequestPrincipalPrincipalType = "APIKEY"
-	UpdatePolicyRequestPrincipalPrincipalTypeROLE   UpdatePolicyRequestPrincipalPrincipalType = "ROLE"
-	UpdatePolicyRequestPrincipalPrincipalTypeUSER   UpdatePolicyRequestPrincipalPrincipalType = "USER"
+	UpdateMonitorTemplateRequestChangeTypeDIFFERENCE UpdateMonitorTemplateRequestChangeType = "DIFFERENCE"
+	UpdateMonitorTemplateRequestChangeTypePERCENTAGE UpdateMonitorTemplateRequestChangeType = "PERCENTAGE"
 )
 
-// Valid indicates whether the value is a known member of the UpdatePolicyRequestPrincipalPrincipalType enum.
-func (e UpdatePolicyRequestPrincipalPrincipalType) Valid() bool {
+// Valid indicates whether the value is a known member of the UpdateMonitorTemplateRequestChangeType enum.
+func (e UpdateMonitorTemplateRequestChangeType) Valid() bool {
 	switch e {
-	case UpdatePolicyRequestPrincipalPrincipalTypeAPIKEY:
+	case UpdateMonitorTemplateRequestChangeTypeDIFFERENCE:
 		return true
-	case UpdatePolicyRequestPrincipalPrincipalTypeROLE:
+	case UpdateMonitorTemplateRequestChangeTypePERCENTAGE:
 		return true
-	case UpdatePolicyRequestPrincipalPrincipalTypeUSER:
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateMonitorTemplateRequestComparisonOperator.
+const (
+	UpdateMonitorTemplateRequestComparisonOperatorABOVE        UpdateMonitorTemplateRequestComparisonOperator = "ABOVE"
+	UpdateMonitorTemplateRequestComparisonOperatorABOVEOREQUAL UpdateMonitorTemplateRequestComparisonOperator = "ABOVE_OR_EQUAL"
+	UpdateMonitorTemplateRequestComparisonOperatorBELOW        UpdateMonitorTemplateRequestComparisonOperator = "BELOW"
+	UpdateMonitorTemplateRequestComparisonOperatorBELOWOREQUAL UpdateMonitorTemplateRequestComparisonOperator = "BELOW_OR_EQUAL"
+	UpdateMonitorTemplateRequestComparisonOperatorEQUAL        UpdateMonitorTemplateRequestComparisonOperator = "EQUAL"
+	UpdateMonitorTemplateRequestComparisonOperatorNOTEQUAL     UpdateMonitorTemplateRequestComparisonOperator = "NOT_EQUAL"
+)
+
+// Valid indicates whether the value is a known member of the UpdateMonitorTemplateRequestComparisonOperator enum.
+func (e UpdateMonitorTemplateRequestComparisonOperator) Valid() bool {
+	switch e {
+	case UpdateMonitorTemplateRequestComparisonOperatorABOVE:
+		return true
+	case UpdateMonitorTemplateRequestComparisonOperatorABOVEOREQUAL:
+		return true
+	case UpdateMonitorTemplateRequestComparisonOperatorBELOW:
+		return true
+	case UpdateMonitorTemplateRequestComparisonOperatorBELOWOREQUAL:
+		return true
+	case UpdateMonitorTemplateRequestComparisonOperatorEQUAL:
+		return true
+	case UpdateMonitorTemplateRequestComparisonOperatorNOTEQUAL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateMonitorTemplateRequestNoDataStatus.
+const (
+	UpdateMonitorTemplateRequestNoDataStatusALERT  UpdateMonitorTemplateRequestNoDataStatus = "ALERT"
+	UpdateMonitorTemplateRequestNoDataStatusNODATA UpdateMonitorTemplateRequestNoDataStatus = "NO_DATA"
+	UpdateMonitorTemplateRequestNoDataStatusOK     UpdateMonitorTemplateRequestNoDataStatus = "OK"
+	UpdateMonitorTemplateRequestNoDataStatusWARN   UpdateMonitorTemplateRequestNoDataStatus = "WARN"
+)
+
+// Valid indicates whether the value is a known member of the UpdateMonitorTemplateRequestNoDataStatus enum.
+func (e UpdateMonitorTemplateRequestNoDataStatus) Valid() bool {
+	switch e {
+	case UpdateMonitorTemplateRequestNoDataStatusALERT:
+		return true
+	case UpdateMonitorTemplateRequestNoDataStatusNODATA:
+		return true
+	case UpdateMonitorTemplateRequestNoDataStatusOK:
+		return true
+	case UpdateMonitorTemplateRequestNoDataStatusWARN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateMonitorTemplateRequestType.
+const (
+	UpdateMonitorTemplateRequestTypeCHANGEDETECTION UpdateMonitorTemplateRequestType = "CHANGE_DETECTION"
+	UpdateMonitorTemplateRequestTypePATTERN         UpdateMonitorTemplateRequestType = "PATTERN"
+	UpdateMonitorTemplateRequestTypeUSAGE           UpdateMonitorTemplateRequestType = "USAGE"
+)
+
+// Valid indicates whether the value is a known member of the UpdateMonitorTemplateRequestType enum.
+func (e UpdateMonitorTemplateRequestType) Valid() bool {
+	switch e {
+	case UpdateMonitorTemplateRequestTypeCHANGEDETECTION:
+		return true
+	case UpdateMonitorTemplateRequestTypePATTERN:
+		return true
+	case UpdateMonitorTemplateRequestTypeUSAGE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserStatus.
+const (
+	UserStatusACTIVE      UserStatus = "ACTIVE"
+	UserStatusDEACTIVATED UserStatus = "DEACTIVATED"
+	UserStatusINACTIVE    UserStatus = "INACTIVE"
+	UserStatusINVITED     UserStatus = "INVITED"
+	UserStatusMIGRATED    UserStatus = "MIGRATED"
+	UserStatusREMOVED     UserStatus = "REMOVED"
+)
+
+// Valid indicates whether the value is a known member of the UserStatus enum.
+func (e UserStatus) Valid() bool {
+	switch e {
+	case UserStatusACTIVE:
+		return true
+	case UserStatusDEACTIVATED:
+		return true
+	case UserStatusINACTIVE:
+		return true
+	case UserStatusINVITED:
+		return true
+	case UserStatusMIGRATED:
+		return true
+	case UserStatusREMOVED:
 		return true
 	default:
 		return false
@@ -1624,15 +1969,15 @@ func (e GetContextParamsDirection) Valid() bool {
 	}
 }
 
-// Defines values for GetCostByLogIdParamsUsageType.
+// Defines values for ListEncryptionKeysParamsProvider.
 const (
-	GetCostByLogIdParamsUsageTypeIngestion GetCostByLogIdParamsUsageType = "ingestion"
+	AWSKMS ListEncryptionKeysParamsProvider = "AWS_KMS"
 )
 
-// Valid indicates whether the value is a known member of the GetCostByLogIdParamsUsageType enum.
-func (e GetCostByLogIdParamsUsageType) Valid() bool {
+// Valid indicates whether the value is a known member of the ListEncryptionKeysParamsProvider enum.
+func (e ListEncryptionKeysParamsProvider) Valid() bool {
 	switch e {
-	case GetCostByLogIdParamsUsageTypeIngestion:
+	case AWSKMS:
 		return true
 	default:
 		return false
@@ -1731,16 +2076,16 @@ func (e GrantAccessParamsEntityType) Valid() bool {
 
 // Defines values for GrantAccessJSONBodyStatus.
 const (
-	GrantAccessJSONBodyStatusActive  GrantAccessJSONBodyStatus = "active"
-	GrantAccessJSONBodyStatusInvited GrantAccessJSONBodyStatus = "invited"
+	Active  GrantAccessJSONBodyStatus = "active"
+	Invited GrantAccessJSONBodyStatus = "invited"
 )
 
 // Valid indicates whether the value is a known member of the GrantAccessJSONBodyStatus enum.
 func (e GrantAccessJSONBodyStatus) Valid() bool {
 	switch e {
-	case GrantAccessJSONBodyStatusActive:
+	case Active:
 		return true
-	case GrantAccessJSONBodyStatusInvited:
+	case Invited:
 		return true
 	default:
 		return false
@@ -1759,27 +2104,6 @@ func (e ListAccessForMemberParamsEntityType) Valid() bool {
 	case ListAccessForMemberParamsEntityTypeGroup:
 		return true
 	case ListAccessForMemberParamsEntityTypeUser:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ListPoliciesByPrincipalParamsPrincipalType.
-const (
-	APIKEY ListPoliciesByPrincipalParamsPrincipalType = "APIKEY"
-	ROLE   ListPoliciesByPrincipalParamsPrincipalType = "ROLE"
-	USER   ListPoliciesByPrincipalParamsPrincipalType = "USER"
-)
-
-// Valid indicates whether the value is a known member of the ListPoliciesByPrincipalParamsPrincipalType enum.
-func (e ListPoliciesByPrincipalParamsPrincipalType) Valid() bool {
-	switch e {
-	case APIKEY:
-		return true
-	case ROLE:
-		return true
-	case USER:
 		return true
 	default:
 		return false
@@ -1830,13 +2154,13 @@ func (e GetUsageByLogIdParamsUsageType) Valid() bool {
 
 // Defines values for GetUsageByUserPerLogIdParamsUsageType.
 const (
-	GetUsageByUserPerLogIdParamsUsageTypeSearch GetUsageByUserPerLogIdParamsUsageType = "search"
+	Search GetUsageByUserPerLogIdParamsUsageType = "search"
 )
 
 // Valid indicates whether the value is a known member of the GetUsageByUserPerLogIdParamsUsageType enum.
 func (e GetUsageByUserPerLogIdParamsUsageType) Valid() bool {
 	switch e {
-	case GetUsageByUserPerLogIdParamsUsageTypeSearch:
+	case Search:
 		return true
 	default:
 		return false
@@ -1861,18 +2185,6 @@ func (e GetUsageByUserPerLogIdParamsMetric) Valid() bool {
 	}
 }
 
-// AWSIntegrationResource defines model for AWSIntegrationResource.
-type AWSIntegrationResource struct {
-	// Resource The integration resource
-	Resource string `json:"resource"`
-
-	// ResourceId A unique identifier for the integration resource
-	ResourceId string `json:"resource_id"`
-
-	// ResourceRegion The region of the resource
-	ResourceRegion *string `json:"resource_region,omitempty"`
-}
-
 // Action defines model for Action.
 type Action struct {
 	Email         *string    `json:"email,omitempty"`
@@ -1883,16 +2195,52 @@ type Action struct {
 // ActionType defines model for Action.Type.
 type ActionType string
 
+// Aggregation defines model for Aggregation.
+type Aggregation struct {
+	// ReduceTo Final reduction applied to the aggregated result. Commonly used when returning a single value instead of a full time series.
+	ReduceTo *ReduceTo `json:"reduce_to,omitempty"`
+
+	// Time Aggregation applied over time buckets.
+	Time TimeFunction `json:"time"`
+}
+
+// AiAssistantSse defines model for AiAssistantSse.
+type AiAssistantSse struct {
+	GroupsSeries *[]GroupSeriesItem `json:"groups_series,omitempty"`
+
+	// Message The loading message or a chunk of the streamed response
+	Message *string `json:"message,omitempty"`
+
+	// Query The query run by the LLM, if type is QUERY_RESPONSE
+	Query *string `json:"query,omitempty"`
+
+	// SessionId The id of the session, if available
+	SessionId *string `json:"session_id,omitempty"`
+	Totals    *struct {
+		// Timeseries the timeseries for non-group by queries
+		Timeseries *[]TimeSlice `json:"timeseries,omitempty"`
+	} `json:"totals,omitempty"`
+
+	// Type Type of event returned
+	Type AiAssistantSseType `json:"type"`
+}
+
+// AiAssistantSseType Type of event returned
+type AiAssistantSseType string
+
 // ApiKey defines model for ApiKey.
 type ApiKey struct {
 	// ApiKey The first 8 characters of the API key. Note its not possible to retrieve the key after creation time.
 	ApiKey *string `json:"api_key,omitempty"`
 
-	// CreatedAt The timestamp when the API key was created
-	CreatedAt *int64 `json:"created_at,omitempty"`
+	// ExpiresAt The expiration time of the API key, expressed as a Unix timestamp. If not set, the key never expires.
+	ExpiresAt *int64 `json:"expires_at,omitempty"`
 
 	// Id The unique identifier for the API key
 	Id *openapi_types.UUID `json:"id,omitempty"`
+
+	// Metadata Common metadata attached to all persisted resources.
+	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// Name The name of the API key
 	Name *string `json:"name,omitempty"`
@@ -1902,6 +2250,21 @@ type ApiKey struct {
 
 	// Tags A map of key value pairs associated with this log
 	Tags *Tags `json:"tags,omitempty"`
+}
+
+// AwsKmsKey defines model for AwsKmsKey.
+type AwsKmsKey struct {
+	AliasArn *string `json:"alias_arn,omitempty"`
+	Region   *string `json:"region,omitempty"`
+}
+
+// CollectionDataset defines model for CollectionDataset.
+type CollectionDataset struct {
+	// Dataset The name of the dataset
+	Dataset string `json:"dataset"`
+
+	// Id The unique identifier of the dataset
+	Id openapi_types.UUID `json:"id"`
 }
 
 // ConditionSet Defines a set of conditions under which a policy applies or does not apply.
@@ -1970,80 +2333,6 @@ type ContextLinks_Item struct {
 	union json.RawMessage
 }
 
-// Contracts defines model for Contracts.
-type Contracts struct {
-	BillingCCycleDetails *struct {
-		BillingCycle *ContractsBillingCCycleDetailsBillingCycle `json:"billing_cycle,omitempty"`
-		EndingAt     *int64                                     `json:"ending_at,omitempty"`
-		StandardTerm *int                                       `json:"standard_term,omitempty"`
-		StartingAt   *int64                                     `json:"starting_at,omitempty"`
-		TermNotes    *string                                    `json:"term_notes,omitempty"`
-	} `json:"billing_cCycle_details,omitempty"`
-	BillingProvider ContractsBillingProvider `json:"billing_provider"`
-
-	// ContractId Unique identifier for the contract
-	ContractId *string `json:"contract_id,omitempty"`
-
-	// ContractName Name of the contract
-	ContractName   string                  `json:"contract_name"`
-	ContractStatus ContractsContractStatus `json:"contract_status"`
-
-	// ContractType The type of the contract
-	ContractType string `json:"contract_type"`
-	CostDetails  struct {
-		CostPerGb        *float64                      `json:"cost_per_gb,omitempty"`
-		Currency         *ContractsCostDetailsCurrency `json:"currency,omitempty"`
-		OverageCostPerGb *float64                      `json:"overage_cost_per_gb,omitempty"`
-		TotalCost        *float64                      `json:"total_cost,omitempty"`
-	} `json:"cost_details"`
-
-	// CreatedAt Unix timestamp for when the customer was created
-	CreatedAt *int `json:"created_at,omitempty"`
-	Limits    struct {
-		FairUsageRatio      *float64                        `json:"fair_usage_ratio,omitempty"`
-		MonthlyLogIngestion *int64                          `json:"monthly_log_ingestion,omitempty"`
-		RetentionPeriod     *ContractsLimitsRetentionPeriod `json:"retention_period,omitempty"`
-	} `json:"limits"`
-
-	// UpdatedAt Unix timestamp for when the customer was last updated
-	UpdatedAt *int `json:"updated_at,omitempty"`
-}
-
-// ContractsBillingCCycleDetailsBillingCycle defines model for Contracts.BillingCCycleDetails.BillingCycle.
-type ContractsBillingCCycleDetailsBillingCycle string
-
-// ContractsBillingProvider defines model for Contracts.BillingProvider.
-type ContractsBillingProvider string
-
-// ContractsContractStatus defines model for Contracts.ContractStatus.
-type ContractsContractStatus string
-
-// ContractsCostDetailsCurrency defines model for Contracts.CostDetails.Currency.
-type ContractsCostDetailsCurrency string
-
-// ContractsLimitsRetentionPeriod defines model for Contracts.Limits.RetentionPeriod.
-type ContractsLimitsRetentionPeriod string
-
-// CostByLogId defines model for CostByLogId.
-type CostByLogId struct {
-	Filter       *string            `json:"filter,omitempty"`
-	GroupsSeries *[]GroupSeriesItem `json:"groups_series,omitempty"`
-
-	// IsExact true if the series result is exact, false if it is an approximation
-	IsExact *bool   `json:"is_exact,omitempty"`
-	Key     *string `json:"key,omitempty"`
-	Name    *string `json:"name,omitempty"`
-}
-
-// CreateAWSIntegrationResourceRequest defines model for CreateAWSIntegrationResourceRequest.
-type CreateAWSIntegrationResourceRequest struct {
-	// Resource The integration resource
-	Resource string `json:"resource"`
-
-	// ResourceRegion The region of the resource
-	ResourceRegion *string `json:"resource_region,omitempty"`
-}
-
 // CreateApiKeyRequest defines model for CreateApiKeyRequest.
 type CreateApiKeyRequest struct {
 	// Name The name of the API key to create
@@ -2051,25 +2340,89 @@ type CreateApiKeyRequest struct {
 
 	// Roles A list of api key role ids
 	Roles map[string]interface{} `json:"roles"`
+
+	// Ttl The time to live for the API key in seconds, defaults to no expiry
+	Ttl *int64 `json:"ttl,omitempty"`
 }
 
-// CreateDashboardRequest defines model for CreateDashboardRequest.
-type CreateDashboardRequest struct {
-	// Created The created date of the dashboard (epoch)
-	Created     *string `json:"created,omitempty"`
-	DashboardId *string `json:"dashboard_id,omitempty"`
-	Layout      *struct {
-		// MetricIds List of associated lbms
-		MetricIds *map[string]interface{} `json:"metric_ids,omitempty"`
-	} `json:"layout,omitempty"`
+// CreateDatasetRequest Identifies a dataset using its collection and dataset name.
+type CreateDatasetRequest struct {
+	// Collection The name of the log collection.
+	Collection string `json:"collection"`
 
-	// Name The name of the Dashboard.
+	// Dataset The name of the dataset within the collection.
+	Dataset *string `json:"dataset,omitempty"`
+}
+
+// CreateEncryptionKeyRequest defines model for CreateEncryptionKeyRequest.
+type CreateEncryptionKeyRequest struct {
+	// AwsKms AWS KMS key configuration.
+	AwsKms struct {
+		// AliasArn The AWS KMS alias ARN (e.g. arn:aws:kms:us-west-2:123456789012:alias/my-key)
+		AliasArn string `json:"alias_arn"`
+
+		// Region (Optional) AWS region for the KMS key.
+		Region *string `json:"region,omitempty"`
+	} `json:"aws_kms"`
+
+	// Name User-friendly display name for the encryption key.
 	Name string `json:"name"`
+
+	// Provider Key provider (currently only AWS_KMS supported).
+	Provider CreateEncryptionKeyRequestProvider `json:"provider"`
 }
+
+// CreateEncryptionKeyRequestProvider Key provider (currently only AWS_KMS supported).
+type CreateEncryptionKeyRequestProvider string
+
+// CreateExportDetails defines model for CreateExportDetails.
+type CreateExportDetails struct {
+	// From The ids of the logs to search. For create-export requests, this field accepts either an array of log ids or the legacy colon-delimited string form. The request is normalized internally and stored in the legacy string format for downstream export processing.
+	From *CreateExportDetails_From `json:"from,omitempty"`
+
+	// FromExpr Expression used to select a set of logs. The expression defines the criteria for which logs are included and is applied across all available logs to produce the input set. Supports logical operators (AND, OR), comparison operators (=, !=), and quoted string literals. When supplied during export creation, the expression is resolved once and the resulting log ids are stored in `from`.
+	FromExpr *string `json:"from_expr,omitempty"`
+
+	// FromTs The starting time (unix time in milliseconds) for which to query data. Must be used together with `to_ts`. This parameter is not to be used when using `time_range`.
+	FromTs *int64 `json:"from_ts,omitempty"`
+
+	// TimeRange The relative time range for which to query data. Time range supported is from milliseconds to years. For an exact range, use `from_ts` and `to_ts` instead.
+	TimeRange *string `json:"time_range,omitempty"`
+
+	// ToTs The ending time (unix time in milliseconds) for which to query data. Must be used together with `from_ts`. This parameter is incompatible with `time_range`.
+	ToTs *int64 `json:"to_ts,omitempty"`
+
+	// Where The where parameter is used to filter the results of your query. See https://docs.bronto.io/core-features/log-search/query-syntax for more details The filter can combine multiple terms using AND, OR, NOT.
+	Where *string `json:"where,omitempty"`
+	union json.RawMessage
+}
+
+// CreateExportDetailsFrom0 defines model for .
+type CreateExportDetailsFrom0 = []string
+
+// CreateExportDetailsFrom1 defines model for .
+type CreateExportDetailsFrom1 = string
+
+// CreateExportDetails_From The ids of the logs to search. For create-export requests, this field accepts either an array of log ids or the legacy colon-delimited string form. The request is normalized internally and stored in the legacy string format for downstream export processing.
+type CreateExportDetails_From struct {
+	union json.RawMessage
+}
+
+// CreateExportDetails0 defines model for .
+type CreateExportDetails0 = map[string]interface{}
+
+// CreateExportDetails1 defines model for .
+type CreateExportDetails1 = map[string]interface{}
+
+// CreateExportDetails2 defines model for .
+type CreateExportDetails2 = map[string]interface{}
+
+// CreateExportDetails3 defines model for .
+type CreateExportDetails3 = map[string]interface{}
 
 // CreateExportRequest defines model for CreateExportRequest.
 type CreateExportRequest struct {
-	SearchDetails ExportDetails `json:"search_details"`
+	SearchDetails CreateExportDetails `json:"search_details"`
 }
 
 // CreateGroup defines model for CreateGroup.
@@ -2079,57 +2432,6 @@ type CreateGroup struct {
 
 	// Name The display name of the group.
 	Name string `json:"name"`
-}
-
-// CreateIdp defines model for CreateIdp.
-type CreateIdp struct {
-	// AcceptIdpInitiated When enabled your sign-in session can be initiated from your identify provider. This is not recommended as you might be subject to attacks like spoofing and cross-site request forgery.
-	AcceptIdpInitiated *bool `json:"accept_idp_initiated,omitempty"`
-
-	// AttributeMappings Map your identity provider attributes to bronto user attributes
-	AttributeMappings []struct {
-		// ProviderAttr The value from the identity provider to map from
-		ProviderAttr string `json:"provider_attr"`
-
-		// UserAttr The Bronto user value to map to
-		UserAttr string `json:"user_attr"`
-	} `json:"attribute_mappings"`
-
-	// ClientId The unique identifier assigned to your application when it registers with an OIDC Identity Provider (IdP). This is a required field for registering an OIDC IdP.
-	ClientId *string `json:"client_id,omitempty"`
-
-	// ClientSecret The sensitive credential used to authenticate with the OIDC provider. This is a required field for registering an OIDC IdP.
-	ClientSecret *string `json:"client_secret,omitempty"`
-
-	// Identifiers An identifier allows the email address domain to be used to redirect a user to the sign-in identity provider
-	Identifiers *[]string `json:"identifiers,omitempty"`
-
-	// IssuerUrl The base URL of your OIDC Identity Provider (IdP). This is a required field for registering an OIDC IdP.
-	IssuerUrl *string `json:"issuer_url,omitempty"`
-	MetaCert  *string `json:"meta_cert,omitempty"`
-
-	// Name The name of the identity provider
-	Name string `json:"name"`
-
-	// ProviderType The federated sign-in option.
-	ProviderType CreateIdpProviderType `json:"provider_type"`
-}
-
-// CreateIdpProviderType The federated sign-in option.
-type CreateIdpProviderType string
-
-// CreateLbmRequest defines model for CreateLbmRequest.
-type CreateLbmRequest struct {
-	// Aux Auxiliary data for the metric
-	Aux       *map[string]interface{} `json:"aux,omitempty"`
-	Filter    *string                 `json:"filter,omitempty"`
-	GroupKeys *[]string               `json:"group_keys,omitempty"`
-	Key       *string                 `json:"key,omitempty"`
-	Logs      []openapi_types.UUID    `json:"logs"`
-
-	// Name The name of the dashboard meta to create
-	Name string `json:"name"`
-	Stat string `json:"stat"`
 }
 
 // CreateLimitRequest defines model for CreateLimitRequest.
@@ -2200,43 +2502,116 @@ type CreateLimitRequestTimeWindow string
 // CreateLimitRequestUnit Unit of measurement for the limit
 type CreateLimitRequestUnit string
 
-// CreateLogRequest defines model for CreateLogRequest.
+// CreateLogRequest Identifies a log source using either the legacy fields (`logset`, `log`) or the current fields (`collection`, `dataset`).
 type CreateLogRequest struct {
-	// Log The name of the log
-	Log string `json:"log"`
+	// Collection The name of the log collection. Replaces the deprecated `logset` field.
+	Collection *string `json:"collection,omitempty"`
 
-	// Logset The name of the log set
+	// Dataset The name of the dataset within the collection. Replaces the deprecated `log` field.
+	Dataset *string `json:"dataset,omitempty"`
+
+	// Log Deprecated. Use `dataset` instead.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Log *string `json:"log,omitempty"`
+
+	// Logset Deprecated. Use `collection` instead.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	Logset *string `json:"logset,omitempty"`
+	union  json.RawMessage
 }
+
+// CreateLogRequest0 defines model for .
+type CreateLogRequest0 = map[string]interface{}
+
+// CreateLogRequest1 defines model for .
+type CreateLogRequest1 = map[string]interface{}
+
+// CreateMonitorDowntimeRequest defines model for CreateMonitorDowntimeRequest.
+type CreateMonitorDowntimeRequest struct {
+	// AlertStrategy How to handle alerts triggered during the downtime; "DELAY" alerts until the downtime ends, or "DROP" alerts entirely during the downtime.
+	AlertStrategy *CreateMonitorDowntimeRequestAlertStrategy `json:"alert_strategy,omitempty"`
+
+	// Description Extra contextual information to add to the downtime
+	Description      *string `json:"description,omitempty"`
+	DynamicTimeRange *struct {
+		// FromMinuteOfDay Start of the downtime as number of minutes since midnight
+		FromMinuteOfDay float32 `json:"from_minute_of_day"`
+
+		// Invert Invert the downtime to apply outside of the specified time range
+		Invert *bool `json:"invert,omitempty"`
+
+		// RepeatDays Days on which to apply the downtime (or not apply, if inverted)
+		RepeatDays *[]CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays `json:"repeat_days,omitempty"`
+
+		// ToMinuteOfDay End of the downtime as number of minutes since midnight
+		ToMinuteOfDay float32 `json:"to_minute_of_day"`
+	} `json:"dynamic_time_range,omitempty"`
+
+	// From List of monitor IDs to be affected by the downtime
+	From *[]string `json:"from,omitempty"`
+
+	// Name The name of the monitor downtime
+	Name            *string `json:"name,omitempty"`
+	StaticTimeRange *struct {
+		// From Start of the downtime in epoch milliseconds
+		From float32 `json:"from"`
+
+		// To End of the downtime in epoch milliseconds
+		To float32 `json:"to"`
+	} `json:"static_time_range,omitempty"`
+
+	// SuppressRecoveryAlert When a monitor alerts outside of a downtime window but subsequently recovers within a downtime, by default the first recovery alert is allowed. Setting this flag to "true" forces these recovery alerts to also be suppressed.
+	SuppressRecoveryAlert *bool `json:"suppress_recovery_alert,omitempty"`
+	union                 json.RawMessage
+}
+
+// CreateMonitorDowntimeRequestAlertStrategy How to handle alerts triggered during the downtime; "DELAY" alerts until the downtime ends, or "DROP" alerts entirely during the downtime.
+type CreateMonitorDowntimeRequestAlertStrategy string
+
+// CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays defines model for CreateMonitorDowntimeRequest.DynamicTimeRange.RepeatDays.
+type CreateMonitorDowntimeRequestDynamicTimeRangeRepeatDays string
+
+// CreateMonitorDowntimeRequest0 defines model for .
+type CreateMonitorDowntimeRequest0 = map[string]interface{}
+
+// CreateMonitorDowntimeRequest1 defines model for .
+type CreateMonitorDowntimeRequest1 = map[string]interface{}
 
 // CreateMonitorRequest defines model for CreateMonitorRequest.
 type CreateMonitorRequest struct {
-	// Actions The list on actions (notifications) to take when the monitor fires or resolves
+	// Actions The list of actions (notifications) to take when the monitor fires or resolves
 	Actions []Action `json:"actions"`
+
+	// AiReportEnabled True if an automatic report should be generated when the monitor triggers
+	AiReportEnabled *bool `json:"ai_report_enabled,omitempty"`
+
+	// AiReportInstructions Instructions for the AI on what to include in the report, e.g. check for recent deployments, verify the health of the following dependencies: ... etc
+	AiReportInstructions *string `json:"ai_report_instructions,omitempty"`
 
 	// Aux Additional monitor configuration
 	Aux *map[string]interface{} `json:"aux,omitempty"`
 
+	// ChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+	// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+	ChangeType *CreateMonitorRequestChangeType `json:"change_type,omitempty"`
+
+	// CompareTo For change detection monitors only. How far back in time the comparison query should be run. Minimum "5 mins ago", maximum "1 month".
+	CompareTo *string `json:"compare_to,omitempty"`
+
 	// ComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
 	ComparisonOperator CreateMonitorRequestComparisonOperator `json:"comparison_operator"`
 
-	// Description Extra contextual information to add to the monitor.
+	// Description Extra contextual information to add to the monitor
 	Description *string `json:"description,omitempty"`
 
-	// Filter The filter used to identify events to monitor on.
-	Filter string `json:"filter"`
-
-	// GroupKeys The list of keys to group by
-	GroupKeys *[]string `json:"group_keys,omitempty"`
+	// Formulas List of formulas to use for monitor
+	Formulas *[]Formula `json:"formulas,omitempty"`
 
 	// GroupRetention Remove groups with no data after the provided time in milliseconds
 	GroupRetention *int64 `json:"group_retention,omitempty"`
 
-	// Key The key that identifies the numeric value to monitor
-	Key *string `json:"key,omitempty"`
-
-	// Logs The list of log identifiers to filter for matching events
-	Logs []openapi_types.UUID `json:"logs"`
+	// MuteUntil Optionally create the monitor already muted, suppressing notifications. -1 mutes indefinitely; a future epoch-millis timestamp mutes until then. Omit (or 0) to create unmuted.
+	MuteUntil *int64 `json:"mute_until,omitempty"`
 
 	// Name The name of the monitor
 	Name string `json:"name"`
@@ -2244,22 +2619,26 @@ type CreateMonitorRequest struct {
 	// NoDataStatus Specify the status to use if a group has no data (no events matched in a time window)
 	NoDataStatus *CreateMonitorRequestNoDataStatus `json:"no_data_status,omitempty"`
 
-	// NotifyOnce Notify only the groups changing the global monitor status. e.g. notifications are sent only for the first group going in ALERT status or for last group resolving)
+	// NotifyOnce Notify only the groups changing the global monitor status, i.e. notifications are sent only for the first group entering ALERT status or for the last group resolving
 	NotifyOnce *bool `json:"notify_once,omitempty"`
 
-	// Stat The function to compute (MIN, MAX, COUNT, SUM, AVG)
-	Stat CreateMonitorRequestStat `json:"stat"`
+	// Queries List of queries to use for monitor
+	Queries []QueryDefinition `json:"queries"`
 
 	// Threshold the threshold value of the monitor
 	Threshold float32                   `json:"threshold"`
 	Type      *CreateMonitorRequestType `json:"type,omitempty"`
 
 	// WarningThreshold the warning threshold value
-	WarningThreshold *float64 `json:"warning_threshold,omitempty"`
+	WarningThreshold *float32 `json:"warning_threshold,omitempty"`
 
-	// Window The time window to evaluate the monitor. Minimum 5 mins, maximum 1 day.
+	// Window The time window to evaluate the monitor; minimum five minutes, maximum one day
 	Window string `json:"window"`
 }
+
+// CreateMonitorRequestChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+type CreateMonitorRequestChangeType string
 
 // CreateMonitorRequestComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
 type CreateMonitorRequestComparisonOperator string
@@ -2267,99 +2646,78 @@ type CreateMonitorRequestComparisonOperator string
 // CreateMonitorRequestNoDataStatus Specify the status to use if a group has no data (no events matched in a time window)
 type CreateMonitorRequestNoDataStatus string
 
-// CreateMonitorRequestStat The function to compute (MIN, MAX, COUNT, SUM, AVG)
-type CreateMonitorRequestStat string
-
 // CreateMonitorRequestType defines model for CreateMonitorRequest.Type.
 type CreateMonitorRequestType string
 
-// CreateOrgRequest defines model for CreateOrgRequest.
-type CreateOrgRequest struct {
-	// Name The name of the organization
+// CreateMonitorTemplateRequest defines model for CreateMonitorTemplateRequest.
+type CreateMonitorTemplateRequest struct {
+	// Actions The list of actions (notifications) to take when the monitor fires or resolves
+	Actions *string `json:"actions,omitempty"`
+
+	// Aux Additional monitor configuration
+	Aux *map[string]interface{} `json:"aux,omitempty"`
+
+	// ChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+	// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+	ChangeType *CreateMonitorTemplateRequestChangeType `json:"change_type,omitempty"`
+
+	// CompareTo For change detection monitors only. How far back in time the comparison query should be run. Minimum "5 mins ago", maximum "1 month".
+	CompareTo *string `json:"compare_to,omitempty"`
+
+	// ComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+	ComparisonOperator CreateMonitorTemplateRequestComparisonOperator `json:"comparison_operator"`
+
+	// Description Extra contextual information to add to the monitor template
+	Description *string `json:"description,omitempty"`
+
+	// GroupRetention Remove groups with no data after the provided time in milliseconds
+	GroupRetention *int64 `json:"group_retention,omitempty"`
+	Metric         struct {
+		// Arguments Map of parameter names to argument bindings. Each key must correspond to a metric parameter defined by the metric template.
+		Arguments *map[string]TemplateArgument `json:"arguments,omitempty"`
+
+		// Id The unique identifier for the metric definition template that backs this monitor.
+		Id *openapi_types.UUID `json:"id,omitempty"`
+	} `json:"metric"`
+
+	// Name The name of the monitor template
 	Name string `json:"name"`
 
-	// Region AWS region where the organisation resides
-	Region *CreateOrgRequestRegion `json:"region,omitempty"`
+	// NoDataStatus Specify the status to use if a group has no data (no events matched in a time window)
+	NoDataStatus *CreateMonitorTemplateRequestNoDataStatus `json:"no_data_status,omitempty"`
+
+	// NotifyOnce Notify only the groups changing the global monitor status, i.e. notifications are sent only for the first group entering ALERT status or for the last group resolving
+	NotifyOnce *string `json:"notify_once,omitempty"`
+
+	// Parameters Map of parameter names to their definitions. Each key represents the parameter name used within the template.
+	Parameters *TemplateParameters `json:"parameters,omitempty"`
+
+	// ThisTemplateTags A map of key value pairs associated with this log
+	ThisTemplateTags Tags `json:"this_template_tags"`
+
+	// Threshold the threshold value of the monitor
+	Threshold string                            `json:"threshold"`
+	Type      *CreateMonitorTemplateRequestType `json:"type,omitempty"`
+
+	// WarningThreshold the warning threshold value
+	WarningThreshold *string `json:"warning_threshold,omitempty"`
+
+	// Window The time window to evaluate the monitor; minimum five minutes, maximum one day
+	Window string `json:"window"`
 }
 
-// CreateOrgRequestRegion AWS region where the organisation resides
-type CreateOrgRequestRegion string
+// CreateMonitorTemplateRequestChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+type CreateMonitorTemplateRequestChangeType string
 
-// CreatePolicyRequest defines model for CreatePolicyRequest.
-type CreatePolicyRequest struct {
-	// Actions The actions allowed by this policy.
-	Actions *[]string `json:"actions,omitempty"`
+// CreateMonitorTemplateRequestComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+type CreateMonitorTemplateRequestComparisonOperator string
 
-	// CreatedAt Timestamp of when the policy was created.
-	CreatedAt *int64 `json:"created_at,omitempty"`
+// CreateMonitorTemplateRequestNoDataStatus Specify the status to use if a group has no data (no events matched in a time window)
+type CreateMonitorTemplateRequestNoDataStatus string
 
-	// Description Description of the policy.
-	Description *string `json:"description,omitempty"`
-
-	// Id The unique identifier for the policy.
-	Id *openapi_types.UUID `json:"id,omitempty"`
-
-	// ModifiedAt Timestamp of when the policy was last modified.
-	ModifiedAt *int64 `json:"modified_at,omitempty"`
-
-	// PolicyType The type of policy.
-	PolicyType *CreatePolicyRequestPolicyType `json:"policy_type,omitempty"`
-
-	// Principal The principal this policy applies to.
-	Principal *struct {
-		// PrincipalId The unique identifier of the principal.
-		PrincipalId *openapi_types.UUID `json:"principal_id,omitempty"`
-
-		// PrincipalType The type of principal.
-		PrincipalType *CreatePolicyRequestPrincipalPrincipalType `json:"principal_type,omitempty"`
-	} `json:"principal,omitempty"`
-
-	// Resource The resource associated with this policy.
-	Resource *map[string]interface{} `json:"resource,omitempty"`
-
-	// Restricted Whether this policy is restricted.
-	Restricted *bool `json:"restricted,omitempty"`
-
-	// Unless Defines a set of conditions under which a policy applies or does not apply.
-	Unless *ConditionSet `json:"unless,omitempty"`
-
-	// When Defines a set of conditions under which a policy applies or does not apply.
-	When *ConditionSet `json:"when,omitempty"`
-}
-
-// CreatePolicyRequestPolicyType The type of policy.
-type CreatePolicyRequestPolicyType string
-
-// CreatePolicyRequestPrincipalPrincipalType The type of principal.
-type CreatePolicyRequestPrincipalPrincipalType string
-
-// CreateRoleRequest defines model for CreateRoleRequest.
-type CreateRoleRequest struct {
-	// Description Description of the role
-	Description *string `json:"description,omitempty"`
-
-	// DisplayName The display name of the role
-	DisplayName *string `json:"display_name,omitempty"`
-
-	// Permissions Updated list of permissions.
-	Permissions *[]string `json:"permissions,omitempty"`
-
-	// RoleType The entity which the roles can be applied to. USER | API
-	RoleType *string `json:"role_type,omitempty"`
-}
-
-// CreateSavedSearchRequest defines model for CreateSavedSearchRequest.
-type CreateSavedSearchRequest struct {
-	// CreatedBy The name or identifier of the user who created the saved search.
-	CreatedBy string `json:"created_by"`
-
-	// LogIds List of IDs of logs associated with the saved search.
-	LogIds []string `json:"log_ids"`
-
-	// Name The name of the saved search.
-	Name          string        `json:"name"`
-	SearchDetails SearchDetails `json:"search_details"`
-}
+// CreateMonitorTemplateRequestType defines model for CreateMonitorTemplateRequest.Type.
+type CreateMonitorTemplateRequestType string
 
 // CreateSearchRequest defines model for CreateSearchRequest.
 type CreateSearchRequest struct {
@@ -2380,20 +2738,20 @@ type CreateSearchRequest struct {
 	ExplainOnly *bool `json:"explain_only,omitempty"`
 
 	// From The ids of the logs to search.
-	// One of either the `from` or the `from_tags` parameters _must_ be specified.
+	// One of either the `from` or the `from_expr` parameters _must_ be specified.
+	// if you need a list of log ids, use the [List Logs](#operation/listLogs) endpoint.
 	From *[]string `json:"from,omitempty"`
+
+	// FromExpr Expression used to select a set of logs. The expression defines the criteria for which logs are
+	// included and is applied across all available logs to produce the input set. Supports logical
+	// operators (AND, OR), comparison operators (=, !=), and quoted string literals.
+	FromExpr *string `json:"from_expr,omitempty"`
 
 	// FromSequence Specifies the starting sequence number for the time range when used together with the `from_ts` parameter.
 	// Each log event has a sequence number which is unique within a millisecond,
 	// and can be used to query data with sub-millisecond time range precision.
 	// The sequence numbers are ordered such that earlier log events have lower sequence numbers.
 	FromSequence *int `json:"from_sequence,omitempty"`
-
-	// FromTags The tags to search. Each tag should be in the form `<key>:<value>`, e.g., `environment:production`.
-	// One of either the `from` or the `from_tags` parameters _must_ be specified.
-	// If _both_ are specified then `from_tags` takes precedence, and the `from` value is ignored.
-	// If the key or the value contain a `:` or `=` character, then these can be escaped by wrapping the entire key or value in double-quotes `"`.
-	FromTags *[]string `json:"from_tags,omitempty"`
 
 	// FromTs The starting time (unix time in milliseconds) for which to query data.
 	// Must be used together with `to_ts`.
@@ -2415,6 +2773,33 @@ type CreateSearchRequest struct {
 
 	// NumOfSlices The number of buckets to break the time series results into.
 	NumOfSlices *int `json:"num_of_slices,omitempty"`
+
+	// OrderBy Specifies the attribute by which to sort the result set, using SQL-style ORDER BY syntax.
+	// The expected format is <key> ASC|DESC, for example: "duration_ms ASC".
+	// If the sort direction (ASC or DESC) is omitted, ascending order is used by default.
+	// Only one sort key may be specified.
+	//
+	// This parameter is only compatible with event search queries — i.e., queries that return a list of events and do not use aggregate functions (such as `count(*)`) in the `select` parameter.
+	//
+	// Sorting behavior is subject to certain restrictions — see the [Sort by Column](https://docs.bronto.io/Search-and-Visualize/Log-Search#sort-by-column) documentation for details.
+	//
+	// When the sort parameter is set, pagination links are not included in the response.
+	// The number of results returned is controlled solely by the limit parameter.
+	OrderBy *string `json:"order_by,omitempty"`
+
+	// PaginationToken The token used to retrieve a specific page of results (next, prev, or first).
+	//
+	// **Usage Rules:**
+	// * This token is retrieved from the `href` in the `links` response object.
+	// * When this parameter is provided, all other search filters (e.g., query string, date range) are **ignored**, with the exception of `per_page`.
+	PaginationToken *openapi_types.UUID `json:"pagination_token,omitempty"`
+
+	// PerPage The number of records to return in the next page of results.
+	//
+	// **Usage Rules:**
+	// * Used alongside `pagination_token` to modify the page size for the retrieved page.
+	// * If omitted, defaults to the page size defined in the initial query request.
+	PerPage *int `json:"per_page,omitempty"`
 
 	// Select The select parameter enables the selection of one or many rows or columns from your datasets.
 	// It can be used to select keys by name, e.g. `"select": ["ip_address", "status_code"]`, in which
@@ -2442,6 +2827,18 @@ type CreateSearchRequest struct {
 	Where *string `json:"where,omitempty"`
 }
 
+// CreateSlackIntegrationResourceRequest defines model for CreateSlackIntegrationResourceRequest.
+type CreateSlackIntegrationResourceRequest struct {
+	// Channels List of channels to which to send alerts
+	Channels []string `json:"channels"`
+
+	// Name Name of the Slack integration
+	Name string `json:"name"`
+
+	// WorkspaceId Slack workspace to use for integration; you must first authenticate to the workspace through the Bronto UI
+	WorkspaceId openapi_types.UUID `json:"workspace_id"`
+}
+
 // CreateUserRequest defines model for CreateUserRequest.
 type CreateUserRequest struct {
 	// Email The user's email address
@@ -2465,10 +2862,10 @@ type CreateWebhookIntegrationResourceRequest struct {
 	// Name The webhook name
 	Name string `json:"name"`
 
-	// Payload The wanted payload structure
+	// Payload The desired payload structure (JSON)
 	Payload *string `json:"payload,omitempty"`
 
-	// Url The webhook url
+	// Url The webhook URL
 	Url string `json:"url"`
 }
 
@@ -2480,14 +2877,14 @@ type Customers struct {
 	// ContractType The type of contract associated with the customer
 	ContractType *string `json:"contract_type,omitempty"`
 
-	// CreatedAt Unix timestamp for when the customer was created
-	CreatedAt int `json:"created_at"`
-
 	// CustomerId Unique identifier for the customer
 	CustomerId string `json:"customer_id"`
 
 	// CustomerName Name of the customer or company
 	CustomerName string `json:"customer_name"`
+
+	// Metadata Common metadata attached to all persisted resources.
+	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// OrgId Identifier for the organization associated with the customer
 	OrgId string `json:"org_id"`
@@ -2509,27 +2906,58 @@ type Customers struct {
 
 	// Parent Identifier for the parent organization, if applicable
 	Parent *string `json:"parent,omitempty"`
-
-	// UpdatedAt Unix timestamp for when the customer was last updated
-	UpdatedAt int `json:"updated_at"`
 }
 
 // Dashboard defines model for Dashboard.
 type Dashboard struct {
-	// Created The created date of the dashboard (epoch)
-	Created     *string `json:"created,omitempty"`
-	DashboardId *string `json:"dashboard_id,omitempty"`
-	Layout      *struct {
-		// MetricIds List of associated lbms
-		MetricIds *map[string]interface{} `json:"metric_ids,omitempty"`
+	// Description The description of the dashboard.
+	Description *string `json:"description,omitempty"`
+
+	// Id Unique identifier of the dashboard.
+	Id *openapi_types.UUID `json:"id,omitempty"`
+
+	// Layout Optional layout metadata for the dashboard.
+	Layout *struct {
+		// MetricIds List of associated LBMs.
+		MetricIds *[]string `json:"metric_ids,omitempty"`
 	} `json:"layout,omitempty"`
 
-	// Name The name of the Dashboard.
+	// Metadata Common metadata attached to all persisted resources.
+	Metadata *Metadata `json:"metadata,omitempty"`
+
+	// Name The name of the dashboard.
 	Name string `json:"name"`
 
 	// Tags A map of key value pairs associated with this log
-	Tags    *Tags     `json:"tags,omitempty"`
+	Tags     *Tags     `json:"tags,omitempty"`
+	Template *Template `json:"template,omitempty"`
+
+	// Widgets The widgets included in this dashboard.
 	Widgets *[]Widget `json:"widgets,omitempty"`
+}
+
+// Dataset Configuration for a dataset.
+type Dataset struct {
+	// Collection Name of the log collection.
+	Collection string `json:"collection"`
+
+	// Dataset Name of the dataset within the collection.
+	Dataset string `json:"dataset"`
+
+	// Id The unique identifier of the dataset.
+	Id openapi_types.UUID `json:"id"`
+
+	// IsSystemGenerated Whether the dataset is generated by the system.
+	IsSystemGenerated *bool `json:"is_system_generated,omitempty"`
+
+	// Metadata Common metadata attached to all persisted resources.
+	Metadata *Metadata `json:"metadata,omitempty"`
+
+	// ParserId Identifier of the parser used to process incoming events for this dataset.
+	ParserId *openapi_types.UUID `json:"parser_id,omitempty"`
+
+	// Tags A map of key value pairs associated with this log
+	Tags *Tags `json:"tags,omitempty"`
 }
 
 // DeleteTag defines model for DeleteTag.
@@ -2539,6 +2967,40 @@ type DeleteTag struct {
 	// Name The name of the tag
 	Name string `json:"name"`
 }
+
+// EncryptionKey defines model for EncryptionKey.
+type EncryptionKey struct {
+	AwsKms *AwsKmsKey `json:"aws_kms,omitempty"`
+
+	// Id Key ID
+	Id string `json:"id"`
+
+	// Name User-facing name for this key
+	Name string `json:"name"`
+
+	// OrgId Organization ID
+	OrgId    string                `json:"org_id"`
+	Provider EncryptionKeyProvider `json:"provider"`
+	Status   EncryptionKeyStatus   `json:"status"`
+}
+
+// EncryptionKeyProvider defines model for EncryptionKey.Provider.
+type EncryptionKeyProvider string
+
+// EncryptionKeyStatus defines model for EncryptionKey.Status.
+type EncryptionKeyStatus string
+
+// EncryptionKeyUpdateRequest Update request for encryption key. Only name and status can be updated. Status can only transition from CREATED to ACTIVE.
+type EncryptionKeyUpdateRequest struct {
+	// Name User-facing name for this key
+	Name *string `json:"name,omitempty"`
+
+	// Status Key status. Only CREATED keys can be transitioned to ACTIVE status.
+	Status *EncryptionKeyUpdateRequestStatus `json:"status,omitempty"`
+}
+
+// EncryptionKeyUpdateRequestStatus Key status. Only CREATED keys can be transitioned to ACTIVE status.
+type EncryptionKeyUpdateRequestStatus string
 
 // Entity defines model for Entity.
 type Entity struct {
@@ -2558,14 +3020,19 @@ type EntityId struct {
 	Id openapi_types.UUID `json:"id"`
 }
 
-// ErrorResponse defines model for ErrorResponse.
+// ErrorResponse Standard error response returned by the API when a request fails.
 type ErrorResponse struct {
-	// Code The http response code.
+	// Code HTTP status code for the error response.
 	Code int32 `json:"code"`
 
-	// CorrelationId The unique identifier for the request.
+	// CorrelationId Unique identifier for the request, used for tracing and debugging.
 	CorrelationId string `json:"correlation_id"`
-	Message       string `json:"message"`
+
+	// Details Human-readable description of the error.
+	Details string `json:"details"`
+
+	// Type HTTP reason phrase associated with the status code (e.g. "Not Found" for 404)
+	Type string `json:"type"`
 }
 
 // Event defines model for Event.
@@ -2581,7 +3048,7 @@ type Event struct {
 	//   exceptions like stack traces.
 	Status *string `json:"@status,omitempty"`
 
-	// Time Human readable time of when this event was ingested into Bronto Bytes. The time is in UTC and in the format "YYYY-MM-DD HH:MM:SS.MMM UTC"
+	// Time Human readable time of when this event was ingested into Bronto. The time is in UTC and in the format "YYYY-MM-DD HH:MM:SS.MMM UTC"
 	Time *string `json:"@time,omitempty"`
 
 	// Attributes Additional details attached to the log event, such as resource attributes, environment settings, or custom attributes defined by the user.
@@ -2660,27 +3127,20 @@ type ExportStatus string
 
 // ExportDetails defines model for ExportDetails.
 type ExportDetails struct {
-	// From The ids of the logs to search separated by a colon (:).
+	// From The ids of the logs to search separated by a colon (:). When an export is created using `from_expr`, the expression is resolved to concrete log ids and those ids are persisted in `from` for downstream export processing.
 	From *string `json:"from,omitempty"`
 
-	// FromTsCamel Unix timestamp in milliseconds, provided as either an integer or a string. Some Bronto API fields deprecated the string form in favor of the integer form; see the referencing field's own docs.
-	FromTsCamel *UnixTimestampOrString `json:"fromTs,omitempty"`
+	// FromExpr Expression used to select a set of logs. The expression defines the criteria for which logs are  included and is applied across all available logs to produce the input set. Supports logical operators (AND, OR), comparison operators (=, !=), and quoted string literals. When supplied during export creation, the expression is resolved once and the resulting log ids are stored in `from`.
+	FromExpr *string `json:"from_expr,omitempty"`
 
-	// FromTs Unix timestamp in milliseconds, provided as either an integer or a string. Some Bronto API fields deprecated the string form in favor of the integer form; see the referencing field's own docs.
-	FromTs *UnixTimestampOrString `json:"from_ts,omitempty"`
-
-	// TimeRangeCamel The relative time range for which to query data. Time range supported is from milliseconds to years. For an exact range, use `from_ts` and `to_ts` instead.
-	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	TimeRangeCamel *string `json:"timeRange,omitempty"`
+	// FromTs The starting time (unix time in milliseconds) for which to query data. Must be used together with `to_ts`. This parameter is not to be used when using `time_range`.
+	FromTs *int64 `json:"from_ts,omitempty"`
 
 	// TimeRange The relative time range for which to query data. Time range supported is from milliseconds to years. For an exact range, use `from_ts` and `to_ts` instead.
 	TimeRange *string `json:"time_range,omitempty"`
 
-	// ToTsCamel Unix timestamp in milliseconds, provided as either an integer or a string. Some Bronto API fields deprecated the string form in favor of the integer form; see the referencing field's own docs.
-	ToTsCamel *UnixTimestampOrString `json:"toTs,omitempty"`
-
-	// ToTs Unix timestamp in milliseconds, provided as either an integer or a string. Some Bronto API fields deprecated the string form in favor of the integer form; see the referencing field's own docs.
-	ToTs *UnixTimestampOrString `json:"to_ts,omitempty"`
+	// ToTs The ending time (unix time in milliseconds) for which to query data. Must be used together with `from_ts`. This parameter is incompatible with `time_range`.
+	ToTs *int64 `json:"to_ts,omitempty"`
 
 	// Where The where parameter is used to filter the results of your query.  See https://docs.bronto.io/core-features/log-search/query-syntax for more details The filter can combine multiple terms using AND, OR, NOT.
 	Where *string `json:"where,omitempty"`
@@ -2698,6 +3158,12 @@ type ExportDetails2 = map[string]interface{}
 
 // ExportDetails3 defines model for .
 type ExportDetails3 = map[string]interface{}
+
+// Formula defines model for Formula.
+type Formula struct {
+	Expression string `json:"expression"`
+	Name       string `json:"name"`
+}
 
 // ForwardConfig defines model for ForwardConfig.
 type ForwardConfig struct {
@@ -2794,18 +3260,6 @@ type ForwardConfigRequest struct {
 // ForwardConfigRequestCompression The compression algorithm to use, to reduce the payload size (ZSTD recommended)
 type ForwardConfigRequestCompression string
 
-// GenerateParser defines model for GenerateParser.
-type GenerateParser struct {
-	// Description The parser format description
-	Description *string `json:"description,omitempty"`
-
-	// LogId The unique identifier of the log to generate the parser for.
-	LogId openapi_types.UUID `json:"log_id"`
-
-	// Name The name of the parser.
-	Name *string `json:"name,omitempty"`
-}
-
 // Group defines model for Group.
 type Group struct {
 	// Count The number of times this group appeared in the logs
@@ -2815,55 +3269,22 @@ type Group struct {
 	Group *string `json:"group,omitempty"`
 
 	// Stat The statistical function applied to the group
-	Stat       *string            `json:"stat,omitempty"`
-	Timeseries *[]GroupTimeSeries `json:"timeseries,omitempty"`
+	Stat       *string      `json:"stat,omitempty"`
+	Timeseries *[]TimeSlice `json:"timeseries,omitempty"`
 
 	// Value Overall value of the statistical function applied
 	Value *float64 `json:"value,omitempty"`
 }
 
-// GroupDefn defines model for GroupDefn.
-type GroupDefn struct {
-	// CreatedAt The timestamp when the group was created.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-
-	// Description A brief summary or explanation of the group's purpose.
-	Description *string `json:"description,omitempty"`
-
-	// GroupId A unique identifier for the group.
-	GroupId *openapi_types.UUID `json:"group_id,omitempty"`
-
-	// ModifiedAt The timestamp when the group was last modified.
-	ModifiedAt *int64 `json:"modified_at,omitempty"`
-
-	// Name The display name of the group.
-	Name *string `json:"name,omitempty"`
-}
-
-// GroupList defines model for GroupList.
-type GroupList struct {
-	Groups *[]GroupDefn `json:"groups,omitempty"`
-}
-
-// GroupSeries defines model for GroupSeries.
-type GroupSeries struct {
-	// Group The group name
-	Group  *string   `json:"group,omitempty"`
-	Series *[]Series `json:"series,omitempty"`
-
-	// TotalCount The total count of the group
-	TotalCount *int `json:"totalCount,omitempty"`
-
-	// TotalValue The total statistical value of the group. For example the average latency in milliseconds.
-	TotalValue *float32 `json:"totalValue,omitempty"`
-}
-
 // GroupSeriesItem defines model for GroupSeriesItem.
 type GroupSeriesItem struct {
-	// Count The number of times this group appeared in the logs
+	// Count The number of times this group appeared in the logs/metrics across the timeseries
 	Count *int64 `json:"count,omitempty"`
 
-	// GroupsSeries The subgroups of the group (multi group-by)
+	// GroupsSeries The subgroups time series of the group. Provided only in case multiple group-by keys where specified in the query.
+	// Every object in this array is a group time series object with the same properties as the parent
+	// object (key, name, count, stat, timeseries etc). The groups series recursion repeats the number of group by keys
+	// specified in the query.
 	GroupsSeries *[]struct {
 		// Count The number of times this group appeared in the logs
 		Count *int64 `json:"count,omitempty"`
@@ -2875,14 +3296,17 @@ type GroupSeriesItem struct {
 		SeriesResolutionMs *float32 `json:"series_resolution_ms,omitempty"`
 
 		// Stat The statistical function applied to the group
-		Stat       *string            `json:"stat,omitempty"`
-		Timeseries *[]GroupTimeSeries `json:"timeseries,omitempty"`
+		Stat       *string      `json:"stat,omitempty"`
+		Timeseries *[]TimeSlice `json:"timeseries,omitempty"`
 
 		// Value Overall value of the statistical function applied
 		Value *float64 `json:"value,omitempty"`
 	} `json:"groups_series,omitempty"`
 
-	// Name The group name
+	// Key The group by key of this series
+	Key *string `json:"key,omitempty"`
+
+	// Name The group name associated with the timeseries
 	Name *string `json:"name,omitempty"`
 
 	// Quantiles Statistical distribution of the group’s metric values shown through key quantiles:
@@ -2897,124 +3321,60 @@ type GroupSeriesItem struct {
 	// - **max**: The maximum observed value.
 	Quantiles *map[string]interface{} `json:"quantiles,omitempty"`
 
-	// SeriesResolutionMs The resolution of the timeseries in milliseconds
+	// SeriesResolutionMs The resolution of the timeseries in milliseconds, so the length in milliseconds of a time slice
 	SeriesResolutionMs *float32 `json:"series_resolution_ms,omitempty"`
 
 	// Stat The statistical function applied to the group
-	Stat       *string            `json:"stat,omitempty"`
-	Timeseries *[]GroupTimeSeries `json:"timeseries,omitempty"`
+	Stat *string `json:"stat,omitempty"`
 
-	// Value Overall value of the statistical function applied
+	// Timeseries list of slices of this timeseries
+	Timeseries *[]TimeSlice `json:"timeseries,omitempty"`
+
+	// Value Overall value as result of the statistical function applied
 	Value *float64 `json:"value,omitempty"`
 }
 
-// GroupTimeSeries defines model for GroupTimeSeries.
-type GroupTimeSeries struct {
-	// Timestamp Unix timestamp in milliseconds
-	Timestamp *string `json:"@timestamp,omitempty"`
+// Identity Actor responsible for an operation.
+type Identity struct {
+	// Id Identifier of the actor (user id or API key id).
+	Id openapi_types.UUID `json:"id"`
 
-	// Count Count of the group key in the given time slice
-	Count *int64 `json:"count,omitempty"`
-
-	// Quantiles Statistical distribution of the group’s values within the time slice, represented by key quantiles:
-	// - **min**: The minimum observed value.
-	// - **p25**: The 25th percentile (first quartile).
-	// - **p50**: The 50th percentile (median).
-	// - **p75**: The 75th percentile (third quartile).
-	// - **p90**: The 90th percentile.
-	// - **p95**: The 95th percentile.
-	// - **p99**: The 99th percentile.
-	// - **p999**: The 99.9th percentile, highlighting extreme outliers.
-	// - **max**: The maximum observed value.
-	Quantiles *map[string]interface{} `json:"quantiles,omitempty"`
-
-	// Value The value of the statistical function for that group in the given time slice
-	Value *float64 `json:"value,omitempty"`
+	// Type Type of actor performing the operation.
+	Type IdentityType `json:"type"`
 }
 
-// Idp defines model for Idp.
-type Idp struct {
-	// AcceptIdpInitiated When enabled your sign-in session can be initiated from your identify provider. This is not recommended as you might be subject to attacks like spoofing and cross-site request forgery.
-	AcceptIdpInitiated bool `json:"accept_idp_initiated"`
+// IdentityType Type of actor performing the operation.
+type IdentityType string
 
-	// AppClientId This is the aws cognito application client id which is required to build the start url
-	AppClientId *string `json:"app_client_id,omitempty"`
+// InitLiveTailRequest defines model for InitLiveTailRequest.
+type InitLiveTailRequest struct {
+	// From List of log IDs to tail
+	From *[]string `json:"from,omitempty"`
 
-	// AttributeMappings Map your identity provider attributes to bronto user attributes
-	AttributeMappings []struct {
-		// ProviderAttr The value from the identity provider to map from
-		ProviderAttr string `json:"provider_attr"`
+	// FromExpr Expression which selects logs to tail
+	FromExpr *string `json:"from_expr,omitempty"`
 
-		// UserAttr The Bronto user value to map to
-		UserAttr string `json:"user_attr"`
-	} `json:"attribute_mappings"`
-
-	// ClientId The unique identifier assigned to your application when it registers with an OIDC Identity Provider (IdP). This is a required field for registering an OIDC IdP.
-	ClientId *string `json:"client_id,omitempty"`
-
-	// ClientSecret The sensitive credential used to authenticate with the OIDC provider. This is a required field for registering an OIDC IdP.
-	ClientSecret *string `json:"client_secret,omitempty"`
-
-	// Identifiers An identifier allows the email address domain to be used to redirect a user to the sign-in identity provider
-	Identifiers *[]string `json:"identifiers,omitempty"`
-
-	// IssuerUrl The base URL of your OIDC Identity Provider (IdP). This is a required field for registering an OIDC IdP.
-	IssuerUrl *string `json:"issuer_url,omitempty"`
-	MetaCert  *string `json:"meta_cert,omitempty"`
-
-	// Name The name of the identity provider
-	Name *string `json:"name,omitempty"`
-
-	// ProviderType The federated sign-in option
-	ProviderType IdpProviderType `json:"provider_type"`
+	// Where Optional filter to apply to log events in the tail stream
+	Where *string `json:"where,omitempty"`
+	union json.RawMessage
 }
 
-// IdpProviderType The federated sign-in option
-type IdpProviderType string
+// InitLiveTailRequest0 defines model for .
+type InitLiveTailRequest0 = map[string]interface{}
 
-// Insight defines model for Insight.
-type Insight struct {
-	// Category The category the insight applies to
-	Category *InsightCategory `json:"category,omitempty"`
+// InitLiveTailRequest1 defines model for .
+type InitLiveTailRequest1 = map[string]interface{}
 
-	// CreatedAt Unix timestamp for when the insight was created
-	CreatedAt *int64 `json:"created_at,omitempty"`
-
-	// Description A brief message explaining the insight
-	Description *string `json:"description,omitempty"`
-
-	// EntityId The entity id for which the insight applies to
-	EntityId *openapi_types.UUID `json:"entity_id,omitempty"`
-
-	// EntityType The entity type for which the insight applies to
-	EntityType *InsightEntityType `json:"entity_type,omitempty"`
-
-	// Id The unique identifier for the insight
-	Id *openapi_types.UUID `json:"id,omitempty"`
-
-	// ModifiedAt Unix timestamp for when the insight was last updated at
-	ModifiedAt *int64 `json:"modified_at,omitempty"`
-
-	// Name The name of the insight
-	Name *InsightName `json:"name,omitempty"`
+// InitLiveTailResponseBody defines model for InitLiveTailResponse.
+type InitLiveTailResponseBody struct {
+	// JobId Unique identifier for the live tail job; used to poll for events
+	JobId *string `json:"job_id,omitempty"`
 }
-
-// InsightCategory The category the insight applies to
-type InsightCategory string
-
-// InsightEntityType The entity type for which the insight applies to
-type InsightEntityType string
-
-// InsightName The name of the insight
-type InsightName string
 
 // Limit defines model for Limit.
 type Limit struct {
 	// Category Category of the limit
 	Category LimitCategory `json:"category"`
-
-	// CreatedAt Unix timestamp for when the limit was created
-	CreatedAt *int64 `json:"created_at,omitempty"`
 
 	// Description Description of the limit
 	Description *string `json:"description,omitempty"`
@@ -3022,8 +3382,8 @@ type Limit struct {
 	// Id Unique identifier for the limit
 	Id *string `json:"id,omitempty"`
 
-	// ModifiedAt Unix timestamp for when the limit was last modified
-	ModifiedAt *int64 `json:"modified_at,omitempty"`
+	// Metadata Common metadata attached to all persisted resources.
+	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// OrgId Identifier for the organization
 	OrgId *string `json:"org_id,omitempty"`
@@ -3036,6 +3396,9 @@ type Limit struct {
 
 	// TimeWindow Time window for the limit
 	TimeWindow LimitTimeWindow `json:"time_window"`
+
+	// Type Type of the limit indicating whether it is system-defined or user-defined
+	Type LimitType `json:"type"`
 
 	// Unit Unit of measurement for the limit
 	Unit LimitUnit `json:"unit"`
@@ -3080,108 +3443,214 @@ type LimitTarget string
 // LimitTimeWindow Time window for the limit
 type LimitTimeWindow string
 
+// LimitType Type of the limit indicating whether it is system-defined or user-defined
+type LimitType string
+
 // LimitUnit Unit of measurement for the limit
 type LimitUnit string
 
-// ListMetricsResponse defines model for ListMetricsResponse.
-type ListMetricsResponse struct {
-	Meta   *Meta         `json:"meta,omitempty"`
-	Result *[]MetricItem `json:"result,omitempty"`
+// ListComponent defines model for ListComponent.
+type ListComponent struct {
+	// Config Configuration for the table component, defining how log fields
+	// should be displayed in a tabular format.
+	Config struct {
+		// Columns Ordered list of columns to display in the table.
+		// The order of items determines the column order in the UI.
+		Columns []struct {
+			// BaseUnit The unit the field’s values are currently expressed in.
+			BaseUnit *string `json:"base_unit,omitempty"`
+
+			// Format Optional semantic format describing how the field should be interpreted (e.g. duration, bytes, percentage).
+			Format *string `json:"format,omitempty"`
+
+			// Name Field name in the log dataset.
+			Name string `json:"name"`
+
+			// Precision Number of decimal places to display when rendering the value. If not specified, a default formatting is applied.
+			Precision *int `json:"precision,omitempty"`
+
+			// TargetUnit The unit to convert the field’s values to for display. If not specified, no conversion is applied.
+			TargetUnit *string `json:"target_unit,omitempty"`
+		} `json:"columns"`
+	} `json:"config"`
+	Type ListComponentType `json:"type"`
 }
 
-// Log defines model for Log.
+// ListComponentType defines model for ListComponent.Type.
+type ListComponentType string
+
+// Log Configuration for a log source. A log can be identified using either the current fields (`collection`, `dataset`) or the deprecated legacy fields (`logset`, `log`). The `log_id` must always be provided.
 type Log struct {
-	// DropEvents This is the percentage of new incoming data for this log that will be rejected (where 0.0 is no data rejection  and 1.0 is all data rejection). Rejected data is not recoverable and will not be indexed or monitored.
-	DropEvents *float32 `json:"drop_events,omitempty"`
+	// Collection Name of the log collection. Replaces the deprecated `logset` field.
+	Collection *string `json:"collection,omitempty"`
+
+	// Dataset Name of the dataset within the collection. Replaces the deprecated `log` field.
+	Dataset *string `json:"dataset,omitempty"`
 
 	// IsSystemGenerated Whether the log is generated by the system
 	IsSystemGenerated *bool `json:"is_system_generated,omitempty"`
 
-	// Level This is the log level at which incoming events will be accepted. For example if info is set then debug and trace  events will be rejected. Events with no level will be allowed irrespective of the level set. Rejected data is not  recoverable and will not be indexed or monitored.
-	Level *LogLevel `json:"level,omitempty"`
-
-	// Log The name of the log
-	Log string `json:"log"`
+	// Log Deprecated. Use `dataset` instead.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Log *string `json:"log,omitempty"`
 
 	// LogId The unique identifier of the log
-	LogId openapi_types.UUID `json:"log_id"`
+	LogId *openapi_types.UUID `json:"log_id,omitempty"`
 
-	// Logset The name of the log set
-	Logset string `json:"logset"`
+	// Logset Deprecated. Use `collection` instead.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Logset *string `json:"logset,omitempty"`
+
+	// Metadata Common metadata attached to all persisted resources.
+	Metadata *Metadata `json:"metadata,omitempty"`
+
+	// ParserId Identifier of the parser used to process incoming events for this log.
+	ParserId *openapi_types.UUID `json:"parser_id,omitempty"`
 
 	// Tags A map of key value pairs associated with this log
-	Tags *Tags `json:"tags,omitempty"`
+	Tags  *Tags `json:"tags,omitempty"`
+	union json.RawMessage
 }
 
-// LogLevel This is the log level at which incoming events will be accepted. For example if info is set then debug and trace  events will be rejected. Events with no level will be allowed irrespective of the level set. Rejected data is not  recoverable and will not be indexed or monitored.
-type LogLevel string
+// Log0 defines model for .
+type Log0 = map[string]interface{}
 
-// LogsetLog defines model for LogsetLog.
-type LogsetLog struct {
-	// Log The name of the log
-	Log string `json:"log"`
+// Log1 defines model for .
+type Log1 = map[string]interface{}
 
-	// LogId The unique identifier of the log
-	LogId openapi_types.UUID `json:"log_id"`
+// LogView A view configuration describing how log data should be presented.
+// A view consists of one or more components (e.g. timeline, list),
+// each defining a specific way to visualize or explore the data.
+type LogView struct {
+	// Components Ordered list of components that make up the view.
+	//
+	// Each component represents a distinct visualization or data representation,
+	// such as a timeline or a list.
+	//
+	// The order of components determines their display order in the UI.
+	Components *[]LogView_Components_Item `json:"components,omitempty"`
 }
 
-// Meta defines model for Meta.
-type Meta struct {
-	// DashboardId The dashboard ID
-	DashboardId string `json:"dashboard_id"`
-
-	// FromTimestamp The starting time of the period covered by the dashboard
-	FromTimestamp int `json:"from_timestamp"`
-
-	// OrgId The organisation ID
-	OrgId openapi_types.UUID `json:"org_id"`
-
-	// ToTimestamp The ending time of the period covered by the dashboard
-	ToTimestamp int `json:"to_timestamp"`
+// LogView_Components_Item defines model for LogView.components.Item.
+type LogView_Components_Item struct {
+	union json.RawMessage
 }
 
-// MetricDelta Contains information about the change in a metric between a specified time range  and the immediately preceding time range. For example: - If the specified time range is the last 7 days, the delta is calculated based on the previous 7 days. - If the specified time range is the last 20 minutes, the delta is calculated based on the previous 20 minutes.
+// Metadata Common metadata attached to all persisted resources.
+type Metadata struct {
+	// CreatedAt Creation timestamp in milliseconds since epoch.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+
+	// CreatedBy Actor responsible for an operation.
+	CreatedBy *Identity `json:"created_by,omitempty"`
+
+	// DeletedAt Deletion timestamp in milliseconds since epoch.
+	DeletedAt *int64 `json:"deleted_at,omitempty"`
+
+	// DeletedBy Actor responsible for an operation.
+	DeletedBy *Identity `json:"deleted_by,omitempty"`
+
+	// LastHeartbeatAt Timestamp of the last heartbeat in milliseconds since epoch.
+	LastHeartbeatAt *int64 `json:"last_heartbeat_at,omitempty"`
+
+	// ModifiedAt Last update timestamp in milliseconds since epoch.
+	ModifiedAt *int64 `json:"modified_at,omitempty"`
+
+	// ModifiedBy Actor responsible for an operation.
+	ModifiedBy *Identity `json:"modified_by,omitempty"`
+}
+
+// MetricDelta Contains information about the change in the metric aggregations between the specified time range  and the delta time range. If the delta time range is not specified, the delta is computed against the time range immediately preceding the requested one
 type MetricDelta struct {
-	// DeltaFactor The relative change between the current and previous total values.
-	DeltaFactor *float64 `json:"delta_factor,omitempty"`
+	// Aggregates Aggregated values for the comparison period.
+	Aggregates *[]struct {
+		// Function the name of the function
+		Function string `json:"function"`
 
-	// DeltaValue The computed difference between the current and previous total values.
-	DeltaValue *float64 `json:"delta_value,omitempty"`
+		// Value the computed value over the delta period
+		Value *float32 `json:"value,omitempty"`
+	} `json:"aggregates,omitempty"`
+
+	// Changes Change between current and delta period aggregates.
+	Changes *[]struct {
+		// Factor Relative delta.
+		Factor *float32 `json:"factor,omitempty"`
+
+		// Function the name of the function
+		Function string `json:"function"`
+
+		// Value Absolute difference.
+		Value float32 `json:"value"`
+	} `json:"changes,omitempty"`
 
 	// EndTime The ending unix time in milliseconds of the previous period.
 	EndTime *int `json:"end_time,omitempty"`
 
 	// StartTime The starting unix time in milliseconds of the previous period.
 	StartTime *int `json:"start_time,omitempty"`
+}
 
-	// TotalCount The total number of data points in the previous period.
-	TotalCount *int `json:"total_count,omitempty"`
+// MetricFormula defines model for MetricFormula.
+type MetricFormula struct {
+	// Aggregation The reduction to apply to the timeseries to reduce it to a single value
+	Aggregation *struct {
+		// ReduceTo Final reduction applied to the aggregated result. Commonly used when returning a single value instead of a full time series.
+		ReduceTo *ReduceTo `json:"reduce_to,omitempty"`
+	} `json:"aggregation,omitempty"`
 
-	// TotalValue The total value of the previous period.
-	TotalValue *float64 `json:"total_value,omitempty"`
+	// Expression The expression that defines the formula. The formula elements refer, by name, to queries defined in the Metric Definition.
+	// When queries results have groups, the formula is computed over every group timeseries that appear in all group by queries.
+	Expression string `json:"expression"`
+
+	// Name The unique name, within a metric definition, of the formula.  The name allows to identify the timeseries resulting from this formula in a search response
+	Name string `json:"name"`
 }
 
 // MetricItem defines model for MetricItem.
 type MetricItem struct {
+	Aggregates *[]struct {
+		Function string   `json:"function"`
+		Value    *float32 `json:"value,omitempty"`
+	} `json:"aggregates,omitempty"`
+
 	// Aux Auxiliary data for the metric
 	Aux *map[string]interface{} `json:"aux,omitempty"`
 
-	// Delta Contains information about the change in a metric between a specified time range  and the immediately preceding time range. For example: - If the specified time range is the last 7 days, the delta is calculated based on the previous 7 days. - If the specified time range is the last 20 minutes, the delta is calculated based on the previous 20 minutes.
+	// Delta Contains information about the change in the metric aggregations between the specified time range  and the delta time range. If the delta time range is not specified, the delta is computed against the time range immediately preceding the requested one
 	Delta  *MetricDelta `json:"delta,omitempty"`
 	Filter string       `json:"filter"`
+
+	// FromExpr Expression used to select a set of logs. The expression defines the criteria for which logs are
+	// included and is applied across all available logs to produce the input set. Supports logical
+	// operators (AND, OR), comparison operators (=, !=), and quoted string literals.
+	FromExpr *string `json:"from_expr,omitempty"`
+
+	// FromTags The tags filters for selecting the datasets. Each from_tags should be in the form `<key>:<value>`, e.g. `environment:production`.
+	// When multiple from_tags are provided, filters on the same tag key are evaluated with OR logic, while filters on tags with different keys
+	// are evaluated with AND logic (facet style search). e.g. [`environment:production`, `team:A`, `team:B`] will include all production datasets where
+	// the team tag is either B or A.
+	// One of either the `logs` or the `from_tags` parameters _must_ be specified.
+	// If _both_ are specified then `from_tags` takes precedence, and the `logs` value is ignored.
 	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	GroupSeries  *[]GroupSeries     `json:"groupSeries,omitempty"`
+	FromTags *[]string `json:"from_tags,omitempty"`
+
+	// GroupKeys Keys used for grouping the metric results
+	GroupKeys *[]string `json:"group_keys,omitempty"`
+
+	// GroupsSeries timeseries for group by queries
 	GroupsSeries *[]GroupSeriesItem `json:"groups_series,omitempty"`
 	Id           string             `json:"id"`
 
 	// IsExact true if the series result is exact, false if it is an approximation
-	IsExact    *bool                `json:"is_exact,omitempty"`
-	Key        string               `json:"key"`
-	Logs       []openapi_types.UUID `json:"logs"`
-	Name       string               `json:"name"`
-	Series     []SeriesItem         `json:"series"`
-	Stat       string               `json:"stat"`
-	TotalCount int                  `json:"total_count"`
+	IsExact *bool                 `json:"is_exact,omitempty"`
+	Key     string                `json:"key"`
+	Logs    *[]openapi_types.UUID `json:"logs,omitempty"`
+	Name    string                `json:"name"`
+
+	// Series timeseries for non-group by queries
+	Series     []TimeSlice `json:"series"`
+	Stat       string      `json:"stat"`
+	TotalCount int         `json:"total_count"`
 
 	// TotalQuantiles Statistical distribution of the metric values represented by key quantiles:
 	// - **min**: The minimum observed value.
@@ -3197,28 +3666,104 @@ type MetricItem struct {
 	TotalValue     float32                 `json:"total_value"`
 }
 
+// MetricQuery defines model for MetricQuery.
+type MetricQuery struct {
+	// Aggregation the aggregation to apply to the selected metric field
+	Aggregation *[]Aggregation `json:"aggregation,omitempty"`
+
+	// From List log IDs to query. One of either the `from` or `from_expr` parameters _must_ be specified.
+	From *[]string `json:"from,omitempty"`
+
+	// FromExpr An expression to identify the the logs or the metric to query.
+	FromExpr *string `json:"from_expr,omitempty"`
+
+	// Groups The groups parameter specifies a key to use to arrange the results returned by an aggregate function
+	// (such as count, max, min, avg, sum) into groups of values. The aggregate function returns a single value
+	// for each group.
+	Groups *[]string `json:"groups,omitempty"`
+
+	// Name The unique name of the query within a Metric Definition or a Timeseries request. The name allows to identify the timeseries resulting from the query in the response or to compute formulas. Currently space cannot be in the name if the query has to be referenced in a formula
+	Name *string `json:"name,omitempty"`
+
+	// Select The `select` parameter specifies the metric field to retrieve from the dataset.
+	// Only a single field can be selected, for example: `"select": ["cpu_usage"]`.
+	//
+	// The response returns a timeseries for the selected metric, with values aggregated
+	// across the requested time slices.
+	Select *[]string `json:"select,omitempty"`
+
+	// Where The where parameter is used to filter the results of your query.
+	// See https://docs.bronto.io/core-features/log-search/query-syntax for more details
+	// The filter can combine multiple terms using AND, OR, NOT.
+	Where *string `json:"where,omitempty"`
+	union json.RawMessage
+}
+
+// MetricQuery0 defines model for .
+type MetricQuery0 = map[string]interface{}
+
+// MetricQuery1 defines model for .
+type MetricQuery1 = map[string]interface{}
+
+// MetricTimeseries contains the timeseries for a query or a formula
+type MetricTimeseries struct {
+	// Aggregates the aggregates computed for this formula/query
+	Aggregates *[]struct {
+		// Function the name of the function
+		Function string `json:"function"`
+
+		// Value the computed value
+		Value float32 `json:"value"`
+	} `json:"aggregates,omitempty"`
+
+	// Delta Contains information about the change in the metric aggregations between the specified time range  and the delta time range. If the delta time range is not specified, the delta is computed against the time range immediately preceding the requested one
+	Delta *MetricDelta `json:"delta,omitempty"`
+
+	// Formulas the list of formulas computed in the request
+	Formulas *[]MetricFormula `json:"formulas,omitempty"`
+
+	// GroupsSeries timeseries for group by queries
+	GroupsSeries *[]GroupSeriesItem `json:"groups_series,omitempty"`
+
+	// IsExact true if the series result is exact, false if it is an approximation
+	IsExact *bool `json:"is_exact,omitempty"`
+
+	// Name the name of the query or formula this object refers to
+	Name string `json:"name"`
+
+	// Queries the list of simple queries computed in the request
+	Queries []MetricQuery `json:"queries"`
+
+	// Series timeseries for non-group by queries
+	Series *[]TimeSlice `json:"series,omitempty"`
+}
+
 // Monitor defines model for Monitor.
 type Monitor struct {
-	// Actions The list on actions (notifications) to take when the monitor fires or resolves
+	// Actions The list of actions (notifications) to take when the monitor fires or resolves
 	Actions []Action `json:"actions"`
+
+	// AiReportEnabled True if an automatic report should be generated when the monitor triggers
+	AiReportEnabled bool `json:"ai_report_enabled"`
+
+	// AiReportInstructions Instructions for the AI on what to include in the report, e.g. check for recent deployments, verify the health of the following dependencies: ... etc
+	AiReportInstructions *string `json:"ai_report_instructions,omitempty"`
 
 	// Aux Additional monitor configuration
 	Aux *map[string]interface{} `json:"aux,omitempty"`
 
+	// ChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+	// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+	ChangeType *MonitorChangeType `json:"change_type,omitempty"`
+
+	// CompareTo For change detection monitors only. How far back in time the comparison query should be run. Minimum "5 mins ago", maximum "1 month".
+	CompareTo *string `json:"compare_to,omitempty"`
+
 	// ComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
 	ComparisonOperator MonitorComparisonOperator `json:"comparison_operator"`
 
-	// CreatedAt The timestamp when the monitor was created
-	CreatedAt int64 `json:"created_at"`
-
-	// Description Extra contextual information to add to the monitor.
+	// Description Extra contextual information to add to the monitor
 	Description *string `json:"description,omitempty"`
-
-	// Filter The filter used to identify events to monitor on.
-	Filter string `json:"filter"`
-
-	// GroupByKeys The list of keys to group by
-	GroupByKeys *[]string `json:"group_by_keys,omitempty"`
 
 	// GroupRetention Remove groups with no data after the provided time in milliseconds
 	GroupRetention *int64 `json:"group_retention,omitempty"`
@@ -3226,14 +3771,14 @@ type Monitor struct {
 	// Id The unique identifier for the monitor
 	Id openapi_types.UUID `json:"id"`
 
-	// Key The key that identifies the numeric value to monitor
-	Key *string `json:"key,omitempty"`
-
 	// LastTriggerTs The timestamp of the last time the monitor fired
 	LastTriggerTs *int64 `json:"last_trigger_ts,omitempty"`
 
-	// Logs The list of log identifiers to filter for matching events
-	Logs []openapi_types.UUID `json:"logs"`
+	// Metadata Common metadata attached to all persisted resources.
+	Metadata Metadata `json:"metadata"`
+
+	// MetricId The unique identifier for the metric definition that backs this monitor
+	MetricId *openapi_types.UUID `json:"metric_id,omitempty"`
 
 	// MonitoredGroups Representation of all the monitored groups and their status
 	MonitoredGroups *[]struct {
@@ -3253,14 +3798,12 @@ type Monitor struct {
 	// NoDataStatus Specify the status to use if a group has no data (no events matched in a time window)
 	NoDataStatus *MonitorNoDataStatus `json:"no_data_status,omitempty"`
 
-	// NotifyOnce Notify only the groups changing the global monitor status. e.g. notifications are sent only for the first group going in ALERT status or for last group resolving)
+	// NotifyOnce Notify only the groups changing the global monitor status, i.e. notifications are sent only for the first group entering ALERT status or for the last group resolving
 	NotifyOnce *bool `json:"notify_once,omitempty"`
 
-	// Stat The function to compute (MIN, MAX, COUNT, SUM, AVG)
-	Stat MonitorStat `json:"stat"`
-
 	// Status The status of the monitor
-	Status MonitorStatus `json:"status"`
+	Status   MonitorStatus `json:"status"`
+	Template *Template     `json:"template,omitempty"`
 
 	// Threshold the threshold value of the monitor
 	Threshold float64     `json:"threshold"`
@@ -3269,9 +3812,13 @@ type Monitor struct {
 	// WarningThreshold the warning threshold value
 	WarningThreshold *float64 `json:"warning_threshold,omitempty"`
 
-	// Window The time window to evaluate the monitor. Minimum 5 mins, maximum 1 day.
+	// Window The time window to evaluate the monitor; minimum five minutes, maximum one day
 	Window string `json:"window"`
 }
+
+// MonitorChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+type MonitorChangeType string
 
 // MonitorComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
 type MonitorComparisonOperator string
@@ -3282,38 +3829,269 @@ type MonitorMonitoredGroupsStatus string
 // MonitorNoDataStatus Specify the status to use if a group has no data (no events matched in a time window)
 type MonitorNoDataStatus string
 
-// MonitorStat The function to compute (MIN, MAX, COUNT, SUM, AVG)
-type MonitorStat string
-
 // MonitorStatus The status of the monitor
 type MonitorStatus string
 
 // MonitorType defines model for Monitor.Type.
 type MonitorType string
 
+// MonitorDowntime defines model for MonitorDowntime.
+type MonitorDowntime struct {
+	// AlertStrategy How to handle alerts triggered during the downtime; "DELAY" alerts until the downtime ends, or "DROP" alerts entirely during the downtime.
+	AlertStrategy *MonitorDowntimeAlertStrategy `json:"alert_strategy,omitempty"`
+
+	// Description Extra contextual information to add to the downtime
+	Description      *string `json:"description,omitempty"`
+	DynamicTimeRange *struct {
+		// FromMinuteOfDay Start of the downtime as number of minutes since midnight
+		FromMinuteOfDay float32 `json:"from_minute_of_day"`
+
+		// Invert Invert the downtime to apply outside of the specified time range
+		Invert *bool `json:"invert,omitempty"`
+
+		// RepeatDays Days on which to apply the downtime (or not apply, if inverted)
+		RepeatDays *[]MonitorDowntimeDynamicTimeRangeRepeatDays `json:"repeat_days,omitempty"`
+
+		// ToMinuteOfDay End of the downtime as number of minutes since midnight
+		ToMinuteOfDay float32 `json:"to_minute_of_day"`
+	} `json:"dynamic_time_range,omitempty"`
+
+	// From List of monitor IDs to be affected by the downtime
+	From *[]string `json:"from,omitempty"`
+
+	// Id The unique identifier for the monitor downtime
+	Id *openapi_types.UUID `json:"id,omitempty"`
+
+	// Name The name of the monitor downtime
+	Name            *string `json:"name,omitempty"`
+	StaticTimeRange *struct {
+		// From Start of the downtime in epoch milliseconds
+		From float32 `json:"from"`
+
+		// To End of the downtime in epoch milliseconds
+		To float32 `json:"to"`
+	} `json:"static_time_range,omitempty"`
+
+	// SuppressRecoveryAlert When a monitor alerts outside of a downtime window but subsequently recovers within a downtime, by default the first recovery alert is allowed. Setting this flag to "true" forces these recovery alerts to also be suppressed.
+	SuppressRecoveryAlert *bool `json:"suppress_recovery_alert,omitempty"`
+	union                 json.RawMessage
+}
+
+// MonitorDowntimeAlertStrategy How to handle alerts triggered during the downtime; "DELAY" alerts until the downtime ends, or "DROP" alerts entirely during the downtime.
+type MonitorDowntimeAlertStrategy string
+
+// MonitorDowntimeDynamicTimeRangeRepeatDays defines model for MonitorDowntime.DynamicTimeRange.RepeatDays.
+type MonitorDowntimeDynamicTimeRangeRepeatDays string
+
+// MonitorDowntime0 defines model for .
+type MonitorDowntime0 = map[string]interface{}
+
+// MonitorDowntime1 defines model for .
+type MonitorDowntime1 = map[string]interface{}
+
 // MonitorEvent defines model for MonitorEvent.
 type MonitorEvent struct {
-	// Message a short message that explain the events
+	// Message A short message that summarises the event
 	Message *string `json:"message,omitempty"`
 
 	// MonitorId The unique identifier for the monitor
 	MonitorId openapi_types.UUID `json:"monitor_id"`
 
-	// MonitorStatus the new status of the monitor after this event
+	// MonitorStatus The new status of the monitor after this event
 	MonitorStatus MonitorEventMonitorStatus `json:"monitor_status"`
 
-	// PreviousStatus the previous status of the monitor
+	// PreviousStatus The previous status of the monitor before this event
 	PreviousStatus *MonitorEventPreviousStatus `json:"previous_status,omitempty"`
 
 	// Time The unix time in milliseconds of when the event happened
 	Time float32 `json:"time"`
 }
 
-// MonitorEventMonitorStatus the new status of the monitor after this event
+// MonitorEventMonitorStatus The new status of the monitor after this event
 type MonitorEventMonitorStatus string
 
-// MonitorEventPreviousStatus the previous status of the monitor
+// MonitorEventPreviousStatus The previous status of the monitor before this event
 type MonitorEventPreviousStatus string
+
+// MonitorGroupHistory defines model for MonitorGroupHistory.
+type MonitorGroupHistory struct {
+	// GroupId The identifier for the group (key and value)
+	GroupId *string `json:"group_id,omitempty"`
+	History *[]struct {
+		// Status The new status of the group at the time of the change
+		Status *MonitorGroupHistoryHistoryStatus `json:"status,omitempty"`
+
+		// Time The unix time in milliseconds of when the status change happened
+		Time *float32 `json:"time,omitempty"`
+	} `json:"history,omitempty"`
+
+	// MonitorId The unique identifier for the monitor
+	MonitorId *openapi_types.UUID `json:"monitor_id,omitempty"`
+}
+
+// MonitorGroupHistoryHistoryStatus The new status of the group at the time of the change
+type MonitorGroupHistoryHistoryStatus string
+
+// MonitorNotification defines model for MonitorNotification.
+type MonitorNotification struct {
+	// Destination The destination of the notification, such as Slack channel or email address
+	Destination string `json:"destination"`
+
+	// FailureReason The reason of the failure if the notification status is "FAILED"
+	FailureReason *string `json:"failure_reason,omitempty"`
+
+	// MonitorId The unique identifier for the monitor
+	MonitorId openapi_types.UUID `json:"monitor_id"`
+
+	// MonitorStatus The status of the monitor when the notification was sent
+	MonitorStatus MonitorNotificationMonitorStatus `json:"monitor_status"`
+
+	// NotificationId The unique identifier for the notification
+	NotificationId string `json:"notification_id"`
+
+	// Status The status of the notification
+	Status MonitorNotificationStatus `json:"status"`
+
+	// Test True if the notification was a manual test
+	Test bool `json:"test"`
+
+	// Time The unix time in milliseconds of when the notification was created
+	Time float32 `json:"time"`
+
+	// Type The type of notification
+	Type MonitorNotificationType `json:"type"`
+}
+
+// MonitorNotificationMonitorStatus The status of the monitor when the notification was sent
+type MonitorNotificationMonitorStatus string
+
+// MonitorNotificationStatus The status of the notification
+type MonitorNotificationStatus string
+
+// MonitorNotificationType The type of notification
+type MonitorNotificationType string
+
+// MonitorTemplate defines model for MonitorTemplate.
+type MonitorTemplate struct {
+	// Actions The list of actions (notifications) to take when the monitor fires or resolves
+	Actions *string `json:"actions,omitempty"`
+
+	// Aux Additional monitor configuration
+	Aux *map[string]interface{} `json:"aux,omitempty"`
+
+	// ChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+	// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+	ChangeType *MonitorTemplateChangeType `json:"change_type,omitempty"`
+
+	// CompareTo For change detection monitors only. How far back in time the comparison query should be run. Minimum "5 mins ago", maximum "1 month".
+	CompareTo *string `json:"compare_to,omitempty"`
+
+	// ComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+	ComparisonOperator MonitorTemplateComparisonOperator `json:"comparison_operator"`
+
+	// Description Extra contextual information to add to the monitor
+	Description *string `json:"description,omitempty"`
+
+	// GroupRetention Remove groups with no data after the provided time in milliseconds
+	GroupRetention *int64 `json:"group_retention,omitempty"`
+
+	// Id The unique identifier for the monitor
+	Id openapi_types.UUID `json:"id"`
+
+	// Metadata Common metadata attached to all persisted resources.
+	Metadata Metadata `json:"metadata"`
+	MetricId *struct {
+		// Arguments Map of parameter names to argument bindings. Each key must correspond to a widget parameter defined by the widget template.
+		Arguments *map[string]TemplateArgument `json:"arguments,omitempty"`
+
+		// Id The unique identifier for the metric definition that backs this monitor template.
+		Id *openapi_types.UUID `json:"id,omitempty"`
+	} `json:"metric_id,omitempty"`
+
+	// Name The name of the monitor
+	Name string `json:"name"`
+
+	// NoDataStatus Specify the status to use if a group has no data (no events matched in a time window)
+	NoDataStatus *MonitorTemplateNoDataStatus `json:"no_data_status,omitempty"`
+
+	// NotifyOnce Notify only the groups changing the global monitor status, i.e. notifications are sent only for the first group entering ALERT status or for the last group resolving
+	NotifyOnce *string `json:"notify_once,omitempty"`
+
+	// Parameters Map of parameter names to their definitions. Each key represents the parameter name used within the template.
+	Parameters *TemplateParameters `json:"parameters,omitempty"`
+
+	// Threshold the threshold value of the monitor
+	Threshold string              `json:"threshold"`
+	Type      MonitorTemplateType `json:"type"`
+
+	// WarningThreshold the warning threshold value
+	WarningThreshold *string `json:"warning_threshold,omitempty"`
+
+	// Window The time window to evaluate the monitor; minimum five minutes, maximum one day
+	Window string `json:"window"`
+}
+
+// MonitorTemplateChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+type MonitorTemplateChangeType string
+
+// MonitorTemplateComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+type MonitorTemplateComparisonOperator string
+
+// MonitorTemplateNoDataStatus Specify the status to use if a group has no data (no events matched in a time window)
+type MonitorTemplateNoDataStatus string
+
+// MonitorTemplateType defines model for MonitorTemplate.Type.
+type MonitorTemplateType string
+
+// MultiOrgUser defines model for MultiOrgUser.
+type MultiOrgUser struct {
+	// Email The user's email address
+	Email openapi_types.Email `json:"email"`
+
+	// FirstName The user's first name
+	FirstName string `json:"first_name"`
+
+	// Groups A list of groups this user belongs to.
+	Groups *[]UserGroup `json:"groups,omitempty"`
+
+	// Id The unique identifier for the user
+	Id openapi_types.UUID `json:"id"`
+
+	// InvitedAt Unix timestamp (seconds) of the last invitation sent to the user
+	InvitedAt *int64 `json:"invited_at,omitempty"`
+
+	// InvitedBy Identifier for the user who sent the latest invitation
+	InvitedBy *string `json:"invited_by,omitempty"`
+
+	// LastLogins A map of login methods to their last login timestamps (Unix epoch).
+	LastLogins *map[string]int64 `json:"last_logins,omitempty"`
+
+	// LastName The user's last name
+	LastName     string `json:"last_name"`
+	LoginMethods *[]struct {
+		// Enabled Flag to enable or disable a login method override for this specific user.
+		Enabled bool `json:"enabled"`
+
+		// Name The name of the login method
+		Name string `json:"name"`
+	} `json:"login_methods,omitempty"`
+
+	// Organisations A list of organisations this user belongs to.
+	Organisations *[]Organization `json:"organisations,omitempty"`
+
+	// Roles A list of role ids
+	Roles *[]string `json:"roles,omitempty"`
+
+	// Status Current status of the user
+	Status *MultiOrgUserStatus `json:"status,omitempty"`
+
+	// Tags A map of key value pairs associated with this log
+	Tags *Tags `json:"tags,omitempty"`
+}
+
+// MultiOrgUserStatus Current status of the user
+type MultiOrgUserStatus string
 
 // MuteMonitorRequest defines model for MuteMonitorRequest.
 type MuteMonitorRequest struct {
@@ -3350,21 +4128,59 @@ type OrgAccessList struct {
 	Items *[]OrgAccess `json:"items,omitempty"`
 }
 
+// OrganisationSettings defines model for OrganisationSettings.
+type OrganisationSettings struct {
+	// DcrEnabled True to enable Dynamic Client Registration (DCR) OAuth for MCP clients connecting to the server.
+	DcrEnabled *bool `json:"dcr_enabled,omitempty"`
+
+	// MultiOrgGroup Default multi org group.
+	MultiOrgGroup *string `json:"multi_org_group,omitempty"`
+
+	// OutOfOrder True to enable out of order handling in the system. Note that ingestion delay may be added to sort the received events.
+	OutOfOrder *bool `json:"out_of_order,omitempty"`
+
+	// SharedDatasets Whether the shared datasets setting should be enabled on the org.
+	SharedDatasets *bool `json:"shared_datasets,omitempty"`
+}
+
 // Organization defines model for Organization.
 type Organization struct {
-	// CreatedAt The timestamp when the organization was created
-	CreatedAt int64 `json:"created_at"`
+	// Active Whether the organization is active
+	Active *bool `json:"active,omitempty"`
+
+	// ContractType The contract type for the organization
+	ContractType *OrganizationContractType `json:"contract_type,omitempty"`
+
+	// Description A description of the organization
+	Description *string `json:"description,omitempty"`
 
 	// Id The unique identifier for the organization key
-	Id           openapi_types.UUID     `json:"id"`
-	LoginMethods map[string]interface{} `json:"login_methods"`
+	Id openapi_types.UUID `json:"id"`
+
+	// IsManagementOrg Whether this organization is a management organization
+	IsManagementOrg *bool                  `json:"is_management_org,omitempty"`
+	LoginMethods    map[string]interface{} `json:"login_methods"`
+
+	// ManagementResource The identifier of the management resource associated with this organization
+	ManagementResource *openapi_types.UUID `json:"management_resource,omitempty"`
+
+	// Metadata Common metadata attached to all persisted resources.
+	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// Name The name of the organization
-	Name string `json:"name"`
+	Name          string `json:"name"`
+	PartitionTags *struct {
+		Enabled          *bool     `json:"enabled,omitempty"`
+		PartitionTagList *[]string `json:"partition_tag_list,omitempty"`
+	} `json:"partition_tags,omitempty"`
 
 	// Region AWS region where the organisation resides
-	Region *OrganizationRegion `json:"region,omitempty"`
+	Region   *OrganizationRegion   `json:"region,omitempty"`
+	Settings *OrganisationSettings `json:"settings,omitempty"`
 }
+
+// OrganizationContractType The contract type for the organization
+type OrganizationContractType string
 
 // OrganizationRegion AWS region where the organisation resides
 type OrganizationRegion string
@@ -3375,38 +4191,17 @@ type Pagination struct {
 	NextPageUrl *string `json:"next_page_url,omitempty"`
 }
 
-// Parser defines model for Parser.
-type Parser struct {
-	// AiGenerated true if the pattern was generated using AI tools
-	AiGenerated *bool `json:"ai_generated,omitempty"`
+// ParsersUsageMetricsByLogId defines model for ParsersUsageMetricsByLogId.
+type ParsersUsageMetricsByLogId struct {
+	// LatencyNs The latency in milliseconds for parsing log lines with this parser
+	LatencyNs *[]GroupSeriesItem `json:"latency_ns,omitempty"`
 
-	// Id The unique identifier for the parser
-	Id openapi_types.UUID `json:"id"`
+	// LogId The uuid of the log being parsed
+	LogId *openapi_types.UUID `json:"log_id,omitempty"`
 
-	// LogLines Original raw log lines
-	LogLines *[]string `json:"log_lines,omitempty"`
-
-	// Name The name of the parser
-	Name string `json:"name"`
-
-	// ParsedLines Parsed output of each log line
-	ParsedLines *[]map[string]string `json:"parsed_lines,omitempty"`
-
-	// Pattern The pattern of the parser
-	Pattern *string `json:"pattern,omitempty"`
-
-	// Scope Specifics if a parser is global available or private to an individual organisation
-	Scope ParserScope `json:"scope"`
-
-	// Type type of parser
-	Type ParserType `json:"type"`
+	// MatchRatio The ratio for log lines matched with the parser
+	MatchRatio *[]GroupSeriesItem `json:"match_ratio,omitempty"`
 }
-
-// ParserScope Specifics if a parser is global available or private to an individual organisation
-type ParserScope string
-
-// ParserType type of parser
-type ParserType string
 
 // Permission defines model for Permission.
 type Permission struct {
@@ -3424,12 +4219,6 @@ type Permission struct {
 
 		// Name The name of the permission
 		Name *string `json:"name,omitempty"`
-
-		// Restricted Indicates if the permission is restricted
-		Restricted *bool `json:"restricted,omitempty"`
-
-		// Sensitive Indicates if the permission is a sensitive permission. i.e. one which requires careful review
-		Sensitive *bool `json:"sensitive,omitempty"`
 
 		// Type The type of permission (e.g., read, write, delete)
 		Type *string `json:"type,omitempty"`
@@ -3484,6 +4273,11 @@ type PolicyPolicyType string
 // PolicyPrincipalPrincipalType The type of principal.
 type PolicyPrincipalPrincipalType string
 
+// PollLiveTailResponseBody defines model for PollLiveTailResponse.
+type PollLiveTailResponseBody struct {
+	Events *[]Event `json:"events,omitempty"`
+}
+
 // Principal defines model for Principal.
 type Principal struct {
 	// PrincipalId Unique ID of the principal
@@ -3496,24 +4290,31 @@ type Principal struct {
 // PrincipalPrincipalType Type of the principal (Role, User, API Key)
 type PrincipalPrincipalType string
 
-// Product defines model for Product.
-type Product struct {
-	// Active When false this product is discontinued and its not possible to create new subscriptions for this product. Existing subscriptions are unaffected.
-	Active bool `json:"active"`
+// QueryDefinition defines model for QueryDefinition.
+type QueryDefinition struct {
+	Aggregation *[]Aggregation `json:"aggregation,omitempty"`
 
-	// Description The description of the product that the subscription is for.
-	Description string `json:"description"`
+	// From List log IDs to query. One of either the `from` or `from_expr` parameters _must_ be specified.
+	From *[]string `json:"from,omitempty"`
 
-	// Name The name of the product that the subscription is for.
-	Name       string `json:"name"`
-	PlanLimits struct {
-		// SearchQuota The allowable number of bytes that can be searched per month.
-		SearchQuota *string `json:"search_quota,omitempty"`
-	} `json:"plan_limits"`
-	ProductId string `json:"product_id"`
+	// FromExpr Expression used to select a set of logs. The expression defines the criteria for which logs are
+	// included and is applied across all available logs to produce the input set. Supports logical
+	// operators (AND, OR), comparison operators (=, !=), and quoted string literals.
+	FromExpr *string   `json:"from_expr,omitempty"`
+	Groups   *[]string `json:"groups,omitempty"`
+	Name     string    `json:"name"`
+	Select   []string  `json:"select"`
+	Where    string    `json:"where"`
+	union    json.RawMessage
 }
 
-// QueryExplain defines model for QueryExplain.
+// QueryDefinition0 defines model for .
+type QueryDefinition0 = map[string]interface{}
+
+// QueryDefinition1 defines model for .
+type QueryDefinition1 = map[string]interface{}
+
+// QueryExplain details on the query execution
 type QueryExplain struct {
 	// ExecutionTimeMillis Measure of time taken to execute the query.
 	ExecutionTimeMillis *string `json:"Execution time (millis),omitempty"`
@@ -3580,6 +4381,18 @@ type QueryResult_Links_Item struct {
 	union json.RawMessage
 }
 
+// ReduceTo Final reduction applied to the aggregated result. Commonly used when returning a single value instead of a full time series.
+type ReduceTo string
+
+// ResendUserInvitationResponseBody defines model for ResendUserInvitationResponse.
+type ResendUserInvitationResponseBody struct {
+	// Message Additional information about the resend attempt
+	Message *string `json:"message,omitempty"`
+
+	// Success Indicates whether the invitation email was resent successfully
+	Success *bool `json:"success,omitempty"`
+}
+
 // Resource defines model for Resource.
 type Resource struct {
 	// ResourceId The unique identifier of the resource.
@@ -3592,249 +4405,130 @@ type Resource struct {
 // ResourceResourceType The type of the resource.
 type ResourceResourceType string
 
-// Role defines model for Role.
-type Role struct {
-	// Description Description of the role
-	Description *string `json:"description,omitempty"`
-
-	// DisplayName The display name of the role
-	DisplayName *string `json:"display_name,omitempty"`
-	Permissions *[]struct {
-		// Description Description of the permission
-		Description *string `json:"description,omitempty"`
-
-		// DisplayName The display name of the permission
-		DisplayName *string `json:"display_name,omitempty"`
-
-		// GroupDisplayName The display name of the permission group
-		GroupDisplayName *string `json:"group_display_name,omitempty"`
-
-		// GroupName The group name of the permission
-		GroupName *string `json:"group_name,omitempty"`
-
-		// Name The name of the permission
-		Name *string `json:"name,omitempty"`
-
-		// Restricted Indicates if the permission is restricted
-		Restricted *bool `json:"restricted,omitempty"`
-
-		// Type The type of permission (e.g., read, write, delete)
-		Type *string `json:"type,omitempty"`
-	} `json:"permissions,omitempty"`
-
-	// RoleId The ID of the role
-	RoleId *string `json:"role_id,omitempty"`
-
-	// RoleType The entity which the roles can be applied to. USER | API
-	RoleType *string `json:"role_type,omitempty"`
-}
-
-// SavedSearch defines model for SavedSearch.
-type SavedSearch struct {
-	// CreatedAt The timestamp when the saved search was created.
-	CreatedAt *int64 `json:"created_at,omitempty"`
-
-	// CreatedBy The name or identifier of the user who created the saved search.
-	CreatedBy *string `json:"created_by,omitempty"`
-
-	// LogIds List of IDs of logs associated with the saved search.
-	LogIds []string `json:"log_ids"`
-
-	// ModifiedAt The timestamp when the saved search was last modified.
-	ModifiedAt *int64 `json:"modified_at,omitempty"`
-
-	// Name The name of the saved search.
-	Name string `json:"name"`
-
-	// SavedSearchId The unique identifier for the saved search.
-	SavedSearchId *string       `json:"saved_search_id,omitempty"`
-	SearchDetails SearchDetails `json:"search_details"`
-
-	// UserId The ID of the user who created or owns the saved search.
-	UserId *string `json:"user_id,omitempty"`
-}
-
-// SearchCompletedLinksAsyncEnabled defines model for SearchCompletedLinksAsyncEnabled.
+// SearchCompletedLinksAsyncEnabled Navigation links for traversing the result set.
 type SearchCompletedLinksAsyncEnabled = []SearchCompletedLinksAsyncEnabled_Item
 
 // SearchCompletedLinksAsyncEnabled0 defines model for .
 type SearchCompletedLinksAsyncEnabled0 struct {
-	// Href For paginated event search queries, the URL which can be used to fetch the next page of results.
+	// Href The URL to fetch the next page of results.
 	Href *string `json:"href,omitempty"`
 
-	// Rel next
-	Rel *string `json:"rel,omitempty"`
+	// Rel Indicates this link points to the next page of results.
+	Rel *SearchCompletedLinksAsyncEnabled0Rel `json:"rel,omitempty"`
 }
+
+// SearchCompletedLinksAsyncEnabled0Rel Indicates this link points to the next page of results.
+type SearchCompletedLinksAsyncEnabled0Rel string
 
 // SearchCompletedLinksAsyncEnabled1 defines model for .
 type SearchCompletedLinksAsyncEnabled1 struct {
+	// Href The URL to fetch the previous page of results.
+	// **Note:** This link is only present if you have navigated past the first page.
+	Href *string `json:"href,omitempty"`
+
+	// Rel Indicates this link points to the previous page of results.
+	Rel *SearchCompletedLinksAsyncEnabled1Rel `json:"rel,omitempty"`
+}
+
+// SearchCompletedLinksAsyncEnabled1Rel Indicates this link points to the previous page of results.
+type SearchCompletedLinksAsyncEnabled1Rel string
+
+// SearchCompletedLinksAsyncEnabled2 defines model for .
+type SearchCompletedLinksAsyncEnabled2 struct {
+	// Href The URL to fetch the first page of results.
+	Href *string `json:"href,omitempty"`
+
+	// Rel Indicates this link points to the first page of results.
+	Rel *SearchCompletedLinksAsyncEnabled2Rel `json:"rel,omitempty"`
+}
+
+// SearchCompletedLinksAsyncEnabled2Rel Indicates this link points to the first page of results.
+type SearchCompletedLinksAsyncEnabled2Rel string
+
+// SearchCompletedLinksAsyncEnabled3 defines model for .
+type SearchCompletedLinksAsyncEnabled3 struct {
 	// Href The URL to fetch the query's status. See more information about the async api [here](#tag/search/operation/getSearchStatus).
 	Href *string `json:"href,omitempty"`
 
-	// Rel status
-	Rel *string `json:"rel,omitempty"`
+	// Rel Indicates this link points to the query status.
+	Rel *SearchCompletedLinksAsyncEnabled3Rel `json:"rel,omitempty"`
 }
+
+// SearchCompletedLinksAsyncEnabled3Rel Indicates this link points to the query status.
+type SearchCompletedLinksAsyncEnabled3Rel string
 
 // SearchCompletedLinksAsyncEnabled_Item defines model for SearchCompletedLinksAsyncEnabled.Item.
 type SearchCompletedLinksAsyncEnabled_Item struct {
 	union json.RawMessage
 }
 
-// SearchDetails defines model for SearchDetails.
-type SearchDetails struct {
-	// From The ids of the logs to search.
-	From *string `json:"from,omitempty"`
+// SearchTimeseries defines model for SearchTimeseries.
+type SearchTimeseries struct {
+	Delta *struct {
+		// Enabled Whether delta calculation is enabled.
+		Enabled bool `json:"enabled"`
 
-	// FromTs The starting time (unix time in milliseconds) for which to query data. Must be used together with `to_ts`. This parameter is not to be used when using `time_range`.
-	FromTs *int `json:"from_ts,omitempty"`
+		// FromTs Start of the comparison time range (Unix epoch in milliseconds).
+		FromTs *int64 `json:"from_ts,omitempty"`
 
-	// Select The select parameter selects values of one or more specified keys and can be  considered to be equivalent to returning columns from a table.  It can select keys either by name, e.g. query params with select=ip_address or with  an aggregate function (count, max, min, avg, sum) on the values of the specified key,  e.g. query params with select=count(ip_address). Multiple selects can be used and they would separated by & in the query param,  e.g. &select=count(ip_address)&select=count(hostname).  The following internal columns are always available\: @time, @origin & @raw
-	Select *string `json:"select,omitempty"`
+		// Natural The reference time period used for delta comparison. Either `natural` or both `from_ts` and `to_ts` may be provided when `delta` is enabled. `natural` takes precedence over `from_ts`/`to_ts` if both are supplied. If no delta period is specified, the delta is computed against the previous equivalent time range.
+		Natural *string `json:"natural,omitempty"`
 
-	// TimeRange The relative time range for which to query data. Time range supported is from milliseconds to years. For an exact range, use `from_ts` and `to_ts` instead.
-	TimeRange *string `json:"time_range,omitempty"`
+		// ToTs End of the comparison time range (Unix epoch in milliseconds).
+		ToTs *int64 `json:"to_ts,omitempty"`
+	} `json:"delta,omitempty"`
 
-	// ToTs The ending time (unix time in milliseconds) for which to query data. Must be used together with `from_ts`. This parameter is incompatible with `time_range`.
-	ToTs *int `json:"to_ts,omitempty"`
+	// Formulas a list of formulas that combine the queries results
+	Formulas *[]MetricFormula `json:"formulas,omitempty"`
 
-	// Where The where parameter is used to filter the results of your query.  See https://docs.bronto.io/core-features/log-search/query-syntax for more details The filter can combine multiple terms using AND, OR, NOT.
-	Where *string `json:"where,omitempty"`
+	// Limit In a query with a group by, it limits the number of groups returned.
+	// It does not affect a query using aggregate functions.
+	Limit *int `json:"limit,omitempty"`
+
+	// NumOfSlices The number of buckets to break the time series results into.
+	NumOfSlices *map[string]interface{} `json:"num_of_slices,omitempty"`
+
+	// Queries the list of simple queries computed to generate the timeseries
+	Queries   []MetricQuery `json:"queries"`
+	TimeRange struct {
+		// FromTs The starting time (unix time in milliseconds) for which to query data.
+		// Must be used together with `to_ts`.
+		// This parameter is incompatible with `time_range`.
+		FromTs *int64 `json:"from_ts,omitempty"`
+
+		// Natural The natural time range for which to query data. Time range supported is from
+		// milliseconds to years. For an exact range, use `from_ts` and `to_ts` instead.
+		Natural *string `json:"natural,omitempty"`
+
+		// ToTs The ending time (unix time in milliseconds) for which to query data.
+		// Must be used together with `from_ts`.
+		// This parameter is incompatible with `time_range`.
+		ToTs *int64 `json:"to_ts,omitempty"`
+	} `json:"time_range"`
 }
 
-// SearchInProgressLinks defines model for SearchInProgressLinks.
-type SearchInProgressLinks = []SearchInProgressLinks_Item
+// SlackIntegrationResource defines model for SlackIntegrationResource.
+type SlackIntegrationResource struct {
+	// Channels List of channels to which to send alerts
+	Channels []string `json:"channels"`
 
-// SearchInProgressLinks0 defines model for .
-type SearchInProgressLinks0 struct {
-	// Href The URL to fetch the query's status. See more information about the async api [here](#tag/search/operation/getSearchStatus).
-	Href *string `json:"href,omitempty"`
+	// Id A unique identifier for the integration resource
+	Id string `json:"id"`
 
-	// Rel status
-	Rel *string `json:"rel,omitempty"`
-}
-
-// SearchInProgressLinks_Item defines model for SearchInProgressLinks.Item.
-type SearchInProgressLinks_Item struct {
-	union json.RawMessage
-}
-
-// SendTestNotificationsRequest defines model for SendTestNotificationsRequest.
-type SendTestNotificationsRequest struct {
-	// Actions The list on actions (notifications) to take when the monitor fires or resolves
-	Actions []Action `json:"actions"`
-
-	// ComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
-	ComparisonOperator SendTestNotificationsRequestComparisonOperator `json:"comparison_operator"`
-
-	// Description Extra contextual information to add to the monitor.
-	Description *string `json:"description,omitempty"`
-
-	// Filter The filter used to identify events to monitor on.
-	Filter string `json:"filter"`
-
-	// Group Specify the group you want to send notifications for
-	Group *string `json:"group,omitempty"`
-
-	// GroupByKeys The list of keys to group by
-	GroupByKeys *[]string `json:"group_by_keys,omitempty"`
-
-	// Key The key that identifies the numeric value to monitor
-	Key *string `json:"key,omitempty"`
-
-	// Name The name of the monitor
+	// Name Name of the Slack integration
 	Name string `json:"name"`
 
-	// Stat The function to compute (MIN, MAX, COUNT, SUM, AVG)
-	Stat SendTestNotificationsRequestStat `json:"stat"`
-
-	// StateTransitions The state transitions to test
-	StateTransitions []SendTestNotificationsRequestStateTransitions `json:"state_transitions"`
-
-	// Threshold the threshold value of the monitor
-	Threshold float64 `json:"threshold"`
-
-	// WarningThreshold the warning threshold value
-	WarningThreshold *float64 `json:"warning_threshold,omitempty"`
-
-	// Window The time window to evaluate the monitor. Minimum 5 mins, maximum 1 day.
-	Window string `json:"window"`
+	// WorkspaceId Slack workspace to use for integration; you must first authenticate to the workspace through the Bronto UI
+	WorkspaceId openapi_types.UUID `json:"workspace_id"`
 }
 
-// SendTestNotificationsRequestComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
-type SendTestNotificationsRequestComparisonOperator string
+// SlackWorkspaceResource defines model for SlackWorkspaceResource.
+type SlackWorkspaceResource struct {
+	// Id A unique identifier for the workspace resource; does not correlate to the workspace ID in Slack
+	Id string `json:"id"`
 
-// SendTestNotificationsRequestStat The function to compute (MIN, MAX, COUNT, SUM, AVG)
-type SendTestNotificationsRequestStat string
-
-// SendTestNotificationsRequestStateTransitions defines model for SendTestNotificationsRequest.StateTransitions.
-type SendTestNotificationsRequestStateTransitions string
-
-// Series defines model for Series.
-type Series struct {
-	// Timestamp Unix timestamp in milliseconds
-	Timestamp *int `json:"@timestamp,omitempty"`
-
-	// Count The number of events to compute the value
-	Count *int `json:"count,omitempty"`
-
-	// Value The statistical value
-	Value *float32 `json:"value,omitempty"`
-}
-
-// SeriesItem defines model for SeriesItem.
-type SeriesItem map[string]string
-
-// SsoMapping defines model for SsoMapping.
-type SsoMapping struct {
-	// AssignAttr The Bronto role or group to map to
-	AssignAttr string `json:"assign_attr"`
-
-	// ProviderKey The identity provider key to retrieve the value from
-	ProviderKey string `json:"provider_key"`
-
-	// ProviderValue The identify provider value to map from
-	ProviderValue string `json:"provider_value"`
-}
-
-// SsoMappings defines model for SsoMappings.
-type SsoMappings struct {
-	// Mappings Map your identity provider attributes to bronto role or group
-	Mappings []SsoMapping `json:"mappings"`
-}
-
-// Subscription defines model for Subscription.
-type Subscription struct {
-	// CurrentPeriodEnd Unix timestamp for end of the current period that the subscription has been invoiced for.
-	CurrentPeriodEnd int `json:"current_period_end"`
-
-	// CurrentPeriodStart Unix timestamp for start of the current period (in epoc time) that the subscription has been invoiced for.
-	CurrentPeriodStart int `json:"current_period_start"`
-
-	// Description A description of the organisations subscription
-	Description *string `json:"description,omitempty"`
-
-	// IngestionLimitBytesMonthly The total amount of bytes that can be ingested per month
-	IngestionLimitBytesMonthly int `json:"ingestion_limit_bytes_monthly"`
-
-	// IntervalCount The number of intervals (specified in the interval_frq attribute) between subscription billings. For example, interval_frq=month and interval_count=3 bills every 3 months.
-	IntervalCount int                     `json:"interval_count"`
-	IntervalFrq   SubscriptionIntervalFrq `json:"interval_frq"`
-
-	// PaymentMethod Describes the payment method for the organisation
-	PaymentMethod *string            `json:"payment_method,omitempty"`
-	Product       Product            `json:"product"`
-	Status        SubscriptionStatus `json:"status"`
-}
-
-// SubscriptionIntervalFrq defines model for Subscription.IntervalFrq.
-type SubscriptionIntervalFrq string
-
-// SubscriptionStatus defines model for Subscription.Status.
-type SubscriptionStatus string
-
-// SubscriptionsResponse defines model for SubscriptionsResponse.
-type SubscriptionsResponse struct {
-	Subscriptions []Subscription `json:"subscriptions"`
+	// Name Name of the Slack workspace
+	Name string `json:"name"`
 }
 
 // Tag defines model for Tag.
@@ -3867,6 +4561,15 @@ type TagValue struct {
 	Value string `json:"value"`
 }
 
+// TagValues defines model for TagValues.
+type TagValues = []struct {
+	// Name The name of the tag, a tag name must be unique per entity.
+	Name string `json:"name"`
+
+	// Value The value of the tag
+	Value string `json:"value"`
+}
+
 // TagWithValues defines model for TagWithValues.
 type TagWithValues struct {
 	// Name The name of the tag, a tag name must be unique per entity.
@@ -3877,9 +4580,103 @@ type TagWithValues struct {
 // Tags A map of key value pairs associated with this log
 type Tags map[string]string
 
+// Template defines model for Template.
+type Template struct {
+	// Arguments Map of parameter names to argument bindings. Each key must correspond to a parameter defined by the referenced template.
+	Arguments *map[string]TemplateArgument `json:"arguments,omitempty"`
+
+	// Id Identifier of the dashboard template this dashboard is based on. If provided, arguments must be supplied for required template parameters.
+	Id *openapi_types.UUID `json:"id,omitempty"`
+}
+
+// TemplateArgument Represents the runtime binding for a single template parameter. Exactly one binding strategy must be provided.
+// An argument can either: - Provide a literal value directly, or - Reference a named template input parameter.
+type TemplateArgument struct {
+	union json.RawMessage
+}
+
+// TemplateArgument0 Bind the parameter to a literal value.
+type TemplateArgument0 struct {
+	// Literal Literal value to assign to the parameter. The value must conform to the parameter's declared VariableType. Accepts a string, array.
+	Literal TemplateArgument_0_Literal `json:"literal"`
+}
+
+// TemplateArgument0Literal0 defines model for .
+type TemplateArgument0Literal0 = string
+
+// TemplateArgument0Literal1 defines model for .
+type TemplateArgument0Literal1 = []map[string]interface{}
+
+// TemplateArgument_0_Literal Literal value to assign to the parameter. The value must conform to the parameter's declared VariableType. Accepts a string, array.
+type TemplateArgument_0_Literal struct {
+	union json.RawMessage
+}
+
+// TemplateArgument1 Bind the parameter to a template input parameter.
+type TemplateArgument1 struct {
+	// Input Name of the template input parameter whose value should be used.
+	Input string `json:"input"`
+}
+
+// TemplateParameter Defines a template parameter. A parameter describes the expected type and purpose of a value that must be supplied when the template is instantiated.
+// This schema represents parameter metadata only. It does not contain runtime values.
+type TemplateParameter struct {
+	// Description Human-readable explanation of the parameter’s purpose.
+	Description *string `json:"description,omitempty"`
+
+	// Type The expected data type of the parameter value. The provided argument must conform to this type.
+	Type TemplateParameterType `json:"type"`
+}
+
+// TemplateParameterType The expected data type of the parameter value. The provided argument must conform to this type.
+type TemplateParameterType string
+
+// TemplateParameters Map of parameter names to their definitions. Each key represents the parameter name used within the template.
+type TemplateParameters map[string]TemplateParameter
+
+// TimeFunction Aggregation applied over time buckets.
+type TimeFunction string
+
+// TimeSlice defines model for TimeSlice.
+type TimeSlice struct {
+	// Timestamp Unix timestamp in milliseconds of the start of this time slice
+	Timestamp string `json:"@timestamp"`
+
+	// Count Count of the group key in the given time slice
+	Count int64 `json:"count"`
+
+	// Quantiles Statistical distribution of the group’s values within the time slice, represented by key quantiles:
+	// - **min**: The minimum observed value.
+	// - **p25**: The 25th percentile (first quartile).
+	// - **p50**: The 50th percentile (median).
+	// - **p75**: The 75th percentile (third quartile).
+	// - **p90**: The 90th percentile.
+	// - **p95**: The 95th percentile.
+	// - **p99**: The 99th percentile.
+	// - **p999**: The 99.9th percentile, highlighting extreme outliers.
+	// - **max**: The maximum observed value.
+	Quantiles *map[string]interface{} `json:"quantiles,omitempty"`
+
+	// Value The value of the statistical function for that group in the given time slice
+	Value float64 `json:"value"`
+}
+
+// TimelineComponent defines model for TimelineComponent.
+type TimelineComponent struct {
+	Config struct {
+		// GroupBy Field used to group timeline events.
+		GroupBy *string `json:"group_by,omitempty"`
+	} `json:"config"`
+	Type TimelineComponentType `json:"type"`
+}
+
+// TimelineComponentType defines model for TimelineComponent.Type.
+type TimelineComponentType string
+
 // TopKeyValue defines model for TopKeyValue.
 type TopKeyValue struct {
 	// Rank A count representing the number of times a value occurred for the key.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	Rank *int `json:"rank,omitempty"`
 
 	// Value A value associated with the key.
@@ -3887,37 +4684,29 @@ type TopKeyValue struct {
 }
 
 // TopKeys defines model for TopKeys.
-type TopKeys map[string]TopKeysPerLog
+type TopKeys map[string]TopKeysPerLogOrMetric
 
-// TopKeysPerLog defines model for TopKeysPerLog.
-type TopKeysPerLog struct {
+// TopKeysPerLogOrMetric defines model for TopKeysPerLogOrMetric.
+type TopKeysPerLogOrMetric struct {
 	// FieldType A description of the source of the given key.
-	FieldType *TopKeysPerLogFieldType `json:"field_type,omitempty"`
+	FieldType *TopKeysPerLogOrMetricFieldType `json:"field_type,omitempty"`
 
 	// Rank A count representing the number of times this key was in the sampled data.
-	Rank int `json:"rank"`
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Rank *int `json:"rank,omitempty"`
 
 	// Type A description of the type of data contained in the key.
-	Type   *TopKeysPerLogType      `json:"type,omitempty"`
+	Type TopKeysPerLogOrMetricType `json:"type"`
+
+	// Values a sample list of values
 	Values *map[string]TopKeyValue `json:"values,omitempty"`
 }
 
-// TopKeysPerLogFieldType A description of the source of the given key.
-type TopKeysPerLogFieldType string
+// TopKeysPerLogOrMetricFieldType A description of the source of the given key.
+type TopKeysPerLogOrMetricFieldType string
 
-// TopKeysPerLogType A description of the type of data contained in the key.
-type TopKeysPerLogType string
-
-// UnixTimestampOrString Unix timestamp in milliseconds, provided as either an integer or a string. Some Bronto API fields deprecated the string form in favor of the integer form; see the referencing field's own docs.
-type UnixTimestampOrString struct {
-	union json.RawMessage
-}
-
-// UnixTimestampOrString0 defines model for .
-type UnixTimestampOrString0 = int64
-
-// UnixTimestampOrString1 defines model for .
-type UnixTimestampOrString1 = string
+// TopKeysPerLogOrMetricType A description of the type of data contained in the key.
+type TopKeysPerLogOrMetricType string
 
 // UpdateApiKeyRequest defines model for UpdateApiKeyRequest.
 type UpdateApiKeyRequest struct {
@@ -3927,31 +4716,6 @@ type UpdateApiKeyRequest struct {
 	// Roles A list of api key role ids
 	Roles *map[string]interface{} `json:"roles,omitempty"`
 }
-
-// UpdateIdp defines model for UpdateIdp.
-type UpdateIdp struct {
-	// AcceptIdpInitiated When enabled your sign-in session can be initiated from your identify provider. This is not recommended as you might be subject to attacks like spoofing and cross-site request forgery.
-	AcceptIdpInitiated *bool `json:"accept_idp_initiated,omitempty"`
-
-	// AttributeMappings Map your identity provider attributes to bronto user attributes
-	AttributeMappings *[]struct {
-		// ProviderAttr The value from the identity provider to map from
-		ProviderAttr string `json:"provider_attr"`
-
-		// UserAttr The Bronto user value to map to
-		UserAttr string `json:"user_attr"`
-	} `json:"attribute_mappings,omitempty"`
-
-	// Identifiers An identifier allows the email address domain to be used to redirect a user to the sign-in identity provider
-	Identifiers *[]string `json:"identifiers,omitempty"`
-	MetaCert    *string   `json:"meta_cert,omitempty"`
-
-	// Provider The federated sign-in option, currently only SAML is supported
-	Provider *UpdateIdpProvider `json:"provider,omitempty"`
-}
-
-// UpdateIdpProvider The federated sign-in option, currently only SAML is supported
-type UpdateIdpProvider string
 
 // UpdateLimitRequest defines model for UpdateLimitRequest.
 type UpdateLimitRequest struct {
@@ -4021,31 +4785,77 @@ type UpdateLimitRequestTimeWindow string
 // UpdateLimitRequestUnit Unit of measurement for the limit
 type UpdateLimitRequestUnit string
 
-// UpdateLogRequest defines model for UpdateLogRequest.
-type UpdateLogRequest struct {
-	// DropEvents This is the percentage of new incoming data for this log that will be rejected (where 0.0 is no data rejection  and 1.0 is all data rejection). Rejected data is not recoverable and will not be indexed or monitored.
-	DropEvents *float32 `json:"drop_events,omitempty"`
+// UpdateMonitorDowntimeRequest defines model for UpdateMonitorDowntimeRequest.
+type UpdateMonitorDowntimeRequest struct {
+	// AlertStrategy How to handle alerts triggered during the downtime; "DELAY" alerts until the downtime ends, or "DROP" alerts entirely during the downtime.
+	AlertStrategy *UpdateMonitorDowntimeRequestAlertStrategy `json:"alert_strategy,omitempty"`
 
-	// Level This is the log level at which incoming events will be accepted. For example if info is set then debug and trace  events will be rejected. Events with no level will be allowed irrespective of the level set. Rejected data is not  recoverable and will not be indexed or monitored.
-	Level *UpdateLogRequestLevel `json:"level,omitempty"`
+	// Description Extra contextual information to add to the downtime
+	Description      *string `json:"description,omitempty"`
+	DynamicTimeRange *struct {
+		// FromMinuteOfDay Start of the downtime as number of minutes since midnight
+		FromMinuteOfDay float32 `json:"from_minute_of_day"`
 
-	// Log The name of the log
-	Log string `json:"log"`
+		// Invert Invert the downtime to apply outside of the specified time range
+		Invert *bool `json:"invert,omitempty"`
 
-	// Logset The name of the log set
-	Logset *string `json:"logset,omitempty"`
+		// RepeatDays Days on which to apply the downtime (or not apply, if inverted)
+		RepeatDays *[]UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays `json:"repeat_days,omitempty"`
+
+		// ToMinuteOfDay End of the downtime as number of minutes since midnight
+		ToMinuteOfDay float32 `json:"to_minute_of_day"`
+	} `json:"dynamic_time_range,omitempty"`
+
+	// From List of monitor IDs to be affected by the downtime
+	From *[]string `json:"from,omitempty"`
+
+	// Name The name of the monitor downtime
+	Name            *string `json:"name,omitempty"`
+	StaticTimeRange *struct {
+		// From Start of the downtime in epoch milliseconds
+		From float32 `json:"from"`
+
+		// To End of the downtime in epoch milliseconds
+		To float32 `json:"to"`
+	} `json:"static_time_range,omitempty"`
+
+	// SuppressRecoveryAlert When a monitor alerts outside of a downtime window but subsequently recovers within a downtime, by default the first recovery alert is allowed. Setting this flag to "true" forces these recovery alerts to also be suppressed.
+	SuppressRecoveryAlert *bool `json:"suppress_recovery_alert,omitempty"`
+	union                 json.RawMessage
 }
 
-// UpdateLogRequestLevel This is the log level at which incoming events will be accepted. For example if info is set then debug and trace  events will be rejected. Events with no level will be allowed irrespective of the level set. Rejected data is not  recoverable and will not be indexed or monitored.
-type UpdateLogRequestLevel string
+// UpdateMonitorDowntimeRequestAlertStrategy How to handle alerts triggered during the downtime; "DELAY" alerts until the downtime ends, or "DROP" alerts entirely during the downtime.
+type UpdateMonitorDowntimeRequestAlertStrategy string
+
+// UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays defines model for UpdateMonitorDowntimeRequest.DynamicTimeRange.RepeatDays.
+type UpdateMonitorDowntimeRequestDynamicTimeRangeRepeatDays string
+
+// UpdateMonitorDowntimeRequest0 defines model for .
+type UpdateMonitorDowntimeRequest0 = map[string]interface{}
+
+// UpdateMonitorDowntimeRequest1 defines model for .
+type UpdateMonitorDowntimeRequest1 = map[string]interface{}
 
 // UpdateMonitorRequest defines model for UpdateMonitorRequest.
 type UpdateMonitorRequest struct {
-	// Actions The list on actions (notifications) to take when the monitor fires or resolves
+	// Actions The list of actions (notifications) to take when the monitor fires or resolves
 	Actions []Action `json:"actions"`
+
+	// AiReportEnabled True if an automatic report should be generated when the monitor triggers
+	AiReportEnabled *bool `json:"ai_report_enabled,omitempty"`
+
+	// AiReportInstructions Instructions for the AI on what to include in the report, e.g. check for recent deployments, verify the health of the following dependencies: ... etc
+	AiReportInstructions *string `json:"ai_report_instructions,omitempty"`
 
 	// Aux Additional monitor configuration
 	Aux *map[string]interface{} `json:"aux,omitempty"`
+
+	// ChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+	// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+	ChangeType *UpdateMonitorRequestChangeType `json:"change_type,omitempty"`
+
+	// CompareTo For change detection monitors only. How far back in time the comparison query should be run. Minimum "5 mins ago", maximum "1 month".
+	CompareTo *string `json:"compare_to,omitempty"`
 
 	// ComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
 	ComparisonOperator UpdateMonitorRequestComparisonOperator `json:"comparison_operator"`
@@ -4053,20 +4863,11 @@ type UpdateMonitorRequest struct {
 	// Description Extra contextual information to add to the monitor.
 	Description *string `json:"description,omitempty"`
 
-	// Filter The filter used to identify events to monitor on.
-	Filter string `json:"filter"`
-
-	// GroupKeys The list of keys to group by
-	GroupKeys *[]string `json:"group_keys,omitempty"`
+	// Formulas List of formulas to use for monitor
+	Formulas *[]Formula `json:"formulas,omitempty"`
 
 	// GroupRetention Remove groups with no data after the provided time in milliseconds
 	GroupRetention *int64 `json:"group_retention,omitempty"`
-
-	// Key The key that identifies the numeric value to monitor
-	Key *string `json:"key,omitempty"`
-
-	// Logs The list of log identifiers to filter for matching events
-	Logs []openapi_types.UUID `json:"logs"`
 
 	// Name The name of the monitor
 	Name string `json:"name"`
@@ -4074,22 +4875,26 @@ type UpdateMonitorRequest struct {
 	// NoDataStatus Specify the status to use in case of no data (no events matched in a time window)
 	NoDataStatus *UpdateMonitorRequestNoDataStatus `json:"no_data_status,omitempty"`
 
-	// NotifyOnce Notify only the groups changing the global monitor status. e.g. notifications are sent only for the first group going in ALERT status or for last group resolving)
+	// NotifyOnce Notify only the groups changing the global monitor status, i.e. notifications are sent only for the first group entering ALERT status or for the last group resolving
 	NotifyOnce *bool `json:"notify_once,omitempty"`
 
-	// Stat The function to compute (MIN, MAX, COUNT, SUM, AVG)
-	Stat UpdateMonitorRequestStat `json:"stat"`
+	// Queries List of queries to use for monitor
+	Queries []QueryDefinition `json:"queries"`
 
 	// Threshold the threshold value of the monitor
 	Threshold float32                   `json:"threshold"`
 	Type      *UpdateMonitorRequestType `json:"type,omitempty"`
 
 	// WarningThreshold the warning threshold value
-	WarningThreshold *float64 `json:"warning_threshold,omitempty"`
+	WarningThreshold *float32 `json:"warning_threshold,omitempty"`
 
-	// Window The time window to evaluate the monitor. Minimum 5 mins, maximum 1 day.
+	// Window The time window to evaluate the monitor; minimum five minutes, maximum one day
 	Window string `json:"window"`
 }
+
+// UpdateMonitorRequestChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+type UpdateMonitorRequestChangeType string
 
 // UpdateMonitorRequestComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
 type UpdateMonitorRequestComparisonOperator string
@@ -4097,106 +4902,81 @@ type UpdateMonitorRequestComparisonOperator string
 // UpdateMonitorRequestNoDataStatus Specify the status to use in case of no data (no events matched in a time window)
 type UpdateMonitorRequestNoDataStatus string
 
-// UpdateMonitorRequestStat The function to compute (MIN, MAX, COUNT, SUM, AVG)
-type UpdateMonitorRequestStat string
-
 // UpdateMonitorRequestType defines model for UpdateMonitorRequest.Type.
 type UpdateMonitorRequestType string
 
-// UpdateOrgRequest defines model for UpdateOrgRequest.
-type UpdateOrgRequest struct {
-	LoginMethods *map[string]interface{} `json:"login_methods,omitempty"`
-}
+// UpdateMonitorTemplateRequest defines model for UpdateMonitorTemplateRequest.
+type UpdateMonitorTemplateRequest struct {
+	// Aux Additional monitor configuration
+	Aux *map[string]interface{} `json:"aux,omitempty"`
 
-// UpdateParser defines model for UpdateParser.
-type UpdateParser struct {
-	// Description The parser format description
+	// ChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+	// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+	ChangeType *UpdateMonitorTemplateRequestChangeType `json:"change_type,omitempty"`
+
+	// CompareTo For change detection monitors only. How far back in time the comparison query should be run. Minimum "5 mins ago", maximum "1 month".
+	CompareTo *string `json:"compare_to,omitempty"`
+
+	// ComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+	ComparisonOperator UpdateMonitorTemplateRequestComparisonOperator `json:"comparison_operator"`
+
+	// Description Extra contextual information to add to the monitor template.
 	Description *string `json:"description,omitempty"`
 
-	// LogId The unique identifier of the log to create the parser for.
-	LogId openapi_types.UUID `json:"log_id"`
+	// GroupRetention Remove groups with no data after the provided time in milliseconds
+	GroupRetention *int64 `json:"group_retention,omitempty"`
+	Metric         struct {
+		// Arguments Map of parameter names to argument bindings. Each key must correspond to a metric parameter defined by the metric template.
+		Arguments *map[string]TemplateArgument `json:"arguments,omitempty"`
 
-	// Name The name of the parser.
-	Name *string `json:"name,omitempty"`
+		// Id The unique identifier for the metric definition template that backs this monitor.
+		Id *openapi_types.UUID `json:"id,omitempty"`
+	} `json:"metric"`
 
-	// Pattern The pattern of the parser
-	Pattern *string `json:"pattern,omitempty"`
+	// Name The name of the monitor template
+	Name string `json:"name"`
+
+	// NoDataStatus Specify the status to use in case of no data (no events matched in a time window)
+	NoDataStatus *UpdateMonitorTemplateRequestNoDataStatus `json:"no_data_status,omitempty"`
+
+	// Parameters Map of parameter names to their definitions. Each key represents the parameter name used within the template.
+	Parameters       *TemplateParameters `json:"parameters,omitempty"`
+	ThisTemplateTags *TagValues          `json:"this_template_tags,omitempty"`
+
+	// Threshold the threshold value of the monitor
+	Threshold float32                           `json:"threshold"`
+	Type      *UpdateMonitorTemplateRequestType `json:"type,omitempty"`
+
+	// WarningThreshold the warning threshold value
+	WarningThreshold *float32 `json:"warning_threshold,omitempty"`
+
+	// Window The time window to evaluate the monitor; minimum five minutes, maximum one day
+	Window string `json:"window"`
 }
 
-// UpdatePolicyRequest defines model for UpdatePolicyRequest.
-type UpdatePolicyRequest struct {
-	// Actions The actions allowed by this policy.
-	Actions *[]string `json:"actions,omitempty"`
+// UpdateMonitorTemplateRequestChangeType For change detection monitors only. Specifies how the change values are calculated, as described
+// in the [Bronto documentation](https://docs.bronto.io/core-features/monitors).
+type UpdateMonitorTemplateRequestChangeType string
 
-	// CreatedAt Timestamp of when the policy was created.
-	CreatedAt *int64 `json:"created_at,omitempty"`
+// UpdateMonitorTemplateRequestComparisonOperator the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL, BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+type UpdateMonitorTemplateRequestComparisonOperator string
 
-	// Description Description of the policy.
-	Description *string `json:"description,omitempty"`
+// UpdateMonitorTemplateRequestNoDataStatus Specify the status to use in case of no data (no events matched in a time window)
+type UpdateMonitorTemplateRequestNoDataStatus string
 
-	// Id The unique identifier for the policy.
-	Id *openapi_types.UUID `json:"id,omitempty"`
+// UpdateMonitorTemplateRequestType defines model for UpdateMonitorTemplateRequest.Type.
+type UpdateMonitorTemplateRequestType string
 
-	// ModifiedAt Timestamp of when the policy was last modified.
-	ModifiedAt *int64 `json:"modified_at,omitempty"`
+// UpdateSlackIntegrationRequest defines model for UpdateSlackIntegrationRequest.
+type UpdateSlackIntegrationRequest struct {
+	// Channels List of channels to which to send alerts
+	Channels []string `json:"channels"`
 
-	// PolicyType The type of policy.
-	PolicyType *UpdatePolicyRequestPolicyType `json:"policy_type,omitempty"`
+	// Name Name of the Slack integration
+	Name string `json:"name"`
 
-	// Principal The principal this policy applies to.
-	Principal *struct {
-		// PrincipalId The unique identifier of the principal.
-		PrincipalId *openapi_types.UUID `json:"principal_id,omitempty"`
-
-		// PrincipalType The type of principal.
-		PrincipalType *UpdatePolicyRequestPrincipalPrincipalType `json:"principal_type,omitempty"`
-	} `json:"principal,omitempty"`
-
-	// Resource The resource associated with this policy.
-	Resource *map[string]interface{} `json:"resource,omitempty"`
-
-	// Restricted Whether this policy is restricted.
-	Restricted *bool `json:"restricted,omitempty"`
-
-	// Unless Defines a set of conditions under which a policy applies or does not apply.
-	Unless *ConditionSet `json:"unless,omitempty"`
-
-	// When Defines a set of conditions under which a policy applies or does not apply.
-	When *ConditionSet `json:"when,omitempty"`
-}
-
-// UpdatePolicyRequestPolicyType The type of policy.
-type UpdatePolicyRequestPolicyType string
-
-// UpdatePolicyRequestPrincipalPrincipalType The type of principal.
-type UpdatePolicyRequestPrincipalPrincipalType string
-
-// UpdateRoleRequest defines model for UpdateRoleRequest.
-type UpdateRoleRequest struct {
-	// Description Description of the role
-	Description *string `json:"description,omitempty"`
-
-	// DisplayName The display name of the role
-	DisplayName *string `json:"display_name,omitempty"`
-
-	// Id The ID of the role
-	Id *string `json:"id,omitempty"`
-
-	// Permissions Updated list of permissions.
-	Permissions *[]string `json:"permissions,omitempty"`
-
-	// RoleType The entity which the roles can be applied to. USER | API
-	RoleType *string `json:"role_type,omitempty"`
-}
-
-// UpdateSavedSearchRequest defines model for UpdateSavedSearchRequest.
-type UpdateSavedSearchRequest struct {
-	// LogIds List of IDs of logs associated with the saved search.
-	LogIds []string `json:"log_ids"`
-
-	// Name The name of the saved search.
-	Name          string        `json:"name"`
-	SearchDetails SearchDetails `json:"search_details"`
+	// WorkspaceId Slack workspace to use for integration; you must first authenticate to the workspace through the Bronto UI
+	WorkspaceId openapi_types.UUID `json:"workspace_id"`
 }
 
 // UpdateUserRequest defines model for UpdateUserRequest.
@@ -4220,7 +5000,7 @@ type UpdateWebhookIntegrationRequest struct {
 	// Name The webhook name
 	Name string `json:"name"`
 
-	// Payload The wanted payload structure
+	// Payload The desired payload structure (JSON)
 	Payload *string `json:"payload,omitempty"`
 
 	// Url The webhook url
@@ -4250,25 +5030,78 @@ type User struct {
 	// Id The unique identifier for the user
 	Id openapi_types.UUID `json:"id"`
 
+	// InvitedAt Unix timestamp (seconds) of the last invitation sent to the user
+	InvitedAt *int64 `json:"invited_at,omitempty"`
+
+	// InvitedBy Identifier for the user who sent the latest invitation
+	InvitedBy *string `json:"invited_by,omitempty"`
+
 	// LastLogins A map of login methods to their last login timestamps (Unix epoch).
 	LastLogins *map[string]int64 `json:"last_logins,omitempty"`
 
 	// LastName The user's last name
-	LastName     string                  `json:"last_name"`
-	LoginMethods *map[string]interface{} `json:"login_methods,omitempty"`
+	LastName     string `json:"last_name"`
+	LoginMethods *[]struct {
+		// Enabled Flag to enable or disable a login method override for this specific user.
+		Enabled bool `json:"enabled"`
+
+		// Name The name of the login method
+		Name string `json:"name"`
+	} `json:"login_methods,omitempty"`
 
 	// Roles A list of role ids
 	Roles *[]string `json:"roles,omitempty"`
+
+	// Status Current status of the user
+	Status *UserStatus `json:"status,omitempty"`
 
 	// Tags A map of key value pairs associated with this log
 	Tags *Tags `json:"tags,omitempty"`
 }
 
+// UserStatus Current status of the user
+type UserStatus string
+
+// UserGroup defines model for UserGroup.
+type UserGroup struct {
+	// CreatedAt The timestamp when the group was created.
+	CreatedAt *int64 `json:"created_at,omitempty"`
+
+	// Description A brief summary or explanation of the group's purpose.
+	Description *string `json:"description,omitempty"`
+
+	// GroupId A unique identifier for the group.
+	GroupId *openapi_types.UUID `json:"group_id,omitempty"`
+
+	// ModifiedAt The timestamp when the group was last modified.
+	ModifiedAt *int64 `json:"modified_at,omitempty"`
+
+	// Name The display name of the group.
+	Name *string `json:"name,omitempty"`
+}
+
+// UserGroupList defines model for UserGroupList.
+type UserGroupList struct {
+	Groups *[]UserGroup `json:"groups,omitempty"`
+}
+
 // UserPreference defines model for UserPreference.
 type UserPreference struct {
 	Preferences *struct {
-		PreferredOrg *openapi_types.UUID `json:"preferred_org,omitempty"`
-		Theme        *string             `json:"theme,omitempty"`
+		Defaults *struct {
+			Dashboard *openapi_types.UUID `json:"dashboard,omitempty"`
+			Monitor   *openapi_types.UUID `json:"monitor,omitempty"`
+		} `json:"defaults,omitempty"`
+		Favourites *struct {
+			Dashboards    *[]openapi_types.UUID `json:"dashboards,omitempty"`
+			Monitors      *[]openapi_types.UUID `json:"monitors,omitempty"`
+			SavedSearches *[]openapi_types.UUID `json:"saved_searches,omitempty"`
+		} `json:"favourites,omitempty"`
+		Features         *map[string]bool    `json:"features,omitempty"`
+		FilterNullGroups *string             `json:"filter_null_groups,omitempty"`
+		PreferredOrg     *openapi_types.UUID `json:"preferred_org,omitempty"`
+		Theme            *string             `json:"theme,omitempty"`
+		Timezone         *string             `json:"timezone,omitempty"`
 	} `json:"preferences,omitempty"`
 }
 
@@ -4283,7 +5116,7 @@ type WebhookIntegrationResource struct {
 	// Name The webhook name
 	Name string `json:"name"`
 
-	// Payload The wanted payload structure
+	// Payload The desired payload structure (JSON)
 	Payload *string `json:"payload,omitempty"`
 
 	// Url The webhook url
@@ -4292,12 +5125,9 @@ type WebhookIntegrationResource struct {
 
 // Widget defines model for Widget.
 type Widget struct {
-	// CreatedAt The Unix timestamp when the widget was created.
-	CreatedAt *int `json:"created_at,omitempty"`
-
 	// Description A description of the widget
-	Description *string `json:"description,omitempty"`
-	Id          *string `json:"id,omitempty"`
+	Description *string             `json:"description,omitempty"`
+	Id          *openapi_types.UUID `json:"id,omitempty"`
 
 	// Layout The layout of the widget
 	Layout *struct {
@@ -4319,6 +5149,9 @@ type Widget struct {
 		} `json:"widget_layouts,omitempty"`
 	} `json:"layout,omitempty"`
 
+	// Metadata Common metadata attached to all persisted resources.
+	Metadata *Metadata `json:"metadata,omitempty"`
+
 	// MetricIds the metric IDs associated with the widget
 	MetricIds *[]openapi_types.UUID `json:"metric_ids,omitempty"`
 
@@ -4326,7 +5159,8 @@ type Widget struct {
 	Name *string `json:"name,omitempty"`
 
 	// Tags A map of key value pairs associated with this log
-	Tags *Tags `json:"tags,omitempty"`
+	Tags     *Tags     `json:"tags,omitempty"`
+	Template *Template `json:"template,omitempty"`
 
 	// Type The type of the Widget.
 	Type *WidgetType `json:"type,omitempty"`
@@ -4338,62 +5172,22 @@ type Widget struct {
 // WidgetType The type of the Widget.
 type WidgetType string
 
-// WidgetRequest defines model for WidgetRequest.
-type WidgetRequest struct {
-	// Aux Additional widget configuration
-	Aux *map[string]interface{} `json:"aux,omitempty"`
-
-	// Description The widget description
-	Description *string `json:"description,omitempty"`
-
-	// MetricIds The metric IDs associated with the widget. A widget can include either metrics or widgets, but not both.
-	MetricIds *[]string `json:"metric_ids,omitempty"`
-
-	// Name The widget name
-	Name string `json:"name"`
-
-	// Type The widget type
-	Type *string `json:"type,omitempty"`
-
-	// WidgetIds The widget IDs associated with the widget. A widget can include either metrics or widgets, but not both.
-	WidgetIds *[]string `json:"widget_ids,omitempty"`
-}
-
 // apiKeyAuthContextKey is the context key for ApiKeyAuth security scheme
 type apiKeyAuthContextKey string
 
 // bearerAuthContextKey is the context key for BearerAuth security scheme
 type bearerAuthContextKey string
 
-// GetAnalyticsErrorsParams defines parameters for GetAnalyticsErrors.
-type GetAnalyticsErrorsParams struct {
-	// TimeRange The time period for which to query data. Either `time_range` or both `from_ts` and `to_ts`  must be provided. If `time_range` is provided, it will take precedence
-	TimeRange *string `form:"time_range,omitempty" json:"time_range,omitempty"`
-
-	// FromTs The starting unix time in milliseconds for which to query data. Either `time_range` or both  `from_ts` and `to_ts` must be provided. If `time_range` is provided, it will take precedence.
-	FromTs *int `form:"from_ts,omitempty" json:"from_ts,omitempty"`
-
-	// ToTs The ending unix time in milliseconds for which to query data. Either `time_range` or both `from_ts` and `to_ts` must be provided. If `time_range` is provided, it will take precedence.
-	ToTs *int `form:"to_ts,omitempty" json:"to_ts,omitempty"`
-
-	// Limit The maximum number of groups to return. If not provided, the default limit is 50. The maximum limit is 100.
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// NumOfSlices The num_of_slices parameter defines how the time range is divided into intervals.  It is optional, and if not provided, a default value is applied.
-	NumOfSlices *int `form:"num_of_slices,omitempty" json:"num_of_slices,omitempty"`
-}
-
 // GetContextParams defines parameters for GetContext.
 type GetContextParams struct {
 	// From The ids of the logs to search.
-	// One of either the `from` or the `from_tags` parameters _must_ be specified.
+	// One of either the `from` or the `from_expr` parameters _must_ be specified.
 	From *string `form:"from,omitempty" json:"from,omitempty"`
 
-	// FromTags The tags to search. Each tag should be in the form `<key>:<value>`, e.g., `environment:production`.
-	// One of either the `from` or the `from_tags` parameters _must_ be specified.
-	// If _both_ are specified then `from_tags` takes precedence, and the `from` value is ignored.
-	// If the key or the value contain a `:` or `=` character, then these can be escaped by wrapping the entire key or value in double-quotes `"`.
-	FromTags *string `form:"from_tags,omitempty" json:"from_tags,omitempty"`
+	// FromExpr Expression used to select a set of logs. The expression defines the criteria for which logs are
+	// included and is applied across all available logs to produce the input set. Supports logical
+	// operators (AND, OR), comparison operators (=, !=), and quoted string literals.
+	FromExpr *string `form:"from_expr,omitempty" json:"from_expr,omitempty"`
 
 	// Timestamp The timestamp for the event for which context is being retrieved
 	Timestamp int `form:"timestamp" json:"timestamp"`
@@ -4414,30 +5208,6 @@ type GetContextParams struct {
 // GetContextParamsDirection defines parameters for GetContext.
 type GetContextParamsDirection string
 
-// GetCostByLogIdParams defines parameters for GetCostByLogId.
-type GetCostByLogIdParams struct {
-	// TimeRange The relative time range for which to calculate usage data. Time range supported is calendar months.  For an exact range, use `from_ts` and `to_ts` instead.
-	TimeRange *string `form:"time_range,omitempty" json:"time_range,omitempty"`
-
-	// FromTs The starting time (unix time in milliseconds) for which to calculate usage data. Must be used together with `to_ts`. This parameter is not to be used when using `time_range`.
-	FromTs *int `form:"from_ts,omitempty" json:"from_ts,omitempty"`
-
-	// ToTs The ending time (unix time in milliseconds) for which to calculate usage data. Must be used together with `from_ts`. This parameter is incompatible with `time_range`.
-	ToTs *int `form:"to_ts,omitempty" json:"to_ts,omitempty"`
-
-	// UsageType The type of usage to query.
-	UsageType *GetCostByLogIdParamsUsageType `form:"usage_type,omitempty" json:"usage_type,omitempty"`
-
-	// Limit Returns the top N logs based on the usage. If not provided, the default limit is 50. The maximum limit is 100.
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// NumOfSlices The num_of_slices parameter defines how the time range is divided into intervals.  It is optional, and if not provided, a default value is applied. The default number of slices is 1 minute granularity for up to 12 hours time range  and 20 minutes granularity for longer than 12 hours time range up to 720 slices. - default for 30 days time window: 720 slices (max number of slices allowed)
-	NumOfSlices *int `form:"num_of_slices,omitempty" json:"num_of_slices,omitempty"`
-}
-
-// GetCostByLogIdParamsUsageType defines parameters for GetCostByLogId.
-type GetCostByLogIdParamsUsageType string
-
 // UpdateCustomerJSONBody defines parameters for UpdateCustomer.
 type UpdateCustomerJSONBody struct {
 	// BillingEmails Updated list of billing email addresses.
@@ -4447,58 +5217,33 @@ type UpdateCustomerJSONBody struct {
 	CustomerName string `json:"customer_name"`
 }
 
-// UpdateDashboardJSONBody defines parameters for UpdateDashboard.
-type UpdateDashboardJSONBody struct {
-	union json.RawMessage
+// AssignDatasetParserJSONBody defines parameters for AssignDatasetParser.
+type AssignDatasetParserJSONBody struct {
+	ParserId openapi_types.UUID `json:"parser_id"`
 }
 
-// UpdateDashboardJSONBody0 defines parameters for UpdateDashboard.
-type UpdateDashboardJSONBody0 struct {
-	// Name The new name of the dashboard
-	Name string `json:"name"`
+// ListEncryptionKeysParams defines parameters for ListEncryptionKeys.
+type ListEncryptionKeysParams struct {
+	// Provider Filter keys by provider (e.g., AWS_KMS)
+	Provider *ListEncryptionKeysParamsProvider `form:"provider,omitempty" json:"provider,omitempty"`
+
+	// Limit Maximum number of encryption keys to return (default 50, max 100)
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// UpdateDashboardJSONBody1 defines parameters for UpdateDashboard.
-type UpdateDashboardJSONBody1 struct {
-	// Layout The layout of the dashboard
-	Layout map[string]interface{} `json:"layout"`
-}
-
-// UpdateDashboardJSONBody2 defines parameters for UpdateDashboard.
-type UpdateDashboardJSONBody2 struct {
-	// WidgetIds Only one of 'append' or 'remove' can be provided in a single request.
-	WidgetIds UpdateDashboardJSONBody_2_WidgetIds `json:"widget_ids"`
-}
-
-// UpdateDashboardJSONBody2WidgetIds0 defines parameters for UpdateDashboard.
-type UpdateDashboardJSONBody2WidgetIds0 = map[string]interface{}
-
-// UpdateDashboardJSONBody2WidgetIds1 defines parameters for UpdateDashboard.
-type UpdateDashboardJSONBody2WidgetIds1 = map[string]interface{}
-
-// UpdateDashboardJSONBody_2_WidgetIds defines parameters for UpdateDashboard.
-type UpdateDashboardJSONBody_2_WidgetIds struct {
-	// Append List of widget IDs to append to the dashboard
-	Append *[]string `json:"append,omitempty"`
-
-	// Remove List of widget IDs to remove from the dashboard
-	Remove *[]string `json:"remove,omitempty"`
-	union  json.RawMessage
-}
+// ListEncryptionKeysParamsProvider defines parameters for ListEncryptionKeys.
+type ListEncryptionKeysParamsProvider string
 
 // ExplainErrorParams defines parameters for ExplainError.
 type ExplainErrorParams struct {
-	// Timestamp the timestamp of the error to analyse in ms
+	// Timestamp the timestamp in milliseconds of the error/warn event to analyse
 	Timestamp int `form:"timestamp" json:"timestamp"`
 
-	// Sequence the sequence number of the error to analyse
+	// Sequence the sequence number of the  error/warn event to analyse
 	Sequence int `form:"sequence" json:"sequence"`
 
-	// LogId the id of the log storing the error
+	// LogId the id of the dataset (log) storing the error
 	LogId openapi_types.UUID `form:"logId" json:"logId"`
-
-	// Sse enable Server side event response
-	Sse *bool `form:"sse,omitempty" json:"sse,omitempty"`
 
 	// ZoneOffset zone offset e.g. -01:00
 	ZoneOffset *string `form:"zone_offset,omitempty" json:"zone_offset,omitempty"`
@@ -4529,42 +5274,33 @@ type AddGroupMembersJSONBody struct {
 // AddGroupMembersJSONBodyMembersMemberType defines parameters for AddGroupMembers.
 type AddGroupMembersJSONBodyMembersMemberType string
 
-// GetLbmByIdParams defines parameters for GetLbmById.
-type GetLbmByIdParams struct {
-	// TimeRange The time period for which to query data. Either `time_range` or both `from_ts` and `to_ts`  must be provided. If `time_range` is provided, it will take precedence
-	TimeRange *string `form:"time_range,omitempty" json:"time_range,omitempty"`
+// PollLiveTailParams defines parameters for PollLiveTail.
+type PollLiveTailParams struct {
+	// JobId ID of live tail job to poll
+	JobId string `form:"job_id" json:"job_id"`
 
-	// FromTs The starting unix time in milliseconds for which to query data. Either `time_range` or both  `from_ts` and `to_ts` must be provided. If `time_range` is provided, it will take precedence.
-	FromTs *int `form:"from_ts,omitempty" json:"from_ts,omitempty"`
-
-	// ToTs The ending unix time in milliseconds for which to query data. Either `time_range` or both `from_ts` and `to_ts` must be provided. If `time_range` is provided, it will take precedence.
-	ToTs *int `form:"to_ts,omitempty" json:"to_ts,omitempty"`
-
-	// Limit The maximum number of groups to return. If not provided, the default limit is 50. The maximum limit is 100.
+	// Limit Maximum number of log entries to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// NumOfSlices The num_of_slices parameter defines how the time range is divided into intervals.  It is optional, and if not provided, a default value is applied. The default number of slices is 1 minute granularity for up to 12 hours time range  and 20 minutes granularity for longer than 12 hours time range up to 720 slices. - default for 20 minutes time window: 20 slices - default for 12 hour time window: 720 slices - default for 1 day time window: 72 slices (1 slice per 20 minutes) - default for 10 days time window: 720 slices (1 slice per 20 minutes) - default for 30 days time window: 720 slices (max number of slices allowed)
-	NumOfSlices *int `form:"num_of_slices,omitempty" json:"num_of_slices,omitempty"`
-
-	// Delta Enables calculation of the difference between the current and previous time range values.  When set to true, the response includes a delta object with the computed difference and its relative change. Defaults to false.
-	Delta *bool `form:"delta,omitempty" json:"delta,omitempty"`
-
-	// DeltaTimeRange The time period for which to query data for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be provided if `delta` is enabled. If `delta_time_range` is provided, it will take precedence
-	DeltaTimeRange *string `form:"delta_time_range,omitempty" json:"delta_time_range,omitempty"`
-
-	// DeltaFromTs The starting unix time in milliseconds for which to query data for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be provided if `delta` is enabled. If `delta_time_range` is provided, it will take precedence.
-	DeltaFromTs *int `form:"delta_from_ts,omitempty" json:"delta_from_ts,omitempty"`
-
-	// DeltaToTs The ending unix time in milliseconds for which to query data for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be provided if `delta` is enabled. If `delta_time_range` is provided, it will take precedence.
-	DeltaToTs *int `form:"delta_to_ts,omitempty" json:"delta_to_ts,omitempty"`
+	// MostRecentFirst Order response events chronologically, ascending (false) or descending (true)
+	MostRecentFirst *bool `form:"most_recent_first,omitempty" json:"most_recent_first,omitempty"`
 }
 
 // GetMonitorEventsParams defines parameters for GetMonitorEvents.
 type GetMonitorEventsParams struct {
-	// FromTs The starting time (unix time in milliseconds) for which to search for monitor events.
+	// FromTs The start of the time range (unix time in milliseconds) for which to search for monitor events.
 	FromTs *int `form:"from_ts,omitempty" json:"from_ts,omitempty"`
 
-	// ToTs The ending time (unix time in milliseconds) for which to search for monitor events.
+	// ToTs The end of the time range (unix time in milliseconds) for which to search for monitor events.
+	ToTs *int `form:"to_ts,omitempty" json:"to_ts,omitempty"`
+}
+
+// ListMonitorNotificationsParams defines parameters for ListMonitorNotifications.
+type ListMonitorNotificationsParams struct {
+	// FromTs The starting time (unix time in milliseconds) for which to search for monitor notifications.
+	FromTs *int `form:"from_ts,omitempty" json:"from_ts,omitempty"`
+
+	// ToTs The ending time (unix time in milliseconds) for which to search for monitor notifications.
 	ToTs *int `form:"to_ts,omitempty" json:"to_ts,omitempty"`
 }
 
@@ -4589,20 +5325,86 @@ type GrantAccessJSONBodyStatus string
 // ListAccessForMemberParamsEntityType defines parameters for ListAccessForMember.
 type ListAccessForMemberParamsEntityType string
 
-// ListPoliciesByPrincipalParamsPrincipalType defines parameters for ListPoliciesByPrincipal.
-type ListPoliciesByPrincipalParamsPrincipalType string
+// GetParsersUsageRatioByLogIdParams defines parameters for GetParsersUsageRatioByLogId.
+type GetParsersUsageRatioByLogIdParams struct {
+	// TimeRange The relative time range for which to calculate parser metrics. Time range supported is from minutes to years. For an exact range, use `from_ts` and `to_ts` instead.
+	TimeRange *string `form:"time_range,omitempty" json:"time_range,omitempty"`
+
+	// FromTs The starting time (unix time in milliseconds) for which to calculate parser metrics. Must be used together with `to_ts`. This parameter is not to be used when using `time_range`.
+	FromTs *int `form:"from_ts,omitempty" json:"from_ts,omitempty"`
+
+	// ToTs The ending time (unix time in milliseconds) for which to calculate parser metrics. Must be used together with `from_ts`. This parameter is incompatible with `time_range`.
+	ToTs *int `form:"to_ts,omitempty" json:"to_ts,omitempty"`
+
+	// Limit Returns the top N logs based on the usage. If not provided, the default limit is 50. The maximum limit is 100.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// NumOfSlices The num_of_slices parameter defines how the time range is divided into intervals.  It is optional, and if not provided, a default value is applied. The default number of slices is 1 minute granularity for up to 12 hours time range  and 20 minutes granularity for longer than 12 hours time range up to 720 slices. - default for 20 minutes time window: 20 slices - default for 12 hour time window: 720 slices - default for 1 day time window: 72 slices (1 slice per 20 minutes) - default for 10 days time window: 720 slices (1 slice per 20 minutes) - default for 30 days time window: 720 slices (max number of slices allowed)
+	NumOfSlices *int `form:"num_of_slices,omitempty" json:"num_of_slices,omitempty"`
+
+	// Delta Enables calculation of the difference between the current and previous time range values.  When set to true, the response includes a delta object with the computed difference and its relative change. Defaults to false.
+	Delta *bool `form:"delta,omitempty" json:"delta,omitempty"`
+
+	// DeltaTimeRange The time period for which to query data for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be provided if `delta` is enabled. If `delta_time_range` is provided, it will take precedence
+	DeltaTimeRange *string `form:"delta_time_range,omitempty" json:"delta_time_range,omitempty"`
+
+	// DeltaFromTs The starting unix time in milliseconds for which to query data for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be provided if `delta` is enabled. If `delta_time_range` is provided, it will take precedence.
+	DeltaFromTs *int `form:"delta_from_ts,omitempty" json:"delta_from_ts,omitempty"`
+
+	// DeltaToTs The ending unix time in milliseconds for which to query data for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be provided if `delta` is enabled. If `delta_time_range` is provided, it will take precedence.
+	DeltaToTs *int `form:"delta_to_ts,omitempty" json:"delta_to_ts,omitempty"`
+}
+
+// GetParsersUsageMetricsByLogIdParams defines parameters for GetParsersUsageMetricsByLogId.
+type GetParsersUsageMetricsByLogIdParams struct {
+	// TimeRange The relative time range for which to calculate parser metrics. Time range supported is from minutes to years. For an exact range, use `from_ts` and `to_ts` instead.
+	TimeRange *string `form:"time_range,omitempty" json:"time_range,omitempty"`
+
+	// FromTs The starting time (unix time in milliseconds) for which to calculate parser metrics. Must be used together with `to_ts`. This parameter is not to be used when using `time_range`.
+	FromTs *int `form:"from_ts,omitempty" json:"from_ts,omitempty"`
+
+	// ToTs The ending time (unix time in milliseconds) for which to calculate parser metrics. Must be used together with `from_ts`. This parameter is incompatible with `time_range`.
+	ToTs *int `form:"to_ts,omitempty" json:"to_ts,omitempty"`
+
+	// Limit Returns the top N logs based on the usage. If not provided, the default limit is 50. The maximum limit is 100.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// NumOfSlices The num_of_slices parameter defines how the time range is divided into intervals.  It is optional, and if not provided, a default value is applied. The default number of slices is 1 minute granularity for up to 12 hours time range  and 20 minutes granularity for longer than 12 hours time range up to 720 slices. - default for 20 minutes time window: 20 slices - default for 12 hour time window: 720 slices - default for 1 day time window: 72 slices (1 slice per 20 minutes) - default for 10 days time window: 720 slices (1 slice per 20 minutes) - default for 30 days time window: 720 slices (max number of slices allowed)
+	NumOfSlices *int `form:"num_of_slices,omitempty" json:"num_of_slices,omitempty"`
+
+	// Delta Enables calculation of the difference between the current and previous time range values.  When set to true, the response includes a delta object with the computed difference and its relative change. Defaults to false.
+	Delta *bool `form:"delta,omitempty" json:"delta,omitempty"`
+
+	// DeltaTimeRange The time period for which to query data for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be provided if `delta` is enabled. If `delta_time_range` is provided, it will take precedence
+	DeltaTimeRange *string `form:"delta_time_range,omitempty" json:"delta_time_range,omitempty"`
+
+	// DeltaFromTs The starting unix time in milliseconds for which to query data for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be provided if `delta` is enabled. If `delta_time_range` is provided, it will take precedence.
+	DeltaFromTs *int `form:"delta_from_ts,omitempty" json:"delta_from_ts,omitempty"`
+
+	// DeltaToTs The ending unix time in milliseconds for which to query data for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be provided if `delta` is enabled. If `delta_time_range` is provided, it will take precedence.
+	DeltaToTs *int `form:"delta_to_ts,omitempty" json:"delta_to_ts,omitempty"`
+}
+
+// PostPatternsJSONBody defines parameters for PostPatterns.
+type PostPatternsJSONBody struct {
+	// SearchDetails One of either `from` or `from_expr` must be specified.
+	SearchDetails struct {
+		// From List of dataset IDs to search.
+		From *[]string `json:"from,omitempty"`
+
+		// FromExpr Dataset selector expression.
+		FromExpr *string `json:"from_expr,omitempty"`
+	} `json:"search_details"`
+}
 
 // SearchParams defines parameters for Search.
 type SearchParams struct {
 	// From The ids of the logs to search.
-	// One of either the `from` or the `from_tags` parameters _must_ be specified.
+	// One of either the `from` or the `from_expr` parameters _must_ be specified.
 	From *string `form:"from,omitempty" json:"from,omitempty"`
 
-	// FromTags The tags to search. Each tag should be in the form `<key>:<value>`, e.g., `environment:production`.
-	// One of either the `from` or the `from_tags` parameters _must_ be specified.
-	// If _both_ are specified then `from_tags` takes precedence, and the `from` value is ignored.
-	// If the key or the value contain a `:` or `=` character, then these can be escaped by wrapping the entire key or value in double-quotes `"`.
-	FromTags *string `form:"from_tags,omitempty" json:"from_tags,omitempty"`
+	// FromExpr Expression used to select a set of logs. The expression defines the criteria for which logs are  included and is applied across all available logs to produce the input set. Supports logical operators (AND, OR), comparison operators (=, !=), and quoted string literals.
+	FromExpr *string `form:"from_expr,omitempty" json:"from_expr,omitempty"`
 
 	// TimeRange The relative time range for which to query data. Time range supported is from milliseconds to years. For an exact range, use `from_ts` and `to_ts` instead.
 	TimeRange *string `form:"time_range,omitempty" json:"time_range,omitempty"`
@@ -4640,21 +5442,87 @@ type SearchParams struct {
 	// ExplainOnly If set to `true` then only the `explain` element of the response will be populated. The `explain` element will contain the `Approximate bytes in time range` attribute which provides an estimate for the amount of data present in the time range for the selected datasets. This parameter is set to `false` by default.
 	ExplainOnly *bool `form:"explain_only,omitempty" json:"explain_only,omitempty"`
 
-	// AsyncEnabled If set to `true` the server will respond in an asynchronous way: it will return immediately with a polling link (in the `links` element of the response body), which the client should check periodically  to monitor the progress of the query and to receive partial results.  This is useful for long running queries, and allows an API client to handle multiple requests concurrently without blocking.  The behaviour of the async API is described [here](#tag/search/operation/getSearchStatus).
-	// If set to `false` the server will wait until the query has completed before returning a single `200` response with the completed results in the response body.
+	// AsyncEnabled If set to `true` the server will respond in an asynchronous way: it will return immediately with
+	// a polling link (in the `links` element of the response body), which the client should check periodically
+	// to monitor the progress of the query and to receive partial results.
+	// This is useful for long running queries, and allows an API client to handle multiple requests concurrently without blocking.
+	// The behaviour of the async API is described [here](#tag/search/operation/getSearchStatus).
+	//
+	// If set to `false` the server will wait until the query has completed before returning a single `200` response
+	// with the completed results in the response body.
 	AsyncEnabled *bool `form:"async_enabled,omitempty" json:"async_enabled,omitempty"`
+
+	// OrderBy Specifies the attribute by which to sort the result set, using SQL-style ORDER BY syntax.
+	// The expected format is <key> ASC|DESC, for example: "duration_ms ASC".
+	// If the sort direction (ASC or DESC) is omitted, ascending order is used by default.
+	// Only one sort key may be specified.
+	//
+	// This parameter is only compatible with event search queries — i.e., queries that return a list of events and do not use aggregate functions (such as `count(*)`) in the `select` parameter.
+	//
+	// Sorting behavior is subject to certain restrictions — see the [Sort by Column](https://docs.bronto.io/Search-and-Visualize/Log-Search#sort-by-column) documentation for details.
+	//
+	// When the sort parameter is set, pagination links are not included in the response.
+	// The number of results returned is controlled solely by the limit parameter.
+	OrderBy *string `form:"order_by,omitempty" json:"order_by,omitempty"`
+
+	// PaginationToken The token used to retrieve a specific page of results (next, prev, or first).
+	//
+	// **Usage Rules:**
+	// * This token is retrieved from the `href` in the `links` response object.
+	// * When this parameter is provided, all other search filters (e.g., query string, date range) are **ignored**, with the exception of `per_page`.
+	PaginationToken *openapi_types.UUID `form:"pagination_token,omitempty" json:"pagination_token,omitempty"`
+
+	// PerPage The number of records to return in the next page of results.
+	//
+	// **Usage Rules:**
+	// * Ued alongside `pagination_token` to modify the page size for the retrieved page.
+	// * If omitted, defaults to the page size defined in the initial query request.
+	PerPage *int `form:"per_page,omitempty" json:"per_page,omitempty"`
 }
 
 // ListTagsByNameParams defines parameters for ListTagsByName.
 type ListTagsByNameParams struct {
-	// Name Filter tags by name.
+	// Name Filter results by tag name.
 	Name *string `form:"name,omitempty" json:"name,omitempty"`
 
-	// Value Filter tags by value.
+	// Value Filter results by tag value.
 	Value *string `form:"value,omitempty" json:"value,omitempty"`
 
-	// EntityType Filter tags by entity type.
+	// EntityType Filter results by entity type.
 	EntityType *string `form:"entity_type,omitempty" json:"entity_type,omitempty"`
+}
+
+// GetTimeseriesFromMetricDefinitionParams defines parameters for GetTimeseriesFromMetricDefinition.
+type GetTimeseriesFromMetricDefinitionParams struct {
+	// TimeRange The relative time range for which to query data. Time range supported is from milliseconds to years. For an exact range, use `from_ts` and `to_ts` instead.
+	TimeRange *string `form:"time_range,omitempty" json:"time_range,omitempty"`
+
+	// FromTs The starting time (unix time in milliseconds) for which to query data. Must be used together with `to_ts`. This parameter is incompatible with `time_range`.
+	FromTs *int64 `form:"from_ts,omitempty" json:"from_ts,omitempty"`
+
+	// ToTs The ending time (unix time in milliseconds) for which to query data. Must be used together with `from_ts`. This parameter is incompatible with `time_range`.
+	ToTs *int64 `form:"to_ts,omitempty" json:"to_ts,omitempty"`
+
+	// Limit In a query with a group by, it limits the number of groups returned.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// NumOfSlices The number of buckets to break the time series results into.
+	NumOfSlices *int `form:"num_of_slices,omitempty" json:"num_of_slices,omitempty"`
+
+	// Where The where parameter is used to filter the results of your query.  See https://docs.bronto.io/core-features/log-search/query-syntax for more details The filter can combine multiple terms using AND, OR, NOT.
+	Where *string `form:"where,omitempty" json:"where,omitempty"`
+
+	// Delta Enables calculation of the difference between the current and previous time range values.  When set to true, the response includes a delta object with the computed difference and its relative change.
+	Delta *bool `form:"delta,omitempty" json:"delta,omitempty"`
+
+	// DeltaTimeRange The reference time period used for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` may be provided when `delta` is enabled. `delta_time_range` takes precedence over `delta_from_ts`/`delta_to_ts` if both are supplied. If no delta period is specified, the delta is computed against the previous equivalent time range.
+	DeltaTimeRange *string `form:"delta_time_range,omitempty" json:"delta_time_range,omitempty"`
+
+	// DeltaFromTs The starting unix time in milliseconds for which to query data for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` may be provided when `delta` is enabled. `delta_time_range` takes precedence over `delta_from_ts`/`delta_to_ts` if both are supplied. If no delta period is specified, the delta is computed against the previous equivalent time range.
+	DeltaFromTs *int `form:"delta_from_ts,omitempty" json:"delta_from_ts,omitempty"`
+
+	// DeltaToTs The ending unix time in milliseconds for which to query data for delta comparison. Either `delta_time_range` or both `delta_from_ts` and `delta_to_ts` may be provided when `delta` is enabled. `delta_time_range` takes precedence over `delta_from_ts`/`delta_to_ts` if both are supplied. If no delta period is specified, the delta is computed against the previous equivalent time range.
+	DeltaToTs *int `form:"delta_to_ts,omitempty" json:"delta_to_ts,omitempty"`
 }
 
 // GetTopKeysByIdParams defines parameters for GetTopKeysById.
@@ -4662,15 +5530,24 @@ type GetTopKeysByIdParams struct {
 	// LogId The ids of the logs to retrieve the top keys for.
 	// If no log ids are specified, then top keys are returned for all logs.
 	LogId *openapi_types.UUID `form:"log_id,omitempty" json:"log_id,omitempty"`
+
+	// TimeRange time range to load the keys (Optional). `last 1 day` if not provided
+	TimeRange *string `form:"time_range,omitempty" json:"time_range,omitempty"`
+
+	// FromTs The starting time (unix time in milliseconds) for which to load the keys. Must be used together with `to_ts`. This parameter is incompatible with `time_range`.
+	FromTs *int `form:"from_ts,omitempty" json:"from_ts,omitempty"`
+
+	// ToTs The ending time (unix time in milliseconds) for which to load the keys. Must be used together with `from_ts`. This parameter is incompatible with `time_range`.
+	ToTs *int `form:"to_ts,omitempty" json:"to_ts,omitempty"`
+
+	// FromExpr The from expression to identify the logs or metrics to load the top keys for. Alternative to log_ids. If from expr is provided, log_ids is ignored.
+	FromExpr *string `form:"from_expr,omitempty" json:"from_expr,omitempty"`
 }
 
 // GetUsageParams defines parameters for GetUsage.
 type GetUsageParams struct {
 	// TimeRange The period to calculate the usage for.
 	TimeRange *string `form:"time_range,omitempty" json:"time_range,omitempty"`
-
-	// TimeRangeCamel The period to calculate the usage for.
-	TimeRangeCamel *string `form:"timeRange,omitempty" json:"timeRange,omitempty"`
 
 	// NumOfSlices The num_of_slices parameter defines how the time range is divided into intervals.  It is optional, and if not provided, a default value is applied. The default number of slices is 1 minute granularity for up to 12 hours time range  and 20 minutes granularity for longer than 12 hours time range up to 720 slices. - default for 20 minutes time window: 20 slices - default for 12 hour time window: 720 slices - default for 1 day time window: 72 slices (1 slice per 20 minutes) - default for 10 days time window: 720 slices (1 slice per 20 minutes) - default for 30 days time window: 720 slices (max number of slices allowed)
 	NumOfSlices *int `form:"num_of_slices,omitempty" json:"num_of_slices,omitempty"`
@@ -4708,10 +5585,10 @@ type GetUsageByLogIdParams struct {
 	// UsageType The type of usage to query.
 	UsageType *GetUsageByLogIdParamsUsageType `form:"usage_type,omitempty" json:"usage_type,omitempty"`
 
-	// Limit Returns the top N logs based on the usage. If not provided, the default limit is 50. The maximum limit is 100.
+	// Limit Returns the top N logs based on the usage.
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// NumOfSlices The num_of_slices parameter defines how the time range is divided into intervals.  It is optional, and if not provided, a default value is applied. The default number of slices is 1 minute granularity for up to 12 hours time range  and 20 minutes granularity for longer than 12 hours time range up to 720 slices. - default for 20 minutes time window: 20 slices - default for 12 hour time window: 720 slices - default for 1 day time window: 72 slices (1 slice per 20 minutes) - default for 10 days time window: 720 slices (1 slice per 20 minutes) - default for 30 days time window: 720 slices (max number of slices allowed)
+	// NumOfSlices The num_of_slices parameter defines how the time range is divided into intervals.  It is optional, and if not provided, a default value is applied. The maximum number of slices is 1 minute granularity for up to 12 hours time range  and 20 minutes granularity for longer than 12 hours time range. - default for 20 minutes time window: 20 slices - default for 12 hour time window: 12 slices (1 slice per hour) - default for 1 day time window: 24 slices (1 slice per hour) - default for 30 days time window: 30 slices (1 slice per day) - default for 1 year time window: 12 slices (1 slice per month)
 	NumOfSlices *int `form:"num_of_slices,omitempty" json:"num_of_slices,omitempty"`
 
 	// Delta Enables calculation of the difference between the current and previous time range values.  When set to true, the response includes a delta object with the computed difference and its relative change. Defaults to false.
@@ -4774,52 +5651,28 @@ type GetUsageByUserPerLogIdParamsMetric string
 
 // PatchUserPreferencesJSONBody defines parameters for PatchUserPreferences.
 type PatchUserPreferencesJSONBody struct {
-	PreferredOrg *openapi_types.UUID `json:"preferred_org,omitempty"`
+	Defaults *struct {
+		Dashboard *openapi_types.UUID `json:"dashboard,omitempty"`
+		Monitor   *openapi_types.UUID `json:"monitor,omitempty"`
+	} `json:"defaults,omitempty"`
+	Favourites *struct {
+		Dashboards    *[]openapi_types.UUID `json:"dashboards,omitempty"`
+		Monitors      *[]openapi_types.UUID `json:"monitors,omitempty"`
+		SavedSearches *[]openapi_types.UUID `json:"saved_searches,omitempty"`
+	} `json:"favourites,omitempty"`
+	Features         *map[string]bool    `json:"features,omitempty"`
+	FilterNullGroups *string             `json:"filter_null_groups,omitempty"`
+	PreferredOrg     *openapi_types.UUID `json:"preferred_org,omitempty"`
+	Timezone         *string             `json:"timezone,omitempty"`
 }
 
-// PatchWidgetJSONBody defines parameters for PatchWidget.
-type PatchWidgetJSONBody struct {
-	union json.RawMessage
-}
+// WidgetCreationAssistantParams defines parameters for WidgetCreationAssistant.
+type WidgetCreationAssistantParams struct {
+	// SessionId the id identifying a chat session
+	SessionId *openapi_types.UUID `form:"session_id,omitempty" json:"session_id,omitempty"`
 
-// PatchWidgetJSONBody0 defines parameters for PatchWidget.
-type PatchWidgetJSONBody0 struct {
-	// Name The new name of the widget
-	Name string `json:"name"`
-}
-
-// PatchWidgetJSONBody1 defines parameters for PatchWidget.
-type PatchWidgetJSONBody1 struct {
-	// Aux Additional widget configuration
-	Aux map[string]interface{} `json:"aux"`
-}
-
-// PatchWidgetJSONBody2 defines parameters for PatchWidget.
-type PatchWidgetJSONBody2 struct {
-	// WidgetIds Only one of 'append' or 'remove' can be provided in a single request.
-	WidgetIds PatchWidgetJSONBody_2_WidgetIds `json:"widget_ids"`
-}
-
-// PatchWidgetJSONBody2WidgetIds0 defines parameters for PatchWidget.
-type PatchWidgetJSONBody2WidgetIds0 = map[string]interface{}
-
-// PatchWidgetJSONBody2WidgetIds1 defines parameters for PatchWidget.
-type PatchWidgetJSONBody2WidgetIds1 = map[string]interface{}
-
-// PatchWidgetJSONBody_2_WidgetIds defines parameters for PatchWidget.
-type PatchWidgetJSONBody_2_WidgetIds struct {
-	// Append List of widget IDs to append to the widget
-	Append *[]string `json:"append,omitempty"`
-
-	// Remove List of widget IDs to remove from the widget
-	Remove *[]string `json:"remove,omitempty"`
-	union  json.RawMessage
-}
-
-// PatchWidgetJSONBody3 defines parameters for PatchWidget.
-type PatchWidgetJSONBody3 struct {
-	// Layout The layout of the widget
-	Layout map[string]interface{} `json:"layout"`
+	// UserRequest the prompt describing the widget requested
+	UserRequest string `form:"userRequest" json:"userRequest"`
 }
 
 // CreateApiKeyJSONRequestBody defines body for CreateApiKey for application/json ContentType.
@@ -4831,11 +5684,17 @@ type UpdateApiKeyJSONRequestBody = UpdateApiKeyRequest
 // UpdateCustomerJSONRequestBody defines body for UpdateCustomer for application/json ContentType.
 type UpdateCustomerJSONRequestBody UpdateCustomerJSONBody
 
-// CreateDashboardJSONRequestBody defines body for CreateDashboard for application/json ContentType.
-type CreateDashboardJSONRequestBody = CreateDashboardRequest
+// CreateDatasetJSONRequestBody defines body for CreateDataset for application/json ContentType.
+type CreateDatasetJSONRequestBody = CreateDatasetRequest
 
-// UpdateDashboardJSONRequestBody defines body for UpdateDashboard for application/json ContentType.
-type UpdateDashboardJSONRequestBody UpdateDashboardJSONBody
+// AssignDatasetParserJSONRequestBody defines body for AssignDatasetParser for application/json ContentType.
+type AssignDatasetParserJSONRequestBody AssignDatasetParserJSONBody
+
+// CreateEncryptionKeyJSONRequestBody defines body for CreateEncryptionKey for application/json ContentType.
+type CreateEncryptionKeyJSONRequestBody = CreateEncryptionKeyRequest
+
+// UpdateEncryptionKeyJSONRequestBody defines body for UpdateEncryptionKey for application/json ContentType.
+type UpdateEncryptionKeyJSONRequestBody = EncryptionKeyUpdateRequest
 
 // CreateExportJSONRequestBody defines body for CreateExport for application/json ContentType.
 type CreateExportJSONRequestBody = CreateExportRequest
@@ -4853,7 +5712,7 @@ type UpdateForwardConfigJSONRequestBody = ForwardConfigRequest
 type CreateGroupJSONRequestBody = CreateGroup
 
 // UpdateGroupJSONRequestBody defines body for UpdateGroup for application/json ContentType.
-type UpdateGroupJSONRequestBody = GroupDefn
+type UpdateGroupJSONRequestBody = UserGroup
 
 // RemoveGroupMembersJSONRequestBody defines body for RemoveGroupMembers for application/json ContentType.
 type RemoveGroupMembersJSONRequestBody RemoveGroupMembersJSONBody
@@ -4861,8 +5720,11 @@ type RemoveGroupMembersJSONRequestBody RemoveGroupMembersJSONBody
 // AddGroupMembersJSONRequestBody defines body for AddGroupMembers for application/json ContentType.
 type AddGroupMembersJSONRequestBody AddGroupMembersJSONBody
 
-// CreateAWSIntegrationJSONRequestBody defines body for CreateAWSIntegration for application/json ContentType.
-type CreateAWSIntegrationJSONRequestBody = CreateAWSIntegrationResourceRequest
+// CreateSlackIntegrationJSONRequestBody defines body for CreateSlackIntegration for application/json ContentType.
+type CreateSlackIntegrationJSONRequestBody = CreateSlackIntegrationResourceRequest
+
+// UpdateSlackIntegrationJSONRequestBody defines body for UpdateSlackIntegration for application/json ContentType.
+type UpdateSlackIntegrationJSONRequestBody = UpdateSlackIntegrationRequest
 
 // CreateWebhookIntegrationJSONRequestBody defines body for CreateWebhookIntegration for application/json ContentType.
 type CreateWebhookIntegrationJSONRequestBody = CreateWebhookIntegrationResourceRequest
@@ -4870,80 +5732,47 @@ type CreateWebhookIntegrationJSONRequestBody = CreateWebhookIntegrationResourceR
 // UpdateWebhookIntegrationJSONRequestBody defines body for UpdateWebhookIntegration for application/json ContentType.
 type UpdateWebhookIntegrationJSONRequestBody = UpdateWebhookIntegrationRequest
 
-// CreateLogBasedMetricJSONRequestBody defines body for CreateLogBasedMetric for application/json ContentType.
-type CreateLogBasedMetricJSONRequestBody = CreateLbmRequest
-
 // CreateLimitJSONRequestBody defines body for CreateLimit for application/json ContentType.
 type CreateLimitJSONRequestBody = CreateLimitRequest
 
 // UpdateLimitJSONRequestBody defines body for UpdateLimit for application/json ContentType.
 type UpdateLimitJSONRequestBody = UpdateLimitRequest
 
+// InitLiveTailJSONRequestBody defines body for InitLiveTail for application/json ContentType.
+type InitLiveTailJSONRequestBody = InitLiveTailRequest
+
 // CreateLogJSONRequestBody defines body for CreateLog for application/json ContentType.
 type CreateLogJSONRequestBody = CreateLogRequest
-
-// UpdateLogJSONRequestBody defines body for UpdateLog for application/json ContentType.
-type UpdateLogJSONRequestBody = UpdateLogRequest
 
 // CreateMonitorJSONRequestBody defines body for CreateMonitor for application/json ContentType.
 type CreateMonitorJSONRequestBody = CreateMonitorRequest
 
-// SendTestNotificationsJSONRequestBody defines body for SendTestNotifications for application/json ContentType.
-type SendTestNotificationsJSONRequestBody = SendTestNotificationsRequest
+// CreateMonitorDowntimeJSONRequestBody defines body for CreateMonitorDowntime for application/json ContentType.
+type CreateMonitorDowntimeJSONRequestBody = CreateMonitorDowntimeRequest
+
+// UpdateMonitorDowntimeJSONRequestBody defines body for UpdateMonitorDowntime for application/json ContentType.
+type UpdateMonitorDowntimeJSONRequestBody = UpdateMonitorDowntimeRequest
+
+// CreateMonitorTemplateJSONRequestBody defines body for CreateMonitorTemplate for application/json ContentType.
+type CreateMonitorTemplateJSONRequestBody = CreateMonitorTemplateRequest
+
+// UpdateMonitorTemplateJSONRequestBody defines body for UpdateMonitorTemplate for application/json ContentType.
+type UpdateMonitorTemplateJSONRequestBody = UpdateMonitorTemplateRequest
 
 // UpdateMonitorJSONRequestBody defines body for UpdateMonitor for application/json ContentType.
 type UpdateMonitorJSONRequestBody = UpdateMonitorRequest
 
-// MuteMonitorJSONRequestBody defines body for MuteMonitor for application/json ContentType.
-type MuteMonitorJSONRequestBody = MuteMonitorRequest
-
-// CreateOrgJSONRequestBody defines body for CreateOrg for application/json ContentType.
-type CreateOrgJSONRequestBody = CreateOrgRequest
-
-// UpdateOrgJSONRequestBody defines body for UpdateOrg for application/json ContentType.
-type UpdateOrgJSONRequestBody = UpdateOrgRequest
+// UpdateMonitorStatusJSONRequestBody defines body for UpdateMonitorStatus for application/json ContentType.
+type UpdateMonitorStatusJSONRequestBody = MuteMonitorRequest
 
 // GrantAccessJSONRequestBody defines body for GrantAccess for application/json ContentType.
 type GrantAccessJSONRequestBody GrantAccessJSONBody
 
-// AiGenerateParserJSONRequestBody defines body for AiGenerateParser for application/json ContentType.
-type AiGenerateParserJSONRequestBody = GenerateParser
-
-// AiUpdateParserJSONRequestBody defines body for AiUpdateParser for application/json ContentType.
-type AiUpdateParserJSONRequestBody = UpdateParser
-
-// CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
-type CreatePolicyJSONRequestBody = CreatePolicyRequest
-
-// UpdatePolicyJSONRequestBody defines body for UpdatePolicy for application/json ContentType.
-type UpdatePolicyJSONRequestBody = UpdatePolicyRequest
-
-// CreateRoleJSONRequestBody defines body for CreateRole for application/json ContentType.
-type CreateRoleJSONRequestBody = CreateRoleRequest
-
-// UpdateRoleJSONRequestBody defines body for UpdateRole for application/json ContentType.
-type UpdateRoleJSONRequestBody = UpdateRoleRequest
-
-// CreateSavedSearchJSONRequestBody defines body for CreateSavedSearch for application/json ContentType.
-type CreateSavedSearchJSONRequestBody = CreateSavedSearchRequest
-
-// UpdateSavedSearchJSONRequestBody defines body for UpdateSavedSearch for application/json ContentType.
-type UpdateSavedSearchJSONRequestBody = UpdateSavedSearchRequest
+// PostPatternsJSONRequestBody defines body for PostPatterns for application/json ContentType.
+type PostPatternsJSONRequestBody PostPatternsJSONBody
 
 // PostSearchJSONRequestBody defines body for PostSearch for application/json ContentType.
 type PostSearchJSONRequestBody = CreateSearchRequest
-
-// CreateIdpJSONRequestBody defines body for CreateIdp for application/json ContentType.
-type CreateIdpJSONRequestBody = CreateIdp
-
-// UpdateIdpJSONRequestBody defines body for UpdateIdp for application/json ContentType.
-type UpdateIdpJSONRequestBody = UpdateIdp
-
-// CreateSsoMappingsJSONRequestBody defines body for CreateSsoMappings for application/json ContentType.
-type CreateSsoMappingsJSONRequestBody = SsoMappings
-
-// UpdateSsoMappingsJSONRequestBody defines body for UpdateSsoMappings for application/json ContentType.
-type UpdateSsoMappingsJSONRequestBody = SsoMappings
 
 // DeleteTagJSONRequestBody defines body for DeleteTag for application/json ContentType.
 type DeleteTagJSONRequestBody = DeleteTag
@@ -4954,6 +5783,9 @@ type CreateTagJSONRequestBody = Tag
 // UpdateTagJSONRequestBody defines body for UpdateTag for application/json ContentType.
 type UpdateTagJSONRequestBody = Tag
 
+// SearchTimeseriesJSONRequestBody defines body for SearchTimeseries for application/json ContentType.
+type SearchTimeseriesJSONRequestBody = SearchTimeseries
+
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = CreateUserRequest
 
@@ -4962,15 +5794,6 @@ type UpdateUserJSONRequestBody = UpdateUserRequest
 
 // PatchUserPreferencesJSONRequestBody defines body for PatchUserPreferences for application/json ContentType.
 type PatchUserPreferencesJSONRequestBody PatchUserPreferencesJSONBody
-
-// CreateWidgetJSONRequestBody defines body for CreateWidget for application/json ContentType.
-type CreateWidgetJSONRequestBody = WidgetRequest
-
-// PatchWidgetJSONRequestBody defines body for PatchWidget for application/json ContentType.
-type PatchWidgetJSONRequestBody PatchWidgetJSONBody
-
-// UpdateWidgetJSONRequestBody defines body for UpdateWidget for application/json ContentType.
-type UpdateWidgetJSONRequestBody = WidgetRequest
 
 // AsContextConditionValue0 returns the union data inside the ContextCondition_Value as a ContextConditionValue0
 func (t ContextCondition_Value) AsContextConditionValue0() (ContextConditionValue0, error) {
@@ -5092,6 +5915,286 @@ func (t ContextLinks_Item) MarshalJSON() ([]byte, error) {
 }
 
 func (t *ContextLinks_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsCreateExportDetails0 returns the union data inside the CreateExportDetails as a CreateExportDetails0
+func (t CreateExportDetails) AsCreateExportDetails0() (CreateExportDetails0, error) {
+	var body CreateExportDetails0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateExportDetails0 overwrites any union data inside the CreateExportDetails as the provided CreateExportDetails0
+func (t *CreateExportDetails) FromCreateExportDetails0(v CreateExportDetails0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateExportDetails0 performs a merge with any union data inside the CreateExportDetails, using the provided CreateExportDetails0
+func (t *CreateExportDetails) MergeCreateExportDetails0(v CreateExportDetails0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateExportDetails1 returns the union data inside the CreateExportDetails as a CreateExportDetails1
+func (t CreateExportDetails) AsCreateExportDetails1() (CreateExportDetails1, error) {
+	var body CreateExportDetails1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateExportDetails1 overwrites any union data inside the CreateExportDetails as the provided CreateExportDetails1
+func (t *CreateExportDetails) FromCreateExportDetails1(v CreateExportDetails1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateExportDetails1 performs a merge with any union data inside the CreateExportDetails, using the provided CreateExportDetails1
+func (t *CreateExportDetails) MergeCreateExportDetails1(v CreateExportDetails1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateExportDetails2 returns the union data inside the CreateExportDetails as a CreateExportDetails2
+func (t CreateExportDetails) AsCreateExportDetails2() (CreateExportDetails2, error) {
+	var body CreateExportDetails2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateExportDetails2 overwrites any union data inside the CreateExportDetails as the provided CreateExportDetails2
+func (t *CreateExportDetails) FromCreateExportDetails2(v CreateExportDetails2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateExportDetails2 performs a merge with any union data inside the CreateExportDetails, using the provided CreateExportDetails2
+func (t *CreateExportDetails) MergeCreateExportDetails2(v CreateExportDetails2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateExportDetails3 returns the union data inside the CreateExportDetails as a CreateExportDetails3
+func (t CreateExportDetails) AsCreateExportDetails3() (CreateExportDetails3, error) {
+	var body CreateExportDetails3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateExportDetails3 overwrites any union data inside the CreateExportDetails as the provided CreateExportDetails3
+func (t *CreateExportDetails) FromCreateExportDetails3(v CreateExportDetails3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateExportDetails3 performs a merge with any union data inside the CreateExportDetails, using the provided CreateExportDetails3
+func (t *CreateExportDetails) MergeCreateExportDetails3(v CreateExportDetails3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateExportDetails) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.From != nil {
+		object["from"], err = json.Marshal(t.From)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from': %w", err)
+		}
+	}
+
+	if t.FromExpr != nil {
+		object["from_expr"], err = json.Marshal(t.FromExpr)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from_expr': %w", err)
+		}
+	}
+
+	if t.FromTs != nil {
+		object["from_ts"], err = json.Marshal(t.FromTs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from_ts': %w", err)
+		}
+	}
+
+	if t.TimeRange != nil {
+		object["time_range"], err = json.Marshal(t.TimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'time_range': %w", err)
+		}
+	}
+
+	if t.ToTs != nil {
+		object["to_ts"], err = json.Marshal(t.ToTs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'to_ts': %w", err)
+		}
+	}
+
+	if t.Where != nil {
+		object["where"], err = json.Marshal(t.Where)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'where': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *CreateExportDetails) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["from"]; found {
+		err = json.Unmarshal(raw, &t.From)
+		if err != nil {
+			return fmt.Errorf("error reading 'from': %w", err)
+		}
+	}
+
+	if raw, found := object["from_expr"]; found {
+		err = json.Unmarshal(raw, &t.FromExpr)
+		if err != nil {
+			return fmt.Errorf("error reading 'from_expr': %w", err)
+		}
+	}
+
+	if raw, found := object["from_ts"]; found {
+		err = json.Unmarshal(raw, &t.FromTs)
+		if err != nil {
+			return fmt.Errorf("error reading 'from_ts': %w", err)
+		}
+	}
+
+	if raw, found := object["time_range"]; found {
+		err = json.Unmarshal(raw, &t.TimeRange)
+		if err != nil {
+			return fmt.Errorf("error reading 'time_range': %w", err)
+		}
+	}
+
+	if raw, found := object["to_ts"]; found {
+		err = json.Unmarshal(raw, &t.ToTs)
+		if err != nil {
+			return fmt.Errorf("error reading 'to_ts': %w", err)
+		}
+	}
+
+	if raw, found := object["where"]; found {
+		err = json.Unmarshal(raw, &t.Where)
+		if err != nil {
+			return fmt.Errorf("error reading 'where': %w", err)
+		}
+	}
+
+	return err
+}
+
+// AsCreateExportDetailsFrom0 returns the union data inside the CreateExportDetails_From as a CreateExportDetailsFrom0
+func (t CreateExportDetails_From) AsCreateExportDetailsFrom0() (CreateExportDetailsFrom0, error) {
+	var body CreateExportDetailsFrom0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateExportDetailsFrom0 overwrites any union data inside the CreateExportDetails_From as the provided CreateExportDetailsFrom0
+func (t *CreateExportDetails_From) FromCreateExportDetailsFrom0(v CreateExportDetailsFrom0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateExportDetailsFrom0 performs a merge with any union data inside the CreateExportDetails_From, using the provided CreateExportDetailsFrom0
+func (t *CreateExportDetails_From) MergeCreateExportDetailsFrom0(v CreateExportDetailsFrom0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateExportDetailsFrom1 returns the union data inside the CreateExportDetails_From as a CreateExportDetailsFrom1
+func (t CreateExportDetails_From) AsCreateExportDetailsFrom1() (CreateExportDetailsFrom1, error) {
+	var body CreateExportDetailsFrom1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateExportDetailsFrom1 overwrites any union data inside the CreateExportDetails_From as the provided CreateExportDetailsFrom1
+func (t *CreateExportDetails_From) FromCreateExportDetailsFrom1(v CreateExportDetailsFrom1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateExportDetailsFrom1 performs a merge with any union data inside the CreateExportDetails_From, using the provided CreateExportDetailsFrom1
+func (t *CreateExportDetails_From) MergeCreateExportDetailsFrom1(v CreateExportDetailsFrom1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateExportDetails_From) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateExportDetails_From) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -5290,6 +6393,324 @@ func (t *CreateLimitRequest_Scope) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsCreateLogRequest0 returns the union data inside the CreateLogRequest as a CreateLogRequest0
+func (t CreateLogRequest) AsCreateLogRequest0() (CreateLogRequest0, error) {
+	var body CreateLogRequest0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateLogRequest0 overwrites any union data inside the CreateLogRequest as the provided CreateLogRequest0
+func (t *CreateLogRequest) FromCreateLogRequest0(v CreateLogRequest0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateLogRequest0 performs a merge with any union data inside the CreateLogRequest, using the provided CreateLogRequest0
+func (t *CreateLogRequest) MergeCreateLogRequest0(v CreateLogRequest0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateLogRequest1 returns the union data inside the CreateLogRequest as a CreateLogRequest1
+func (t CreateLogRequest) AsCreateLogRequest1() (CreateLogRequest1, error) {
+	var body CreateLogRequest1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateLogRequest1 overwrites any union data inside the CreateLogRequest as the provided CreateLogRequest1
+func (t *CreateLogRequest) FromCreateLogRequest1(v CreateLogRequest1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateLogRequest1 performs a merge with any union data inside the CreateLogRequest, using the provided CreateLogRequest1
+func (t *CreateLogRequest) MergeCreateLogRequest1(v CreateLogRequest1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateLogRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.Collection != nil {
+		object["collection"], err = json.Marshal(t.Collection)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'collection': %w", err)
+		}
+	}
+
+	if t.Dataset != nil {
+		object["dataset"], err = json.Marshal(t.Dataset)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dataset': %w", err)
+		}
+	}
+
+	if t.Log != nil {
+		object["log"], err = json.Marshal(t.Log)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'log': %w", err)
+		}
+	}
+
+	if t.Logset != nil {
+		object["logset"], err = json.Marshal(t.Logset)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'logset': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *CreateLogRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["collection"]; found {
+		err = json.Unmarshal(raw, &t.Collection)
+		if err != nil {
+			return fmt.Errorf("error reading 'collection': %w", err)
+		}
+	}
+
+	if raw, found := object["dataset"]; found {
+		err = json.Unmarshal(raw, &t.Dataset)
+		if err != nil {
+			return fmt.Errorf("error reading 'dataset': %w", err)
+		}
+	}
+
+	if raw, found := object["log"]; found {
+		err = json.Unmarshal(raw, &t.Log)
+		if err != nil {
+			return fmt.Errorf("error reading 'log': %w", err)
+		}
+	}
+
+	if raw, found := object["logset"]; found {
+		err = json.Unmarshal(raw, &t.Logset)
+		if err != nil {
+			return fmt.Errorf("error reading 'logset': %w", err)
+		}
+	}
+
+	return err
+}
+
+// AsCreateMonitorDowntimeRequest0 returns the union data inside the CreateMonitorDowntimeRequest as a CreateMonitorDowntimeRequest0
+func (t CreateMonitorDowntimeRequest) AsCreateMonitorDowntimeRequest0() (CreateMonitorDowntimeRequest0, error) {
+	var body CreateMonitorDowntimeRequest0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateMonitorDowntimeRequest0 overwrites any union data inside the CreateMonitorDowntimeRequest as the provided CreateMonitorDowntimeRequest0
+func (t *CreateMonitorDowntimeRequest) FromCreateMonitorDowntimeRequest0(v CreateMonitorDowntimeRequest0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateMonitorDowntimeRequest0 performs a merge with any union data inside the CreateMonitorDowntimeRequest, using the provided CreateMonitorDowntimeRequest0
+func (t *CreateMonitorDowntimeRequest) MergeCreateMonitorDowntimeRequest0(v CreateMonitorDowntimeRequest0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateMonitorDowntimeRequest1 returns the union data inside the CreateMonitorDowntimeRequest as a CreateMonitorDowntimeRequest1
+func (t CreateMonitorDowntimeRequest) AsCreateMonitorDowntimeRequest1() (CreateMonitorDowntimeRequest1, error) {
+	var body CreateMonitorDowntimeRequest1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateMonitorDowntimeRequest1 overwrites any union data inside the CreateMonitorDowntimeRequest as the provided CreateMonitorDowntimeRequest1
+func (t *CreateMonitorDowntimeRequest) FromCreateMonitorDowntimeRequest1(v CreateMonitorDowntimeRequest1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateMonitorDowntimeRequest1 performs a merge with any union data inside the CreateMonitorDowntimeRequest, using the provided CreateMonitorDowntimeRequest1
+func (t *CreateMonitorDowntimeRequest) MergeCreateMonitorDowntimeRequest1(v CreateMonitorDowntimeRequest1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateMonitorDowntimeRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.AlertStrategy != nil {
+		object["alert_strategy"], err = json.Marshal(t.AlertStrategy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'alert_strategy': %w", err)
+		}
+	}
+
+	if t.Description != nil {
+		object["description"], err = json.Marshal(t.Description)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
+	if t.DynamicTimeRange != nil {
+		object["dynamic_time_range"], err = json.Marshal(t.DynamicTimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dynamic_time_range': %w", err)
+		}
+	}
+
+	if t.From != nil {
+		object["from"], err = json.Marshal(t.From)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from': %w", err)
+		}
+	}
+
+	if t.Name != nil {
+		object["name"], err = json.Marshal(t.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if t.StaticTimeRange != nil {
+		object["static_time_range"], err = json.Marshal(t.StaticTimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'static_time_range': %w", err)
+		}
+	}
+
+	if t.SuppressRecoveryAlert != nil {
+		object["suppress_recovery_alert"], err = json.Marshal(t.SuppressRecoveryAlert)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'suppress_recovery_alert': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *CreateMonitorDowntimeRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["alert_strategy"]; found {
+		err = json.Unmarshal(raw, &t.AlertStrategy)
+		if err != nil {
+			return fmt.Errorf("error reading 'alert_strategy': %w", err)
+		}
+	}
+
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &t.Description)
+		if err != nil {
+			return fmt.Errorf("error reading 'description': %w", err)
+		}
+	}
+
+	if raw, found := object["dynamic_time_range"]; found {
+		err = json.Unmarshal(raw, &t.DynamicTimeRange)
+		if err != nil {
+			return fmt.Errorf("error reading 'dynamic_time_range': %w", err)
+		}
+	}
+
+	if raw, found := object["from"]; found {
+		err = json.Unmarshal(raw, &t.From)
+		if err != nil {
+			return fmt.Errorf("error reading 'from': %w", err)
+		}
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &t.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+	}
+
+	if raw, found := object["static_time_range"]; found {
+		err = json.Unmarshal(raw, &t.StaticTimeRange)
+		if err != nil {
+			return fmt.Errorf("error reading 'static_time_range': %w", err)
+		}
+	}
+
+	if raw, found := object["suppress_recovery_alert"]; found {
+		err = json.Unmarshal(raw, &t.SuppressRecoveryAlert)
+		if err != nil {
+			return fmt.Errorf("error reading 'suppress_recovery_alert': %w", err)
+		}
+	}
+
+	return err
+}
+
 // AsEventLinks0 returns the union data inside the Event_Links_Item as a EventLinks0
 func (t Event_Links_Item) AsEventLinks0() (EventLinks0, error) {
 	var body EventLinks0
@@ -5450,10 +6871,10 @@ func (t ExportDetails) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if t.FromTsCamel != nil {
-		object["fromTs"], err = json.Marshal(t.FromTsCamel)
+	if t.FromExpr != nil {
+		object["from_expr"], err = json.Marshal(t.FromExpr)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'fromTs': %w", err)
+			return nil, fmt.Errorf("error marshaling 'from_expr': %w", err)
 		}
 	}
 
@@ -5464,24 +6885,10 @@ func (t ExportDetails) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if t.TimeRangeCamel != nil {
-		object["timeRange"], err = json.Marshal(t.TimeRangeCamel)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'timeRange': %w", err)
-		}
-	}
-
 	if t.TimeRange != nil {
 		object["time_range"], err = json.Marshal(t.TimeRange)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'time_range': %w", err)
-		}
-	}
-
-	if t.ToTsCamel != nil {
-		object["toTs"], err = json.Marshal(t.ToTsCamel)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'toTs': %w", err)
 		}
 	}
 
@@ -5520,10 +6927,10 @@ func (t *ExportDetails) UnmarshalJSON(b []byte) error {
 		}
 	}
 
-	if raw, found := object["fromTs"]; found {
-		err = json.Unmarshal(raw, &t.FromTsCamel)
+	if raw, found := object["from_expr"]; found {
+		err = json.Unmarshal(raw, &t.FromExpr)
 		if err != nil {
-			return fmt.Errorf("error reading 'fromTs': %w", err)
+			return fmt.Errorf("error reading 'from_expr': %w", err)
 		}
 	}
 
@@ -5534,13 +6941,6 @@ func (t *ExportDetails) UnmarshalJSON(b []byte) error {
 		}
 	}
 
-	if raw, found := object["timeRange"]; found {
-		err = json.Unmarshal(raw, &t.TimeRangeCamel)
-		if err != nil {
-			return fmt.Errorf("error reading 'timeRange': %w", err)
-		}
-	}
-
 	if raw, found := object["time_range"]; found {
 		err = json.Unmarshal(raw, &t.TimeRange)
 		if err != nil {
@@ -5548,17 +6948,134 @@ func (t *ExportDetails) UnmarshalJSON(b []byte) error {
 		}
 	}
 
-	if raw, found := object["toTs"]; found {
-		err = json.Unmarshal(raw, &t.ToTsCamel)
-		if err != nil {
-			return fmt.Errorf("error reading 'toTs': %w", err)
-		}
-	}
-
 	if raw, found := object["to_ts"]; found {
 		err = json.Unmarshal(raw, &t.ToTs)
 		if err != nil {
 			return fmt.Errorf("error reading 'to_ts': %w", err)
+		}
+	}
+
+	if raw, found := object["where"]; found {
+		err = json.Unmarshal(raw, &t.Where)
+		if err != nil {
+			return fmt.Errorf("error reading 'where': %w", err)
+		}
+	}
+
+	return err
+}
+
+// AsInitLiveTailRequest0 returns the union data inside the InitLiveTailRequest as a InitLiveTailRequest0
+func (t InitLiveTailRequest) AsInitLiveTailRequest0() (InitLiveTailRequest0, error) {
+	var body InitLiveTailRequest0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromInitLiveTailRequest0 overwrites any union data inside the InitLiveTailRequest as the provided InitLiveTailRequest0
+func (t *InitLiveTailRequest) FromInitLiveTailRequest0(v InitLiveTailRequest0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeInitLiveTailRequest0 performs a merge with any union data inside the InitLiveTailRequest, using the provided InitLiveTailRequest0
+func (t *InitLiveTailRequest) MergeInitLiveTailRequest0(v InitLiveTailRequest0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsInitLiveTailRequest1 returns the union data inside the InitLiveTailRequest as a InitLiveTailRequest1
+func (t InitLiveTailRequest) AsInitLiveTailRequest1() (InitLiveTailRequest1, error) {
+	var body InitLiveTailRequest1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromInitLiveTailRequest1 overwrites any union data inside the InitLiveTailRequest as the provided InitLiveTailRequest1
+func (t *InitLiveTailRequest) FromInitLiveTailRequest1(v InitLiveTailRequest1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeInitLiveTailRequest1 performs a merge with any union data inside the InitLiveTailRequest, using the provided InitLiveTailRequest1
+func (t *InitLiveTailRequest) MergeInitLiveTailRequest1(v InitLiveTailRequest1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t InitLiveTailRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.From != nil {
+		object["from"], err = json.Marshal(t.From)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from': %w", err)
+		}
+	}
+
+	if t.FromExpr != nil {
+		object["from_expr"], err = json.Marshal(t.FromExpr)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from_expr': %w", err)
+		}
+	}
+
+	if t.Where != nil {
+		object["where"], err = json.Marshal(t.Where)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'where': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *InitLiveTailRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["from"]; found {
+		err = json.Unmarshal(raw, &t.From)
+		if err != nil {
+			return fmt.Errorf("error reading 'from': %w", err)
+		}
+	}
+
+	if raw, found := object["from_expr"]; found {
+		err = json.Unmarshal(raw, &t.FromExpr)
+		if err != nil {
+			return fmt.Errorf("error reading 'from_expr': %w", err)
 		}
 	}
 
@@ -5718,6 +7235,827 @@ func (t *Limit_Scope) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsLog0 returns the union data inside the Log as a Log0
+func (t Log) AsLog0() (Log0, error) {
+	var body Log0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLog0 overwrites any union data inside the Log as the provided Log0
+func (t *Log) FromLog0(v Log0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLog0 performs a merge with any union data inside the Log, using the provided Log0
+func (t *Log) MergeLog0(v Log0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLog1 returns the union data inside the Log as a Log1
+func (t Log) AsLog1() (Log1, error) {
+	var body Log1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLog1 overwrites any union data inside the Log as the provided Log1
+func (t *Log) FromLog1(v Log1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLog1 performs a merge with any union data inside the Log, using the provided Log1
+func (t *Log) MergeLog1(v Log1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t Log) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.Collection != nil {
+		object["collection"], err = json.Marshal(t.Collection)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'collection': %w", err)
+		}
+	}
+
+	if t.Dataset != nil {
+		object["dataset"], err = json.Marshal(t.Dataset)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dataset': %w", err)
+		}
+	}
+
+	if t.IsSystemGenerated != nil {
+		object["is_system_generated"], err = json.Marshal(t.IsSystemGenerated)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'is_system_generated': %w", err)
+		}
+	}
+
+	if t.Log != nil {
+		object["log"], err = json.Marshal(t.Log)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'log': %w", err)
+		}
+	}
+
+	if t.LogId != nil {
+		object["log_id"], err = json.Marshal(t.LogId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'log_id': %w", err)
+		}
+	}
+
+	if t.Logset != nil {
+		object["logset"], err = json.Marshal(t.Logset)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'logset': %w", err)
+		}
+	}
+
+	if t.Metadata != nil {
+		object["metadata"], err = json.Marshal(t.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'metadata': %w", err)
+		}
+	}
+
+	if t.ParserId != nil {
+		object["parser_id"], err = json.Marshal(t.ParserId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'parser_id': %w", err)
+		}
+	}
+
+	if t.Tags != nil {
+		object["tags"], err = json.Marshal(t.Tags)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *Log) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["collection"]; found {
+		err = json.Unmarshal(raw, &t.Collection)
+		if err != nil {
+			return fmt.Errorf("error reading 'collection': %w", err)
+		}
+	}
+
+	if raw, found := object["dataset"]; found {
+		err = json.Unmarshal(raw, &t.Dataset)
+		if err != nil {
+			return fmt.Errorf("error reading 'dataset': %w", err)
+		}
+	}
+
+	if raw, found := object["is_system_generated"]; found {
+		err = json.Unmarshal(raw, &t.IsSystemGenerated)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_system_generated': %w", err)
+		}
+	}
+
+	if raw, found := object["log"]; found {
+		err = json.Unmarshal(raw, &t.Log)
+		if err != nil {
+			return fmt.Errorf("error reading 'log': %w", err)
+		}
+	}
+
+	if raw, found := object["log_id"]; found {
+		err = json.Unmarshal(raw, &t.LogId)
+		if err != nil {
+			return fmt.Errorf("error reading 'log_id': %w", err)
+		}
+	}
+
+	if raw, found := object["logset"]; found {
+		err = json.Unmarshal(raw, &t.Logset)
+		if err != nil {
+			return fmt.Errorf("error reading 'logset': %w", err)
+		}
+	}
+
+	if raw, found := object["metadata"]; found {
+		err = json.Unmarshal(raw, &t.Metadata)
+		if err != nil {
+			return fmt.Errorf("error reading 'metadata': %w", err)
+		}
+	}
+
+	if raw, found := object["parser_id"]; found {
+		err = json.Unmarshal(raw, &t.ParserId)
+		if err != nil {
+			return fmt.Errorf("error reading 'parser_id': %w", err)
+		}
+	}
+
+	if raw, found := object["tags"]; found {
+		err = json.Unmarshal(raw, &t.Tags)
+		if err != nil {
+			return fmt.Errorf("error reading 'tags': %w", err)
+		}
+	}
+
+	return err
+}
+
+// AsTimelineComponent returns the union data inside the LogView_Components_Item as a TimelineComponent
+func (t LogView_Components_Item) AsTimelineComponent() (TimelineComponent, error) {
+	var body TimelineComponent
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTimelineComponent overwrites any union data inside the LogView_Components_Item as the provided TimelineComponent
+func (t *LogView_Components_Item) FromTimelineComponent(v TimelineComponent) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTimelineComponent performs a merge with any union data inside the LogView_Components_Item, using the provided TimelineComponent
+func (t *LogView_Components_Item) MergeTimelineComponent(v TimelineComponent) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsListComponent returns the union data inside the LogView_Components_Item as a ListComponent
+func (t LogView_Components_Item) AsListComponent() (ListComponent, error) {
+	var body ListComponent
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromListComponent overwrites any union data inside the LogView_Components_Item as the provided ListComponent
+func (t *LogView_Components_Item) FromListComponent(v ListComponent) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeListComponent performs a merge with any union data inside the LogView_Components_Item, using the provided ListComponent
+func (t *LogView_Components_Item) MergeListComponent(v ListComponent) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LogView_Components_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LogView_Components_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsMetricQuery0 returns the union data inside the MetricQuery as a MetricQuery0
+func (t MetricQuery) AsMetricQuery0() (MetricQuery0, error) {
+	var body MetricQuery0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMetricQuery0 overwrites any union data inside the MetricQuery as the provided MetricQuery0
+func (t *MetricQuery) FromMetricQuery0(v MetricQuery0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMetricQuery0 performs a merge with any union data inside the MetricQuery, using the provided MetricQuery0
+func (t *MetricQuery) MergeMetricQuery0(v MetricQuery0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMetricQuery1 returns the union data inside the MetricQuery as a MetricQuery1
+func (t MetricQuery) AsMetricQuery1() (MetricQuery1, error) {
+	var body MetricQuery1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMetricQuery1 overwrites any union data inside the MetricQuery as the provided MetricQuery1
+func (t *MetricQuery) FromMetricQuery1(v MetricQuery1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMetricQuery1 performs a merge with any union data inside the MetricQuery, using the provided MetricQuery1
+func (t *MetricQuery) MergeMetricQuery1(v MetricQuery1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t MetricQuery) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.Aggregation != nil {
+		object["aggregation"], err = json.Marshal(t.Aggregation)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'aggregation': %w", err)
+		}
+	}
+
+	if t.From != nil {
+		object["from"], err = json.Marshal(t.From)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from': %w", err)
+		}
+	}
+
+	if t.FromExpr != nil {
+		object["from_expr"], err = json.Marshal(t.FromExpr)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from_expr': %w", err)
+		}
+	}
+
+	if t.Groups != nil {
+		object["groups"], err = json.Marshal(t.Groups)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'groups': %w", err)
+		}
+	}
+
+	if t.Name != nil {
+		object["name"], err = json.Marshal(t.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if t.Select != nil {
+		object["select"], err = json.Marshal(t.Select)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'select': %w", err)
+		}
+	}
+
+	if t.Where != nil {
+		object["where"], err = json.Marshal(t.Where)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'where': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *MetricQuery) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["aggregation"]; found {
+		err = json.Unmarshal(raw, &t.Aggregation)
+		if err != nil {
+			return fmt.Errorf("error reading 'aggregation': %w", err)
+		}
+	}
+
+	if raw, found := object["from"]; found {
+		err = json.Unmarshal(raw, &t.From)
+		if err != nil {
+			return fmt.Errorf("error reading 'from': %w", err)
+		}
+	}
+
+	if raw, found := object["from_expr"]; found {
+		err = json.Unmarshal(raw, &t.FromExpr)
+		if err != nil {
+			return fmt.Errorf("error reading 'from_expr': %w", err)
+		}
+	}
+
+	if raw, found := object["groups"]; found {
+		err = json.Unmarshal(raw, &t.Groups)
+		if err != nil {
+			return fmt.Errorf("error reading 'groups': %w", err)
+		}
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &t.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+	}
+
+	if raw, found := object["select"]; found {
+		err = json.Unmarshal(raw, &t.Select)
+		if err != nil {
+			return fmt.Errorf("error reading 'select': %w", err)
+		}
+	}
+
+	if raw, found := object["where"]; found {
+		err = json.Unmarshal(raw, &t.Where)
+		if err != nil {
+			return fmt.Errorf("error reading 'where': %w", err)
+		}
+	}
+
+	return err
+}
+
+// AsMonitorDowntime0 returns the union data inside the MonitorDowntime as a MonitorDowntime0
+func (t MonitorDowntime) AsMonitorDowntime0() (MonitorDowntime0, error) {
+	var body MonitorDowntime0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMonitorDowntime0 overwrites any union data inside the MonitorDowntime as the provided MonitorDowntime0
+func (t *MonitorDowntime) FromMonitorDowntime0(v MonitorDowntime0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMonitorDowntime0 performs a merge with any union data inside the MonitorDowntime, using the provided MonitorDowntime0
+func (t *MonitorDowntime) MergeMonitorDowntime0(v MonitorDowntime0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMonitorDowntime1 returns the union data inside the MonitorDowntime as a MonitorDowntime1
+func (t MonitorDowntime) AsMonitorDowntime1() (MonitorDowntime1, error) {
+	var body MonitorDowntime1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMonitorDowntime1 overwrites any union data inside the MonitorDowntime as the provided MonitorDowntime1
+func (t *MonitorDowntime) FromMonitorDowntime1(v MonitorDowntime1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMonitorDowntime1 performs a merge with any union data inside the MonitorDowntime, using the provided MonitorDowntime1
+func (t *MonitorDowntime) MergeMonitorDowntime1(v MonitorDowntime1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t MonitorDowntime) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.AlertStrategy != nil {
+		object["alert_strategy"], err = json.Marshal(t.AlertStrategy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'alert_strategy': %w", err)
+		}
+	}
+
+	if t.Description != nil {
+		object["description"], err = json.Marshal(t.Description)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
+	if t.DynamicTimeRange != nil {
+		object["dynamic_time_range"], err = json.Marshal(t.DynamicTimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dynamic_time_range': %w", err)
+		}
+	}
+
+	if t.From != nil {
+		object["from"], err = json.Marshal(t.From)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from': %w", err)
+		}
+	}
+
+	if t.Id != nil {
+		object["id"], err = json.Marshal(t.Id)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'id': %w", err)
+		}
+	}
+
+	if t.Name != nil {
+		object["name"], err = json.Marshal(t.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if t.StaticTimeRange != nil {
+		object["static_time_range"], err = json.Marshal(t.StaticTimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'static_time_range': %w", err)
+		}
+	}
+
+	if t.SuppressRecoveryAlert != nil {
+		object["suppress_recovery_alert"], err = json.Marshal(t.SuppressRecoveryAlert)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'suppress_recovery_alert': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *MonitorDowntime) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["alert_strategy"]; found {
+		err = json.Unmarshal(raw, &t.AlertStrategy)
+		if err != nil {
+			return fmt.Errorf("error reading 'alert_strategy': %w", err)
+		}
+	}
+
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &t.Description)
+		if err != nil {
+			return fmt.Errorf("error reading 'description': %w", err)
+		}
+	}
+
+	if raw, found := object["dynamic_time_range"]; found {
+		err = json.Unmarshal(raw, &t.DynamicTimeRange)
+		if err != nil {
+			return fmt.Errorf("error reading 'dynamic_time_range': %w", err)
+		}
+	}
+
+	if raw, found := object["from"]; found {
+		err = json.Unmarshal(raw, &t.From)
+		if err != nil {
+			return fmt.Errorf("error reading 'from': %w", err)
+		}
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &t.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &t.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+	}
+
+	if raw, found := object["static_time_range"]; found {
+		err = json.Unmarshal(raw, &t.StaticTimeRange)
+		if err != nil {
+			return fmt.Errorf("error reading 'static_time_range': %w", err)
+		}
+	}
+
+	if raw, found := object["suppress_recovery_alert"]; found {
+		err = json.Unmarshal(raw, &t.SuppressRecoveryAlert)
+		if err != nil {
+			return fmt.Errorf("error reading 'suppress_recovery_alert': %w", err)
+		}
+	}
+
+	return err
+}
+
+// AsQueryDefinition0 returns the union data inside the QueryDefinition as a QueryDefinition0
+func (t QueryDefinition) AsQueryDefinition0() (QueryDefinition0, error) {
+	var body QueryDefinition0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromQueryDefinition0 overwrites any union data inside the QueryDefinition as the provided QueryDefinition0
+func (t *QueryDefinition) FromQueryDefinition0(v QueryDefinition0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeQueryDefinition0 performs a merge with any union data inside the QueryDefinition, using the provided QueryDefinition0
+func (t *QueryDefinition) MergeQueryDefinition0(v QueryDefinition0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsQueryDefinition1 returns the union data inside the QueryDefinition as a QueryDefinition1
+func (t QueryDefinition) AsQueryDefinition1() (QueryDefinition1, error) {
+	var body QueryDefinition1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromQueryDefinition1 overwrites any union data inside the QueryDefinition as the provided QueryDefinition1
+func (t *QueryDefinition) FromQueryDefinition1(v QueryDefinition1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeQueryDefinition1 performs a merge with any union data inside the QueryDefinition, using the provided QueryDefinition1
+func (t *QueryDefinition) MergeQueryDefinition1(v QueryDefinition1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t QueryDefinition) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.Aggregation != nil {
+		object["aggregation"], err = json.Marshal(t.Aggregation)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'aggregation': %w", err)
+		}
+	}
+
+	if t.From != nil {
+		object["from"], err = json.Marshal(t.From)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from': %w", err)
+		}
+	}
+
+	if t.FromExpr != nil {
+		object["from_expr"], err = json.Marshal(t.FromExpr)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from_expr': %w", err)
+		}
+	}
+
+	if t.Groups != nil {
+		object["groups"], err = json.Marshal(t.Groups)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'groups': %w", err)
+		}
+	}
+
+	object["name"], err = json.Marshal(t.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	if t.Select != nil {
+		object["select"], err = json.Marshal(t.Select)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'select': %w", err)
+		}
+	}
+
+	object["where"], err = json.Marshal(t.Where)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'where': %w", err)
+	}
+
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *QueryDefinition) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["aggregation"]; found {
+		err = json.Unmarshal(raw, &t.Aggregation)
+		if err != nil {
+			return fmt.Errorf("error reading 'aggregation': %w", err)
+		}
+	}
+
+	if raw, found := object["from"]; found {
+		err = json.Unmarshal(raw, &t.From)
+		if err != nil {
+			return fmt.Errorf("error reading 'from': %w", err)
+		}
+	}
+
+	if raw, found := object["from_expr"]; found {
+		err = json.Unmarshal(raw, &t.FromExpr)
+		if err != nil {
+			return fmt.Errorf("error reading 'from_expr': %w", err)
+		}
+	}
+
+	if raw, found := object["groups"]; found {
+		err = json.Unmarshal(raw, &t.Groups)
+		if err != nil {
+			return fmt.Errorf("error reading 'groups': %w", err)
+		}
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &t.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+	}
+
+	if raw, found := object["select"]; found {
+		err = json.Unmarshal(raw, &t.Select)
+		if err != nil {
+			return fmt.Errorf("error reading 'select': %w", err)
+		}
+	}
+
+	if raw, found := object["where"]; found {
+		err = json.Unmarshal(raw, &t.Where)
+		if err != nil {
+			return fmt.Errorf("error reading 'where': %w", err)
+		}
+	}
+
+	return err
+}
+
 // AsQueryResultLinks0 returns the union data inside the QueryResult_Links_Item as a QueryResultLinks0
 func (t QueryResult_Links_Item) AsQueryResultLinks0() (QueryResultLinks0, error) {
 	var body QueryResultLinks0
@@ -5806,6 +8144,58 @@ func (t *SearchCompletedLinksAsyncEnabled_Item) MergeSearchCompletedLinksAsyncEn
 	return err
 }
 
+// AsSearchCompletedLinksAsyncEnabled2 returns the union data inside the SearchCompletedLinksAsyncEnabled_Item as a SearchCompletedLinksAsyncEnabled2
+func (t SearchCompletedLinksAsyncEnabled_Item) AsSearchCompletedLinksAsyncEnabled2() (SearchCompletedLinksAsyncEnabled2, error) {
+	var body SearchCompletedLinksAsyncEnabled2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSearchCompletedLinksAsyncEnabled2 overwrites any union data inside the SearchCompletedLinksAsyncEnabled_Item as the provided SearchCompletedLinksAsyncEnabled2
+func (t *SearchCompletedLinksAsyncEnabled_Item) FromSearchCompletedLinksAsyncEnabled2(v SearchCompletedLinksAsyncEnabled2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSearchCompletedLinksAsyncEnabled2 performs a merge with any union data inside the SearchCompletedLinksAsyncEnabled_Item, using the provided SearchCompletedLinksAsyncEnabled2
+func (t *SearchCompletedLinksAsyncEnabled_Item) MergeSearchCompletedLinksAsyncEnabled2(v SearchCompletedLinksAsyncEnabled2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSearchCompletedLinksAsyncEnabled3 returns the union data inside the SearchCompletedLinksAsyncEnabled_Item as a SearchCompletedLinksAsyncEnabled3
+func (t SearchCompletedLinksAsyncEnabled_Item) AsSearchCompletedLinksAsyncEnabled3() (SearchCompletedLinksAsyncEnabled3, error) {
+	var body SearchCompletedLinksAsyncEnabled3
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSearchCompletedLinksAsyncEnabled3 overwrites any union data inside the SearchCompletedLinksAsyncEnabled_Item as the provided SearchCompletedLinksAsyncEnabled3
+func (t *SearchCompletedLinksAsyncEnabled_Item) FromSearchCompletedLinksAsyncEnabled3(v SearchCompletedLinksAsyncEnabled3) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSearchCompletedLinksAsyncEnabled3 performs a merge with any union data inside the SearchCompletedLinksAsyncEnabled_Item, using the provided SearchCompletedLinksAsyncEnabled3
+func (t *SearchCompletedLinksAsyncEnabled_Item) MergeSearchCompletedLinksAsyncEnabled3(v SearchCompletedLinksAsyncEnabled3) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t SearchCompletedLinksAsyncEnabled_Item) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -5816,22 +8206,22 @@ func (t *SearchCompletedLinksAsyncEnabled_Item) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// AsSearchInProgressLinks0 returns the union data inside the SearchInProgressLinks_Item as a SearchInProgressLinks0
-func (t SearchInProgressLinks_Item) AsSearchInProgressLinks0() (SearchInProgressLinks0, error) {
-	var body SearchInProgressLinks0
+// AsTemplateArgument0 returns the union data inside the TemplateArgument as a TemplateArgument0
+func (t TemplateArgument) AsTemplateArgument0() (TemplateArgument0, error) {
+	var body TemplateArgument0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromSearchInProgressLinks0 overwrites any union data inside the SearchInProgressLinks_Item as the provided SearchInProgressLinks0
-func (t *SearchInProgressLinks_Item) FromSearchInProgressLinks0(v SearchInProgressLinks0) error {
+// FromTemplateArgument0 overwrites any union data inside the TemplateArgument as the provided TemplateArgument0
+func (t *TemplateArgument) FromTemplateArgument0(v TemplateArgument0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeSearchInProgressLinks0 performs a merge with any union data inside the SearchInProgressLinks_Item, using the provided SearchInProgressLinks0
-func (t *SearchInProgressLinks_Item) MergeSearchInProgressLinks0(v SearchInProgressLinks0) error {
+// MergeTemplateArgument0 performs a merge with any union data inside the TemplateArgument, using the provided TemplateArgument0
+func (t *TemplateArgument) MergeTemplateArgument0(v TemplateArgument0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -5842,32 +8232,58 @@ func (t *SearchInProgressLinks_Item) MergeSearchInProgressLinks0(v SearchInProgr
 	return err
 }
 
-func (t SearchInProgressLinks_Item) MarshalJSON() ([]byte, error) {
+// AsTemplateArgument1 returns the union data inside the TemplateArgument as a TemplateArgument1
+func (t TemplateArgument) AsTemplateArgument1() (TemplateArgument1, error) {
+	var body TemplateArgument1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTemplateArgument1 overwrites any union data inside the TemplateArgument as the provided TemplateArgument1
+func (t *TemplateArgument) FromTemplateArgument1(v TemplateArgument1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTemplateArgument1 performs a merge with any union data inside the TemplateArgument, using the provided TemplateArgument1
+func (t *TemplateArgument) MergeTemplateArgument1(v TemplateArgument1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t TemplateArgument) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *SearchInProgressLinks_Item) UnmarshalJSON(b []byte) error {
+func (t *TemplateArgument) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
-// AsUnixTimestampOrString0 returns the union data inside the UnixTimestampOrString as a UnixTimestampOrString0
-func (t UnixTimestampOrString) AsUnixTimestampOrString0() (UnixTimestampOrString0, error) {
-	var body UnixTimestampOrString0
+// AsTemplateArgument0Literal0 returns the union data inside the TemplateArgument_0_Literal as a TemplateArgument0Literal0
+func (t TemplateArgument_0_Literal) AsTemplateArgument0Literal0() (TemplateArgument0Literal0, error) {
+	var body TemplateArgument0Literal0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromUnixTimestampOrString0 overwrites any union data inside the UnixTimestampOrString as the provided UnixTimestampOrString0
-func (t *UnixTimestampOrString) FromUnixTimestampOrString0(v UnixTimestampOrString0) error {
+// FromTemplateArgument0Literal0 overwrites any union data inside the TemplateArgument_0_Literal as the provided TemplateArgument0Literal0
+func (t *TemplateArgument_0_Literal) FromTemplateArgument0Literal0(v TemplateArgument0Literal0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeUnixTimestampOrString0 performs a merge with any union data inside the UnixTimestampOrString, using the provided UnixTimestampOrString0
-func (t *UnixTimestampOrString) MergeUnixTimestampOrString0(v UnixTimestampOrString0) error {
+// MergeTemplateArgument0Literal0 performs a merge with any union data inside the TemplateArgument_0_Literal, using the provided TemplateArgument0Literal0
+func (t *TemplateArgument_0_Literal) MergeTemplateArgument0Literal0(v TemplateArgument0Literal0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -5878,22 +8294,22 @@ func (t *UnixTimestampOrString) MergeUnixTimestampOrString0(v UnixTimestampOrStr
 	return err
 }
 
-// AsUnixTimestampOrString1 returns the union data inside the UnixTimestampOrString as a UnixTimestampOrString1
-func (t UnixTimestampOrString) AsUnixTimestampOrString1() (UnixTimestampOrString1, error) {
-	var body UnixTimestampOrString1
+// AsTemplateArgument0Literal1 returns the union data inside the TemplateArgument_0_Literal as a TemplateArgument0Literal1
+func (t TemplateArgument_0_Literal) AsTemplateArgument0Literal1() (TemplateArgument0Literal1, error) {
+	var body TemplateArgument0Literal1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromUnixTimestampOrString1 overwrites any union data inside the UnixTimestampOrString as the provided UnixTimestampOrString1
-func (t *UnixTimestampOrString) FromUnixTimestampOrString1(v UnixTimestampOrString1) error {
+// FromTemplateArgument0Literal1 overwrites any union data inside the TemplateArgument_0_Literal as the provided TemplateArgument0Literal1
+func (t *TemplateArgument_0_Literal) FromTemplateArgument0Literal1(v TemplateArgument0Literal1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeUnixTimestampOrString1 performs a merge with any union data inside the UnixTimestampOrString, using the provided UnixTimestampOrString1
-func (t *UnixTimestampOrString) MergeUnixTimestampOrString1(v UnixTimestampOrString1) error {
+// MergeTemplateArgument0Literal1 performs a merge with any union data inside the TemplateArgument_0_Literal, using the provided TemplateArgument0Literal1
+func (t *TemplateArgument_0_Literal) MergeTemplateArgument0Literal1(v TemplateArgument0Literal1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -5904,12 +8320,12 @@ func (t *UnixTimestampOrString) MergeUnixTimestampOrString1(v UnixTimestampOrStr
 	return err
 }
 
-func (t UnixTimestampOrString) MarshalJSON() ([]byte, error) {
+func (t TemplateArgument_0_Literal) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *UnixTimestampOrString) UnmarshalJSON(b []byte) error {
+func (t *TemplateArgument_0_Literal) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -6108,22 +8524,22 @@ func (t *UpdateLimitRequest_Scope) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// AsUpdateDashboardJSONBody0 returns the union data inside the UpdateDashboardJSONBody as a UpdateDashboardJSONBody0
-func (t UpdateDashboardJSONBody) AsUpdateDashboardJSONBody0() (UpdateDashboardJSONBody0, error) {
-	var body UpdateDashboardJSONBody0
+// AsUpdateMonitorDowntimeRequest0 returns the union data inside the UpdateMonitorDowntimeRequest as a UpdateMonitorDowntimeRequest0
+func (t UpdateMonitorDowntimeRequest) AsUpdateMonitorDowntimeRequest0() (UpdateMonitorDowntimeRequest0, error) {
+	var body UpdateMonitorDowntimeRequest0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromUpdateDashboardJSONBody0 overwrites any union data inside the UpdateDashboardJSONBody as the provided UpdateDashboardJSONBody0
-func (t *UpdateDashboardJSONBody) FromUpdateDashboardJSONBody0(v UpdateDashboardJSONBody0) error {
+// FromUpdateMonitorDowntimeRequest0 overwrites any union data inside the UpdateMonitorDowntimeRequest as the provided UpdateMonitorDowntimeRequest0
+func (t *UpdateMonitorDowntimeRequest) FromUpdateMonitorDowntimeRequest0(v UpdateMonitorDowntimeRequest0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeUpdateDashboardJSONBody0 performs a merge with any union data inside the UpdateDashboardJSONBody, using the provided UpdateDashboardJSONBody0
-func (t *UpdateDashboardJSONBody) MergeUpdateDashboardJSONBody0(v UpdateDashboardJSONBody0) error {
+// MergeUpdateMonitorDowntimeRequest0 performs a merge with any union data inside the UpdateMonitorDowntimeRequest, using the provided UpdateMonitorDowntimeRequest0
+func (t *UpdateMonitorDowntimeRequest) MergeUpdateMonitorDowntimeRequest0(v UpdateMonitorDowntimeRequest0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -6134,22 +8550,22 @@ func (t *UpdateDashboardJSONBody) MergeUpdateDashboardJSONBody0(v UpdateDashboar
 	return err
 }
 
-// AsUpdateDashboardJSONBody1 returns the union data inside the UpdateDashboardJSONBody as a UpdateDashboardJSONBody1
-func (t UpdateDashboardJSONBody) AsUpdateDashboardJSONBody1() (UpdateDashboardJSONBody1, error) {
-	var body UpdateDashboardJSONBody1
+// AsUpdateMonitorDowntimeRequest1 returns the union data inside the UpdateMonitorDowntimeRequest as a UpdateMonitorDowntimeRequest1
+func (t UpdateMonitorDowntimeRequest) AsUpdateMonitorDowntimeRequest1() (UpdateMonitorDowntimeRequest1, error) {
+	var body UpdateMonitorDowntimeRequest1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromUpdateDashboardJSONBody1 overwrites any union data inside the UpdateDashboardJSONBody as the provided UpdateDashboardJSONBody1
-func (t *UpdateDashboardJSONBody) FromUpdateDashboardJSONBody1(v UpdateDashboardJSONBody1) error {
+// FromUpdateMonitorDowntimeRequest1 overwrites any union data inside the UpdateMonitorDowntimeRequest as the provided UpdateMonitorDowntimeRequest1
+func (t *UpdateMonitorDowntimeRequest) FromUpdateMonitorDowntimeRequest1(v UpdateMonitorDowntimeRequest1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeUpdateDashboardJSONBody1 performs a merge with any union data inside the UpdateDashboardJSONBody, using the provided UpdateDashboardJSONBody1
-func (t *UpdateDashboardJSONBody) MergeUpdateDashboardJSONBody1(v UpdateDashboardJSONBody1) error {
+// MergeUpdateMonitorDowntimeRequest1 performs a merge with any union data inside the UpdateMonitorDowntimeRequest, using the provided UpdateMonitorDowntimeRequest1
+func (t *UpdateMonitorDowntimeRequest) MergeUpdateMonitorDowntimeRequest1(v UpdateMonitorDowntimeRequest1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -6160,95 +8576,7 @@ func (t *UpdateDashboardJSONBody) MergeUpdateDashboardJSONBody1(v UpdateDashboar
 	return err
 }
 
-// AsUpdateDashboardJSONBody2 returns the union data inside the UpdateDashboardJSONBody as a UpdateDashboardJSONBody2
-func (t UpdateDashboardJSONBody) AsUpdateDashboardJSONBody2() (UpdateDashboardJSONBody2, error) {
-	var body UpdateDashboardJSONBody2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromUpdateDashboardJSONBody2 overwrites any union data inside the UpdateDashboardJSONBody as the provided UpdateDashboardJSONBody2
-func (t *UpdateDashboardJSONBody) FromUpdateDashboardJSONBody2(v UpdateDashboardJSONBody2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeUpdateDashboardJSONBody2 performs a merge with any union data inside the UpdateDashboardJSONBody, using the provided UpdateDashboardJSONBody2
-func (t *UpdateDashboardJSONBody) MergeUpdateDashboardJSONBody2(v UpdateDashboardJSONBody2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t UpdateDashboardJSONBody) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *UpdateDashboardJSONBody) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsUpdateDashboardJSONBody2WidgetIds0 returns the union data inside the UpdateDashboardJSONBody_2_WidgetIds as a UpdateDashboardJSONBody2WidgetIds0
-func (t UpdateDashboardJSONBody_2_WidgetIds) AsUpdateDashboardJSONBody2WidgetIds0() (UpdateDashboardJSONBody2WidgetIds0, error) {
-	var body UpdateDashboardJSONBody2WidgetIds0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromUpdateDashboardJSONBody2WidgetIds0 overwrites any union data inside the UpdateDashboardJSONBody_2_WidgetIds as the provided UpdateDashboardJSONBody2WidgetIds0
-func (t *UpdateDashboardJSONBody_2_WidgetIds) FromUpdateDashboardJSONBody2WidgetIds0(v UpdateDashboardJSONBody2WidgetIds0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeUpdateDashboardJSONBody2WidgetIds0 performs a merge with any union data inside the UpdateDashboardJSONBody_2_WidgetIds, using the provided UpdateDashboardJSONBody2WidgetIds0
-func (t *UpdateDashboardJSONBody_2_WidgetIds) MergeUpdateDashboardJSONBody2WidgetIds0(v UpdateDashboardJSONBody2WidgetIds0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsUpdateDashboardJSONBody2WidgetIds1 returns the union data inside the UpdateDashboardJSONBody_2_WidgetIds as a UpdateDashboardJSONBody2WidgetIds1
-func (t UpdateDashboardJSONBody_2_WidgetIds) AsUpdateDashboardJSONBody2WidgetIds1() (UpdateDashboardJSONBody2WidgetIds1, error) {
-	var body UpdateDashboardJSONBody2WidgetIds1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromUpdateDashboardJSONBody2WidgetIds1 overwrites any union data inside the UpdateDashboardJSONBody_2_WidgetIds as the provided UpdateDashboardJSONBody2WidgetIds1
-func (t *UpdateDashboardJSONBody_2_WidgetIds) FromUpdateDashboardJSONBody2WidgetIds1(v UpdateDashboardJSONBody2WidgetIds1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeUpdateDashboardJSONBody2WidgetIds1 performs a merge with any union data inside the UpdateDashboardJSONBody_2_WidgetIds, using the provided UpdateDashboardJSONBody2WidgetIds1
-func (t *UpdateDashboardJSONBody_2_WidgetIds) MergeUpdateDashboardJSONBody2WidgetIds1(v UpdateDashboardJSONBody2WidgetIds1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t UpdateDashboardJSONBody_2_WidgetIds) MarshalJSON() ([]byte, error) {
+func (t UpdateMonitorDowntimeRequest) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	if err != nil {
 		return nil, err
@@ -6261,24 +8589,59 @@ func (t UpdateDashboardJSONBody_2_WidgetIds) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if t.Append != nil {
-		object["append"], err = json.Marshal(t.Append)
+	if t.AlertStrategy != nil {
+		object["alert_strategy"], err = json.Marshal(t.AlertStrategy)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'append': %w", err)
+			return nil, fmt.Errorf("error marshaling 'alert_strategy': %w", err)
 		}
 	}
 
-	if t.Remove != nil {
-		object["remove"], err = json.Marshal(t.Remove)
+	if t.Description != nil {
+		object["description"], err = json.Marshal(t.Description)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'remove': %w", err)
+			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
+	if t.DynamicTimeRange != nil {
+		object["dynamic_time_range"], err = json.Marshal(t.DynamicTimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dynamic_time_range': %w", err)
+		}
+	}
+
+	if t.From != nil {
+		object["from"], err = json.Marshal(t.From)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from': %w", err)
+		}
+	}
+
+	if t.Name != nil {
+		object["name"], err = json.Marshal(t.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if t.StaticTimeRange != nil {
+		object["static_time_range"], err = json.Marshal(t.StaticTimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'static_time_range': %w", err)
+		}
+	}
+
+	if t.SuppressRecoveryAlert != nil {
+		object["suppress_recovery_alert"], err = json.Marshal(t.SuppressRecoveryAlert)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'suppress_recovery_alert': %w", err)
 		}
 	}
 	b, err = json.Marshal(object)
 	return b, err
 }
 
-func (t *UpdateDashboardJSONBody_2_WidgetIds) UnmarshalJSON(b []byte) error {
+func (t *UpdateMonitorDowntimeRequest) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	if err != nil {
 		return err
@@ -6289,241 +8652,52 @@ func (t *UpdateDashboardJSONBody_2_WidgetIds) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if raw, found := object["append"]; found {
-		err = json.Unmarshal(raw, &t.Append)
+	if raw, found := object["alert_strategy"]; found {
+		err = json.Unmarshal(raw, &t.AlertStrategy)
 		if err != nil {
-			return fmt.Errorf("error reading 'append': %w", err)
+			return fmt.Errorf("error reading 'alert_strategy': %w", err)
 		}
 	}
 
-	if raw, found := object["remove"]; found {
-		err = json.Unmarshal(raw, &t.Remove)
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &t.Description)
 		if err != nil {
-			return fmt.Errorf("error reading 'remove': %w", err)
+			return fmt.Errorf("error reading 'description': %w", err)
 		}
 	}
 
-	return err
-}
-
-// AsPatchWidgetJSONBody0 returns the union data inside the PatchWidgetJSONBody as a PatchWidgetJSONBody0
-func (t PatchWidgetJSONBody) AsPatchWidgetJSONBody0() (PatchWidgetJSONBody0, error) {
-	var body PatchWidgetJSONBody0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPatchWidgetJSONBody0 overwrites any union data inside the PatchWidgetJSONBody as the provided PatchWidgetJSONBody0
-func (t *PatchWidgetJSONBody) FromPatchWidgetJSONBody0(v PatchWidgetJSONBody0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePatchWidgetJSONBody0 performs a merge with any union data inside the PatchWidgetJSONBody, using the provided PatchWidgetJSONBody0
-func (t *PatchWidgetJSONBody) MergePatchWidgetJSONBody0(v PatchWidgetJSONBody0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPatchWidgetJSONBody1 returns the union data inside the PatchWidgetJSONBody as a PatchWidgetJSONBody1
-func (t PatchWidgetJSONBody) AsPatchWidgetJSONBody1() (PatchWidgetJSONBody1, error) {
-	var body PatchWidgetJSONBody1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPatchWidgetJSONBody1 overwrites any union data inside the PatchWidgetJSONBody as the provided PatchWidgetJSONBody1
-func (t *PatchWidgetJSONBody) FromPatchWidgetJSONBody1(v PatchWidgetJSONBody1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePatchWidgetJSONBody1 performs a merge with any union data inside the PatchWidgetJSONBody, using the provided PatchWidgetJSONBody1
-func (t *PatchWidgetJSONBody) MergePatchWidgetJSONBody1(v PatchWidgetJSONBody1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPatchWidgetJSONBody2 returns the union data inside the PatchWidgetJSONBody as a PatchWidgetJSONBody2
-func (t PatchWidgetJSONBody) AsPatchWidgetJSONBody2() (PatchWidgetJSONBody2, error) {
-	var body PatchWidgetJSONBody2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPatchWidgetJSONBody2 overwrites any union data inside the PatchWidgetJSONBody as the provided PatchWidgetJSONBody2
-func (t *PatchWidgetJSONBody) FromPatchWidgetJSONBody2(v PatchWidgetJSONBody2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePatchWidgetJSONBody2 performs a merge with any union data inside the PatchWidgetJSONBody, using the provided PatchWidgetJSONBody2
-func (t *PatchWidgetJSONBody) MergePatchWidgetJSONBody2(v PatchWidgetJSONBody2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPatchWidgetJSONBody3 returns the union data inside the PatchWidgetJSONBody as a PatchWidgetJSONBody3
-func (t PatchWidgetJSONBody) AsPatchWidgetJSONBody3() (PatchWidgetJSONBody3, error) {
-	var body PatchWidgetJSONBody3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPatchWidgetJSONBody3 overwrites any union data inside the PatchWidgetJSONBody as the provided PatchWidgetJSONBody3
-func (t *PatchWidgetJSONBody) FromPatchWidgetJSONBody3(v PatchWidgetJSONBody3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePatchWidgetJSONBody3 performs a merge with any union data inside the PatchWidgetJSONBody, using the provided PatchWidgetJSONBody3
-func (t *PatchWidgetJSONBody) MergePatchWidgetJSONBody3(v PatchWidgetJSONBody3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t PatchWidgetJSONBody) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *PatchWidgetJSONBody) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsPatchWidgetJSONBody2WidgetIds0 returns the union data inside the PatchWidgetJSONBody_2_WidgetIds as a PatchWidgetJSONBody2WidgetIds0
-func (t PatchWidgetJSONBody_2_WidgetIds) AsPatchWidgetJSONBody2WidgetIds0() (PatchWidgetJSONBody2WidgetIds0, error) {
-	var body PatchWidgetJSONBody2WidgetIds0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPatchWidgetJSONBody2WidgetIds0 overwrites any union data inside the PatchWidgetJSONBody_2_WidgetIds as the provided PatchWidgetJSONBody2WidgetIds0
-func (t *PatchWidgetJSONBody_2_WidgetIds) FromPatchWidgetJSONBody2WidgetIds0(v PatchWidgetJSONBody2WidgetIds0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePatchWidgetJSONBody2WidgetIds0 performs a merge with any union data inside the PatchWidgetJSONBody_2_WidgetIds, using the provided PatchWidgetJSONBody2WidgetIds0
-func (t *PatchWidgetJSONBody_2_WidgetIds) MergePatchWidgetJSONBody2WidgetIds0(v PatchWidgetJSONBody2WidgetIds0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPatchWidgetJSONBody2WidgetIds1 returns the union data inside the PatchWidgetJSONBody_2_WidgetIds as a PatchWidgetJSONBody2WidgetIds1
-func (t PatchWidgetJSONBody_2_WidgetIds) AsPatchWidgetJSONBody2WidgetIds1() (PatchWidgetJSONBody2WidgetIds1, error) {
-	var body PatchWidgetJSONBody2WidgetIds1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPatchWidgetJSONBody2WidgetIds1 overwrites any union data inside the PatchWidgetJSONBody_2_WidgetIds as the provided PatchWidgetJSONBody2WidgetIds1
-func (t *PatchWidgetJSONBody_2_WidgetIds) FromPatchWidgetJSONBody2WidgetIds1(v PatchWidgetJSONBody2WidgetIds1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePatchWidgetJSONBody2WidgetIds1 performs a merge with any union data inside the PatchWidgetJSONBody_2_WidgetIds, using the provided PatchWidgetJSONBody2WidgetIds1
-func (t *PatchWidgetJSONBody_2_WidgetIds) MergePatchWidgetJSONBody2WidgetIds1(v PatchWidgetJSONBody2WidgetIds1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t PatchWidgetJSONBody_2_WidgetIds) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	object := make(map[string]json.RawMessage)
-	if t.union != nil {
-		err = json.Unmarshal(b, &object)
+	if raw, found := object["dynamic_time_range"]; found {
+		err = json.Unmarshal(raw, &t.DynamicTimeRange)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("error reading 'dynamic_time_range': %w", err)
 		}
 	}
 
-	if t.Append != nil {
-		object["append"], err = json.Marshal(t.Append)
+	if raw, found := object["from"]; found {
+		err = json.Unmarshal(raw, &t.From)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'append': %w", err)
+			return fmt.Errorf("error reading 'from': %w", err)
 		}
 	}
 
-	if t.Remove != nil {
-		object["remove"], err = json.Marshal(t.Remove)
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &t.Name)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'remove': %w", err)
-		}
-	}
-	b, err = json.Marshal(object)
-	return b, err
-}
-
-func (t *PatchWidgetJSONBody_2_WidgetIds) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	if err != nil {
-		return err
-	}
-	object := make(map[string]json.RawMessage)
-	err = json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["append"]; found {
-		err = json.Unmarshal(raw, &t.Append)
-		if err != nil {
-			return fmt.Errorf("error reading 'append': %w", err)
+			return fmt.Errorf("error reading 'name': %w", err)
 		}
 	}
 
-	if raw, found := object["remove"]; found {
-		err = json.Unmarshal(raw, &t.Remove)
+	if raw, found := object["static_time_range"]; found {
+		err = json.Unmarshal(raw, &t.StaticTimeRange)
 		if err != nil {
-			return fmt.Errorf("error reading 'remove': %w", err)
+			return fmt.Errorf("error reading 'static_time_range': %w", err)
+		}
+	}
+
+	if raw, found := object["suppress_recovery_alert"]; found {
+		err = json.Unmarshal(raw, &t.SuppressRecoveryAlert)
+		if err != nil {
+			return fmt.Errorf("error reading 'suppress_recovery_alert': %w", err)
 		}
 	}
 
@@ -6603,9 +8777,6 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// GetAnalyticsErrors request
-	GetAnalyticsErrors(ctx context.Context, params *GetAnalyticsErrorsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListApiKeys request
 	ListApiKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -6622,14 +8793,11 @@ type ClientInterface interface {
 
 	UpdateApiKey(ctx context.Context, apiKeyId openapi_types.UUID, body UpdateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListCollections request
+	ListCollections(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetContext request
 	GetContext(ctx context.Context, params *GetContextParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetContract request
-	GetContract(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetCostByLogId request
-	GetCostByLogId(ctx context.Context, params *GetCostByLogIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetCustomer request
 	GetCustomer(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6639,24 +8807,43 @@ type ClientInterface interface {
 
 	UpdateCustomer(ctx context.Context, body UpdateCustomerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListDashboards request
-	ListDashboards(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListDatasets request
+	ListDatasets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateDashboardWithBody request with any body
-	CreateDashboardWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateDatasetWithBody request with any body
+	CreateDatasetWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateDashboard(ctx context.Context, body CreateDashboardJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDataset(ctx context.Context, body CreateDatasetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteDashboard request
-	DeleteDashboard(ctx context.Context, dashboardId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UnassignDatasetParser request
+	UnassignDatasetParser(ctx context.Context, datasetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDashboard request
-	GetDashboard(ctx context.Context, dashboardId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetDatasetParser request
+	GetDatasetParser(ctx context.Context, datasetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateDashboardWithBody request with any body
-	UpdateDashboardWithBody(ctx context.Context, dashboardId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// AssignDatasetParserWithBody request with any body
+	AssignDatasetParserWithBody(ctx context.Context, datasetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateDashboard(ctx context.Context, dashboardId openapi_types.UUID, body UpdateDashboardJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	AssignDatasetParser(ctx context.Context, datasetId openapi_types.UUID, body AssignDatasetParserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListEncryptionKeys request
+	ListEncryptionKeys(ctx context.Context, params *ListEncryptionKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateEncryptionKeyWithBody request with any body
+	CreateEncryptionKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateEncryptionKey(ctx context.Context, body CreateEncryptionKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteEncryptionKey request
+	DeleteEncryptionKey(ctx context.Context, keyId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetEncryptionKey request
+	GetEncryptionKey(ctx context.Context, keyId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateEncryptionKeyWithBody request with any body
+	UpdateEncryptionKeyWithBody(ctx context.Context, keyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateEncryptionKey(ctx context.Context, keyId string, body UpdateEncryptionKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ExplainError request
 	ExplainError(ctx context.Context, params *ExplainErrorParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6728,22 +8915,27 @@ type ClientInterface interface {
 
 	AddGroupMembers(ctx context.Context, groupId openapi_types.UUID, body AddGroupMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListInsights request
-	ListInsights(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListSlackIntegrations request
+	ListSlackIntegrations(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetInsight request
-	GetInsight(ctx context.Context, insightId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateSlackIntegrationWithBody request with any body
+	CreateSlackIntegrationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListAWSIntegrations request
-	ListAWSIntegrations(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSlackIntegration(ctx context.Context, body CreateSlackIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateAWSIntegrationWithBody request with any body
-	CreateAWSIntegrationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListSlackWorkspaces request
+	ListSlackWorkspaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateAWSIntegration(ctx context.Context, body CreateAWSIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteSlackWorkspace request
+	DeleteSlackWorkspace(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteAWSIntegration request
-	DeleteAWSIntegration(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteSlackIntegration request
+	DeleteSlackIntegration(ctx context.Context, slackId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateSlackIntegrationWithBody request with any body
+	UpdateSlackIntegrationWithBody(ctx context.Context, slackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateSlackIntegration(ctx context.Context, slackId string, body UpdateSlackIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListWebhookIntegrations request
 	ListWebhookIntegrations(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6760,14 +8952,6 @@ type ClientInterface interface {
 	UpdateWebhookIntegrationWithBody(ctx context.Context, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateWebhookIntegration(ctx context.Context, webhookId string, body UpdateWebhookIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateLogBasedMetricWithBody request with any body
-	CreateLogBasedMetricWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateLogBasedMetric(ctx context.Context, body CreateLogBasedMetricJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetLbmById request
-	GetLbmById(ctx context.Context, lbmId string, params *GetLbmByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListLimits request
 	ListLimits(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6788,6 +8972,14 @@ type ClientInterface interface {
 
 	UpdateLimit(ctx context.Context, limitId openapi_types.UUID, body UpdateLimitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PollLiveTail request
+	PollLiveTail(ctx context.Context, params *PollLiveTailParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// InitLiveTailWithBody request with any body
+	InitLiveTailWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	InitLiveTail(ctx context.Context, body InitLiveTailJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListLogs request
 	ListLogs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -6796,28 +8988,14 @@ type ClientInterface interface {
 
 	CreateLog(ctx context.Context, body CreateLogJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteLog request
-	DeleteLog(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetLogById request
-	GetLogById(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateLogWithBody request with any body
-	UpdateLogWithBody(ctx context.Context, logId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateLog(ctx context.Context, logId openapi_types.UUID, body UpdateLogJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListLogViews request
+	ListLogViews(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListDashboardsForLog request
 	ListDashboardsForLog(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetMetricsForLog request
-	GetMetricsForLog(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListMonitorsForLog request
 	ListMonitorsForLog(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListLogSets request
-	ListLogSets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListMonitors request
 	ListMonitors(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6827,10 +9005,40 @@ type ClientInterface interface {
 
 	CreateMonitor(ctx context.Context, body CreateMonitorJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SendTestNotificationsWithBody request with any body
-	SendTestNotificationsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListMonitorDowntimes request
+	ListMonitorDowntimes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	SendTestNotifications(ctx context.Context, body SendTestNotificationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateMonitorDowntimeWithBody request with any body
+	CreateMonitorDowntimeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateMonitorDowntime(ctx context.Context, body CreateMonitorDowntimeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteMonitorDowntime request
+	DeleteMonitorDowntime(ctx context.Context, downtimeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateMonitorDowntimeWithBody request with any body
+	UpdateMonitorDowntimeWithBody(ctx context.Context, downtimeId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateMonitorDowntime(ctx context.Context, downtimeId openapi_types.UUID, body UpdateMonitorDowntimeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListMonitorTemplates request
+	ListMonitorTemplates(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateMonitorTemplateWithBody request with any body
+	CreateMonitorTemplateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateMonitorTemplate(ctx context.Context, body CreateMonitorTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteMonitorTemplate request
+	DeleteMonitorTemplate(ctx context.Context, templateId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetMonitorTemplate request
+	GetMonitorTemplate(ctx context.Context, templateId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateMonitorTemplateWithBody request with any body
+	UpdateMonitorTemplateWithBody(ctx context.Context, templateId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateMonitorTemplate(ctx context.Context, templateId openapi_types.UUID, body UpdateMonitorTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteMonitor request
 	DeleteMonitor(ctx context.Context, monitorId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6846,26 +9054,13 @@ type ClientInterface interface {
 	// GetMonitorEvents request
 	GetMonitorEvents(ctx context.Context, monitorId openapi_types.UUID, params *GetMonitorEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// MuteMonitorWithBody request with any body
-	MuteMonitorWithBody(ctx context.Context, monitorId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListMonitorNotifications request
+	ListMonitorNotifications(ctx context.Context, monitorId openapi_types.UUID, params *ListMonitorNotificationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	MuteMonitor(ctx context.Context, monitorId openapi_types.UUID, body MuteMonitorJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpdateMonitorStatusWithBody request with any body
+	UpdateMonitorStatusWithBody(ctx context.Context, monitorId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListOrgs request
-	ListOrgs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateOrgWithBody request with any body
-	CreateOrgWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateOrg(ctx context.Context, body CreateOrgJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetOrgById request
-	GetOrgById(ctx context.Context, orgId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateOrgWithBody request with any body
-	UpdateOrgWithBody(ctx context.Context, orgId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateOrg(ctx context.Context, orgId openapi_types.UUID, body UpdateOrgJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateMonitorStatus(ctx context.Context, monitorId openapi_types.UUID, body UpdateMonitorStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListOrgMembers request
 	ListOrgMembers(ctx context.Context, orgId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6884,87 +9079,22 @@ type ClientInterface interface {
 	// ListAccessForMember request
 	ListAccessForMember(ctx context.Context, orgId string, entityType ListAccessForMemberParamsEntityType, entityId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListParsers request
-	ListParsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetParsersUsageRatioByLogId request
+	GetParsersUsageRatioByLogId(ctx context.Context, params *GetParsersUsageRatioByLogIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AiGenerateParserWithBody request with any body
-	AiGenerateParserWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetParsersUsageMetricsByLogId request
+	GetParsersUsageMetricsByLogId(ctx context.Context, params *GetParsersUsageMetricsByLogIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	AiGenerateParser(ctx context.Context, body AiGenerateParserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostPatternsWithBody request with any body
+	PostPatternsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteParser request
-	DeleteParser(ctx context.Context, parserId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AiUpdateParserWithBody request with any body
-	AiUpdateParserWithBody(ctx context.Context, parserId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	AiUpdateParser(ctx context.Context, parserId openapi_types.UUID, body AiUpdateParserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostPatterns(ctx context.Context, body PostPatternsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListPermissions request
 	ListPermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPolicies request
-	ListPolicies(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreatePolicyWithBody request with any body
-	CreatePolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreatePolicy(ctx context.Context, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListPoliciesByPrincipal request
-	ListPoliciesByPrincipal(ctx context.Context, principalType ListPoliciesByPrincipalParamsPrincipalType, principalId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListPoliciesByResource request
 	ListPoliciesByResource(ctx context.Context, resourceType string, resourceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeletePolicy request
-	DeletePolicy(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetPolicy request
-	GetPolicy(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdatePolicyWithBody request with any body
-	UpdatePolicyWithBody(ctx context.Context, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdatePolicy(ctx context.Context, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListRoles request
-	ListRoles(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateRoleWithBody request with any body
-	CreateRoleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateRole(ctx context.Context, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteRole request
-	DeleteRole(ctx context.Context, roleId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetRole request
-	GetRole(ctx context.Context, roleId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateRoleWithBody request with any body
-	UpdateRoleWithBody(ctx context.Context, roleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateRole(ctx context.Context, roleId string, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListSavedSearches request
-	ListSavedSearches(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateSavedSearchWithBody request with any body
-	CreateSavedSearchWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateSavedSearch(ctx context.Context, body CreateSavedSearchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteSavedSearchById request
-	DeleteSavedSearchById(ctx context.Context, savedSearchId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetSavedSearchById request
-	GetSavedSearchById(ctx context.Context, savedSearchId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateSavedSearchWithBody request with any body
-	UpdateSavedSearchWithBody(ctx context.Context, savedSearchId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateSavedSearch(ctx context.Context, savedSearchId openapi_types.UUID, body UpdateSavedSearchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Search request
 	Search(ctx context.Context, params *SearchParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6973,53 +9103,6 @@ type ClientInterface interface {
 	PostSearchWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	PostSearch(ctx context.Context, body PostSearchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteSearchStatus request
-	DeleteSearchStatus(ctx context.Context, statusId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetSearchStatus request
-	GetSearchStatus(ctx context.Context, statusId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListIdp request
-	ListIdp(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateIdpWithBody request with any body
-	CreateIdpWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateIdp(ctx context.Context, body CreateIdpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteIdp request
-	DeleteIdp(ctx context.Context, idpName string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetIdp request
-	GetIdp(ctx context.Context, idpName string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateIdpWithBody request with any body
-	UpdateIdpWithBody(ctx context.Context, idpName string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateIdp(ctx context.Context, idpName string, body UpdateIdpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteSsoMapping request
-	DeleteSsoMapping(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListSsoMappings request
-	ListSsoMappings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateSsoMappingsWithBody request with any body
-	CreateSsoMappingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateSsoMappings(ctx context.Context, body CreateSsoMappingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateSsoMappingsWithBody request with any body
-	UpdateSsoMappingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateSsoMappings(ctx context.Context, body UpdateSsoMappingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListSubscriptions request
-	ListSubscriptions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetSubscriptionById request
-	GetSubscriptionById(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteTagWithBody request with any body
 	DeleteTagWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -7038,6 +9121,14 @@ type ClientInterface interface {
 
 	// ListTagsByName request
 	ListTagsByName(ctx context.Context, params *ListTagsByNameParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SearchTimeseriesWithBody request with any body
+	SearchTimeseriesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SearchTimeseries(ctx context.Context, body SearchTimeseriesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetTimeseriesFromMetricDefinition request
+	GetTimeseriesFromMetricDefinition(ctx context.Context, metricDefinitionId openapi_types.UUID, params *GetTimeseriesFromMetricDefinitionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTopKeysById request
 	GetTopKeysById(ctx context.Context, params *GetTopKeysByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -7059,6 +9150,9 @@ type ClientInterface interface {
 
 	CreateUser(ctx context.Context, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListAllUsers request
+	ListAllUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteUserById request
 	DeleteUserById(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -7073,6 +9167,9 @@ type ClientInterface interface {
 	// ListMemberships request
 	ListMemberships(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeactivateUser request
+	DeactivateUser(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListGroupsForMember request
 	ListGroupsForMember(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -7084,41 +9181,14 @@ type ClientInterface interface {
 
 	PatchUserPreferences(ctx context.Context, userId string, body PatchUserPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListWidgets request
-	ListWidgets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ReactivateUser request
+	ReactivateUser(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateWidgetWithBody request with any body
-	CreateWidgetWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ResendUserInvitation request
+	ResendUserInvitation(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateWidget(ctx context.Context, body CreateWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteWidget request
-	DeleteWidget(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetWidget request
-	GetWidget(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PatchWidgetWithBody request with any body
-	PatchWidgetWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	PatchWidget(ctx context.Context, id openapi_types.UUID, body PatchWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateWidgetWithBody request with any body
-	UpdateWidgetWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateWidget(ctx context.Context, id openapi_types.UUID, body UpdateWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-}
-
-func (c *Client) GetAnalyticsErrors(ctx context.Context, params *GetAnalyticsErrorsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAnalyticsErrorsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
+	// WidgetCreationAssistant request
+	WidgetCreationAssistant(ctx context.Context, params *WidgetCreationAssistantParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListApiKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7193,32 +9263,20 @@ func (c *Client) UpdateApiKey(ctx context.Context, apiKeyId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListCollections(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCollectionsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetContext(ctx context.Context, params *GetContextParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetContextRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetContract(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetContractRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetCostByLogId(ctx context.Context, params *GetCostByLogIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetCostByLogIdRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -7265,8 +9323,8 @@ func (c *Client) UpdateCustomer(ctx context.Context, body UpdateCustomerJSONRequ
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListDashboards(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListDashboardsRequest(c.Server)
+func (c *Client) ListDatasets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDatasetsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -7277,8 +9335,8 @@ func (c *Client) ListDashboards(ctx context.Context, reqEditors ...RequestEditor
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateDashboardWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDashboardRequestWithBody(c.Server, contentType, body)
+func (c *Client) CreateDatasetWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDatasetRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7289,8 +9347,8 @@ func (c *Client) CreateDashboardWithBody(ctx context.Context, contentType string
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateDashboard(ctx context.Context, body CreateDashboardJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateDashboardRequest(c.Server, body)
+func (c *Client) CreateDataset(ctx context.Context, body CreateDatasetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDatasetRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7301,8 +9359,8 @@ func (c *Client) CreateDashboard(ctx context.Context, body CreateDashboardJSONRe
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteDashboard(ctx context.Context, dashboardId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteDashboardRequest(c.Server, dashboardId)
+func (c *Client) UnassignDatasetParser(ctx context.Context, datasetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnassignDatasetParserRequest(c.Server, datasetId)
 	if err != nil {
 		return nil, err
 	}
@@ -7313,8 +9371,8 @@ func (c *Client) DeleteDashboard(ctx context.Context, dashboardId string, reqEdi
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetDashboard(ctx context.Context, dashboardId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDashboardRequest(c.Server, dashboardId)
+func (c *Client) GetDatasetParser(ctx context.Context, datasetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDatasetParserRequest(c.Server, datasetId)
 	if err != nil {
 		return nil, err
 	}
@@ -7325,8 +9383,8 @@ func (c *Client) GetDashboard(ctx context.Context, dashboardId openapi_types.UUI
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateDashboardWithBody(ctx context.Context, dashboardId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDashboardRequestWithBody(c.Server, dashboardId, contentType, body)
+func (c *Client) AssignDatasetParserWithBody(ctx context.Context, datasetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAssignDatasetParserRequestWithBody(c.Server, datasetId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7337,8 +9395,92 @@ func (c *Client) UpdateDashboardWithBody(ctx context.Context, dashboardId openap
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateDashboard(ctx context.Context, dashboardId openapi_types.UUID, body UpdateDashboardJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDashboardRequest(c.Server, dashboardId, body)
+func (c *Client) AssignDatasetParser(ctx context.Context, datasetId openapi_types.UUID, body AssignDatasetParserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAssignDatasetParserRequest(c.Server, datasetId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListEncryptionKeys(ctx context.Context, params *ListEncryptionKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListEncryptionKeysRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateEncryptionKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEncryptionKeyRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateEncryptionKey(ctx context.Context, body CreateEncryptionKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEncryptionKeyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteEncryptionKey(ctx context.Context, keyId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteEncryptionKeyRequest(c.Server, keyId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetEncryptionKey(ctx context.Context, keyId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEncryptionKeyRequest(c.Server, keyId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateEncryptionKeyWithBody(ctx context.Context, keyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateEncryptionKeyRequestWithBody(c.Server, keyId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateEncryptionKey(ctx context.Context, keyId string, body UpdateEncryptionKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateEncryptionKeyRequest(c.Server, keyId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7661,8 +9803,8 @@ func (c *Client) AddGroupMembers(ctx context.Context, groupId openapi_types.UUID
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListInsights(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListInsightsRequest(c.Server)
+func (c *Client) ListSlackIntegrations(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSlackIntegrationsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -7673,8 +9815,8 @@ func (c *Client) ListInsights(ctx context.Context, reqEditors ...RequestEditorFn
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetInsight(ctx context.Context, insightId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetInsightRequest(c.Server, insightId)
+func (c *Client) CreateSlackIntegrationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSlackIntegrationRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7685,8 +9827,8 @@ func (c *Client) GetInsight(ctx context.Context, insightId openapi_types.UUID, r
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListAWSIntegrations(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAWSIntegrationsRequest(c.Server)
+func (c *Client) CreateSlackIntegration(ctx context.Context, body CreateSlackIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSlackIntegrationRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7697,8 +9839,8 @@ func (c *Client) ListAWSIntegrations(ctx context.Context, reqEditors ...RequestE
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateAWSIntegrationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateAWSIntegrationRequestWithBody(c.Server, contentType, body)
+func (c *Client) ListSlackWorkspaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSlackWorkspacesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -7709,8 +9851,8 @@ func (c *Client) CreateAWSIntegrationWithBody(ctx context.Context, contentType s
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateAWSIntegration(ctx context.Context, body CreateAWSIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateAWSIntegrationRequest(c.Server, body)
+func (c *Client) DeleteSlackWorkspace(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSlackWorkspaceRequest(c.Server, workspaceId)
 	if err != nil {
 		return nil, err
 	}
@@ -7721,8 +9863,32 @@ func (c *Client) CreateAWSIntegration(ctx context.Context, body CreateAWSIntegra
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteAWSIntegration(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteAWSIntegrationRequest(c.Server, resourceId)
+func (c *Client) DeleteSlackIntegration(ctx context.Context, slackId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSlackIntegrationRequest(c.Server, slackId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSlackIntegrationWithBody(ctx context.Context, slackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSlackIntegrationRequestWithBody(c.Server, slackId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSlackIntegration(ctx context.Context, slackId string, body UpdateSlackIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSlackIntegrationRequest(c.Server, slackId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7795,42 +9961,6 @@ func (c *Client) UpdateWebhookIntegrationWithBody(ctx context.Context, webhookId
 
 func (c *Client) UpdateWebhookIntegration(ctx context.Context, webhookId string, body UpdateWebhookIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateWebhookIntegrationRequest(c.Server, webhookId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateLogBasedMetricWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateLogBasedMetricRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateLogBasedMetric(ctx context.Context, body CreateLogBasedMetricJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateLogBasedMetricRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetLbmById(ctx context.Context, lbmId string, params *GetLbmByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetLbmByIdRequest(c.Server, lbmId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -7925,6 +10055,42 @@ func (c *Client) UpdateLimit(ctx context.Context, limitId openapi_types.UUID, bo
 	return c.Client.Do(req)
 }
 
+func (c *Client) PollLiveTail(ctx context.Context, params *PollLiveTailParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPollLiveTailRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InitLiveTailWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInitLiveTailRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InitLiveTail(ctx context.Context, body InitLiveTailJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInitLiveTailRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListLogs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListLogsRequest(c.Server)
 	if err != nil {
@@ -7961,44 +10127,8 @@ func (c *Client) CreateLog(ctx context.Context, body CreateLogJSONRequestBody, r
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteLog(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteLogRequest(c.Server, logId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetLogById(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetLogByIdRequest(c.Server, logId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateLogWithBody(ctx context.Context, logId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateLogRequestWithBody(c.Server, logId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateLog(ctx context.Context, logId openapi_types.UUID, body UpdateLogJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateLogRequest(c.Server, logId, body)
+func (c *Client) ListLogViews(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListLogViewsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -8021,32 +10151,8 @@ func (c *Client) ListDashboardsForLog(ctx context.Context, logId openapi_types.U
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetMetricsForLog(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetMetricsForLogRequest(c.Server, logId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListMonitorsForLog(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListMonitorsForLogRequest(c.Server, logId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListLogSets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListLogSetsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -8093,8 +10199,8 @@ func (c *Client) CreateMonitor(ctx context.Context, body CreateMonitorJSONReques
 	return c.Client.Do(req)
 }
 
-func (c *Client) SendTestNotificationsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSendTestNotificationsRequestWithBody(c.Server, contentType, body)
+func (c *Client) ListMonitorDowntimes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListMonitorDowntimesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -8105,8 +10211,140 @@ func (c *Client) SendTestNotificationsWithBody(ctx context.Context, contentType 
 	return c.Client.Do(req)
 }
 
-func (c *Client) SendTestNotifications(ctx context.Context, body SendTestNotificationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSendTestNotificationsRequest(c.Server, body)
+func (c *Client) CreateMonitorDowntimeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateMonitorDowntimeRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateMonitorDowntime(ctx context.Context, body CreateMonitorDowntimeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateMonitorDowntimeRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteMonitorDowntime(ctx context.Context, downtimeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteMonitorDowntimeRequest(c.Server, downtimeId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateMonitorDowntimeWithBody(ctx context.Context, downtimeId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateMonitorDowntimeRequestWithBody(c.Server, downtimeId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateMonitorDowntime(ctx context.Context, downtimeId openapi_types.UUID, body UpdateMonitorDowntimeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateMonitorDowntimeRequest(c.Server, downtimeId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListMonitorTemplates(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListMonitorTemplatesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateMonitorTemplateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateMonitorTemplateRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateMonitorTemplate(ctx context.Context, body CreateMonitorTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateMonitorTemplateRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteMonitorTemplate(ctx context.Context, templateId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteMonitorTemplateRequest(c.Server, templateId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetMonitorTemplate(ctx context.Context, templateId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetMonitorTemplateRequest(c.Server, templateId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateMonitorTemplateWithBody(ctx context.Context, templateId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateMonitorTemplateRequestWithBody(c.Server, templateId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateMonitorTemplate(ctx context.Context, templateId openapi_types.UUID, body UpdateMonitorTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateMonitorTemplateRequest(c.Server, templateId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8177,8 +10415,8 @@ func (c *Client) GetMonitorEvents(ctx context.Context, monitorId openapi_types.U
 	return c.Client.Do(req)
 }
 
-func (c *Client) MuteMonitorWithBody(ctx context.Context, monitorId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewMuteMonitorRequestWithBody(c.Server, monitorId, contentType, body)
+func (c *Client) ListMonitorNotifications(ctx context.Context, monitorId openapi_types.UUID, params *ListMonitorNotificationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListMonitorNotificationsRequest(c.Server, monitorId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8189,8 +10427,8 @@ func (c *Client) MuteMonitorWithBody(ctx context.Context, monitorId openapi_type
 	return c.Client.Do(req)
 }
 
-func (c *Client) MuteMonitor(ctx context.Context, monitorId openapi_types.UUID, body MuteMonitorJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewMuteMonitorRequest(c.Server, monitorId, body)
+func (c *Client) UpdateMonitorStatusWithBody(ctx context.Context, monitorId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateMonitorStatusRequestWithBody(c.Server, monitorId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8201,68 +10439,8 @@ func (c *Client) MuteMonitor(ctx context.Context, monitorId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListOrgs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListOrgsRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateOrgWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateOrgRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateOrg(ctx context.Context, body CreateOrgJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateOrgRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetOrgById(ctx context.Context, orgId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetOrgByIdRequest(c.Server, orgId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateOrgWithBody(ctx context.Context, orgId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateOrgRequestWithBody(c.Server, orgId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateOrg(ctx context.Context, orgId openapi_types.UUID, body UpdateOrgJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateOrgRequest(c.Server, orgId, body)
+func (c *Client) UpdateMonitorStatus(ctx context.Context, monitorId openapi_types.UUID, body UpdateMonitorStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateMonitorStatusRequest(c.Server, monitorId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8345,8 +10523,8 @@ func (c *Client) ListAccessForMember(ctx context.Context, orgId string, entityTy
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListParsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListParsersRequest(c.Server)
+func (c *Client) GetParsersUsageRatioByLogId(ctx context.Context, params *GetParsersUsageRatioByLogIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetParsersUsageRatioByLogIdRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8357,8 +10535,8 @@ func (c *Client) ListParsers(ctx context.Context, reqEditors ...RequestEditorFn)
 	return c.Client.Do(req)
 }
 
-func (c *Client) AiGenerateParserWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAiGenerateParserRequestWithBody(c.Server, contentType, body)
+func (c *Client) GetParsersUsageMetricsByLogId(ctx context.Context, params *GetParsersUsageMetricsByLogIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetParsersUsageMetricsByLogIdRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8369,8 +10547,8 @@ func (c *Client) AiGenerateParserWithBody(ctx context.Context, contentType strin
 	return c.Client.Do(req)
 }
 
-func (c *Client) AiGenerateParser(ctx context.Context, body AiGenerateParserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAiGenerateParserRequest(c.Server, body)
+func (c *Client) PostPatternsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPatternsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8381,32 +10559,8 @@ func (c *Client) AiGenerateParser(ctx context.Context, body AiGenerateParserJSON
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteParser(ctx context.Context, parserId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteParserRequest(c.Server, parserId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) AiUpdateParserWithBody(ctx context.Context, parserId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAiUpdateParserRequestWithBody(c.Server, parserId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) AiUpdateParser(ctx context.Context, parserId openapi_types.UUID, body AiUpdateParserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAiUpdateParserRequest(c.Server, parserId, body)
+func (c *Client) PostPatterns(ctx context.Context, body PostPatternsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostPatternsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8429,272 +10583,8 @@ func (c *Client) ListPermissions(ctx context.Context, reqEditors ...RequestEdito
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListPolicies(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPoliciesRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreatePolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePolicyRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreatePolicy(ctx context.Context, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePolicyRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListPoliciesByPrincipal(ctx context.Context, principalType ListPoliciesByPrincipalParamsPrincipalType, principalId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPoliciesByPrincipalRequest(c.Server, principalType, principalId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListPoliciesByResource(ctx context.Context, resourceType string, resourceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListPoliciesByResourceRequest(c.Server, resourceType, resourceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeletePolicy(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeletePolicyRequest(c.Server, policyId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetPolicy(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetPolicyRequest(c.Server, policyId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdatePolicyWithBody(ctx context.Context, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdatePolicyRequestWithBody(c.Server, policyId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdatePolicy(ctx context.Context, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdatePolicyRequest(c.Server, policyId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListRoles(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRolesRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateRoleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateRoleRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateRole(ctx context.Context, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateRoleRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteRole(ctx context.Context, roleId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteRoleRequest(c.Server, roleId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetRole(ctx context.Context, roleId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRoleRequest(c.Server, roleId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateRoleWithBody(ctx context.Context, roleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateRoleRequestWithBody(c.Server, roleId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateRole(ctx context.Context, roleId string, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateRoleRequest(c.Server, roleId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListSavedSearches(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSavedSearchesRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateSavedSearchWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSavedSearchRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateSavedSearch(ctx context.Context, body CreateSavedSearchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSavedSearchRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteSavedSearchById(ctx context.Context, savedSearchId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteSavedSearchByIdRequest(c.Server, savedSearchId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetSavedSearchById(ctx context.Context, savedSearchId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetSavedSearchByIdRequest(c.Server, savedSearchId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateSavedSearchWithBody(ctx context.Context, savedSearchId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateSavedSearchRequestWithBody(c.Server, savedSearchId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateSavedSearch(ctx context.Context, savedSearchId openapi_types.UUID, body UpdateSavedSearchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateSavedSearchRequest(c.Server, savedSearchId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8731,210 +10621,6 @@ func (c *Client) PostSearchWithBody(ctx context.Context, contentType string, bod
 
 func (c *Client) PostSearch(ctx context.Context, body PostSearchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostSearchRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteSearchStatus(ctx context.Context, statusId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteSearchStatusRequest(c.Server, statusId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetSearchStatus(ctx context.Context, statusId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetSearchStatusRequest(c.Server, statusId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListIdp(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListIdpRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateIdpWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateIdpRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateIdp(ctx context.Context, body CreateIdpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateIdpRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteIdp(ctx context.Context, idpName string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteIdpRequest(c.Server, idpName)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetIdp(ctx context.Context, idpName string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetIdpRequest(c.Server, idpName)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateIdpWithBody(ctx context.Context, idpName string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateIdpRequestWithBody(c.Server, idpName, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateIdp(ctx context.Context, idpName string, body UpdateIdpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateIdpRequest(c.Server, idpName, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteSsoMapping(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteSsoMappingRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListSsoMappings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSsoMappingsRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateSsoMappingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSsoMappingsRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateSsoMappings(ctx context.Context, body CreateSsoMappingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSsoMappingsRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateSsoMappingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateSsoMappingsRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateSsoMappings(ctx context.Context, body UpdateSsoMappingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateSsoMappingsRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListSubscriptions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSubscriptionsRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetSubscriptionById(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetSubscriptionByIdRequest(c.Server, subscriptionId)
 	if err != nil {
 		return nil, err
 	}
@@ -9029,6 +10715,42 @@ func (c *Client) ListTagsByName(ctx context.Context, params *ListTagsByNameParam
 	return c.Client.Do(req)
 }
 
+func (c *Client) SearchTimeseriesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchTimeseriesRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SearchTimeseries(ctx context.Context, body SearchTimeseriesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchTimeseriesRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetTimeseriesFromMetricDefinition(ctx context.Context, metricDefinitionId openapi_types.UUID, params *GetTimeseriesFromMetricDefinitionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTimeseriesFromMetricDefinitionRequest(c.Server, metricDefinitionId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetTopKeysById(ctx context.Context, params *GetTopKeysByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetTopKeysByIdRequest(c.Server, params)
 	if err != nil {
@@ -9113,6 +10835,18 @@ func (c *Client) CreateUser(ctx context.Context, body CreateUserJSONRequestBody,
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListAllUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAllUsersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) DeleteUserById(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteUserByIdRequest(c.Server, userId)
 	if err != nil {
@@ -9173,6 +10907,18 @@ func (c *Client) ListMemberships(ctx context.Context, userId openapi_types.UUID,
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeactivateUser(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeactivateUserRequest(c.Server, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListGroupsForMember(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListGroupsForMemberRequest(c.Server, userId)
 	if err != nil {
@@ -9221,8 +10967,8 @@ func (c *Client) PatchUserPreferences(ctx context.Context, userId string, body P
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListWidgets(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListWidgetsRequest(c.Server)
+func (c *Client) ReactivateUser(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReactivateUserRequest(c.Server, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -9233,8 +10979,8 @@ func (c *Client) ListWidgets(ctx context.Context, reqEditors ...RequestEditorFn)
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateWidgetWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateWidgetRequestWithBody(c.Server, contentType, body)
+func (c *Client) ResendUserInvitation(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResendUserInvitationRequest(c.Server, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -9245,8 +10991,8 @@ func (c *Client) CreateWidgetWithBody(ctx context.Context, contentType string, b
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateWidget(ctx context.Context, body CreateWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateWidgetRequest(c.Server, body)
+func (c *Client) WidgetCreationAssistant(ctx context.Context, params *WidgetCreationAssistantParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWidgetCreationAssistantRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9255,180 +11001,6 @@ func (c *Client) CreateWidget(ctx context.Context, body CreateWidgetJSONRequestB
 		return nil, err
 	}
 	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteWidget(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteWidgetRequest(c.Server, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetWidget(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetWidgetRequest(c.Server, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PatchWidgetWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPatchWidgetRequestWithBody(c.Server, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PatchWidget(ctx context.Context, id openapi_types.UUID, body PatchWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPatchWidgetRequest(c.Server, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateWidgetWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateWidgetRequestWithBody(c.Server, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateWidget(ctx context.Context, id openapi_types.UUID, body UpdateWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateWidgetRequest(c.Server, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// NewGetAnalyticsErrorsRequest generates requests for GetAnalyticsErrors
-func NewGetAnalyticsErrorsRequest(server string, params *GetAnalyticsErrorsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/analytics/errors")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.TimeRange != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "time_range", *params.TimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.FromTs != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_ts", *params.FromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ToTs != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to_ts", *params.ToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.NumOfSlices != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "num_of_slices", *params.NumOfSlices, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
 }
 
 // NewListApiKeysRequest generates requests for ListApiKeys
@@ -9579,6 +11151,33 @@ func NewUpdateApiKeyRequestWithBody(server string, apiKeyId openapi_types.UUID, 
 	return req, nil
 }
 
+// NewListCollectionsRequest generates requests for ListCollections
+func NewListCollectionsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/collections")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetContextRequest generates requests for GetContext
 func NewGetContextRequest(server string, params *GetContextParams) (*http.Request, error) {
 	var err error
@@ -9619,9 +11218,9 @@ func NewGetContextRequest(server string, params *GetContextParams) (*http.Reques
 
 		}
 
-		if params.FromTags != nil {
+		if params.FromExpr != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_tags", *params.FromTags, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_expr", *params.FromExpr, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9678,147 +11277,6 @@ func NewGetContextRequest(server string, params *GetContextParams) (*http.Reques
 		if params.ExplainOnly != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "explain_only", *params.ExplainOnly, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetContractRequest generates requests for GetContract
-func NewGetContractRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/contract")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetCostByLogIdRequest generates requests for GetCostByLogId
-func NewGetCostByLogIdRequest(server string, params *GetCostByLogIdParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/cost/organizations/logs")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.TimeRange != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "time_range", *params.TimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.FromTs != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_ts", *params.FromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ToTs != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to_ts", *params.ToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.UsageType != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "usage_type", *params.UsageType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.NumOfSlices != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "num_of_slices", *params.NumOfSlices, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9909,8 +11367,8 @@ func NewUpdateCustomerRequestWithBody(server string, contentType string, body io
 	return req, nil
 }
 
-// NewListDashboardsRequest generates requests for ListDashboards
-func NewListDashboardsRequest(server string) (*http.Request, error) {
+// NewListDatasetsRequest generates requests for ListDatasets
+func NewListDatasetsRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -9918,7 +11376,7 @@ func NewListDashboardsRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/dashboards")
+	operationPath := fmt.Sprintf("/datasets")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9936,19 +11394,19 @@ func NewListDashboardsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewCreateDashboardRequest calls the generic CreateDashboard builder with application/json body
-func NewCreateDashboardRequest(server string, body CreateDashboardJSONRequestBody) (*http.Request, error) {
+// NewCreateDatasetRequest calls the generic CreateDataset builder with application/json body
+func NewCreateDatasetRequest(server string, body CreateDatasetJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateDashboardRequestWithBody(server, "application/json", bodyReader)
+	return NewCreateDatasetRequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewCreateDashboardRequestWithBody generates requests for CreateDashboard with any type of body
-func NewCreateDashboardRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateDatasetRequestWithBody generates requests for CreateDataset with any type of body
+func NewCreateDatasetRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -9956,7 +11414,7 @@ func NewCreateDashboardRequestWithBody(server string, contentType string, body i
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/dashboards")
+	operationPath := fmt.Sprintf("/datasets")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9976,13 +11434,13 @@ func NewCreateDashboardRequestWithBody(server string, contentType string, body i
 	return req, nil
 }
 
-// NewDeleteDashboardRequest generates requests for DeleteDashboard
-func NewDeleteDashboardRequest(server string, dashboardId string) (*http.Request, error) {
+// NewUnassignDatasetParserRequest generates requests for UnassignDatasetParser
+func NewUnassignDatasetParserRequest(server string, datasetId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "dashboardId", dashboardId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "datasetId", datasetId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
 	if err != nil {
 		return nil, err
 	}
@@ -9992,7 +11450,7 @@ func NewDeleteDashboardRequest(server string, dashboardId string) (*http.Request
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/dashboards/%s", pathParam0)
+	operationPath := fmt.Sprintf("/datasets/%s/parser", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10010,13 +11468,13 @@ func NewDeleteDashboardRequest(server string, dashboardId string) (*http.Request
 	return req, nil
 }
 
-// NewGetDashboardRequest generates requests for GetDashboard
-func NewGetDashboardRequest(server string, dashboardId openapi_types.UUID) (*http.Request, error) {
+// NewGetDatasetParserRequest generates requests for GetDatasetParser
+func NewGetDatasetParserRequest(server string, datasetId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "dashboardId", dashboardId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "datasetId", datasetId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
 	if err != nil {
 		return nil, err
 	}
@@ -10026,7 +11484,7 @@ func NewGetDashboardRequest(server string, dashboardId openapi_types.UUID) (*htt
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/dashboards/%s", pathParam0)
+	operationPath := fmt.Sprintf("/datasets/%s/parser", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10044,24 +11502,24 @@ func NewGetDashboardRequest(server string, dashboardId openapi_types.UUID) (*htt
 	return req, nil
 }
 
-// NewUpdateDashboardRequest calls the generic UpdateDashboard builder with application/json body
-func NewUpdateDashboardRequest(server string, dashboardId openapi_types.UUID, body UpdateDashboardJSONRequestBody) (*http.Request, error) {
+// NewAssignDatasetParserRequest calls the generic AssignDatasetParser builder with application/json body
+func NewAssignDatasetParserRequest(server string, datasetId openapi_types.UUID, body AssignDatasetParserJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateDashboardRequestWithBody(server, dashboardId, "application/json", bodyReader)
+	return NewAssignDatasetParserRequestWithBody(server, datasetId, "application/json", bodyReader)
 }
 
-// NewUpdateDashboardRequestWithBody generates requests for UpdateDashboard with any type of body
-func NewUpdateDashboardRequestWithBody(server string, dashboardId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+// NewAssignDatasetParserRequestWithBody generates requests for AssignDatasetParser with any type of body
+func NewAssignDatasetParserRequestWithBody(server string, datasetId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "dashboardId", dashboardId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "datasetId", datasetId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
 	if err != nil {
 		return nil, err
 	}
@@ -10071,7 +11529,228 @@ func NewUpdateDashboardRequestWithBody(server string, dashboardId openapi_types.
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/dashboards/%s", pathParam0)
+	operationPath := fmt.Sprintf("/datasets/%s/parser", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListEncryptionKeysRequest generates requests for ListEncryptionKeys
+func NewListEncryptionKeysRequest(server string, params *ListEncryptionKeysParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/encryption-keys")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Provider != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "provider", *params.Provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateEncryptionKeyRequest calls the generic CreateEncryptionKey builder with application/json body
+func NewCreateEncryptionKeyRequest(server string, body CreateEncryptionKeyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateEncryptionKeyRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateEncryptionKeyRequestWithBody generates requests for CreateEncryptionKey with any type of body
+func NewCreateEncryptionKeyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/encryption-keys")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteEncryptionKeyRequest generates requests for DeleteEncryptionKey
+func NewDeleteEncryptionKeyRequest(server string, keyId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "keyId", keyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/encryption-keys/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetEncryptionKeyRequest generates requests for GetEncryptionKey
+func NewGetEncryptionKeyRequest(server string, keyId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "keyId", keyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/encryption-keys/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateEncryptionKeyRequest calls the generic UpdateEncryptionKey builder with application/json body
+func NewUpdateEncryptionKeyRequest(server string, keyId string, body UpdateEncryptionKeyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateEncryptionKeyRequestWithBody(server, keyId, "application/json", bodyReader)
+}
+
+// NewUpdateEncryptionKeyRequestWithBody generates requests for UpdateEncryptionKey with any type of body
+func NewUpdateEncryptionKeyRequestWithBody(server string, keyId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "keyId", keyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/encryption-keys/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10141,18 +11820,6 @@ func NewExplainErrorRequest(server string, params *ExplainErrorParams) (*http.Re
 			for _, qp := range strings.Split(queryFrag, "&") {
 				rawQueryFragments = append(rawQueryFragments, qp)
 			}
-		}
-
-		if params.Sse != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sse", *params.Sse, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
 		}
 
 		if params.ZoneOffset != nil {
@@ -10814,8 +12481,8 @@ func NewAddGroupMembersRequestWithBody(server string, groupId openapi_types.UUID
 	return req, nil
 }
 
-// NewListInsightsRequest generates requests for ListInsights
-func NewListInsightsRequest(server string) (*http.Request, error) {
+// NewListSlackIntegrationsRequest generates requests for ListSlackIntegrations
+func NewListSlackIntegrationsRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -10823,7 +12490,7 @@ func NewListInsightsRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/insights")
+	operationPath := fmt.Sprintf("/integrations/slack")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10841,80 +12508,19 @@ func NewListInsightsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewGetInsightRequest generates requests for GetInsight
-func NewGetInsightRequest(server string, insightId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "insight_id", insightId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/insights/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListAWSIntegrationsRequest generates requests for ListAWSIntegrations
-func NewListAWSIntegrationsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/integrations/aws")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateAWSIntegrationRequest calls the generic CreateAWSIntegration builder with application/json body
-func NewCreateAWSIntegrationRequest(server string, body CreateAWSIntegrationJSONRequestBody) (*http.Request, error) {
+// NewCreateSlackIntegrationRequest calls the generic CreateSlackIntegration builder with application/json body
+func NewCreateSlackIntegrationRequest(server string, body CreateSlackIntegrationJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateAWSIntegrationRequestWithBody(server, "application/json", bodyReader)
+	return NewCreateSlackIntegrationRequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewCreateAWSIntegrationRequestWithBody generates requests for CreateAWSIntegration with any type of body
-func NewCreateAWSIntegrationRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateSlackIntegrationRequestWithBody generates requests for CreateSlackIntegration with any type of body
+func NewCreateSlackIntegrationRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -10922,7 +12528,7 @@ func NewCreateAWSIntegrationRequestWithBody(server string, contentType string, b
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/integrations/aws")
+	operationPath := fmt.Sprintf("/integrations/slack")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10942,13 +12548,40 @@ func NewCreateAWSIntegrationRequestWithBody(server string, contentType string, b
 	return req, nil
 }
 
-// NewDeleteAWSIntegrationRequest generates requests for DeleteAWSIntegration
-func NewDeleteAWSIntegrationRequest(server string, resourceId string) (*http.Request, error) {
+// NewListSlackWorkspacesRequest generates requests for ListSlackWorkspaces
+func NewListSlackWorkspacesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/integrations/slack/workspaces")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDeleteSlackWorkspaceRequest generates requests for DeleteSlackWorkspace
+func NewDeleteSlackWorkspaceRequest(server string, workspaceId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "workspace_id", workspaceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -10958,7 +12591,7 @@ func NewDeleteAWSIntegrationRequest(server string, resourceId string) (*http.Req
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/integrations/aws/%s", pathParam0)
+	operationPath := fmt.Sprintf("/integrations/slack/workspaces/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10972,6 +12605,87 @@ func NewDeleteAWSIntegrationRequest(server string, resourceId string) (*http.Req
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewDeleteSlackIntegrationRequest generates requests for DeleteSlackIntegration
+func NewDeleteSlackIntegrationRequest(server string, slackId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slack_id", slackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/integrations/slack/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateSlackIntegrationRequest calls the generic UpdateSlackIntegration builder with application/json body
+func NewUpdateSlackIntegrationRequest(server string, slackId string, body UpdateSlackIntegrationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateSlackIntegrationRequestWithBody(server, slackId, "application/json", bodyReader)
+}
+
+// NewUpdateSlackIntegrationRequestWithBody generates requests for UpdateSlackIntegration with any type of body
+func NewUpdateSlackIntegrationRequestWithBody(server string, slackId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "slack_id", slackId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/integrations/slack/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -11120,203 +12834,6 @@ func NewUpdateWebhookIntegrationRequestWithBody(server string, webhookId string,
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCreateLogBasedMetricRequest calls the generic CreateLogBasedMetric builder with application/json body
-func NewCreateLogBasedMetricRequest(server string, body CreateLogBasedMetricJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateLogBasedMetricRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateLogBasedMetricRequestWithBody generates requests for CreateLogBasedMetric with any type of body
-func NewCreateLogBasedMetricRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/lbm")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetLbmByIdRequest generates requests for GetLbmById
-func NewGetLbmByIdRequest(server string, lbmId string, params *GetLbmByIdParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "lbm_id", lbmId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/lbm/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.TimeRange != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "time_range", *params.TimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.FromTs != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_ts", *params.FromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ToTs != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to_ts", *params.ToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.NumOfSlices != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "num_of_slices", *params.NumOfSlices, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Delta != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta", *params.Delta, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.DeltaTimeRange != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_time_range", *params.DeltaTimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.DeltaFromTs != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_from_ts", *params.DeltaFromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.DeltaToTs != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_to_ts", *params.DeltaToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -11503,6 +13020,120 @@ func NewUpdateLimitRequestWithBody(server string, limitId openapi_types.UUID, co
 	return req, nil
 }
 
+// NewPollLiveTailRequest generates requests for PollLiveTail
+func NewPollLiveTailRequest(server string, params *PollLiveTailParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/live-tail")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "job_id", params.JobId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.MostRecentFirst != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "most_recent_first", *params.MostRecentFirst, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewInitLiveTailRequest calls the generic InitLiveTail builder with application/json body
+func NewInitLiveTailRequest(server string, body InitLiveTailJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewInitLiveTailRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewInitLiveTailRequestWithBody generates requests for InitLiveTail with any type of body
+func NewInitLiveTailRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/live-tail")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListLogsRequest generates requests for ListLogs
 func NewListLogsRequest(server string) (*http.Request, error) {
 	var err error
@@ -11570,57 +13201,16 @@ func NewCreateLogRequestWithBody(server string, contentType string, body io.Read
 	return req, nil
 }
 
-// NewDeleteLogRequest generates requests for DeleteLog
-func NewDeleteLogRequest(server string, logId openapi_types.UUID) (*http.Request, error) {
+// NewListLogViewsRequest generates requests for ListLogViews
+func NewListLogViewsRequest(server string) (*http.Request, error) {
 	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "logId", logId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
 
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/logs/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetLogByIdRequest generates requests for GetLogById
-func NewGetLogByIdRequest(server string, logId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "logId", logId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/logs/%s", pathParam0)
+	operationPath := fmt.Sprintf("/logs/views")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11634,53 +13224,6 @@ func NewGetLogByIdRequest(server string, logId openapi_types.UUID) (*http.Reques
 	if err != nil {
 		return nil, err
 	}
-
-	return req, nil
-}
-
-// NewUpdateLogRequest calls the generic UpdateLog builder with application/json body
-func NewUpdateLogRequest(server string, logId openapi_types.UUID, body UpdateLogJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateLogRequestWithBody(server, logId, "application/json", bodyReader)
-}
-
-// NewUpdateLogRequestWithBody generates requests for UpdateLog with any type of body
-func NewUpdateLogRequestWithBody(server string, logId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "logId", logId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/logs/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -11719,40 +13262,6 @@ func NewListDashboardsForLogRequest(server string, logId openapi_types.UUID) (*h
 	return req, nil
 }
 
-// NewGetMetricsForLogRequest generates requests for GetMetricsForLog
-func NewGetMetricsForLogRequest(server string, logId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "logId", logId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/logs/%s/metrics", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewListMonitorsForLogRequest generates requests for ListMonitorsForLog
 func NewListMonitorsForLogRequest(server string, logId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -11770,33 +13279,6 @@ func NewListMonitorsForLogRequest(server string, logId openapi_types.UUID) (*htt
 	}
 
 	operationPath := fmt.Sprintf("/logs/%s/monitors", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListLogSetsRequest generates requests for ListLogSets
-func NewListLogSetsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/logsets")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11881,19 +13363,8 @@ func NewCreateMonitorRequestWithBody(server string, contentType string, body io.
 	return req, nil
 }
 
-// NewSendTestNotificationsRequest calls the generic SendTestNotifications builder with application/json body
-func NewSendTestNotificationsRequest(server string, body SendTestNotificationsJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewSendTestNotificationsRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewSendTestNotificationsRequestWithBody generates requests for SendTestNotifications with any type of body
-func NewSendTestNotificationsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewListMonitorDowntimesRequest generates requests for ListMonitorDowntimes
+func NewListMonitorDowntimesRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -11901,7 +13372,45 @@ func NewSendTestNotificationsRequestWithBody(server string, contentType string, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/monitors/send-test-notifications")
+	operationPath := fmt.Sprintf("/monitors/downtimes")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateMonitorDowntimeRequest calls the generic CreateMonitorDowntime builder with application/json body
+func NewCreateMonitorDowntimeRequest(server string, body CreateMonitorDowntimeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateMonitorDowntimeRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateMonitorDowntimeRequestWithBody generates requests for CreateMonitorDowntime with any type of body
+func NewCreateMonitorDowntimeRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/monitors/downtimes")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11912,6 +13421,269 @@ func NewSendTestNotificationsRequestWithBody(server string, contentType string, 
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteMonitorDowntimeRequest generates requests for DeleteMonitorDowntime
+func NewDeleteMonitorDowntimeRequest(server string, downtimeId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "downtimeId", downtimeId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/monitors/downtimes/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateMonitorDowntimeRequest calls the generic UpdateMonitorDowntime builder with application/json body
+func NewUpdateMonitorDowntimeRequest(server string, downtimeId openapi_types.UUID, body UpdateMonitorDowntimeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateMonitorDowntimeRequestWithBody(server, downtimeId, "application/json", bodyReader)
+}
+
+// NewUpdateMonitorDowntimeRequestWithBody generates requests for UpdateMonitorDowntime with any type of body
+func NewUpdateMonitorDowntimeRequestWithBody(server string, downtimeId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "downtimeId", downtimeId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/monitors/downtimes/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListMonitorTemplatesRequest generates requests for ListMonitorTemplates
+func NewListMonitorTemplatesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/monitors/templates")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateMonitorTemplateRequest calls the generic CreateMonitorTemplate builder with application/json body
+func NewCreateMonitorTemplateRequest(server string, body CreateMonitorTemplateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateMonitorTemplateRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateMonitorTemplateRequestWithBody generates requests for CreateMonitorTemplate with any type of body
+func NewCreateMonitorTemplateRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/monitors/templates")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteMonitorTemplateRequest generates requests for DeleteMonitorTemplate
+func NewDeleteMonitorTemplateRequest(server string, templateId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "templateId", templateId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/monitors/templates/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetMonitorTemplateRequest generates requests for GetMonitorTemplate
+func NewGetMonitorTemplateRequest(server string, templateId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "templateId", templateId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/monitors/templates/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateMonitorTemplateRequest calls the generic UpdateMonitorTemplate builder with application/json body
+func NewUpdateMonitorTemplateRequest(server string, templateId openapi_types.UUID, body UpdateMonitorTemplateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateMonitorTemplateRequestWithBody(server, templateId, "application/json", bodyReader)
+}
+
+// NewUpdateMonitorTemplateRequestWithBody generates requests for UpdateMonitorTemplate with any type of body
+func NewUpdateMonitorTemplateRequestWithBody(server string, templateId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "templateId", templateId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/monitors/templates/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -12109,19 +13881,8 @@ func NewGetMonitorEventsRequest(server string, monitorId openapi_types.UUID, par
 	return req, nil
 }
 
-// NewMuteMonitorRequest calls the generic MuteMonitor builder with application/json body
-func NewMuteMonitorRequest(server string, monitorId openapi_types.UUID, body MuteMonitorJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewMuteMonitorRequestWithBody(server, monitorId, "application/json", bodyReader)
-}
-
-// NewMuteMonitorRequestWithBody generates requests for MuteMonitor with any type of body
-func NewMuteMonitorRequestWithBody(server string, monitorId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+// NewListMonitorNotificationsRequest generates requests for ListMonitorNotifications
+func NewListMonitorNotificationsRequest(server string, monitorId openapi_types.UUID, params *ListMonitorNotificationsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12136,7 +13897,7 @@ func NewMuteMonitorRequestWithBody(server string, monitorId openapi_types.UUID, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/monitors/%s/mute", pathParam0)
+	operationPath := fmt.Sprintf("/monitors/%s/notifications", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12146,33 +13907,43 @@ func NewMuteMonitorRequestWithBody(server string, monitorId openapi_types.UUID, 
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
 
-	req.Header.Add("Content-Type", contentType)
+		if params.FromTs != nil {
 
-	return req, nil
-}
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_ts", *params.FromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
 
-// NewListOrgsRequest generates requests for ListOrgs
-func NewListOrgsRequest(server string) (*http.Request, error) {
-	var err error
+		}
 
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
+		if params.ToTs != nil {
 
-	operationPath := fmt.Sprintf("/organizations/")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to_ts", *params.ToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
 
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -12183,27 +13954,34 @@ func NewListOrgsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewCreateOrgRequest calls the generic CreateOrg builder with application/json body
-func NewCreateOrgRequest(server string, body CreateOrgJSONRequestBody) (*http.Request, error) {
+// NewUpdateMonitorStatusRequest calls the generic UpdateMonitorStatus builder with application/json body
+func NewUpdateMonitorStatusRequest(server string, monitorId openapi_types.UUID, body UpdateMonitorStatusJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateOrgRequestWithBody(server, "application/json", bodyReader)
+	return NewUpdateMonitorStatusRequestWithBody(server, monitorId, "application/json", bodyReader)
 }
 
-// NewCreateOrgRequestWithBody generates requests for CreateOrg with any type of body
-func NewCreateOrgRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewUpdateMonitorStatusRequestWithBody generates requests for UpdateMonitorStatus with any type of body
+func NewUpdateMonitorStatusRequestWithBody(server string, monitorId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "monitorId", monitorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
 
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/organizations/")
+	operationPath := fmt.Sprintf("/monitors/%s/status", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12214,87 +13992,6 @@ func NewCreateOrgRequestWithBody(server string, contentType string, body io.Read
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetOrgByIdRequest generates requests for GetOrgById
-func NewGetOrgByIdRequest(server string, orgId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "orgId", orgId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/organizations/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateOrgRequest calls the generic UpdateOrg builder with application/json body
-func NewUpdateOrgRequest(server string, orgId openapi_types.UUID, body UpdateOrgJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateOrgRequestWithBody(server, orgId, "application/json", bodyReader)
-}
-
-// NewUpdateOrgRequestWithBody generates requests for UpdateOrg with any type of body
-func NewUpdateOrgRequestWithBody(server string, orgId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "orgId", orgId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/organizations/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -12536,8 +14233,8 @@ func NewListAccessForMemberRequest(server string, orgId string, entityType ListA
 	return req, nil
 }
 
-// NewListParsersRequest generates requests for ListParsers
-func NewListParsersRequest(server string) (*http.Request, error) {
+// NewGetParsersUsageRatioByLogIdRequest generates requests for GetParsersUsageRatioByLogId
+func NewGetParsersUsageRatioByLogIdRequest(server string, params *GetParsersUsageRatioByLogIdParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -12545,7 +14242,7 @@ func NewListParsersRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/parsers")
+	operationPath := fmt.Sprintf("/parsers/metrics/ratio")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12553,6 +14250,129 @@ func NewListParsersRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.TimeRange != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "time_range", *params.TimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.FromTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_ts", *params.FromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ToTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to_ts", *params.ToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.NumOfSlices != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "num_of_slices", *params.NumOfSlices, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Delta != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta", *params.Delta, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DeltaTimeRange != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_time_range", *params.DeltaTimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DeltaFromTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_from_ts", *params.DeltaFromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DeltaToTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_to_ts", *params.DeltaToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -12563,19 +14383,8 @@ func NewListParsersRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewAiGenerateParserRequest calls the generic AiGenerateParser builder with application/json body
-func NewAiGenerateParserRequest(server string, body AiGenerateParserJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewAiGenerateParserRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewAiGenerateParserRequestWithBody generates requests for AiGenerateParser with any type of body
-func NewAiGenerateParserRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewGetParsersUsageMetricsByLogIdRequest generates requests for GetParsersUsageMetricsByLogId
+func NewGetParsersUsageMetricsByLogIdRequest(server string, params *GetParsersUsageMetricsByLogIdParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -12583,7 +14392,168 @@ func NewAiGenerateParserRequestWithBody(server string, contentType string, body 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/parsers")
+	operationPath := fmt.Sprintf("/parsers/metrics/usage")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.TimeRange != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "time_range", *params.TimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.FromTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_ts", *params.FromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ToTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to_ts", *params.ToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.NumOfSlices != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "num_of_slices", *params.NumOfSlices, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Delta != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta", *params.Delta, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DeltaTimeRange != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_time_range", *params.DeltaTimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DeltaFromTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_from_ts", *params.DeltaFromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DeltaToTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_to_ts", *params.DeltaToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostPatternsRequest calls the generic PostPatterns builder with application/json body
+func NewPostPatternsRequest(server string, body PostPatternsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostPatternsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostPatternsRequestWithBody generates requests for PostPatterns with any type of body
+func NewPostPatternsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/patterns")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12594,87 +14564,6 @@ func NewAiGenerateParserRequestWithBody(server string, contentType string, body 
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteParserRequest generates requests for DeleteParser
-func NewDeleteParserRequest(server string, parserId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "parser_id", parserId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/parsers/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewAiUpdateParserRequest calls the generic AiUpdateParser builder with application/json body
-func NewAiUpdateParserRequest(server string, parserId openapi_types.UUID, body AiUpdateParserJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewAiUpdateParserRequestWithBody(server, parserId, "application/json", bodyReader)
-}
-
-// NewAiUpdateParserRequestWithBody generates requests for AiUpdateParser with any type of body
-func NewAiUpdateParserRequestWithBody(server string, parserId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "parser_id", parserId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/parsers/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -12694,114 +14583,6 @@ func NewListPermissionsRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/permissions")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListPoliciesRequest generates requests for ListPolicies
-func NewListPoliciesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/policies")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreatePolicyRequest calls the generic CreatePolicy builder with application/json body
-func NewCreatePolicyRequest(server string, body CreatePolicyJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreatePolicyRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreatePolicyRequestWithBody generates requests for CreatePolicy with any type of body
-func NewCreatePolicyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/policies")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListPoliciesByPrincipalRequest generates requests for ListPoliciesByPrincipal
-func NewListPoliciesByPrincipalRequest(server string, principalType ListPoliciesByPrincipalParamsPrincipalType, principalId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "principal_type", principalType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "principal_id", principalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/policies/principals/%s/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12860,485 +14641,6 @@ func NewListPoliciesByResourceRequest(server string, resourceType string, resour
 	return req, nil
 }
 
-// NewDeletePolicyRequest generates requests for DeletePolicy
-func NewDeletePolicyRequest(server string, policyId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "policy_id", policyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/policies/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetPolicyRequest generates requests for GetPolicy
-func NewGetPolicyRequest(server string, policyId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "policy_id", policyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/policies/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdatePolicyRequest calls the generic UpdatePolicy builder with application/json body
-func NewUpdatePolicyRequest(server string, policyId string, body UpdatePolicyJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdatePolicyRequestWithBody(server, policyId, "application/json", bodyReader)
-}
-
-// NewUpdatePolicyRequestWithBody generates requests for UpdatePolicy with any type of body
-func NewUpdatePolicyRequestWithBody(server string, policyId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "policy_id", policyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/policies/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListRolesRequest generates requests for ListRoles
-func NewListRolesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/roles")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateRoleRequest calls the generic CreateRole builder with application/json body
-func NewCreateRoleRequest(server string, body CreateRoleJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateRoleRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateRoleRequestWithBody generates requests for CreateRole with any type of body
-func NewCreateRoleRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/roles")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteRoleRequest generates requests for DeleteRole
-func NewDeleteRoleRequest(server string, roleId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "role_id", roleId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/roles/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetRoleRequest generates requests for GetRole
-func NewGetRoleRequest(server string, roleId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "role_id", roleId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/roles/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateRoleRequest calls the generic UpdateRole builder with application/json body
-func NewUpdateRoleRequest(server string, roleId string, body UpdateRoleJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateRoleRequestWithBody(server, roleId, "application/json", bodyReader)
-}
-
-// NewUpdateRoleRequestWithBody generates requests for UpdateRole with any type of body
-func NewUpdateRoleRequestWithBody(server string, roleId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "role_id", roleId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/roles/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListSavedSearchesRequest generates requests for ListSavedSearches
-func NewListSavedSearchesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/saved-searches")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateSavedSearchRequest calls the generic CreateSavedSearch builder with application/json body
-func NewCreateSavedSearchRequest(server string, body CreateSavedSearchJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateSavedSearchRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateSavedSearchRequestWithBody generates requests for CreateSavedSearch with any type of body
-func NewCreateSavedSearchRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/saved-searches")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteSavedSearchByIdRequest generates requests for DeleteSavedSearchById
-func NewDeleteSavedSearchByIdRequest(server string, savedSearchId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "savedSearchId", savedSearchId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/saved-searches/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetSavedSearchByIdRequest generates requests for GetSavedSearchById
-func NewGetSavedSearchByIdRequest(server string, savedSearchId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "savedSearchId", savedSearchId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/saved-searches/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateSavedSearchRequest calls the generic UpdateSavedSearch builder with application/json body
-func NewUpdateSavedSearchRequest(server string, savedSearchId openapi_types.UUID, body UpdateSavedSearchJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateSavedSearchRequestWithBody(server, savedSearchId, "application/json", bodyReader)
-}
-
-// NewUpdateSavedSearchRequestWithBody generates requests for UpdateSavedSearch with any type of body
-func NewUpdateSavedSearchRequestWithBody(server string, savedSearchId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "savedSearchId", savedSearchId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/saved-searches/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewSearchRequest generates requests for Search
 func NewSearchRequest(server string, params *SearchParams) (*http.Request, error) {
 	var err error
@@ -13379,9 +14681,9 @@ func NewSearchRequest(server string, params *SearchParams) (*http.Request, error
 
 		}
 
-		if params.FromTags != nil {
+		if params.FromExpr != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_tags", *params.FromTags, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_expr", *params.FromExpr, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -13535,6 +14837,42 @@ func NewSearchRequest(server string, params *SearchParams) (*http.Request, error
 
 		}
 
+		if params.OrderBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "order_by", *params.OrderBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PaginationToken != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "pagination_token", *params.PaginationToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PerPage != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "per_page", *params.PerPage, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -13585,451 +14923,6 @@ func NewPostSearchRequestWithBody(server string, contentType string, body io.Rea
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteSearchStatusRequest generates requests for DeleteSearchStatus
-func NewDeleteSearchStatusRequest(server string, statusId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "statusId", statusId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/search/status/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetSearchStatusRequest generates requests for GetSearchStatus
-func NewGetSearchStatusRequest(server string, statusId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "statusId", statusId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/search/status/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListIdpRequest generates requests for ListIdp
-func NewListIdpRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/sso/idps")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateIdpRequest calls the generic CreateIdp builder with application/json body
-func NewCreateIdpRequest(server string, body CreateIdpJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateIdpRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateIdpRequestWithBody generates requests for CreateIdp with any type of body
-func NewCreateIdpRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/sso/idps")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteIdpRequest generates requests for DeleteIdp
-func NewDeleteIdpRequest(server string, idpName string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "idp_name", idpName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/sso/idps/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetIdpRequest generates requests for GetIdp
-func NewGetIdpRequest(server string, idpName string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "idp_name", idpName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/sso/idps/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateIdpRequest calls the generic UpdateIdp builder with application/json body
-func NewUpdateIdpRequest(server string, idpName string, body UpdateIdpJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateIdpRequestWithBody(server, idpName, "application/json", bodyReader)
-}
-
-// NewUpdateIdpRequestWithBody generates requests for UpdateIdp with any type of body
-func NewUpdateIdpRequestWithBody(server string, idpName string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "idp_name", idpName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/sso/idps/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteSsoMappingRequest generates requests for DeleteSsoMapping
-func NewDeleteSsoMappingRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/sso/mappings")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListSsoMappingsRequest generates requests for ListSsoMappings
-func NewListSsoMappingsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/sso/mappings")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateSsoMappingsRequest calls the generic CreateSsoMappings builder with application/json body
-func NewCreateSsoMappingsRequest(server string, body CreateSsoMappingsJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateSsoMappingsRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateSsoMappingsRequestWithBody generates requests for CreateSsoMappings with any type of body
-func NewCreateSsoMappingsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/sso/mappings")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewUpdateSsoMappingsRequest calls the generic UpdateSsoMappings builder with application/json body
-func NewUpdateSsoMappingsRequest(server string, body UpdateSsoMappingsJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateSsoMappingsRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewUpdateSsoMappingsRequestWithBody generates requests for UpdateSsoMappings with any type of body
-func NewUpdateSsoMappingsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/sso/mappings")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListSubscriptionsRequest generates requests for ListSubscriptions
-func NewListSubscriptionsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/subscriptions")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetSubscriptionByIdRequest generates requests for GetSubscriptionById
-func NewGetSubscriptionByIdRequest(server string, subscriptionId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "subscriptionId", subscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/subscriptions/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -14232,6 +15125,215 @@ func NewListTagsByNameRequest(server string, params *ListTagsByNameParams) (*htt
 	return req, nil
 }
 
+// NewSearchTimeseriesRequest calls the generic SearchTimeseries builder with application/json body
+func NewSearchTimeseriesRequest(server string, body SearchTimeseriesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSearchTimeseriesRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSearchTimeseriesRequestWithBody generates requests for SearchTimeseries with any type of body
+func NewSearchTimeseriesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/timeseries/search")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetTimeseriesFromMetricDefinitionRequest generates requests for GetTimeseriesFromMetricDefinition
+func NewGetTimeseriesFromMetricDefinitionRequest(server string, metricDefinitionId openapi_types.UUID, params *GetTimeseriesFromMetricDefinitionParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "metric_definition_id", metricDefinitionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/timeseries/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.TimeRange != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "time_range", *params.TimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.FromTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_ts", *params.FromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ToTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to_ts", *params.ToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.NumOfSlices != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "num_of_slices", *params.NumOfSlices, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Where != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "where", *params.Where, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Delta != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta", *params.Delta, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DeltaTimeRange != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_time_range", *params.DeltaTimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DeltaFromTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_from_ts", *params.DeltaFromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DeltaToTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delta_to_ts", *params.DeltaToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetTopKeysByIdRequest generates requests for GetTopKeysById
 func NewGetTopKeysByIdRequest(server string, params *GetTopKeysByIdParams) (*http.Request, error) {
 	var err error
@@ -14263,6 +15365,54 @@ func NewGetTopKeysByIdRequest(server string, params *GetTopKeysByIdParams) (*htt
 		if params.LogId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "log_id", *params.LogId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.TimeRange != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "time_range", *params.TimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.FromTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_ts", *params.FromTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ToTs != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to_ts", *params.ToTs, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.FromExpr != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from_expr", *params.FromExpr, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -14317,18 +15467,6 @@ func NewGetUsageRequest(server string, params *GetUsageParams) (*http.Request, e
 		if params.TimeRange != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "time_range", *params.TimeRange, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.TimeRangeCamel != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "timeRange", *params.TimeRangeCamel, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -14827,6 +15965,33 @@ func NewCreateUserRequestWithBody(server string, contentType string, body io.Rea
 	return req, nil
 }
 
+// NewListAllUsersRequest generates requests for ListAllUsers
+func NewListAllUsersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/users/all")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewDeleteUserByIdRequest generates requests for DeleteUserById
 func NewDeleteUserByIdRequest(server string, userId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -14976,6 +16141,40 @@ func NewListMembershipsRequest(server string, userId openapi_types.UUID) (*http.
 	return req, nil
 }
 
+// NewDeactivateUserRequest generates requests for DeactivateUser
+func NewDeactivateUserRequest(server string, userId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "userId", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/users/%s/deactivate", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListGroupsForMemberRequest generates requests for ListGroupsForMember
 func NewListGroupsForMemberRequest(server string, userId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -15091,16 +16290,23 @@ func NewPatchUserPreferencesRequestWithBody(server string, userId string, conten
 	return req, nil
 }
 
-// NewListWidgetsRequest generates requests for ListWidgets
-func NewListWidgetsRequest(server string) (*http.Request, error) {
+// NewReactivateUserRequest generates requests for ReactivateUser
+func NewReactivateUserRequest(server string, userId openapi_types.UUID) (*http.Request, error) {
 	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "userId", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
 
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/widgets")
+	operationPath := fmt.Sprintf("/users/%s/reactivate", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15108,214 +16314,108 @@ func NewListWidgetsRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewResendUserInvitationRequest generates requests for ResendUserInvitation
+func NewResendUserInvitationRequest(server string, userId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "userId", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/users/%s/resend-invite", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewWidgetCreationAssistantRequest generates requests for WidgetCreationAssistant
+func NewWidgetCreationAssistantRequest(server string, params *WidgetCreationAssistantParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/widget-creation-assistant")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.SessionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "session_id", *params.SessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "userRequest", params.UserRequest, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
-
-	return req, nil
-}
-
-// NewCreateWidgetRequest calls the generic CreateWidget builder with application/json body
-func NewCreateWidgetRequest(server string, body CreateWidgetJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateWidgetRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateWidgetRequestWithBody generates requests for CreateWidget with any type of body
-func NewCreateWidgetRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/widgets")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteWidgetRequest generates requests for DeleteWidget
-func NewDeleteWidgetRequest(server string, id openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/widgets/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetWidgetRequest generates requests for GetWidget
-func NewGetWidgetRequest(server string, id openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/widgets/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPatchWidgetRequest calls the generic PatchWidget builder with application/json body
-func NewPatchWidgetRequest(server string, id openapi_types.UUID, body PatchWidgetJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPatchWidgetRequestWithBody(server, id, "application/json", bodyReader)
-}
-
-// NewPatchWidgetRequestWithBody generates requests for PatchWidget with any type of body
-func NewPatchWidgetRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/widgets/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewUpdateWidgetRequest calls the generic UpdateWidget builder with application/json body
-func NewUpdateWidgetRequest(server string, id openapi_types.UUID, body UpdateWidgetJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateWidgetRequestWithBody(server, id, "application/json", bodyReader)
-}
-
-// NewUpdateWidgetRequestWithBody generates requests for UpdateWidget with any type of body
-func NewUpdateWidgetRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/widgets/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -15363,9 +16463,6 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// GetAnalyticsErrorsWithResponse request
-	GetAnalyticsErrorsWithResponse(ctx context.Context, params *GetAnalyticsErrorsParams, reqEditors ...RequestEditorFn) (*GetAnalyticsErrorsResponse, error)
-
 	// ListApiKeysWithResponse request
 	ListApiKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListApiKeysResponse, error)
 
@@ -15382,14 +16479,11 @@ type ClientWithResponsesInterface interface {
 
 	UpdateApiKeyWithResponse(ctx context.Context, apiKeyId openapi_types.UUID, body UpdateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateApiKeyResponse, error)
 
+	// ListCollectionsWithResponse request
+	ListCollectionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCollectionsResponse, error)
+
 	// GetContextWithResponse request
 	GetContextWithResponse(ctx context.Context, params *GetContextParams, reqEditors ...RequestEditorFn) (*GetContextResponse, error)
-
-	// GetContractWithResponse request
-	GetContractWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetContractResponse, error)
-
-	// GetCostByLogIdWithResponse request
-	GetCostByLogIdWithResponse(ctx context.Context, params *GetCostByLogIdParams, reqEditors ...RequestEditorFn) (*GetCostByLogIdResponse, error)
 
 	// GetCustomerWithResponse request
 	GetCustomerWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCustomerResponse, error)
@@ -15399,24 +16493,43 @@ type ClientWithResponsesInterface interface {
 
 	UpdateCustomerWithResponse(ctx context.Context, body UpdateCustomerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCustomerResponse, error)
 
-	// ListDashboardsWithResponse request
-	ListDashboardsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDashboardsResponse, error)
+	// ListDatasetsWithResponse request
+	ListDatasetsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDatasetsResponse, error)
 
-	// CreateDashboardWithBodyWithResponse request with any body
-	CreateDashboardWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDashboardResponse, error)
+	// CreateDatasetWithBodyWithResponse request with any body
+	CreateDatasetWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDatasetResponse, error)
 
-	CreateDashboardWithResponse(ctx context.Context, body CreateDashboardJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDashboardResponse, error)
+	CreateDatasetWithResponse(ctx context.Context, body CreateDatasetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDatasetResponse, error)
 
-	// DeleteDashboardWithResponse request
-	DeleteDashboardWithResponse(ctx context.Context, dashboardId string, reqEditors ...RequestEditorFn) (*DeleteDashboardResponse, error)
+	// UnassignDatasetParserWithResponse request
+	UnassignDatasetParserWithResponse(ctx context.Context, datasetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnassignDatasetParserResponse, error)
 
-	// GetDashboardWithResponse request
-	GetDashboardWithResponse(ctx context.Context, dashboardId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDashboardResponse, error)
+	// GetDatasetParserWithResponse request
+	GetDatasetParserWithResponse(ctx context.Context, datasetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDatasetParserResponse, error)
 
-	// UpdateDashboardWithBodyWithResponse request with any body
-	UpdateDashboardWithBodyWithResponse(ctx context.Context, dashboardId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDashboardResponse, error)
+	// AssignDatasetParserWithBodyWithResponse request with any body
+	AssignDatasetParserWithBodyWithResponse(ctx context.Context, datasetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AssignDatasetParserResponse, error)
 
-	UpdateDashboardWithResponse(ctx context.Context, dashboardId openapi_types.UUID, body UpdateDashboardJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDashboardResponse, error)
+	AssignDatasetParserWithResponse(ctx context.Context, datasetId openapi_types.UUID, body AssignDatasetParserJSONRequestBody, reqEditors ...RequestEditorFn) (*AssignDatasetParserResponse, error)
+
+	// ListEncryptionKeysWithResponse request
+	ListEncryptionKeysWithResponse(ctx context.Context, params *ListEncryptionKeysParams, reqEditors ...RequestEditorFn) (*ListEncryptionKeysResponse, error)
+
+	// CreateEncryptionKeyWithBodyWithResponse request with any body
+	CreateEncryptionKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEncryptionKeyResponse, error)
+
+	CreateEncryptionKeyWithResponse(ctx context.Context, body CreateEncryptionKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEncryptionKeyResponse, error)
+
+	// DeleteEncryptionKeyWithResponse request
+	DeleteEncryptionKeyWithResponse(ctx context.Context, keyId string, reqEditors ...RequestEditorFn) (*DeleteEncryptionKeyResponse, error)
+
+	// GetEncryptionKeyWithResponse request
+	GetEncryptionKeyWithResponse(ctx context.Context, keyId string, reqEditors ...RequestEditorFn) (*GetEncryptionKeyResponse, error)
+
+	// UpdateEncryptionKeyWithBodyWithResponse request with any body
+	UpdateEncryptionKeyWithBodyWithResponse(ctx context.Context, keyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateEncryptionKeyResponse, error)
+
+	UpdateEncryptionKeyWithResponse(ctx context.Context, keyId string, body UpdateEncryptionKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateEncryptionKeyResponse, error)
 
 	// ExplainErrorWithResponse request
 	ExplainErrorWithResponse(ctx context.Context, params *ExplainErrorParams, reqEditors ...RequestEditorFn) (*ExplainErrorResponse, error)
@@ -15488,22 +16601,27 @@ type ClientWithResponsesInterface interface {
 
 	AddGroupMembersWithResponse(ctx context.Context, groupId openapi_types.UUID, body AddGroupMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*AddGroupMembersResponse, error)
 
-	// ListInsightsWithResponse request
-	ListInsightsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListInsightsResponse, error)
+	// ListSlackIntegrationsWithResponse request
+	ListSlackIntegrationsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSlackIntegrationsResponse, error)
 
-	// GetInsightWithResponse request
-	GetInsightWithResponse(ctx context.Context, insightId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetInsightResponse, error)
+	// CreateSlackIntegrationWithBodyWithResponse request with any body
+	CreateSlackIntegrationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSlackIntegrationResponse, error)
 
-	// ListAWSIntegrationsWithResponse request
-	ListAWSIntegrationsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAWSIntegrationsResponse, error)
+	CreateSlackIntegrationWithResponse(ctx context.Context, body CreateSlackIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSlackIntegrationResponse, error)
 
-	// CreateAWSIntegrationWithBodyWithResponse request with any body
-	CreateAWSIntegrationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAWSIntegrationResponse, error)
+	// ListSlackWorkspacesWithResponse request
+	ListSlackWorkspacesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSlackWorkspacesResponse, error)
 
-	CreateAWSIntegrationWithResponse(ctx context.Context, body CreateAWSIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAWSIntegrationResponse, error)
+	// DeleteSlackWorkspaceWithResponse request
+	DeleteSlackWorkspaceWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*DeleteSlackWorkspaceResponse, error)
 
-	// DeleteAWSIntegrationWithResponse request
-	DeleteAWSIntegrationWithResponse(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*DeleteAWSIntegrationResponse, error)
+	// DeleteSlackIntegrationWithResponse request
+	DeleteSlackIntegrationWithResponse(ctx context.Context, slackId string, reqEditors ...RequestEditorFn) (*DeleteSlackIntegrationResponse, error)
+
+	// UpdateSlackIntegrationWithBodyWithResponse request with any body
+	UpdateSlackIntegrationWithBodyWithResponse(ctx context.Context, slackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSlackIntegrationResponse, error)
+
+	UpdateSlackIntegrationWithResponse(ctx context.Context, slackId string, body UpdateSlackIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSlackIntegrationResponse, error)
 
 	// ListWebhookIntegrationsWithResponse request
 	ListWebhookIntegrationsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListWebhookIntegrationsResponse, error)
@@ -15520,14 +16638,6 @@ type ClientWithResponsesInterface interface {
 	UpdateWebhookIntegrationWithBodyWithResponse(ctx context.Context, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWebhookIntegrationResponse, error)
 
 	UpdateWebhookIntegrationWithResponse(ctx context.Context, webhookId string, body UpdateWebhookIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWebhookIntegrationResponse, error)
-
-	// CreateLogBasedMetricWithBodyWithResponse request with any body
-	CreateLogBasedMetricWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateLogBasedMetricResponse, error)
-
-	CreateLogBasedMetricWithResponse(ctx context.Context, body CreateLogBasedMetricJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateLogBasedMetricResponse, error)
-
-	// GetLbmByIdWithResponse request
-	GetLbmByIdWithResponse(ctx context.Context, lbmId string, params *GetLbmByIdParams, reqEditors ...RequestEditorFn) (*GetLbmByIdResponse, error)
 
 	// ListLimitsWithResponse request
 	ListLimitsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLimitsResponse, error)
@@ -15548,6 +16658,14 @@ type ClientWithResponsesInterface interface {
 
 	UpdateLimitWithResponse(ctx context.Context, limitId openapi_types.UUID, body UpdateLimitJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateLimitResponse, error)
 
+	// PollLiveTailWithResponse request
+	PollLiveTailWithResponse(ctx context.Context, params *PollLiveTailParams, reqEditors ...RequestEditorFn) (*PollLiveTailResponse, error)
+
+	// InitLiveTailWithBodyWithResponse request with any body
+	InitLiveTailWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InitLiveTailResponse, error)
+
+	InitLiveTailWithResponse(ctx context.Context, body InitLiveTailJSONRequestBody, reqEditors ...RequestEditorFn) (*InitLiveTailResponse, error)
+
 	// ListLogsWithResponse request
 	ListLogsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLogsResponse, error)
 
@@ -15556,28 +16674,14 @@ type ClientWithResponsesInterface interface {
 
 	CreateLogWithResponse(ctx context.Context, body CreateLogJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateLogResponse, error)
 
-	// DeleteLogWithResponse request
-	DeleteLogWithResponse(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteLogResponse, error)
-
-	// GetLogByIdWithResponse request
-	GetLogByIdWithResponse(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLogByIdResponse, error)
-
-	// UpdateLogWithBodyWithResponse request with any body
-	UpdateLogWithBodyWithResponse(ctx context.Context, logId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateLogResponse, error)
-
-	UpdateLogWithResponse(ctx context.Context, logId openapi_types.UUID, body UpdateLogJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateLogResponse, error)
+	// ListLogViewsWithResponse request
+	ListLogViewsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLogViewsResponse, error)
 
 	// ListDashboardsForLogWithResponse request
 	ListDashboardsForLogWithResponse(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListDashboardsForLogResponse, error)
 
-	// GetMetricsForLogWithResponse request
-	GetMetricsForLogWithResponse(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetMetricsForLogResponse, error)
-
 	// ListMonitorsForLogWithResponse request
 	ListMonitorsForLogWithResponse(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListMonitorsForLogResponse, error)
-
-	// ListLogSetsWithResponse request
-	ListLogSetsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLogSetsResponse, error)
 
 	// ListMonitorsWithResponse request
 	ListMonitorsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListMonitorsResponse, error)
@@ -15587,10 +16691,40 @@ type ClientWithResponsesInterface interface {
 
 	CreateMonitorWithResponse(ctx context.Context, body CreateMonitorJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMonitorResponse, error)
 
-	// SendTestNotificationsWithBodyWithResponse request with any body
-	SendTestNotificationsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendTestNotificationsResponse, error)
+	// ListMonitorDowntimesWithResponse request
+	ListMonitorDowntimesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListMonitorDowntimesResponse, error)
 
-	SendTestNotificationsWithResponse(ctx context.Context, body SendTestNotificationsJSONRequestBody, reqEditors ...RequestEditorFn) (*SendTestNotificationsResponse, error)
+	// CreateMonitorDowntimeWithBodyWithResponse request with any body
+	CreateMonitorDowntimeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMonitorDowntimeResponse, error)
+
+	CreateMonitorDowntimeWithResponse(ctx context.Context, body CreateMonitorDowntimeJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMonitorDowntimeResponse, error)
+
+	// DeleteMonitorDowntimeWithResponse request
+	DeleteMonitorDowntimeWithResponse(ctx context.Context, downtimeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteMonitorDowntimeResponse, error)
+
+	// UpdateMonitorDowntimeWithBodyWithResponse request with any body
+	UpdateMonitorDowntimeWithBodyWithResponse(ctx context.Context, downtimeId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMonitorDowntimeResponse, error)
+
+	UpdateMonitorDowntimeWithResponse(ctx context.Context, downtimeId openapi_types.UUID, body UpdateMonitorDowntimeJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMonitorDowntimeResponse, error)
+
+	// ListMonitorTemplatesWithResponse request
+	ListMonitorTemplatesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListMonitorTemplatesResponse, error)
+
+	// CreateMonitorTemplateWithBodyWithResponse request with any body
+	CreateMonitorTemplateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMonitorTemplateResponse, error)
+
+	CreateMonitorTemplateWithResponse(ctx context.Context, body CreateMonitorTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMonitorTemplateResponse, error)
+
+	// DeleteMonitorTemplateWithResponse request
+	DeleteMonitorTemplateWithResponse(ctx context.Context, templateId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteMonitorTemplateResponse, error)
+
+	// GetMonitorTemplateWithResponse request
+	GetMonitorTemplateWithResponse(ctx context.Context, templateId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetMonitorTemplateResponse, error)
+
+	// UpdateMonitorTemplateWithBodyWithResponse request with any body
+	UpdateMonitorTemplateWithBodyWithResponse(ctx context.Context, templateId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMonitorTemplateResponse, error)
+
+	UpdateMonitorTemplateWithResponse(ctx context.Context, templateId openapi_types.UUID, body UpdateMonitorTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMonitorTemplateResponse, error)
 
 	// DeleteMonitorWithResponse request
 	DeleteMonitorWithResponse(ctx context.Context, monitorId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteMonitorResponse, error)
@@ -15606,26 +16740,13 @@ type ClientWithResponsesInterface interface {
 	// GetMonitorEventsWithResponse request
 	GetMonitorEventsWithResponse(ctx context.Context, monitorId openapi_types.UUID, params *GetMonitorEventsParams, reqEditors ...RequestEditorFn) (*GetMonitorEventsResponse, error)
 
-	// MuteMonitorWithBodyWithResponse request with any body
-	MuteMonitorWithBodyWithResponse(ctx context.Context, monitorId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MuteMonitorResponse, error)
+	// ListMonitorNotificationsWithResponse request
+	ListMonitorNotificationsWithResponse(ctx context.Context, monitorId openapi_types.UUID, params *ListMonitorNotificationsParams, reqEditors ...RequestEditorFn) (*ListMonitorNotificationsResponse, error)
 
-	MuteMonitorWithResponse(ctx context.Context, monitorId openapi_types.UUID, body MuteMonitorJSONRequestBody, reqEditors ...RequestEditorFn) (*MuteMonitorResponse, error)
+	// UpdateMonitorStatusWithBodyWithResponse request with any body
+	UpdateMonitorStatusWithBodyWithResponse(ctx context.Context, monitorId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMonitorStatusResponse, error)
 
-	// ListOrgsWithResponse request
-	ListOrgsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOrgsResponse, error)
-
-	// CreateOrgWithBodyWithResponse request with any body
-	CreateOrgWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOrgResponse, error)
-
-	CreateOrgWithResponse(ctx context.Context, body CreateOrgJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOrgResponse, error)
-
-	// GetOrgByIdWithResponse request
-	GetOrgByIdWithResponse(ctx context.Context, orgId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetOrgByIdResponse, error)
-
-	// UpdateOrgWithBodyWithResponse request with any body
-	UpdateOrgWithBodyWithResponse(ctx context.Context, orgId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOrgResponse, error)
-
-	UpdateOrgWithResponse(ctx context.Context, orgId openapi_types.UUID, body UpdateOrgJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOrgResponse, error)
+	UpdateMonitorStatusWithResponse(ctx context.Context, monitorId openapi_types.UUID, body UpdateMonitorStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMonitorStatusResponse, error)
 
 	// ListOrgMembersWithResponse request
 	ListOrgMembersWithResponse(ctx context.Context, orgId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListOrgMembersResponse, error)
@@ -15644,87 +16765,22 @@ type ClientWithResponsesInterface interface {
 	// ListAccessForMemberWithResponse request
 	ListAccessForMemberWithResponse(ctx context.Context, orgId string, entityType ListAccessForMemberParamsEntityType, entityId string, reqEditors ...RequestEditorFn) (*ListAccessForMemberResponse, error)
 
-	// ListParsersWithResponse request
-	ListParsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListParsersResponse, error)
+	// GetParsersUsageRatioByLogIdWithResponse request
+	GetParsersUsageRatioByLogIdWithResponse(ctx context.Context, params *GetParsersUsageRatioByLogIdParams, reqEditors ...RequestEditorFn) (*GetParsersUsageRatioByLogIdResponse, error)
 
-	// AiGenerateParserWithBodyWithResponse request with any body
-	AiGenerateParserWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AiGenerateParserResponse, error)
+	// GetParsersUsageMetricsByLogIdWithResponse request
+	GetParsersUsageMetricsByLogIdWithResponse(ctx context.Context, params *GetParsersUsageMetricsByLogIdParams, reqEditors ...RequestEditorFn) (*GetParsersUsageMetricsByLogIdResponse, error)
 
-	AiGenerateParserWithResponse(ctx context.Context, body AiGenerateParserJSONRequestBody, reqEditors ...RequestEditorFn) (*AiGenerateParserResponse, error)
+	// PostPatternsWithBodyWithResponse request with any body
+	PostPatternsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostPatternsResponse, error)
 
-	// DeleteParserWithResponse request
-	DeleteParserWithResponse(ctx context.Context, parserId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteParserResponse, error)
-
-	// AiUpdateParserWithBodyWithResponse request with any body
-	AiUpdateParserWithBodyWithResponse(ctx context.Context, parserId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AiUpdateParserResponse, error)
-
-	AiUpdateParserWithResponse(ctx context.Context, parserId openapi_types.UUID, body AiUpdateParserJSONRequestBody, reqEditors ...RequestEditorFn) (*AiUpdateParserResponse, error)
+	PostPatternsWithResponse(ctx context.Context, body PostPatternsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPatternsResponse, error)
 
 	// ListPermissionsWithResponse request
 	ListPermissionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPermissionsResponse, error)
 
-	// ListPoliciesWithResponse request
-	ListPoliciesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPoliciesResponse, error)
-
-	// CreatePolicyWithBodyWithResponse request with any body
-	CreatePolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error)
-
-	CreatePolicyWithResponse(ctx context.Context, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error)
-
-	// ListPoliciesByPrincipalWithResponse request
-	ListPoliciesByPrincipalWithResponse(ctx context.Context, principalType ListPoliciesByPrincipalParamsPrincipalType, principalId string, reqEditors ...RequestEditorFn) (*ListPoliciesByPrincipalResponse, error)
-
 	// ListPoliciesByResourceWithResponse request
 	ListPoliciesByResourceWithResponse(ctx context.Context, resourceType string, resourceId string, reqEditors ...RequestEditorFn) (*ListPoliciesByResourceResponse, error)
-
-	// DeletePolicyWithResponse request
-	DeletePolicyWithResponse(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*DeletePolicyResponse, error)
-
-	// GetPolicyWithResponse request
-	GetPolicyWithResponse(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error)
-
-	// UpdatePolicyWithBodyWithResponse request with any body
-	UpdatePolicyWithBodyWithResponse(ctx context.Context, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
-
-	UpdatePolicyWithResponse(ctx context.Context, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
-
-	// ListRolesWithResponse request
-	ListRolesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRolesResponse, error)
-
-	// CreateRoleWithBodyWithResponse request with any body
-	CreateRoleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error)
-
-	CreateRoleWithResponse(ctx context.Context, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error)
-
-	// DeleteRoleWithResponse request
-	DeleteRoleWithResponse(ctx context.Context, roleId string, reqEditors ...RequestEditorFn) (*DeleteRoleResponse, error)
-
-	// GetRoleWithResponse request
-	GetRoleWithResponse(ctx context.Context, roleId string, reqEditors ...RequestEditorFn) (*GetRoleResponse, error)
-
-	// UpdateRoleWithBodyWithResponse request with any body
-	UpdateRoleWithBodyWithResponse(ctx context.Context, roleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
-
-	UpdateRoleWithResponse(ctx context.Context, roleId string, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
-
-	// ListSavedSearchesWithResponse request
-	ListSavedSearchesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSavedSearchesResponse, error)
-
-	// CreateSavedSearchWithBodyWithResponse request with any body
-	CreateSavedSearchWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSavedSearchResponse, error)
-
-	CreateSavedSearchWithResponse(ctx context.Context, body CreateSavedSearchJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSavedSearchResponse, error)
-
-	// DeleteSavedSearchByIdWithResponse request
-	DeleteSavedSearchByIdWithResponse(ctx context.Context, savedSearchId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSavedSearchByIdResponse, error)
-
-	// GetSavedSearchByIdWithResponse request
-	GetSavedSearchByIdWithResponse(ctx context.Context, savedSearchId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSavedSearchByIdResponse, error)
-
-	// UpdateSavedSearchWithBodyWithResponse request with any body
-	UpdateSavedSearchWithBodyWithResponse(ctx context.Context, savedSearchId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSavedSearchResponse, error)
-
-	UpdateSavedSearchWithResponse(ctx context.Context, savedSearchId openapi_types.UUID, body UpdateSavedSearchJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSavedSearchResponse, error)
 
 	// SearchWithResponse request
 	SearchWithResponse(ctx context.Context, params *SearchParams, reqEditors ...RequestEditorFn) (*SearchResponse, error)
@@ -15733,53 +16789,6 @@ type ClientWithResponsesInterface interface {
 	PostSearchWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostSearchResponse, error)
 
 	PostSearchWithResponse(ctx context.Context, body PostSearchJSONRequestBody, reqEditors ...RequestEditorFn) (*PostSearchResponse, error)
-
-	// DeleteSearchStatusWithResponse request
-	DeleteSearchStatusWithResponse(ctx context.Context, statusId string, reqEditors ...RequestEditorFn) (*DeleteSearchStatusResponse, error)
-
-	// GetSearchStatusWithResponse request
-	GetSearchStatusWithResponse(ctx context.Context, statusId string, reqEditors ...RequestEditorFn) (*GetSearchStatusResponse, error)
-
-	// ListIdpWithResponse request
-	ListIdpWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListIdpResponse, error)
-
-	// CreateIdpWithBodyWithResponse request with any body
-	CreateIdpWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIdpResponse, error)
-
-	CreateIdpWithResponse(ctx context.Context, body CreateIdpJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIdpResponse, error)
-
-	// DeleteIdpWithResponse request
-	DeleteIdpWithResponse(ctx context.Context, idpName string, reqEditors ...RequestEditorFn) (*DeleteIdpResponse, error)
-
-	// GetIdpWithResponse request
-	GetIdpWithResponse(ctx context.Context, idpName string, reqEditors ...RequestEditorFn) (*GetIdpResponse, error)
-
-	// UpdateIdpWithBodyWithResponse request with any body
-	UpdateIdpWithBodyWithResponse(ctx context.Context, idpName string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateIdpResponse, error)
-
-	UpdateIdpWithResponse(ctx context.Context, idpName string, body UpdateIdpJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateIdpResponse, error)
-
-	// DeleteSsoMappingWithResponse request
-	DeleteSsoMappingWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteSsoMappingResponse, error)
-
-	// ListSsoMappingsWithResponse request
-	ListSsoMappingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSsoMappingsResponse, error)
-
-	// CreateSsoMappingsWithBodyWithResponse request with any body
-	CreateSsoMappingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSsoMappingsResponse, error)
-
-	CreateSsoMappingsWithResponse(ctx context.Context, body CreateSsoMappingsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSsoMappingsResponse, error)
-
-	// UpdateSsoMappingsWithBodyWithResponse request with any body
-	UpdateSsoMappingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSsoMappingsResponse, error)
-
-	UpdateSsoMappingsWithResponse(ctx context.Context, body UpdateSsoMappingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSsoMappingsResponse, error)
-
-	// ListSubscriptionsWithResponse request
-	ListSubscriptionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSubscriptionsResponse, error)
-
-	// GetSubscriptionByIdWithResponse request
-	GetSubscriptionByIdWithResponse(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*GetSubscriptionByIdResponse, error)
 
 	// DeleteTagWithBodyWithResponse request with any body
 	DeleteTagWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteTagResponse, error)
@@ -15798,6 +16807,14 @@ type ClientWithResponsesInterface interface {
 
 	// ListTagsByNameWithResponse request
 	ListTagsByNameWithResponse(ctx context.Context, params *ListTagsByNameParams, reqEditors ...RequestEditorFn) (*ListTagsByNameResponse, error)
+
+	// SearchTimeseriesWithBodyWithResponse request with any body
+	SearchTimeseriesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchTimeseriesResponse, error)
+
+	SearchTimeseriesWithResponse(ctx context.Context, body SearchTimeseriesJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchTimeseriesResponse, error)
+
+	// GetTimeseriesFromMetricDefinitionWithResponse request
+	GetTimeseriesFromMetricDefinitionWithResponse(ctx context.Context, metricDefinitionId openapi_types.UUID, params *GetTimeseriesFromMetricDefinitionParams, reqEditors ...RequestEditorFn) (*GetTimeseriesFromMetricDefinitionResponse, error)
 
 	// GetTopKeysByIdWithResponse request
 	GetTopKeysByIdWithResponse(ctx context.Context, params *GetTopKeysByIdParams, reqEditors ...RequestEditorFn) (*GetTopKeysByIdResponse, error)
@@ -15819,6 +16836,9 @@ type ClientWithResponsesInterface interface {
 
 	CreateUserWithResponse(ctx context.Context, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUserResponse, error)
 
+	// ListAllUsersWithResponse request
+	ListAllUsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAllUsersResponse, error)
+
 	// DeleteUserByIdWithResponse request
 	DeleteUserByIdWithResponse(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteUserByIdResponse, error)
 
@@ -15833,6 +16853,9 @@ type ClientWithResponsesInterface interface {
 	// ListMembershipsWithResponse request
 	ListMembershipsWithResponse(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListMembershipsResponse, error)
 
+	// DeactivateUserWithResponse request
+	DeactivateUserWithResponse(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeactivateUserResponse, error)
+
 	// ListGroupsForMemberWithResponse request
 	ListGroupsForMemberWithResponse(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListGroupsForMemberResponse, error)
 
@@ -15844,62 +16867,14 @@ type ClientWithResponsesInterface interface {
 
 	PatchUserPreferencesWithResponse(ctx context.Context, userId string, body PatchUserPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchUserPreferencesResponse, error)
 
-	// ListWidgetsWithResponse request
-	ListWidgetsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListWidgetsResponse, error)
+	// ReactivateUserWithResponse request
+	ReactivateUserWithResponse(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ReactivateUserResponse, error)
 
-	// CreateWidgetWithBodyWithResponse request with any body
-	CreateWidgetWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWidgetResponse, error)
+	// ResendUserInvitationWithResponse request
+	ResendUserInvitationWithResponse(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ResendUserInvitationResponse, error)
 
-	CreateWidgetWithResponse(ctx context.Context, body CreateWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWidgetResponse, error)
-
-	// DeleteWidgetWithResponse request
-	DeleteWidgetWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteWidgetResponse, error)
-
-	// GetWidgetWithResponse request
-	GetWidgetWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetWidgetResponse, error)
-
-	// PatchWidgetWithBodyWithResponse request with any body
-	PatchWidgetWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchWidgetResponse, error)
-
-	PatchWidgetWithResponse(ctx context.Context, id openapi_types.UUID, body PatchWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchWidgetResponse, error)
-
-	// UpdateWidgetWithBodyWithResponse request with any body
-	UpdateWidgetWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWidgetResponse, error)
-
-	UpdateWidgetWithResponse(ctx context.Context, id openapi_types.UUID, body UpdateWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWidgetResponse, error)
-}
-
-type GetAnalyticsErrorsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *MetricItem
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAnalyticsErrorsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAnalyticsErrorsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetAnalyticsErrorsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
+	// WidgetCreationAssistantWithResponse request
+	WidgetCreationAssistantWithResponse(ctx context.Context, params *WidgetCreationAssistantParams, reqEditors ...RequestEditorFn) (*WidgetCreationAssistantResponse, error)
 }
 
 type ListApiKeysResponse struct {
@@ -16041,15 +17016,52 @@ func (r UpdateApiKeyResponse) ContentType() string {
 	return ""
 }
 
+type ListCollectionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Collections *[]CollectionDataset `json:"collections,omitempty"`
+	}
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
+	JSONDefault *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCollectionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCollectionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListCollectionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetContextResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
+		// Explain details on the query execution
 		Explain *QueryExplain  `json:"explain,omitempty"`
 		Links   *ContextLinks  `json:"links,omitempty"`
 		Result  *[]QueryResult `json:"result,omitempty"`
 	}
 	JSON400     *ErrorResponse
+	JSON403     *ErrorResponse
 	JSON429     *ErrorResponse
 	JSON500     *ErrorResponse
 	JSONDefault *ErrorResponse
@@ -16073,74 +17085,6 @@ func (r GetContextResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetContextResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetContractResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Contracts
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetContractResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetContractResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetContractResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetCostByLogIdResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *CostByLogId
-	JSON400      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetCostByLogIdResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetCostByLogIdResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetCostByLogIdResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -16216,21 +17160,19 @@ func (r UpdateCustomerResponse) ContentType() string {
 	return ""
 }
 
-type ListDashboardsResponse struct {
+type ListDatasetsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Dashboards *[]Dashboard `json:"dashboards,omitempty"`
+		Datasets *[]Dataset `json:"datasets,omitempty"`
 	}
-	JSON400     *ErrorResponse
-	JSON404     *ErrorResponse
 	JSON429     *ErrorResponse
 	JSON500     *ErrorResponse
 	JSONDefault *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r ListDashboardsResponse) Status() string {
+func (r ListDatasetsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16238,7 +17180,7 @@ func (r ListDashboardsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListDashboardsResponse) StatusCode() int {
+func (r ListDatasetsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16246,17 +17188,17 @@ func (r ListDashboardsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListDashboardsResponse) ContentType() string {
+func (r ListDatasetsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type CreateDashboardResponse struct {
+type CreateDatasetResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON201      *Dashboard
+	JSON201      *Dataset
 	JSON400      *ErrorResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
@@ -16264,7 +17206,7 @@ type CreateDashboardResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateDashboardResponse) Status() string {
+func (r CreateDatasetResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16272,7 +17214,7 @@ func (r CreateDashboardResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateDashboardResponse) StatusCode() int {
+func (r CreateDatasetResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16280,14 +17222,14 @@ func (r CreateDashboardResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateDashboardResponse) ContentType() string {
+func (r CreateDatasetResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type DeleteDashboardResponse struct {
+type UnassignDatasetParserResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON404      *ErrorResponse
@@ -16297,7 +17239,7 @@ type DeleteDashboardResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteDashboardResponse) Status() string {
+func (r UnassignDatasetParserResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16305,7 +17247,7 @@ func (r DeleteDashboardResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteDashboardResponse) StatusCode() int {
+func (r UnassignDatasetParserResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16313,17 +17255,54 @@ func (r DeleteDashboardResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteDashboardResponse) ContentType() string {
+func (r UnassignDatasetParserResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type GetDashboardResponse struct {
+type GetDatasetParserResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *Dashboard
+	JSON200      *struct {
+		ParserId   *openapi_types.UUID `json:"parser_id,omitempty"`
+		ParserName *string             `json:"parser_name,omitempty"`
+	}
+	JSON404     *ErrorResponse
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
+	JSONDefault *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDatasetParserResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDatasetParserResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetDatasetParserResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AssignDatasetParserResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *ErrorResponse
 	JSON404      *ErrorResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
@@ -16331,7 +17310,7 @@ type GetDashboardResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetDashboardResponse) Status() string {
+func (r AssignDatasetParserResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16339,7 +17318,7 @@ func (r GetDashboardResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetDashboardResponse) StatusCode() int {
+func (r AssignDatasetParserResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16347,17 +17326,89 @@ func (r GetDashboardResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetDashboardResponse) ContentType() string {
+func (r AssignDatasetParserResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type UpdateDashboardResponse struct {
+type ListEncryptionKeysResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *Dashboard
+	JSON200      *struct {
+		Keys *[]EncryptionKey `json:"keys,omitempty"`
+	}
+	JSON403     *ErrorResponse
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
+	JSONDefault *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListEncryptionKeysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListEncryptionKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListEncryptionKeysResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateEncryptionKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *EncryptionKey
+	JSON400      *ErrorResponse
+	JSON403      *ErrorResponse
+	JSON409      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateEncryptionKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateEncryptionKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateEncryptionKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteEncryptionKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON403      *ErrorResponse
 	JSON404      *ErrorResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
@@ -16365,7 +17416,7 @@ type UpdateDashboardResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdateDashboardResponse) Status() string {
+func (r DeleteEncryptionKeyResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16373,7 +17424,7 @@ func (r UpdateDashboardResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdateDashboardResponse) StatusCode() int {
+func (r DeleteEncryptionKeyResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16381,7 +17432,78 @@ func (r UpdateDashboardResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateDashboardResponse) ContentType() string {
+func (r DeleteEncryptionKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetEncryptionKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EncryptionKey
+	JSON403      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEncryptionKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEncryptionKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetEncryptionKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateEncryptionKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EncryptionKey
+	JSON400      *ErrorResponse
+	JSON403      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateEncryptionKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateEncryptionKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateEncryptionKeyResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -16391,13 +17513,10 @@ func (r UpdateDashboardResponse) ContentType() string {
 type ExplainErrorResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		AiResponse *string `json:"ai_response,omitempty"`
-	}
-	JSON403     *ErrorResponse
-	JSON429     *ErrorResponse
-	JSON500     *ErrorResponse
-	JSONDefault *ErrorResponse
+	JSON403      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -16430,6 +17549,9 @@ type ListExportsResponse struct {
 	JSON200      *struct {
 		Exports *[]Export `json:"exports,omitempty"`
 	}
+	JSON403     *ErrorResponse
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
 	JSONDefault *ErrorResponse
 }
 
@@ -16462,6 +17584,9 @@ type CreateExportResponse struct {
 	HTTPResponse *http.Response
 	JSON201      *Export
 	JSON400      *ErrorResponse
+	JSON403      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
 	JSONDefault  *ErrorResponse
 }
 
@@ -16734,7 +17859,7 @@ func (r UpdateForwardConfigResponse) ContentType() string {
 type ListGroupsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *GroupList
+	JSON200      *UserGroupList
 	JSON403      *ErrorResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
@@ -16768,7 +17893,7 @@ func (r ListGroupsResponse) ContentType() string {
 type CreateGroupResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON201      *GroupDefn
+	JSON201      *UserGroup
 	JSON400      *ErrorResponse
 	JSON403      *ErrorResponse
 	JSON429      *ErrorResponse
@@ -16837,7 +17962,7 @@ func (r DeleteGroupResponse) ContentType() string {
 type GetGroupResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *GroupDefn
+	JSON200      *UserGroup
 	JSON403      *ErrorResponse
 	JSON404      *ErrorResponse
 	JSON429      *ErrorResponse
@@ -17017,81 +18142,11 @@ func (r AddGroupMembersResponse) ContentType() string {
 	return ""
 }
 
-type ListInsightsResponse struct {
+type ListSlackIntegrationsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Insights *[]Insight `json:"insights,omitempty"`
-	}
-	JSON403     *ErrorResponse
-	JSON429     *ErrorResponse
-	JSON500     *ErrorResponse
-	JSONDefault *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r ListInsightsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListInsightsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListInsightsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetInsightResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Insight
-	JSON403      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetInsightResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetInsightResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetInsightResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListAWSIntegrationsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Integrations *[]AWSIntegrationResource `json:"integrations,omitempty"`
+		Integrations *[]SlackIntegrationResource `json:"integrations,omitempty"`
 	}
 	JSON400     *ErrorResponse
 	JSON429     *ErrorResponse
@@ -17100,7 +18155,7 @@ type ListAWSIntegrationsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r ListAWSIntegrationsResponse) Status() string {
+func (r ListSlackIntegrationsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -17108,7 +18163,7 @@ func (r ListAWSIntegrationsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListAWSIntegrationsResponse) StatusCode() int {
+func (r ListSlackIntegrationsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -17116,17 +18171,17 @@ func (r ListAWSIntegrationsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListAWSIntegrationsResponse) ContentType() string {
+func (r ListSlackIntegrationsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type CreateAWSIntegrationResponse struct {
+type CreateSlackIntegrationResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON201      *AWSIntegrationResource
+	JSON201      *SlackIntegrationResource
 	JSON400      *ErrorResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
@@ -17134,7 +18189,7 @@ type CreateAWSIntegrationResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r CreateAWSIntegrationResponse) Status() string {
+func (r CreateSlackIntegrationResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -17142,7 +18197,7 @@ func (r CreateAWSIntegrationResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CreateAWSIntegrationResponse) StatusCode() int {
+func (r CreateSlackIntegrationResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -17150,23 +18205,27 @@ func (r CreateAWSIntegrationResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateAWSIntegrationResponse) ContentType() string {
+func (r CreateSlackIntegrationResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type DeleteAWSIntegrationResponse struct {
+type ListSlackWorkspacesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
+	JSON200      *struct {
+		SlackWorkspaces *[]SlackWorkspaceResource `json:"slack_workspaces,omitempty"`
+	}
+	JSON400     *ErrorResponse
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
+	JSONDefault *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteAWSIntegrationResponse) Status() string {
+func (r ListSlackWorkspacesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -17174,7 +18233,7 @@ func (r DeleteAWSIntegrationResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteAWSIntegrationResponse) StatusCode() int {
+func (r ListSlackWorkspacesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -17182,7 +18241,108 @@ func (r DeleteAWSIntegrationResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteAWSIntegrationResponse) ContentType() string {
+func (r ListSlackWorkspacesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteSlackWorkspaceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteSlackWorkspaceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteSlackWorkspaceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteSlackWorkspaceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteSlackIntegrationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteSlackIntegrationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteSlackIntegrationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteSlackIntegrationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateSlackIntegrationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SlackIntegrationResource
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateSlackIntegrationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateSlackIntegrationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateSlackIntegrationResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -17324,80 +18484,13 @@ func (r UpdateWebhookIntegrationResponse) ContentType() string {
 	return ""
 }
 
-type CreateLogBasedMetricResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *MetricItem
-	JSON400      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateLogBasedMetricResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateLogBasedMetricResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateLogBasedMetricResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetLbmByIdResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *MetricItem
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetLbmByIdResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetLbmByIdResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetLbmByIdResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListLimitsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
 		Limits *[]Limit `json:"limits,omitempty"`
 	}
+	JSON400     *ErrorResponse
 	JSON403     *ErrorResponse
 	JSON429     *ErrorResponse
 	JSON500     *ErrorResponse
@@ -17567,6 +18660,75 @@ func (r UpdateLimitResponse) ContentType() string {
 	return ""
 }
 
+type PollLiveTailResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Logs *[]PollLiveTailResponseBody `json:"logs,omitempty"`
+	}
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
+	JSONDefault *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PollLiveTailResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PollLiveTailResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PollLiveTailResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type InitLiveTailResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *InitLiveTailResponseBody
+	JSON400      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r InitLiveTailResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r InitLiveTailResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r InitLiveTailResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListLogsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -17636,17 +18798,17 @@ func (r CreateLogResponse) ContentType() string {
 	return ""
 }
 
-type DeleteLogResponse struct {
+type ListLogViewsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON404      *ErrorResponse
+	JSON200      *LogView
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
 	JSONDefault  *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteLogResponse) Status() string {
+func (r ListLogViewsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -17654,7 +18816,7 @@ func (r DeleteLogResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteLogResponse) StatusCode() int {
+func (r ListLogViewsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -17662,76 +18824,7 @@ func (r DeleteLogResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteLogResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetLogByIdResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Log
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetLogByIdResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetLogByIdResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetLogByIdResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateLogResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Log
-	JSON400      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateLogResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateLogResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateLogResponse) ContentType() string {
+func (r ListLogViewsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -17772,40 +18865,6 @@ func (r ListDashboardsForLogResponse) ContentType() string {
 	return ""
 }
 
-type GetMetricsForLogResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *MetricItem
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetMetricsForLogResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetMetricsForLogResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetMetricsForLogResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListMonitorsForLogResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -17834,39 +18893,6 @@ func (r ListMonitorsForLogResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListMonitorsForLogResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListLogSetsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *map[string][]LogsetLog
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r ListLogSetsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListLogSetsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListLogSetsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -17944,9 +18970,46 @@ func (r CreateMonitorResponse) ContentType() string {
 	return ""
 }
 
-type SendTestNotificationsResponse struct {
+type ListMonitorDowntimesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *struct {
+		Downtimes *[]MonitorDowntime `json:"downtimes,omitempty"`
+	}
+	JSON403     *ErrorResponse
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
+	JSONDefault *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListMonitorDowntimesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListMonitorDowntimesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListMonitorDowntimesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateMonitorDowntimeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *MonitorDowntime
 	JSON400      *ErrorResponse
 	JSON403      *ErrorResponse
 	JSON429      *ErrorResponse
@@ -17955,7 +19018,7 @@ type SendTestNotificationsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r SendTestNotificationsResponse) Status() string {
+func (r CreateMonitorDowntimeResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -17963,7 +19026,7 @@ func (r SendTestNotificationsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r SendTestNotificationsResponse) StatusCode() int {
+func (r CreateMonitorDowntimeResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -17971,7 +19034,253 @@ func (r SendTestNotificationsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r SendTestNotificationsResponse) ContentType() string {
+func (r CreateMonitorDowntimeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteMonitorDowntimeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON403      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteMonitorDowntimeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteMonitorDowntimeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteMonitorDowntimeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateMonitorDowntimeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MonitorDowntime
+	JSON400      *ErrorResponse
+	JSON403      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateMonitorDowntimeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateMonitorDowntimeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateMonitorDowntimeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListMonitorTemplatesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Templates *[]MonitorTemplate `json:"templates,omitempty"`
+	}
+	JSON403     *ErrorResponse
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
+	JSONDefault *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListMonitorTemplatesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListMonitorTemplatesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListMonitorTemplatesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateMonitorTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *MonitorTemplate
+	JSON400      *ErrorResponse
+	JSON403      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateMonitorTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateMonitorTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateMonitorTemplateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteMonitorTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON403      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteMonitorTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteMonitorTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteMonitorTemplateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetMonitorTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MonitorTemplate
+	JSON403      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetMonitorTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetMonitorTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetMonitorTemplateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateMonitorTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MonitorTemplate
+	JSON400      *ErrorResponse
+	JSON403      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateMonitorTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateMonitorTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateMonitorTemplateResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -18087,8 +19396,8 @@ type GetMonitorEventsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		GroupsHistory *[]MonitorEvent `json:"groups_history,omitempty"`
-		MonitorEvents *[]MonitorEvent `json:"monitor_events,omitempty"`
+		GroupsHistory *[]MonitorGroupHistory `json:"groups_history,omitempty"`
+		MonitorEvents *[]MonitorEvent        `json:"monitor_events,omitempty"`
 	}
 	JSON403     *ErrorResponse
 	JSON404     *ErrorResponse
@@ -18121,7 +19430,45 @@ func (r GetMonitorEventsResponse) ContentType() string {
 	return ""
 }
 
-type MuteMonitorResponse struct {
+type ListMonitorNotificationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		MonitorNotifications *[]MonitorNotification `json:"monitor_notifications,omitempty"`
+	}
+	JSON400     *ErrorResponse
+	JSON403     *ErrorResponse
+	JSON404     *ErrorResponse
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
+	JSONDefault *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListMonitorNotificationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListMonitorNotificationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListMonitorNotificationsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateMonitorStatusResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Monitor
@@ -18134,7 +19481,7 @@ type MuteMonitorResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r MuteMonitorResponse) Status() string {
+func (r UpdateMonitorStatusResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -18142,7 +19489,7 @@ func (r MuteMonitorResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r MuteMonitorResponse) StatusCode() int {
+func (r UpdateMonitorStatusResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -18150,144 +19497,7 @@ func (r MuteMonitorResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r MuteMonitorResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListOrgsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Organisations *[]Organization `json:"organisations,omitempty"`
-	}
-	JSON429     *ErrorResponse
-	JSON500     *ErrorResponse
-	JSONDefault *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r ListOrgsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListOrgsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListOrgsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateOrgResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Organization
-	JSON400      *ErrorResponse
-	JSON409      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateOrgResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateOrgResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateOrgResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetOrgByIdResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Organization
-	JSON404      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetOrgByIdResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetOrgByIdResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetOrgByIdResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateOrgResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Organization
-	JSON403      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateOrgResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateOrgResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateOrgResponse) ContentType() string {
+func (r UpdateMonitorStatusResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -18449,20 +19659,92 @@ func (r ListAccessForMemberResponse) ContentType() string {
 	return ""
 }
 
-type ListParsersResponse struct {
+type GetParsersUsageRatioByLogIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ParsersUsageMetricsByLogId
+	JSON400      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetParsersUsageRatioByLogIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetParsersUsageRatioByLogIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetParsersUsageRatioByLogIdResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetParsersUsageMetricsByLogIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ParsersUsageMetricsByLogId
+	JSON400      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetParsersUsageMetricsByLogIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetParsersUsageMetricsByLogIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetParsersUsageMetricsByLogIdResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PostPatternsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Parsers *[]Parser `json:"parsers,omitempty"`
+		Patterns []struct {
+			Id       string `json:"id"`
+			LogId    string `json:"log_id"`
+			Template string `json:"template"`
+		} `json:"patterns"`
 	}
-	JSON403     *ErrorResponse
+	JSON400     *ErrorResponse
 	JSON429     *ErrorResponse
 	JSON500     *ErrorResponse
 	JSONDefault *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r ListParsersResponse) Status() string {
+func (r PostPatternsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -18470,7 +19752,7 @@ func (r ListParsersResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListParsersResponse) StatusCode() int {
+func (r PostPatternsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -18478,110 +19760,7 @@ func (r ListParsersResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListParsersResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type AiGenerateParserResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Parser
-	JSON400      *ErrorResponse
-	JSON403      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r AiGenerateParserResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AiGenerateParserResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AiGenerateParserResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteParserResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteParserResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteParserResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteParserResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type AiUpdateParserResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Parser
-	JSON400      *ErrorResponse
-	JSON403      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r AiUpdateParserResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AiUpdateParserResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AiUpdateParserResponse) ContentType() string {
+func (r PostPatternsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -18592,8 +19771,12 @@ type ListPermissionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Roles *[]Permission `json:"roles,omitempty"`
+		Resources *[]Permission `json:"resources,omitempty"`
 	}
+	JSON400     *ErrorResponse
+	JSON403     *ErrorResponse
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
 	JSONDefault *ErrorResponse
 }
 
@@ -18615,103 +19798,6 @@ func (r ListPermissionsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListPermissionsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListPoliciesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Policies *[]Policy `json:"policies,omitempty"`
-	}
-	JSONDefault *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r ListPoliciesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListPoliciesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListPoliciesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreatePolicyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Policy
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r CreatePolicyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreatePolicyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreatePolicyResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListPoliciesByPrincipalResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Policies *[]Policy `json:"policies,omitempty"`
-	}
-	JSONDefault *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r ListPoliciesByPrincipalResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListPoliciesByPrincipalResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListPoliciesByPrincipalResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -18750,431 +19836,23 @@ func (r ListPoliciesByResourceResponse) ContentType() string {
 	return ""
 }
 
-type DeletePolicyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r DeletePolicyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeletePolicyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeletePolicyResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetPolicyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Policy
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetPolicyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetPolicyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetPolicyResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdatePolicyResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Policy
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdatePolicyResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdatePolicyResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdatePolicyResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListRolesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Roles *[]Role `json:"roles,omitempty"`
-	}
-	JSONDefault *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r ListRolesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListRolesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListRolesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateRoleResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Role
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateRoleResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateRoleResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateRoleResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteRoleResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteRoleResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteRoleResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteRoleResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetRoleResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Role
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetRoleResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetRoleResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetRoleResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateRoleResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Role
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateRoleResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateRoleResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateRoleResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListSavedSearchesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		SavedSearches *[]SavedSearch `json:"saved_searches,omitempty"`
-	}
-	JSONDefault *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r ListSavedSearchesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListSavedSearchesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListSavedSearchesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateSavedSearchResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *SavedSearch
-	JSON400      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateSavedSearchResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateSavedSearchResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateSavedSearchResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteSavedSearchByIdResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON403      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteSavedSearchByIdResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteSavedSearchByIdResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteSavedSearchByIdResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetSavedSearchByIdResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *SavedSearch
-	JSON403      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetSavedSearchByIdResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetSavedSearchByIdResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetSavedSearchByIdResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateSavedSearchResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *SavedSearch
-	JSON400      *ErrorResponse
-	JSON403      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateSavedSearchResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateSavedSearchResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateSavedSearchResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type SearchResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Events       *[]Event                          `json:"events,omitempty"`
-		Explain      *QueryExplain                     `json:"explain,omitempty"`
-		Groups       *[]Group                          `json:"groups,omitempty"`
-		GroupsSeries *[]GroupSeriesItem                `json:"groups_series,omitempty"`
-		Links        *SearchCompletedLinksAsyncEnabled `json:"links,omitempty"`
-		Metadata     *QueryMetadata                    `json:"metadata,omitempty"`
-		Pagination   *Pagination                       `json:"pagination,omitempty"`
-		Result       *[]QueryResult                    `json:"result,omitempty"`
-		Totals       *map[string]interface{}           `json:"totals,omitempty"`
+		Events *[]Event `json:"events,omitempty"`
+
+		// Explain details on the query execution
+		Explain      *QueryExplain      `json:"explain,omitempty"`
+		Groups       *[]Group           `json:"groups,omitempty"`
+		GroupsSeries *[]GroupSeriesItem `json:"groups_series,omitempty"`
+
+		// Links Navigation links for traversing the result set.
+		Links      *SearchCompletedLinksAsyncEnabled `json:"links,omitempty"`
+		Metadata   *QueryMetadata                    `json:"metadata,omitempty"`
+		Pagination *Pagination                       `json:"pagination,omitempty"`
+		Result     *[]QueryResult                    `json:"result,omitempty"`
+		Totals     *map[string]interface{}           `json:"totals,omitempty"`
 	}
 	JSON400     *ErrorResponse
 	JSON429     *ErrorResponse
@@ -19210,15 +19888,27 @@ type PostSearchResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Events       *[]Event                          `json:"events,omitempty"`
-		Explain      *QueryExplain                     `json:"explain,omitempty"`
-		Groups       *[]Group                          `json:"groups,omitempty"`
-		GroupsSeries *[]GroupSeriesItem                `json:"groups_series,omitempty"`
-		Links        *SearchCompletedLinksAsyncEnabled `json:"links,omitempty"`
-		Metadata     *QueryMetadata                    `json:"metadata,omitempty"`
-		Pagination   *Pagination                       `json:"pagination,omitempty"`
-		Result       *[]QueryResult                    `json:"result,omitempty"`
-		Totals       *map[string]interface{}           `json:"totals,omitempty"`
+		// Events list of events matching the filter, if the query was an event query
+		Events *[]Event `json:"events,omitempty"`
+
+		// Explain details on the query execution
+		Explain *QueryExplain `json:"explain,omitempty"`
+		// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+		Groups *[]Group `json:"groups,omitempty"`
+
+		// GroupsSeries the list of timeseries for group by queries
+		GroupsSeries *[]GroupSeriesItem `json:"groups_series,omitempty"`
+
+		// Links Navigation links for traversing the result set.
+		Links      *SearchCompletedLinksAsyncEnabled `json:"links,omitempty"`
+		Metadata   *QueryMetadata                    `json:"metadata,omitempty"`
+		Pagination *Pagination                       `json:"pagination,omitempty"`
+		// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+		Result *[]QueryResult `json:"result,omitempty"`
+		Totals *struct {
+			// Timeseries the timeseries for non-group by queries
+			Timeseries *[]TimeSlice `json:"timeseries,omitempty"`
+		} `json:"totals,omitempty"`
 	}
 	JSON400     *ErrorResponse
 	JSON429     *ErrorResponse
@@ -19244,505 +19934,6 @@ func (r PostSearchResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PostSearchResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteSearchStatusResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON400      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSON410      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteSearchStatusResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteSearchStatusResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteSearchStatusResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetSearchStatusResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Events       *[]Event               `json:"events,omitempty"`
-		Explain      *QueryExplain          `json:"explain,omitempty"`
-		Groups       *[]Group               `json:"groups,omitempty"`
-		GroupsSeries *[]GroupSeriesItem     `json:"groups_series,omitempty"`
-		Links        *SearchInProgressLinks `json:"links,omitempty"`
-		Metadata     *QueryMetadata         `json:"metadata,omitempty"`
-		Pagination   *Pagination            `json:"pagination,omitempty"`
-
-		// Progress A value between 0 and 100 indicating how much of the processing has finished.
-		Progress *int           `json:"progress,omitempty"`
-		Result   *[]QueryResult `json:"result,omitempty"`
-
-		// StartTime The time the query was started at, in human readable format.
-		StartTime *string `json:"start_time,omitempty"`
-
-		// Status The current status of the query. Possible value:
-		// * `COMPLETED` - the query finished successfully.
-		// * `IN_PROGRESS` - the query is still running.
-		// * `CANCELLED_BY_USER` - the query was stopped as a result of a `DELETE` request being issued.
-		// * `TIMED_OUT` - the query was stopped as it was not polled in time (as indicated by the `Retry-After`
-		//   header in the response for the initial search request, or last poll).
-		// * `INTERNAL_SERVER_ERROR` - the query failed due to internal server error.
-		Status *string                 `json:"status,omitempty"`
-		Totals *map[string]interface{} `json:"totals,omitempty"`
-	}
-	JSON201 *struct {
-		Events       *[]Event                          `json:"events,omitempty"`
-		Explain      *QueryExplain                     `json:"explain,omitempty"`
-		Groups       *[]Group                          `json:"groups,omitempty"`
-		GroupsSeries *[]GroupSeriesItem                `json:"groups_series,omitempty"`
-		Links        *SearchCompletedLinksAsyncEnabled `json:"links,omitempty"`
-		Metadata     *QueryMetadata                    `json:"metadata,omitempty"`
-		Pagination   *Pagination                       `json:"pagination,omitempty"`
-
-		// Progress A value between 0 and 100 indicating how much of the processing has finished.
-		Progress *int           `json:"progress,omitempty"`
-		Result   *[]QueryResult `json:"result,omitempty"`
-
-		// StartTime The time the query was started at, in human readable format.
-		StartTime *string `json:"start_time,omitempty"`
-
-		// Status The current status of the query. Possible value:
-		// * `COMPLETED` - the query finished successfully.
-		// * `IN_PROGRESS` - the query is still running.
-		// * `CANCELLED_BY_USER` - the query was stopped as a result of a `DELETE` request being issued.
-		// * `TIMED_OUT` - the query was stopped as it was not polled in time (as indicated by the `Retry-After`
-		//   header in the response for the initial search request, or last poll).
-		// * `INTERNAL_SERVER_ERROR` - the query failed due to internal server error.
-		Status *string                 `json:"status,omitempty"`
-		Totals *map[string]interface{} `json:"totals,omitempty"`
-	}
-	JSON400     *ErrorResponse
-	JSON404     *ErrorResponse
-	JSON410     *ErrorResponse
-	JSON429     *ErrorResponse
-	JSON500     *ErrorResponse
-	JSONDefault *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetSearchStatusResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetSearchStatusResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetSearchStatusResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListIdpResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Idps *[]Idp `json:"idps,omitempty"`
-	}
-	JSONDefault *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r ListIdpResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListIdpResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListIdpResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateIdpResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Idp
-	JSON400      *ErrorResponse
-	JSON403      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateIdpResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateIdpResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateIdpResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteIdpResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON403      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteIdpResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteIdpResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteIdpResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetIdpResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Idp
-	JSON400      *ErrorResponse
-	JSON403      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetIdpResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetIdpResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetIdpResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateIdpResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON403      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateIdpResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateIdpResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateIdpResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteSsoMappingResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON403      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteSsoMappingResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteSsoMappingResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteSsoMappingResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListSsoMappingsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *struct {
-		Mappings *[]SsoMappings `json:"mappings,omitempty"`
-	}
-	JSONDefault *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r ListSsoMappingsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListSsoMappingsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListSsoMappingsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateSsoMappingsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *SsoMappings
-	JSON400      *ErrorResponse
-	JSON403      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateSsoMappingsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateSsoMappingsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateSsoMappingsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateSsoMappingsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON403      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateSsoMappingsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateSsoMappingsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateSsoMappingsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListSubscriptionsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *SubscriptionsResponse
-	JSON403      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r ListSubscriptionsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListSubscriptionsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListSubscriptionsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetSubscriptionByIdResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Subscription
-	JSON400      *ErrorResponse
-	JSON403      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetSubscriptionByIdResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetSubscriptionByIdResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetSubscriptionByIdResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -19890,11 +20081,78 @@ func (r ListTagsByNameResponse) ContentType() string {
 	return ""
 }
 
+type SearchTimeseriesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *map[string]MetricTimeseries
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r SearchTimeseriesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SearchTimeseriesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SearchTimeseriesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetTimeseriesFromMetricDefinitionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *map[string]MetricTimeseries
+	JSON404      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetTimeseriesFromMetricDefinitionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetTimeseriesFromMetricDefinitionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetTimeseriesFromMetricDefinitionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetTopKeysByIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *map[string]TopKeys
 	JSON400      *ErrorResponse
+	JSON403      *ErrorResponse
 	JSON404      *ErrorResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
@@ -19928,8 +20186,9 @@ func (r GetTopKeysByIdResponse) ContentType() string {
 type GetUsageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *ListMetricsResponse
+	JSON200      *MetricItem
 	JSON400      *ErrorResponse
+	JSON403      *ErrorResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
 	JSONDefault  *ErrorResponse
@@ -20098,6 +20357,42 @@ func (r CreateUserResponse) ContentType() string {
 	return ""
 }
 
+type ListAllUsersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Users *[]MultiOrgUser `json:"users,omitempty"`
+	}
+	JSON403     *ErrorResponse
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
+	JSONDefault *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAllUsersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAllUsersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAllUsersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type DeleteUserByIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -20205,12 +20500,14 @@ func (r UpdateUserResponse) ContentType() string {
 type ListMembershipsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *OrgAccessList
-	JSON403      *ErrorResponse
-	JSON404      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
+	JSON200      *struct {
+		Organisations *[]Organization `json:"organisations,omitempty"`
+	}
+	JSON403     *ErrorResponse
+	JSON404     *ErrorResponse
+	JSON429     *ErrorResponse
+	JSON500     *ErrorResponse
+	JSONDefault *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -20237,11 +20534,46 @@ func (r ListMembershipsResponse) ContentType() string {
 	return ""
 }
 
+type DeactivateUserResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *User
+	JSON403      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON429      *ErrorResponse
+	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeactivateUserResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeactivateUserResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeactivateUserResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListGroupsForMemberResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		Groups *[]GroupDefn `json:"groups,omitempty"`
+		Groups *[]UserGroup `json:"groups,omitempty"`
 	}
 	JSON403     *ErrorResponse
 	JSON404     *ErrorResponse
@@ -20339,80 +20671,10 @@ func (r PatchUserPreferencesResponse) ContentType() string {
 	return ""
 }
 
-type ListWidgetsResponse struct {
+type ReactivateUserResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		Widgets *[]Widget `json:"widgets,omitempty"`
-	}
-	JSON403     *ErrorResponse
-	JSON429     *ErrorResponse
-	JSON500     *ErrorResponse
-	JSONDefault *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r ListWidgetsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListWidgetsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListWidgetsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateWidgetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *Widget
-	JSON400      *ErrorResponse
-	JSON403      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateWidgetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateWidgetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateWidgetResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteWidgetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
+	JSON200      *User
 	JSON403      *ErrorResponse
 	JSON404      *ErrorResponse
 	JSON429      *ErrorResponse
@@ -20421,7 +20683,7 @@ type DeleteWidgetResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteWidgetResponse) Status() string {
+func (r ReactivateUserResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -20429,7 +20691,7 @@ func (r DeleteWidgetResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteWidgetResponse) StatusCode() int {
+func (r ReactivateUserResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -20437,57 +20699,26 @@ func (r DeleteWidgetResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteWidgetResponse) ContentType() string {
+func (r ReactivateUserResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type GetWidgetResponse struct {
+type ResendUserInvitationResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *Widget
+	JSON200      *ResendUserInvitationResponseBody
 	JSON403      *ErrorResponse
-	JSON429      *ErrorResponse
-	JSON500      *ErrorResponse
-	JSONDefault  *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r GetWidgetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetWidgetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetWidgetResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type PatchWidgetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
 	JSON404      *ErrorResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
+	JSONDefault  *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r PatchWidgetResponse) Status() string {
+func (r ResendUserInvitationResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -20495,7 +20726,7 @@ func (r PatchWidgetResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PatchWidgetResponse) StatusCode() int {
+func (r ResendUserInvitationResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -20503,17 +20734,16 @@ func (r PatchWidgetResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PatchWidgetResponse) ContentType() string {
+func (r ResendUserInvitationResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type UpdateWidgetResponse struct {
+type WidgetCreationAssistantResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON400      *ErrorResponse
 	JSON403      *ErrorResponse
 	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
@@ -20521,7 +20751,7 @@ type UpdateWidgetResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r UpdateWidgetResponse) Status() string {
+func (r WidgetCreationAssistantResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -20529,7 +20759,7 @@ func (r UpdateWidgetResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r UpdateWidgetResponse) StatusCode() int {
+func (r WidgetCreationAssistantResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -20537,20 +20767,11 @@ func (r UpdateWidgetResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateWidgetResponse) ContentType() string {
+func (r WidgetCreationAssistantResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
-}
-
-// GetAnalyticsErrorsWithResponse request returning *GetAnalyticsErrorsResponse
-func (c *ClientWithResponses) GetAnalyticsErrorsWithResponse(ctx context.Context, params *GetAnalyticsErrorsParams, reqEditors ...RequestEditorFn) (*GetAnalyticsErrorsResponse, error) {
-	rsp, err := c.GetAnalyticsErrors(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAnalyticsErrorsResponse(rsp)
 }
 
 // ListApiKeysWithResponse request returning *ListApiKeysResponse
@@ -20605,6 +20826,15 @@ func (c *ClientWithResponses) UpdateApiKeyWithResponse(ctx context.Context, apiK
 	return ParseUpdateApiKeyResponse(rsp)
 }
 
+// ListCollectionsWithResponse request returning *ListCollectionsResponse
+func (c *ClientWithResponses) ListCollectionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCollectionsResponse, error) {
+	rsp, err := c.ListCollections(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCollectionsResponse(rsp)
+}
+
 // GetContextWithResponse request returning *GetContextResponse
 func (c *ClientWithResponses) GetContextWithResponse(ctx context.Context, params *GetContextParams, reqEditors ...RequestEditorFn) (*GetContextResponse, error) {
 	rsp, err := c.GetContext(ctx, params, reqEditors...)
@@ -20612,24 +20842,6 @@ func (c *ClientWithResponses) GetContextWithResponse(ctx context.Context, params
 		return nil, err
 	}
 	return ParseGetContextResponse(rsp)
-}
-
-// GetContractWithResponse request returning *GetContractResponse
-func (c *ClientWithResponses) GetContractWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetContractResponse, error) {
-	rsp, err := c.GetContract(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetContractResponse(rsp)
-}
-
-// GetCostByLogIdWithResponse request returning *GetCostByLogIdResponse
-func (c *ClientWithResponses) GetCostByLogIdWithResponse(ctx context.Context, params *GetCostByLogIdParams, reqEditors ...RequestEditorFn) (*GetCostByLogIdResponse, error) {
-	rsp, err := c.GetCostByLogId(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetCostByLogIdResponse(rsp)
 }
 
 // GetCustomerWithResponse request returning *GetCustomerResponse
@@ -20658,65 +20870,126 @@ func (c *ClientWithResponses) UpdateCustomerWithResponse(ctx context.Context, bo
 	return ParseUpdateCustomerResponse(rsp)
 }
 
-// ListDashboardsWithResponse request returning *ListDashboardsResponse
-func (c *ClientWithResponses) ListDashboardsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDashboardsResponse, error) {
-	rsp, err := c.ListDashboards(ctx, reqEditors...)
+// ListDatasetsWithResponse request returning *ListDatasetsResponse
+func (c *ClientWithResponses) ListDatasetsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDatasetsResponse, error) {
+	rsp, err := c.ListDatasets(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListDashboardsResponse(rsp)
+	return ParseListDatasetsResponse(rsp)
 }
 
-// CreateDashboardWithBodyWithResponse request with arbitrary body returning *CreateDashboardResponse
-func (c *ClientWithResponses) CreateDashboardWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDashboardResponse, error) {
-	rsp, err := c.CreateDashboardWithBody(ctx, contentType, body, reqEditors...)
+// CreateDatasetWithBodyWithResponse request with arbitrary body returning *CreateDatasetResponse
+func (c *ClientWithResponses) CreateDatasetWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDatasetResponse, error) {
+	rsp, err := c.CreateDatasetWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateDashboardResponse(rsp)
+	return ParseCreateDatasetResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateDashboardWithResponse(ctx context.Context, body CreateDashboardJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDashboardResponse, error) {
-	rsp, err := c.CreateDashboard(ctx, body, reqEditors...)
+func (c *ClientWithResponses) CreateDatasetWithResponse(ctx context.Context, body CreateDatasetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDatasetResponse, error) {
+	rsp, err := c.CreateDataset(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateDashboardResponse(rsp)
+	return ParseCreateDatasetResponse(rsp)
 }
 
-// DeleteDashboardWithResponse request returning *DeleteDashboardResponse
-func (c *ClientWithResponses) DeleteDashboardWithResponse(ctx context.Context, dashboardId string, reqEditors ...RequestEditorFn) (*DeleteDashboardResponse, error) {
-	rsp, err := c.DeleteDashboard(ctx, dashboardId, reqEditors...)
+// UnassignDatasetParserWithResponse request returning *UnassignDatasetParserResponse
+func (c *ClientWithResponses) UnassignDatasetParserWithResponse(ctx context.Context, datasetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnassignDatasetParserResponse, error) {
+	rsp, err := c.UnassignDatasetParser(ctx, datasetId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteDashboardResponse(rsp)
+	return ParseUnassignDatasetParserResponse(rsp)
 }
 
-// GetDashboardWithResponse request returning *GetDashboardResponse
-func (c *ClientWithResponses) GetDashboardWithResponse(ctx context.Context, dashboardId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDashboardResponse, error) {
-	rsp, err := c.GetDashboard(ctx, dashboardId, reqEditors...)
+// GetDatasetParserWithResponse request returning *GetDatasetParserResponse
+func (c *ClientWithResponses) GetDatasetParserWithResponse(ctx context.Context, datasetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDatasetParserResponse, error) {
+	rsp, err := c.GetDatasetParser(ctx, datasetId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetDashboardResponse(rsp)
+	return ParseGetDatasetParserResponse(rsp)
 }
 
-// UpdateDashboardWithBodyWithResponse request with arbitrary body returning *UpdateDashboardResponse
-func (c *ClientWithResponses) UpdateDashboardWithBodyWithResponse(ctx context.Context, dashboardId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDashboardResponse, error) {
-	rsp, err := c.UpdateDashboardWithBody(ctx, dashboardId, contentType, body, reqEditors...)
+// AssignDatasetParserWithBodyWithResponse request with arbitrary body returning *AssignDatasetParserResponse
+func (c *ClientWithResponses) AssignDatasetParserWithBodyWithResponse(ctx context.Context, datasetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AssignDatasetParserResponse, error) {
+	rsp, err := c.AssignDatasetParserWithBody(ctx, datasetId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateDashboardResponse(rsp)
+	return ParseAssignDatasetParserResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDashboardWithResponse(ctx context.Context, dashboardId openapi_types.UUID, body UpdateDashboardJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDashboardResponse, error) {
-	rsp, err := c.UpdateDashboard(ctx, dashboardId, body, reqEditors...)
+func (c *ClientWithResponses) AssignDatasetParserWithResponse(ctx context.Context, datasetId openapi_types.UUID, body AssignDatasetParserJSONRequestBody, reqEditors ...RequestEditorFn) (*AssignDatasetParserResponse, error) {
+	rsp, err := c.AssignDatasetParser(ctx, datasetId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateDashboardResponse(rsp)
+	return ParseAssignDatasetParserResponse(rsp)
+}
+
+// ListEncryptionKeysWithResponse request returning *ListEncryptionKeysResponse
+func (c *ClientWithResponses) ListEncryptionKeysWithResponse(ctx context.Context, params *ListEncryptionKeysParams, reqEditors ...RequestEditorFn) (*ListEncryptionKeysResponse, error) {
+	rsp, err := c.ListEncryptionKeys(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListEncryptionKeysResponse(rsp)
+}
+
+// CreateEncryptionKeyWithBodyWithResponse request with arbitrary body returning *CreateEncryptionKeyResponse
+func (c *ClientWithResponses) CreateEncryptionKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEncryptionKeyResponse, error) {
+	rsp, err := c.CreateEncryptionKeyWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateEncryptionKeyResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateEncryptionKeyWithResponse(ctx context.Context, body CreateEncryptionKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEncryptionKeyResponse, error) {
+	rsp, err := c.CreateEncryptionKey(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateEncryptionKeyResponse(rsp)
+}
+
+// DeleteEncryptionKeyWithResponse request returning *DeleteEncryptionKeyResponse
+func (c *ClientWithResponses) DeleteEncryptionKeyWithResponse(ctx context.Context, keyId string, reqEditors ...RequestEditorFn) (*DeleteEncryptionKeyResponse, error) {
+	rsp, err := c.DeleteEncryptionKey(ctx, keyId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteEncryptionKeyResponse(rsp)
+}
+
+// GetEncryptionKeyWithResponse request returning *GetEncryptionKeyResponse
+func (c *ClientWithResponses) GetEncryptionKeyWithResponse(ctx context.Context, keyId string, reqEditors ...RequestEditorFn) (*GetEncryptionKeyResponse, error) {
+	rsp, err := c.GetEncryptionKey(ctx, keyId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEncryptionKeyResponse(rsp)
+}
+
+// UpdateEncryptionKeyWithBodyWithResponse request with arbitrary body returning *UpdateEncryptionKeyResponse
+func (c *ClientWithResponses) UpdateEncryptionKeyWithBodyWithResponse(ctx context.Context, keyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateEncryptionKeyResponse, error) {
+	rsp, err := c.UpdateEncryptionKeyWithBody(ctx, keyId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateEncryptionKeyResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateEncryptionKeyWithResponse(ctx context.Context, keyId string, body UpdateEncryptionKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateEncryptionKeyResponse, error) {
+	rsp, err := c.UpdateEncryptionKey(ctx, keyId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateEncryptionKeyResponse(rsp)
 }
 
 // ExplainErrorWithResponse request returning *ExplainErrorResponse
@@ -20945,57 +21218,74 @@ func (c *ClientWithResponses) AddGroupMembersWithResponse(ctx context.Context, g
 	return ParseAddGroupMembersResponse(rsp)
 }
 
-// ListInsightsWithResponse request returning *ListInsightsResponse
-func (c *ClientWithResponses) ListInsightsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListInsightsResponse, error) {
-	rsp, err := c.ListInsights(ctx, reqEditors...)
+// ListSlackIntegrationsWithResponse request returning *ListSlackIntegrationsResponse
+func (c *ClientWithResponses) ListSlackIntegrationsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSlackIntegrationsResponse, error) {
+	rsp, err := c.ListSlackIntegrations(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListInsightsResponse(rsp)
+	return ParseListSlackIntegrationsResponse(rsp)
 }
 
-// GetInsightWithResponse request returning *GetInsightResponse
-func (c *ClientWithResponses) GetInsightWithResponse(ctx context.Context, insightId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetInsightResponse, error) {
-	rsp, err := c.GetInsight(ctx, insightId, reqEditors...)
+// CreateSlackIntegrationWithBodyWithResponse request with arbitrary body returning *CreateSlackIntegrationResponse
+func (c *ClientWithResponses) CreateSlackIntegrationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSlackIntegrationResponse, error) {
+	rsp, err := c.CreateSlackIntegrationWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetInsightResponse(rsp)
+	return ParseCreateSlackIntegrationResponse(rsp)
 }
 
-// ListAWSIntegrationsWithResponse request returning *ListAWSIntegrationsResponse
-func (c *ClientWithResponses) ListAWSIntegrationsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAWSIntegrationsResponse, error) {
-	rsp, err := c.ListAWSIntegrations(ctx, reqEditors...)
+func (c *ClientWithResponses) CreateSlackIntegrationWithResponse(ctx context.Context, body CreateSlackIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSlackIntegrationResponse, error) {
+	rsp, err := c.CreateSlackIntegration(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListAWSIntegrationsResponse(rsp)
+	return ParseCreateSlackIntegrationResponse(rsp)
 }
 
-// CreateAWSIntegrationWithBodyWithResponse request with arbitrary body returning *CreateAWSIntegrationResponse
-func (c *ClientWithResponses) CreateAWSIntegrationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAWSIntegrationResponse, error) {
-	rsp, err := c.CreateAWSIntegrationWithBody(ctx, contentType, body, reqEditors...)
+// ListSlackWorkspacesWithResponse request returning *ListSlackWorkspacesResponse
+func (c *ClientWithResponses) ListSlackWorkspacesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSlackWorkspacesResponse, error) {
+	rsp, err := c.ListSlackWorkspaces(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateAWSIntegrationResponse(rsp)
+	return ParseListSlackWorkspacesResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateAWSIntegrationWithResponse(ctx context.Context, body CreateAWSIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAWSIntegrationResponse, error) {
-	rsp, err := c.CreateAWSIntegration(ctx, body, reqEditors...)
+// DeleteSlackWorkspaceWithResponse request returning *DeleteSlackWorkspaceResponse
+func (c *ClientWithResponses) DeleteSlackWorkspaceWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*DeleteSlackWorkspaceResponse, error) {
+	rsp, err := c.DeleteSlackWorkspace(ctx, workspaceId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateAWSIntegrationResponse(rsp)
+	return ParseDeleteSlackWorkspaceResponse(rsp)
 }
 
-// DeleteAWSIntegrationWithResponse request returning *DeleteAWSIntegrationResponse
-func (c *ClientWithResponses) DeleteAWSIntegrationWithResponse(ctx context.Context, resourceId string, reqEditors ...RequestEditorFn) (*DeleteAWSIntegrationResponse, error) {
-	rsp, err := c.DeleteAWSIntegration(ctx, resourceId, reqEditors...)
+// DeleteSlackIntegrationWithResponse request returning *DeleteSlackIntegrationResponse
+func (c *ClientWithResponses) DeleteSlackIntegrationWithResponse(ctx context.Context, slackId string, reqEditors ...RequestEditorFn) (*DeleteSlackIntegrationResponse, error) {
+	rsp, err := c.DeleteSlackIntegration(ctx, slackId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteAWSIntegrationResponse(rsp)
+	return ParseDeleteSlackIntegrationResponse(rsp)
+}
+
+// UpdateSlackIntegrationWithBodyWithResponse request with arbitrary body returning *UpdateSlackIntegrationResponse
+func (c *ClientWithResponses) UpdateSlackIntegrationWithBodyWithResponse(ctx context.Context, slackId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSlackIntegrationResponse, error) {
+	rsp, err := c.UpdateSlackIntegrationWithBody(ctx, slackId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSlackIntegrationResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateSlackIntegrationWithResponse(ctx context.Context, slackId string, body UpdateSlackIntegrationJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSlackIntegrationResponse, error) {
+	rsp, err := c.UpdateSlackIntegration(ctx, slackId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSlackIntegrationResponse(rsp)
 }
 
 // ListWebhookIntegrationsWithResponse request returning *ListWebhookIntegrationsResponse
@@ -21048,32 +21338,6 @@ func (c *ClientWithResponses) UpdateWebhookIntegrationWithResponse(ctx context.C
 		return nil, err
 	}
 	return ParseUpdateWebhookIntegrationResponse(rsp)
-}
-
-// CreateLogBasedMetricWithBodyWithResponse request with arbitrary body returning *CreateLogBasedMetricResponse
-func (c *ClientWithResponses) CreateLogBasedMetricWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateLogBasedMetricResponse, error) {
-	rsp, err := c.CreateLogBasedMetricWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateLogBasedMetricResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateLogBasedMetricWithResponse(ctx context.Context, body CreateLogBasedMetricJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateLogBasedMetricResponse, error) {
-	rsp, err := c.CreateLogBasedMetric(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateLogBasedMetricResponse(rsp)
-}
-
-// GetLbmByIdWithResponse request returning *GetLbmByIdResponse
-func (c *ClientWithResponses) GetLbmByIdWithResponse(ctx context.Context, lbmId string, params *GetLbmByIdParams, reqEditors ...RequestEditorFn) (*GetLbmByIdResponse, error) {
-	rsp, err := c.GetLbmById(ctx, lbmId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetLbmByIdResponse(rsp)
 }
 
 // ListLimitsWithResponse request returning *ListLimitsResponse
@@ -21137,6 +21401,32 @@ func (c *ClientWithResponses) UpdateLimitWithResponse(ctx context.Context, limit
 	return ParseUpdateLimitResponse(rsp)
 }
 
+// PollLiveTailWithResponse request returning *PollLiveTailResponse
+func (c *ClientWithResponses) PollLiveTailWithResponse(ctx context.Context, params *PollLiveTailParams, reqEditors ...RequestEditorFn) (*PollLiveTailResponse, error) {
+	rsp, err := c.PollLiveTail(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePollLiveTailResponse(rsp)
+}
+
+// InitLiveTailWithBodyWithResponse request with arbitrary body returning *InitLiveTailResponse
+func (c *ClientWithResponses) InitLiveTailWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InitLiveTailResponse, error) {
+	rsp, err := c.InitLiveTailWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInitLiveTailResponse(rsp)
+}
+
+func (c *ClientWithResponses) InitLiveTailWithResponse(ctx context.Context, body InitLiveTailJSONRequestBody, reqEditors ...RequestEditorFn) (*InitLiveTailResponse, error) {
+	rsp, err := c.InitLiveTail(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInitLiveTailResponse(rsp)
+}
+
 // ListLogsWithResponse request returning *ListLogsResponse
 func (c *ClientWithResponses) ListLogsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLogsResponse, error) {
 	rsp, err := c.ListLogs(ctx, reqEditors...)
@@ -21163,39 +21453,13 @@ func (c *ClientWithResponses) CreateLogWithResponse(ctx context.Context, body Cr
 	return ParseCreateLogResponse(rsp)
 }
 
-// DeleteLogWithResponse request returning *DeleteLogResponse
-func (c *ClientWithResponses) DeleteLogWithResponse(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteLogResponse, error) {
-	rsp, err := c.DeleteLog(ctx, logId, reqEditors...)
+// ListLogViewsWithResponse request returning *ListLogViewsResponse
+func (c *ClientWithResponses) ListLogViewsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLogViewsResponse, error) {
+	rsp, err := c.ListLogViews(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteLogResponse(rsp)
-}
-
-// GetLogByIdWithResponse request returning *GetLogByIdResponse
-func (c *ClientWithResponses) GetLogByIdWithResponse(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLogByIdResponse, error) {
-	rsp, err := c.GetLogById(ctx, logId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetLogByIdResponse(rsp)
-}
-
-// UpdateLogWithBodyWithResponse request with arbitrary body returning *UpdateLogResponse
-func (c *ClientWithResponses) UpdateLogWithBodyWithResponse(ctx context.Context, logId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateLogResponse, error) {
-	rsp, err := c.UpdateLogWithBody(ctx, logId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateLogResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateLogWithResponse(ctx context.Context, logId openapi_types.UUID, body UpdateLogJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateLogResponse, error) {
-	rsp, err := c.UpdateLog(ctx, logId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateLogResponse(rsp)
+	return ParseListLogViewsResponse(rsp)
 }
 
 // ListDashboardsForLogWithResponse request returning *ListDashboardsForLogResponse
@@ -21207,15 +21471,6 @@ func (c *ClientWithResponses) ListDashboardsForLogWithResponse(ctx context.Conte
 	return ParseListDashboardsForLogResponse(rsp)
 }
 
-// GetMetricsForLogWithResponse request returning *GetMetricsForLogResponse
-func (c *ClientWithResponses) GetMetricsForLogWithResponse(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetMetricsForLogResponse, error) {
-	rsp, err := c.GetMetricsForLog(ctx, logId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetMetricsForLogResponse(rsp)
-}
-
 // ListMonitorsForLogWithResponse request returning *ListMonitorsForLogResponse
 func (c *ClientWithResponses) ListMonitorsForLogWithResponse(ctx context.Context, logId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListMonitorsForLogResponse, error) {
 	rsp, err := c.ListMonitorsForLog(ctx, logId, reqEditors...)
@@ -21223,15 +21478,6 @@ func (c *ClientWithResponses) ListMonitorsForLogWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseListMonitorsForLogResponse(rsp)
-}
-
-// ListLogSetsWithResponse request returning *ListLogSetsResponse
-func (c *ClientWithResponses) ListLogSetsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLogSetsResponse, error) {
-	rsp, err := c.ListLogSets(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListLogSetsResponse(rsp)
 }
 
 // ListMonitorsWithResponse request returning *ListMonitorsResponse
@@ -21260,21 +21506,117 @@ func (c *ClientWithResponses) CreateMonitorWithResponse(ctx context.Context, bod
 	return ParseCreateMonitorResponse(rsp)
 }
 
-// SendTestNotificationsWithBodyWithResponse request with arbitrary body returning *SendTestNotificationsResponse
-func (c *ClientWithResponses) SendTestNotificationsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendTestNotificationsResponse, error) {
-	rsp, err := c.SendTestNotificationsWithBody(ctx, contentType, body, reqEditors...)
+// ListMonitorDowntimesWithResponse request returning *ListMonitorDowntimesResponse
+func (c *ClientWithResponses) ListMonitorDowntimesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListMonitorDowntimesResponse, error) {
+	rsp, err := c.ListMonitorDowntimes(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSendTestNotificationsResponse(rsp)
+	return ParseListMonitorDowntimesResponse(rsp)
 }
 
-func (c *ClientWithResponses) SendTestNotificationsWithResponse(ctx context.Context, body SendTestNotificationsJSONRequestBody, reqEditors ...RequestEditorFn) (*SendTestNotificationsResponse, error) {
-	rsp, err := c.SendTestNotifications(ctx, body, reqEditors...)
+// CreateMonitorDowntimeWithBodyWithResponse request with arbitrary body returning *CreateMonitorDowntimeResponse
+func (c *ClientWithResponses) CreateMonitorDowntimeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMonitorDowntimeResponse, error) {
+	rsp, err := c.CreateMonitorDowntimeWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSendTestNotificationsResponse(rsp)
+	return ParseCreateMonitorDowntimeResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateMonitorDowntimeWithResponse(ctx context.Context, body CreateMonitorDowntimeJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMonitorDowntimeResponse, error) {
+	rsp, err := c.CreateMonitorDowntime(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateMonitorDowntimeResponse(rsp)
+}
+
+// DeleteMonitorDowntimeWithResponse request returning *DeleteMonitorDowntimeResponse
+func (c *ClientWithResponses) DeleteMonitorDowntimeWithResponse(ctx context.Context, downtimeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteMonitorDowntimeResponse, error) {
+	rsp, err := c.DeleteMonitorDowntime(ctx, downtimeId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteMonitorDowntimeResponse(rsp)
+}
+
+// UpdateMonitorDowntimeWithBodyWithResponse request with arbitrary body returning *UpdateMonitorDowntimeResponse
+func (c *ClientWithResponses) UpdateMonitorDowntimeWithBodyWithResponse(ctx context.Context, downtimeId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMonitorDowntimeResponse, error) {
+	rsp, err := c.UpdateMonitorDowntimeWithBody(ctx, downtimeId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateMonitorDowntimeResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateMonitorDowntimeWithResponse(ctx context.Context, downtimeId openapi_types.UUID, body UpdateMonitorDowntimeJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMonitorDowntimeResponse, error) {
+	rsp, err := c.UpdateMonitorDowntime(ctx, downtimeId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateMonitorDowntimeResponse(rsp)
+}
+
+// ListMonitorTemplatesWithResponse request returning *ListMonitorTemplatesResponse
+func (c *ClientWithResponses) ListMonitorTemplatesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListMonitorTemplatesResponse, error) {
+	rsp, err := c.ListMonitorTemplates(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListMonitorTemplatesResponse(rsp)
+}
+
+// CreateMonitorTemplateWithBodyWithResponse request with arbitrary body returning *CreateMonitorTemplateResponse
+func (c *ClientWithResponses) CreateMonitorTemplateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMonitorTemplateResponse, error) {
+	rsp, err := c.CreateMonitorTemplateWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateMonitorTemplateResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateMonitorTemplateWithResponse(ctx context.Context, body CreateMonitorTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMonitorTemplateResponse, error) {
+	rsp, err := c.CreateMonitorTemplate(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateMonitorTemplateResponse(rsp)
+}
+
+// DeleteMonitorTemplateWithResponse request returning *DeleteMonitorTemplateResponse
+func (c *ClientWithResponses) DeleteMonitorTemplateWithResponse(ctx context.Context, templateId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteMonitorTemplateResponse, error) {
+	rsp, err := c.DeleteMonitorTemplate(ctx, templateId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteMonitorTemplateResponse(rsp)
+}
+
+// GetMonitorTemplateWithResponse request returning *GetMonitorTemplateResponse
+func (c *ClientWithResponses) GetMonitorTemplateWithResponse(ctx context.Context, templateId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetMonitorTemplateResponse, error) {
+	rsp, err := c.GetMonitorTemplate(ctx, templateId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetMonitorTemplateResponse(rsp)
+}
+
+// UpdateMonitorTemplateWithBodyWithResponse request with arbitrary body returning *UpdateMonitorTemplateResponse
+func (c *ClientWithResponses) UpdateMonitorTemplateWithBodyWithResponse(ctx context.Context, templateId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMonitorTemplateResponse, error) {
+	rsp, err := c.UpdateMonitorTemplateWithBody(ctx, templateId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateMonitorTemplateResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateMonitorTemplateWithResponse(ctx context.Context, templateId openapi_types.UUID, body UpdateMonitorTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMonitorTemplateResponse, error) {
+	rsp, err := c.UpdateMonitorTemplate(ctx, templateId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateMonitorTemplateResponse(rsp)
 }
 
 // DeleteMonitorWithResponse request returning *DeleteMonitorResponse
@@ -21321,73 +21663,30 @@ func (c *ClientWithResponses) GetMonitorEventsWithResponse(ctx context.Context, 
 	return ParseGetMonitorEventsResponse(rsp)
 }
 
-// MuteMonitorWithBodyWithResponse request with arbitrary body returning *MuteMonitorResponse
-func (c *ClientWithResponses) MuteMonitorWithBodyWithResponse(ctx context.Context, monitorId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MuteMonitorResponse, error) {
-	rsp, err := c.MuteMonitorWithBody(ctx, monitorId, contentType, body, reqEditors...)
+// ListMonitorNotificationsWithResponse request returning *ListMonitorNotificationsResponse
+func (c *ClientWithResponses) ListMonitorNotificationsWithResponse(ctx context.Context, monitorId openapi_types.UUID, params *ListMonitorNotificationsParams, reqEditors ...RequestEditorFn) (*ListMonitorNotificationsResponse, error) {
+	rsp, err := c.ListMonitorNotifications(ctx, monitorId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseMuteMonitorResponse(rsp)
+	return ParseListMonitorNotificationsResponse(rsp)
 }
 
-func (c *ClientWithResponses) MuteMonitorWithResponse(ctx context.Context, monitorId openapi_types.UUID, body MuteMonitorJSONRequestBody, reqEditors ...RequestEditorFn) (*MuteMonitorResponse, error) {
-	rsp, err := c.MuteMonitor(ctx, monitorId, body, reqEditors...)
+// UpdateMonitorStatusWithBodyWithResponse request with arbitrary body returning *UpdateMonitorStatusResponse
+func (c *ClientWithResponses) UpdateMonitorStatusWithBodyWithResponse(ctx context.Context, monitorId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMonitorStatusResponse, error) {
+	rsp, err := c.UpdateMonitorStatusWithBody(ctx, monitorId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseMuteMonitorResponse(rsp)
+	return ParseUpdateMonitorStatusResponse(rsp)
 }
 
-// ListOrgsWithResponse request returning *ListOrgsResponse
-func (c *ClientWithResponses) ListOrgsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOrgsResponse, error) {
-	rsp, err := c.ListOrgs(ctx, reqEditors...)
+func (c *ClientWithResponses) UpdateMonitorStatusWithResponse(ctx context.Context, monitorId openapi_types.UUID, body UpdateMonitorStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMonitorStatusResponse, error) {
+	rsp, err := c.UpdateMonitorStatus(ctx, monitorId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListOrgsResponse(rsp)
-}
-
-// CreateOrgWithBodyWithResponse request with arbitrary body returning *CreateOrgResponse
-func (c *ClientWithResponses) CreateOrgWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOrgResponse, error) {
-	rsp, err := c.CreateOrgWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateOrgResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateOrgWithResponse(ctx context.Context, body CreateOrgJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOrgResponse, error) {
-	rsp, err := c.CreateOrg(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateOrgResponse(rsp)
-}
-
-// GetOrgByIdWithResponse request returning *GetOrgByIdResponse
-func (c *ClientWithResponses) GetOrgByIdWithResponse(ctx context.Context, orgId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetOrgByIdResponse, error) {
-	rsp, err := c.GetOrgById(ctx, orgId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetOrgByIdResponse(rsp)
-}
-
-// UpdateOrgWithBodyWithResponse request with arbitrary body returning *UpdateOrgResponse
-func (c *ClientWithResponses) UpdateOrgWithBodyWithResponse(ctx context.Context, orgId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOrgResponse, error) {
-	rsp, err := c.UpdateOrgWithBody(ctx, orgId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateOrgResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateOrgWithResponse(ctx context.Context, orgId openapi_types.UUID, body UpdateOrgJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOrgResponse, error) {
-	rsp, err := c.UpdateOrg(ctx, orgId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateOrgResponse(rsp)
+	return ParseUpdateMonitorStatusResponse(rsp)
 }
 
 // ListOrgMembersWithResponse request returning *ListOrgMembersResponse
@@ -21443,56 +21742,39 @@ func (c *ClientWithResponses) ListAccessForMemberWithResponse(ctx context.Contex
 	return ParseListAccessForMemberResponse(rsp)
 }
 
-// ListParsersWithResponse request returning *ListParsersResponse
-func (c *ClientWithResponses) ListParsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListParsersResponse, error) {
-	rsp, err := c.ListParsers(ctx, reqEditors...)
+// GetParsersUsageRatioByLogIdWithResponse request returning *GetParsersUsageRatioByLogIdResponse
+func (c *ClientWithResponses) GetParsersUsageRatioByLogIdWithResponse(ctx context.Context, params *GetParsersUsageRatioByLogIdParams, reqEditors ...RequestEditorFn) (*GetParsersUsageRatioByLogIdResponse, error) {
+	rsp, err := c.GetParsersUsageRatioByLogId(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListParsersResponse(rsp)
+	return ParseGetParsersUsageRatioByLogIdResponse(rsp)
 }
 
-// AiGenerateParserWithBodyWithResponse request with arbitrary body returning *AiGenerateParserResponse
-func (c *ClientWithResponses) AiGenerateParserWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AiGenerateParserResponse, error) {
-	rsp, err := c.AiGenerateParserWithBody(ctx, contentType, body, reqEditors...)
+// GetParsersUsageMetricsByLogIdWithResponse request returning *GetParsersUsageMetricsByLogIdResponse
+func (c *ClientWithResponses) GetParsersUsageMetricsByLogIdWithResponse(ctx context.Context, params *GetParsersUsageMetricsByLogIdParams, reqEditors ...RequestEditorFn) (*GetParsersUsageMetricsByLogIdResponse, error) {
+	rsp, err := c.GetParsersUsageMetricsByLogId(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseAiGenerateParserResponse(rsp)
+	return ParseGetParsersUsageMetricsByLogIdResponse(rsp)
 }
 
-func (c *ClientWithResponses) AiGenerateParserWithResponse(ctx context.Context, body AiGenerateParserJSONRequestBody, reqEditors ...RequestEditorFn) (*AiGenerateParserResponse, error) {
-	rsp, err := c.AiGenerateParser(ctx, body, reqEditors...)
+// PostPatternsWithBodyWithResponse request with arbitrary body returning *PostPatternsResponse
+func (c *ClientWithResponses) PostPatternsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostPatternsResponse, error) {
+	rsp, err := c.PostPatternsWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseAiGenerateParserResponse(rsp)
+	return ParsePostPatternsResponse(rsp)
 }
 
-// DeleteParserWithResponse request returning *DeleteParserResponse
-func (c *ClientWithResponses) DeleteParserWithResponse(ctx context.Context, parserId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteParserResponse, error) {
-	rsp, err := c.DeleteParser(ctx, parserId, reqEditors...)
+func (c *ClientWithResponses) PostPatternsWithResponse(ctx context.Context, body PostPatternsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostPatternsResponse, error) {
+	rsp, err := c.PostPatterns(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteParserResponse(rsp)
-}
-
-// AiUpdateParserWithBodyWithResponse request with arbitrary body returning *AiUpdateParserResponse
-func (c *ClientWithResponses) AiUpdateParserWithBodyWithResponse(ctx context.Context, parserId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AiUpdateParserResponse, error) {
-	rsp, err := c.AiUpdateParserWithBody(ctx, parserId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAiUpdateParserResponse(rsp)
-}
-
-func (c *ClientWithResponses) AiUpdateParserWithResponse(ctx context.Context, parserId openapi_types.UUID, body AiUpdateParserJSONRequestBody, reqEditors ...RequestEditorFn) (*AiUpdateParserResponse, error) {
-	rsp, err := c.AiUpdateParser(ctx, parserId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAiUpdateParserResponse(rsp)
+	return ParsePostPatternsResponse(rsp)
 }
 
 // ListPermissionsWithResponse request returning *ListPermissionsResponse
@@ -21504,41 +21786,6 @@ func (c *ClientWithResponses) ListPermissionsWithResponse(ctx context.Context, r
 	return ParseListPermissionsResponse(rsp)
 }
 
-// ListPoliciesWithResponse request returning *ListPoliciesResponse
-func (c *ClientWithResponses) ListPoliciesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPoliciesResponse, error) {
-	rsp, err := c.ListPolicies(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListPoliciesResponse(rsp)
-}
-
-// CreatePolicyWithBodyWithResponse request with arbitrary body returning *CreatePolicyResponse
-func (c *ClientWithResponses) CreatePolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error) {
-	rsp, err := c.CreatePolicyWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreatePolicyResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreatePolicyWithResponse(ctx context.Context, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error) {
-	rsp, err := c.CreatePolicy(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreatePolicyResponse(rsp)
-}
-
-// ListPoliciesByPrincipalWithResponse request returning *ListPoliciesByPrincipalResponse
-func (c *ClientWithResponses) ListPoliciesByPrincipalWithResponse(ctx context.Context, principalType ListPoliciesByPrincipalParamsPrincipalType, principalId string, reqEditors ...RequestEditorFn) (*ListPoliciesByPrincipalResponse, error) {
-	rsp, err := c.ListPoliciesByPrincipal(ctx, principalType, principalId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListPoliciesByPrincipalResponse(rsp)
-}
-
 // ListPoliciesByResourceWithResponse request returning *ListPoliciesByResourceResponse
 func (c *ClientWithResponses) ListPoliciesByResourceWithResponse(ctx context.Context, resourceType string, resourceId string, reqEditors ...RequestEditorFn) (*ListPoliciesByResourceResponse, error) {
 	rsp, err := c.ListPoliciesByResource(ctx, resourceType, resourceId, reqEditors...)
@@ -21546,163 +21793,6 @@ func (c *ClientWithResponses) ListPoliciesByResourceWithResponse(ctx context.Con
 		return nil, err
 	}
 	return ParseListPoliciesByResourceResponse(rsp)
-}
-
-// DeletePolicyWithResponse request returning *DeletePolicyResponse
-func (c *ClientWithResponses) DeletePolicyWithResponse(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*DeletePolicyResponse, error) {
-	rsp, err := c.DeletePolicy(ctx, policyId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeletePolicyResponse(rsp)
-}
-
-// GetPolicyWithResponse request returning *GetPolicyResponse
-func (c *ClientWithResponses) GetPolicyWithResponse(ctx context.Context, policyId string, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error) {
-	rsp, err := c.GetPolicy(ctx, policyId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetPolicyResponse(rsp)
-}
-
-// UpdatePolicyWithBodyWithResponse request with arbitrary body returning *UpdatePolicyResponse
-func (c *ClientWithResponses) UpdatePolicyWithBodyWithResponse(ctx context.Context, policyId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error) {
-	rsp, err := c.UpdatePolicyWithBody(ctx, policyId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdatePolicyResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdatePolicyWithResponse(ctx context.Context, policyId string, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error) {
-	rsp, err := c.UpdatePolicy(ctx, policyId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdatePolicyResponse(rsp)
-}
-
-// ListRolesWithResponse request returning *ListRolesResponse
-func (c *ClientWithResponses) ListRolesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRolesResponse, error) {
-	rsp, err := c.ListRoles(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListRolesResponse(rsp)
-}
-
-// CreateRoleWithBodyWithResponse request with arbitrary body returning *CreateRoleResponse
-func (c *ClientWithResponses) CreateRoleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error) {
-	rsp, err := c.CreateRoleWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateRoleResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateRoleWithResponse(ctx context.Context, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error) {
-	rsp, err := c.CreateRole(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateRoleResponse(rsp)
-}
-
-// DeleteRoleWithResponse request returning *DeleteRoleResponse
-func (c *ClientWithResponses) DeleteRoleWithResponse(ctx context.Context, roleId string, reqEditors ...RequestEditorFn) (*DeleteRoleResponse, error) {
-	rsp, err := c.DeleteRole(ctx, roleId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteRoleResponse(rsp)
-}
-
-// GetRoleWithResponse request returning *GetRoleResponse
-func (c *ClientWithResponses) GetRoleWithResponse(ctx context.Context, roleId string, reqEditors ...RequestEditorFn) (*GetRoleResponse, error) {
-	rsp, err := c.GetRole(ctx, roleId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetRoleResponse(rsp)
-}
-
-// UpdateRoleWithBodyWithResponse request with arbitrary body returning *UpdateRoleResponse
-func (c *ClientWithResponses) UpdateRoleWithBodyWithResponse(ctx context.Context, roleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error) {
-	rsp, err := c.UpdateRoleWithBody(ctx, roleId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateRoleResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateRoleWithResponse(ctx context.Context, roleId string, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error) {
-	rsp, err := c.UpdateRole(ctx, roleId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateRoleResponse(rsp)
-}
-
-// ListSavedSearchesWithResponse request returning *ListSavedSearchesResponse
-func (c *ClientWithResponses) ListSavedSearchesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSavedSearchesResponse, error) {
-	rsp, err := c.ListSavedSearches(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListSavedSearchesResponse(rsp)
-}
-
-// CreateSavedSearchWithBodyWithResponse request with arbitrary body returning *CreateSavedSearchResponse
-func (c *ClientWithResponses) CreateSavedSearchWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSavedSearchResponse, error) {
-	rsp, err := c.CreateSavedSearchWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateSavedSearchResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateSavedSearchWithResponse(ctx context.Context, body CreateSavedSearchJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSavedSearchResponse, error) {
-	rsp, err := c.CreateSavedSearch(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateSavedSearchResponse(rsp)
-}
-
-// DeleteSavedSearchByIdWithResponse request returning *DeleteSavedSearchByIdResponse
-func (c *ClientWithResponses) DeleteSavedSearchByIdWithResponse(ctx context.Context, savedSearchId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSavedSearchByIdResponse, error) {
-	rsp, err := c.DeleteSavedSearchById(ctx, savedSearchId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteSavedSearchByIdResponse(rsp)
-}
-
-// GetSavedSearchByIdWithResponse request returning *GetSavedSearchByIdResponse
-func (c *ClientWithResponses) GetSavedSearchByIdWithResponse(ctx context.Context, savedSearchId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSavedSearchByIdResponse, error) {
-	rsp, err := c.GetSavedSearchById(ctx, savedSearchId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetSavedSearchByIdResponse(rsp)
-}
-
-// UpdateSavedSearchWithBodyWithResponse request with arbitrary body returning *UpdateSavedSearchResponse
-func (c *ClientWithResponses) UpdateSavedSearchWithBodyWithResponse(ctx context.Context, savedSearchId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSavedSearchResponse, error) {
-	rsp, err := c.UpdateSavedSearchWithBody(ctx, savedSearchId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateSavedSearchResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateSavedSearchWithResponse(ctx context.Context, savedSearchId openapi_types.UUID, body UpdateSavedSearchJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSavedSearchResponse, error) {
-	rsp, err := c.UpdateSavedSearch(ctx, savedSearchId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateSavedSearchResponse(rsp)
 }
 
 // SearchWithResponse request returning *SearchResponse
@@ -21729,155 +21819,6 @@ func (c *ClientWithResponses) PostSearchWithResponse(ctx context.Context, body P
 		return nil, err
 	}
 	return ParsePostSearchResponse(rsp)
-}
-
-// DeleteSearchStatusWithResponse request returning *DeleteSearchStatusResponse
-func (c *ClientWithResponses) DeleteSearchStatusWithResponse(ctx context.Context, statusId string, reqEditors ...RequestEditorFn) (*DeleteSearchStatusResponse, error) {
-	rsp, err := c.DeleteSearchStatus(ctx, statusId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteSearchStatusResponse(rsp)
-}
-
-// GetSearchStatusWithResponse request returning *GetSearchStatusResponse
-func (c *ClientWithResponses) GetSearchStatusWithResponse(ctx context.Context, statusId string, reqEditors ...RequestEditorFn) (*GetSearchStatusResponse, error) {
-	rsp, err := c.GetSearchStatus(ctx, statusId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetSearchStatusResponse(rsp)
-}
-
-// ListIdpWithResponse request returning *ListIdpResponse
-func (c *ClientWithResponses) ListIdpWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListIdpResponse, error) {
-	rsp, err := c.ListIdp(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListIdpResponse(rsp)
-}
-
-// CreateIdpWithBodyWithResponse request with arbitrary body returning *CreateIdpResponse
-func (c *ClientWithResponses) CreateIdpWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIdpResponse, error) {
-	rsp, err := c.CreateIdpWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateIdpResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateIdpWithResponse(ctx context.Context, body CreateIdpJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIdpResponse, error) {
-	rsp, err := c.CreateIdp(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateIdpResponse(rsp)
-}
-
-// DeleteIdpWithResponse request returning *DeleteIdpResponse
-func (c *ClientWithResponses) DeleteIdpWithResponse(ctx context.Context, idpName string, reqEditors ...RequestEditorFn) (*DeleteIdpResponse, error) {
-	rsp, err := c.DeleteIdp(ctx, idpName, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteIdpResponse(rsp)
-}
-
-// GetIdpWithResponse request returning *GetIdpResponse
-func (c *ClientWithResponses) GetIdpWithResponse(ctx context.Context, idpName string, reqEditors ...RequestEditorFn) (*GetIdpResponse, error) {
-	rsp, err := c.GetIdp(ctx, idpName, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetIdpResponse(rsp)
-}
-
-// UpdateIdpWithBodyWithResponse request with arbitrary body returning *UpdateIdpResponse
-func (c *ClientWithResponses) UpdateIdpWithBodyWithResponse(ctx context.Context, idpName string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateIdpResponse, error) {
-	rsp, err := c.UpdateIdpWithBody(ctx, idpName, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateIdpResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateIdpWithResponse(ctx context.Context, idpName string, body UpdateIdpJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateIdpResponse, error) {
-	rsp, err := c.UpdateIdp(ctx, idpName, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateIdpResponse(rsp)
-}
-
-// DeleteSsoMappingWithResponse request returning *DeleteSsoMappingResponse
-func (c *ClientWithResponses) DeleteSsoMappingWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteSsoMappingResponse, error) {
-	rsp, err := c.DeleteSsoMapping(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteSsoMappingResponse(rsp)
-}
-
-// ListSsoMappingsWithResponse request returning *ListSsoMappingsResponse
-func (c *ClientWithResponses) ListSsoMappingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSsoMappingsResponse, error) {
-	rsp, err := c.ListSsoMappings(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListSsoMappingsResponse(rsp)
-}
-
-// CreateSsoMappingsWithBodyWithResponse request with arbitrary body returning *CreateSsoMappingsResponse
-func (c *ClientWithResponses) CreateSsoMappingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSsoMappingsResponse, error) {
-	rsp, err := c.CreateSsoMappingsWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateSsoMappingsResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateSsoMappingsWithResponse(ctx context.Context, body CreateSsoMappingsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSsoMappingsResponse, error) {
-	rsp, err := c.CreateSsoMappings(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateSsoMappingsResponse(rsp)
-}
-
-// UpdateSsoMappingsWithBodyWithResponse request with arbitrary body returning *UpdateSsoMappingsResponse
-func (c *ClientWithResponses) UpdateSsoMappingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSsoMappingsResponse, error) {
-	rsp, err := c.UpdateSsoMappingsWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateSsoMappingsResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateSsoMappingsWithResponse(ctx context.Context, body UpdateSsoMappingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSsoMappingsResponse, error) {
-	rsp, err := c.UpdateSsoMappings(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateSsoMappingsResponse(rsp)
-}
-
-// ListSubscriptionsWithResponse request returning *ListSubscriptionsResponse
-func (c *ClientWithResponses) ListSubscriptionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSubscriptionsResponse, error) {
-	rsp, err := c.ListSubscriptions(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListSubscriptionsResponse(rsp)
-}
-
-// GetSubscriptionByIdWithResponse request returning *GetSubscriptionByIdResponse
-func (c *ClientWithResponses) GetSubscriptionByIdWithResponse(ctx context.Context, subscriptionId string, reqEditors ...RequestEditorFn) (*GetSubscriptionByIdResponse, error) {
-	rsp, err := c.GetSubscriptionById(ctx, subscriptionId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetSubscriptionByIdResponse(rsp)
 }
 
 // DeleteTagWithBodyWithResponse request with arbitrary body returning *DeleteTagResponse
@@ -21938,6 +21879,32 @@ func (c *ClientWithResponses) ListTagsByNameWithResponse(ctx context.Context, pa
 		return nil, err
 	}
 	return ParseListTagsByNameResponse(rsp)
+}
+
+// SearchTimeseriesWithBodyWithResponse request with arbitrary body returning *SearchTimeseriesResponse
+func (c *ClientWithResponses) SearchTimeseriesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchTimeseriesResponse, error) {
+	rsp, err := c.SearchTimeseriesWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchTimeseriesResponse(rsp)
+}
+
+func (c *ClientWithResponses) SearchTimeseriesWithResponse(ctx context.Context, body SearchTimeseriesJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchTimeseriesResponse, error) {
+	rsp, err := c.SearchTimeseries(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchTimeseriesResponse(rsp)
+}
+
+// GetTimeseriesFromMetricDefinitionWithResponse request returning *GetTimeseriesFromMetricDefinitionResponse
+func (c *ClientWithResponses) GetTimeseriesFromMetricDefinitionWithResponse(ctx context.Context, metricDefinitionId openapi_types.UUID, params *GetTimeseriesFromMetricDefinitionParams, reqEditors ...RequestEditorFn) (*GetTimeseriesFromMetricDefinitionResponse, error) {
+	rsp, err := c.GetTimeseriesFromMetricDefinition(ctx, metricDefinitionId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetTimeseriesFromMetricDefinitionResponse(rsp)
 }
 
 // GetTopKeysByIdWithResponse request returning *GetTopKeysByIdResponse
@@ -22002,6 +21969,15 @@ func (c *ClientWithResponses) CreateUserWithResponse(ctx context.Context, body C
 	return ParseCreateUserResponse(rsp)
 }
 
+// ListAllUsersWithResponse request returning *ListAllUsersResponse
+func (c *ClientWithResponses) ListAllUsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAllUsersResponse, error) {
+	rsp, err := c.ListAllUsers(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAllUsersResponse(rsp)
+}
+
 // DeleteUserByIdWithResponse request returning *DeleteUserByIdResponse
 func (c *ClientWithResponses) DeleteUserByIdWithResponse(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteUserByIdResponse, error) {
 	rsp, err := c.DeleteUserById(ctx, userId, reqEditors...)
@@ -22046,6 +22022,15 @@ func (c *ClientWithResponses) ListMembershipsWithResponse(ctx context.Context, u
 	return ParseListMembershipsResponse(rsp)
 }
 
+// DeactivateUserWithResponse request returning *DeactivateUserResponse
+func (c *ClientWithResponses) DeactivateUserWithResponse(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeactivateUserResponse, error) {
+	rsp, err := c.DeactivateUser(ctx, userId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeactivateUserResponse(rsp)
+}
+
 // ListGroupsForMemberWithResponse request returning *ListGroupsForMemberResponse
 func (c *ClientWithResponses) ListGroupsForMemberWithResponse(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListGroupsForMemberResponse, error) {
 	rsp, err := c.ListGroupsForMember(ctx, userId, reqEditors...)
@@ -22081,129 +22066,31 @@ func (c *ClientWithResponses) PatchUserPreferencesWithResponse(ctx context.Conte
 	return ParsePatchUserPreferencesResponse(rsp)
 }
 
-// ListWidgetsWithResponse request returning *ListWidgetsResponse
-func (c *ClientWithResponses) ListWidgetsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListWidgetsResponse, error) {
-	rsp, err := c.ListWidgets(ctx, reqEditors...)
+// ReactivateUserWithResponse request returning *ReactivateUserResponse
+func (c *ClientWithResponses) ReactivateUserWithResponse(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ReactivateUserResponse, error) {
+	rsp, err := c.ReactivateUser(ctx, userId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListWidgetsResponse(rsp)
+	return ParseReactivateUserResponse(rsp)
 }
 
-// CreateWidgetWithBodyWithResponse request with arbitrary body returning *CreateWidgetResponse
-func (c *ClientWithResponses) CreateWidgetWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateWidgetResponse, error) {
-	rsp, err := c.CreateWidgetWithBody(ctx, contentType, body, reqEditors...)
+// ResendUserInvitationWithResponse request returning *ResendUserInvitationResponse
+func (c *ClientWithResponses) ResendUserInvitationWithResponse(ctx context.Context, userId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ResendUserInvitationResponse, error) {
+	rsp, err := c.ResendUserInvitation(ctx, userId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateWidgetResponse(rsp)
+	return ParseResendUserInvitationResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateWidgetWithResponse(ctx context.Context, body CreateWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateWidgetResponse, error) {
-	rsp, err := c.CreateWidget(ctx, body, reqEditors...)
+// WidgetCreationAssistantWithResponse request returning *WidgetCreationAssistantResponse
+func (c *ClientWithResponses) WidgetCreationAssistantWithResponse(ctx context.Context, params *WidgetCreationAssistantParams, reqEditors ...RequestEditorFn) (*WidgetCreationAssistantResponse, error) {
+	rsp, err := c.WidgetCreationAssistant(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateWidgetResponse(rsp)
-}
-
-// DeleteWidgetWithResponse request returning *DeleteWidgetResponse
-func (c *ClientWithResponses) DeleteWidgetWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteWidgetResponse, error) {
-	rsp, err := c.DeleteWidget(ctx, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteWidgetResponse(rsp)
-}
-
-// GetWidgetWithResponse request returning *GetWidgetResponse
-func (c *ClientWithResponses) GetWidgetWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetWidgetResponse, error) {
-	rsp, err := c.GetWidget(ctx, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetWidgetResponse(rsp)
-}
-
-// PatchWidgetWithBodyWithResponse request with arbitrary body returning *PatchWidgetResponse
-func (c *ClientWithResponses) PatchWidgetWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchWidgetResponse, error) {
-	rsp, err := c.PatchWidgetWithBody(ctx, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePatchWidgetResponse(rsp)
-}
-
-func (c *ClientWithResponses) PatchWidgetWithResponse(ctx context.Context, id openapi_types.UUID, body PatchWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchWidgetResponse, error) {
-	rsp, err := c.PatchWidget(ctx, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePatchWidgetResponse(rsp)
-}
-
-// UpdateWidgetWithBodyWithResponse request with arbitrary body returning *UpdateWidgetResponse
-func (c *ClientWithResponses) UpdateWidgetWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateWidgetResponse, error) {
-	rsp, err := c.UpdateWidgetWithBody(ctx, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateWidgetResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateWidgetWithResponse(ctx context.Context, id openapi_types.UUID, body UpdateWidgetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateWidgetResponse, error) {
-	rsp, err := c.UpdateWidget(ctx, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateWidgetResponse(rsp)
-}
-
-// ParseGetAnalyticsErrorsResponse parses an HTTP response from a GetAnalyticsErrorsWithResponse call
-func ParseGetAnalyticsErrorsResponse(rsp *http.Response) (*GetAnalyticsErrorsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAnalyticsErrorsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest MetricItem
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
+	return ParseWidgetCreationAssistantResponse(rsp)
 }
 
 // ParseListApiKeysResponse parses an HTTP response from a ListApiKeysWithResponse call
@@ -22431,6 +22318,55 @@ func ParseUpdateApiKeyResponse(rsp *http.Response) (*UpdateApiKeyResponse, error
 	return response, nil
 }
 
+// ParseListCollectionsResponse parses an HTTP response from a ListCollectionsWithResponse call
+func ParseListCollectionsResponse(rsp *http.Response) (*ListCollectionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCollectionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Collections *[]CollectionDataset `json:"collections,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetContextResponse parses an HTTP response from a GetContextWithResponse call
 func ParseGetContextResponse(rsp *http.Response) (*GetContextResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -22447,6 +22383,7 @@ func ParseGetContextResponse(rsp *http.Response) (*GetContextResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
+			// Explain details on the query execution
 			Explain *QueryExplain  `json:"explain,omitempty"`
 			Links   *ContextLinks  `json:"links,omitempty"`
 			Result  *[]QueryResult `json:"result,omitempty"`
@@ -22463,113 +22400,12 @@ func ParseGetContextResponse(rsp *http.Response) (*GetContextResponse, error) {
 		}
 		response.JSON400 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetContractResponse parses an HTTP response from a GetContractWithResponse call
-func ParseGetContractResponse(rsp *http.Response) (*GetContractResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetContractResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Contracts
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetCostByLogIdResponse parses an HTTP response from a GetCostByLogIdWithResponse call
-func ParseGetCostByLogIdResponse(rsp *http.Response) (*GetCostByLogIdResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetCostByLogIdResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CostByLogId
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
@@ -22712,15 +22548,15 @@ func ParseUpdateCustomerResponse(rsp *http.Response) (*UpdateCustomerResponse, e
 	return response, nil
 }
 
-// ParseListDashboardsResponse parses an HTTP response from a ListDashboardsWithResponse call
-func ParseListDashboardsResponse(rsp *http.Response) (*ListDashboardsResponse, error) {
+// ParseListDatasetsResponse parses an HTTP response from a ListDatasetsWithResponse call
+func ParseListDatasetsResponse(rsp *http.Response) (*ListDatasetsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListDashboardsResponse{
+	response := &ListDatasetsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -22728,26 +22564,12 @@ func ParseListDashboardsResponse(rsp *http.Response) (*ListDashboardsResponse, e
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Dashboards *[]Dashboard `json:"dashboards,omitempty"`
+			Datasets *[]Dataset `json:"datasets,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
@@ -22775,22 +22597,22 @@ func ParseListDashboardsResponse(rsp *http.Response) (*ListDashboardsResponse, e
 	return response, nil
 }
 
-// ParseCreateDashboardResponse parses an HTTP response from a CreateDashboardWithResponse call
-func ParseCreateDashboardResponse(rsp *http.Response) (*CreateDashboardResponse, error) {
+// ParseCreateDatasetResponse parses an HTTP response from a CreateDatasetWithResponse call
+func ParseCreateDatasetResponse(rsp *http.Response) (*CreateDatasetResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateDashboardResponse{
+	response := &CreateDatasetResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Dashboard
+		var dest Dataset
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -22829,15 +22651,15 @@ func ParseCreateDashboardResponse(rsp *http.Response) (*CreateDashboardResponse,
 	return response, nil
 }
 
-// ParseDeleteDashboardResponse parses an HTTP response from a DeleteDashboardWithResponse call
-func ParseDeleteDashboardResponse(rsp *http.Response) (*DeleteDashboardResponse, error) {
+// ParseUnassignDatasetParserResponse parses an HTTP response from a UnassignDatasetParserWithResponse call
+func ParseUnassignDatasetParserResponse(rsp *http.Response) (*UnassignDatasetParserResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteDashboardResponse{
+	response := &UnassignDatasetParserResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -22876,22 +22698,25 @@ func ParseDeleteDashboardResponse(rsp *http.Response) (*DeleteDashboardResponse,
 	return response, nil
 }
 
-// ParseGetDashboardResponse parses an HTTP response from a GetDashboardWithResponse call
-func ParseGetDashboardResponse(rsp *http.Response) (*GetDashboardResponse, error) {
+// ParseGetDatasetParserResponse parses an HTTP response from a GetDatasetParserWithResponse call
+func ParseGetDatasetParserResponse(rsp *http.Response) (*GetDatasetParserResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetDashboardResponse{
+	response := &GetDatasetParserResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Dashboard
+		var dest struct {
+			ParserId   *openapi_types.UUID `json:"parser_id,omitempty"`
+			ParserName *string             `json:"parser_name,omitempty"`
+		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -22930,26 +22755,333 @@ func ParseGetDashboardResponse(rsp *http.Response) (*GetDashboardResponse, error
 	return response, nil
 }
 
-// ParseUpdateDashboardResponse parses an HTTP response from a UpdateDashboardWithResponse call
-func ParseUpdateDashboardResponse(rsp *http.Response) (*UpdateDashboardResponse, error) {
+// ParseAssignDatasetParserResponse parses an HTTP response from a AssignDatasetParserWithResponse call
+func ParseAssignDatasetParserResponse(rsp *http.Response) (*AssignDatasetParserResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdateDashboardResponse{
+	response := &AssignDatasetParserResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListEncryptionKeysResponse parses an HTTP response from a ListEncryptionKeysWithResponse call
+func ParseListEncryptionKeysResponse(rsp *http.Response) (*ListEncryptionKeysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListEncryptionKeysResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Dashboard
+		var dest struct {
+			Keys *[]EncryptionKey `json:"keys,omitempty"`
+		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateEncryptionKeyResponse parses an HTTP response from a CreateEncryptionKeyWithResponse call
+func ParseCreateEncryptionKeyResponse(rsp *http.Response) (*CreateEncryptionKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateEncryptionKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest EncryptionKey
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteEncryptionKeyResponse parses an HTTP response from a DeleteEncryptionKeyWithResponse call
+func ParseDeleteEncryptionKeyResponse(rsp *http.Response) (*DeleteEncryptionKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteEncryptionKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetEncryptionKeyResponse parses an HTTP response from a GetEncryptionKeyWithResponse call
+func ParseGetEncryptionKeyResponse(rsp *http.Response) (*GetEncryptionKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEncryptionKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EncryptionKey
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateEncryptionKeyResponse parses an HTTP response from a UpdateEncryptionKeyWithResponse call
+func ParseUpdateEncryptionKeyResponse(rsp *http.Response) (*UpdateEncryptionKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateEncryptionKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EncryptionKey
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest ErrorResponse
@@ -22998,15 +23130,6 @@ func ParseExplainErrorResponse(rsp *http.Response) (*ExplainErrorResponse, error
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			AiResponse *string `json:"ai_response,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -23063,6 +23186,27 @@ func ParseListExportsResponse(rsp *http.Response) (*ListExportsResponse, error) 
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -23102,6 +23246,27 @@ func ParseCreateExportResponse(rsp *http.Response) (*CreateExportResponse, error
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest ErrorResponse
@@ -23506,7 +23671,7 @@ func ParseListGroupsResponse(rsp *http.Response) (*ListGroupsResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest GroupList
+		var dest UserGroupList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -23560,7 +23725,7 @@ func ParseCreateGroupResponse(rsp *http.Response) (*CreateGroupResponse, error) 
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest GroupDefn
+		var dest UserGroup
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -23675,7 +23840,7 @@ func ParseGetGroupResponse(rsp *http.Response) (*GetGroupResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest GroupDefn
+		var dest UserGroup
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -23979,15 +24144,15 @@ func ParseAddGroupMembersResponse(rsp *http.Response) (*AddGroupMembersResponse,
 	return response, nil
 }
 
-// ParseListInsightsResponse parses an HTTP response from a ListInsightsWithResponse call
-func ParseListInsightsResponse(rsp *http.Response) (*ListInsightsResponse, error) {
+// ParseListSlackIntegrationsResponse parses an HTTP response from a ListSlackIntegrationsWithResponse call
+func ParseListSlackIntegrationsResponse(rsp *http.Response) (*ListSlackIntegrationsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListInsightsResponse{
+	response := &ListSlackIntegrationsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -23995,117 +24160,7 @@ func ParseListInsightsResponse(rsp *http.Response) (*ListInsightsResponse, error
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Insights *[]Insight `json:"insights,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetInsightResponse parses an HTTP response from a GetInsightWithResponse call
-func ParseGetInsightResponse(rsp *http.Response) (*GetInsightResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetInsightResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Insight
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListAWSIntegrationsResponse parses an HTTP response from a ListAWSIntegrationsWithResponse call
-func ParseListAWSIntegrationsResponse(rsp *http.Response) (*ListAWSIntegrationsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListAWSIntegrationsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Integrations *[]AWSIntegrationResource `json:"integrations,omitempty"`
+			Integrations *[]SlackIntegrationResource `json:"integrations,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -24145,22 +24200,22 @@ func ParseListAWSIntegrationsResponse(rsp *http.Response) (*ListAWSIntegrationsR
 	return response, nil
 }
 
-// ParseCreateAWSIntegrationResponse parses an HTTP response from a CreateAWSIntegrationWithResponse call
-func ParseCreateAWSIntegrationResponse(rsp *http.Response) (*CreateAWSIntegrationResponse, error) {
+// ParseCreateSlackIntegrationResponse parses an HTTP response from a CreateSlackIntegrationWithResponse call
+func ParseCreateSlackIntegrationResponse(rsp *http.Response) (*CreateSlackIntegrationResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CreateAWSIntegrationResponse{
+	response := &CreateSlackIntegrationResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest AWSIntegrationResource
+		var dest SlackIntegrationResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -24199,20 +24254,191 @@ func ParseCreateAWSIntegrationResponse(rsp *http.Response) (*CreateAWSIntegratio
 	return response, nil
 }
 
-// ParseDeleteAWSIntegrationResponse parses an HTTP response from a DeleteAWSIntegrationWithResponse call
-func ParseDeleteAWSIntegrationResponse(rsp *http.Response) (*DeleteAWSIntegrationResponse, error) {
+// ParseListSlackWorkspacesResponse parses an HTTP response from a ListSlackWorkspacesWithResponse call
+func ParseListSlackWorkspacesResponse(rsp *http.Response) (*ListSlackWorkspacesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteAWSIntegrationResponse{
+	response := &ListSlackWorkspacesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			SlackWorkspaces *[]SlackWorkspaceResource `json:"slack_workspaces,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteSlackWorkspaceResponse parses an HTTP response from a DeleteSlackWorkspaceWithResponse call
+func ParseDeleteSlackWorkspaceResponse(rsp *http.Response) (*DeleteSlackWorkspaceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteSlackWorkspaceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteSlackIntegrationResponse parses an HTTP response from a DeleteSlackIntegrationWithResponse call
+func ParseDeleteSlackIntegrationResponse(rsp *http.Response) (*DeleteSlackIntegrationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteSlackIntegrationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateSlackIntegrationResponse parses an HTTP response from a UpdateSlackIntegrationWithResponse call
+func ParseUpdateSlackIntegrationResponse(rsp *http.Response) (*UpdateSlackIntegrationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateSlackIntegrationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SlackIntegrationResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -24436,114 +24662,6 @@ func ParseUpdateWebhookIntegrationResponse(rsp *http.Response) (*UpdateWebhookIn
 	return response, nil
 }
 
-// ParseCreateLogBasedMetricResponse parses an HTTP response from a CreateLogBasedMetricWithResponse call
-func ParseCreateLogBasedMetricResponse(rsp *http.Response) (*CreateLogBasedMetricResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateLogBasedMetricResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest MetricItem
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetLbmByIdResponse parses an HTTP response from a GetLbmByIdWithResponse call
-func ParseGetLbmByIdResponse(rsp *http.Response) (*GetLbmByIdResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetLbmByIdResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest MetricItem
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListLimitsResponse parses an HTTP response from a ListLimitsWithResponse call
 func ParseListLimitsResponse(rsp *http.Response) (*ListLimitsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -24566,6 +24684,13 @@ func ParseListLimitsResponse(rsp *http.Response) (*ListLimitsResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ErrorResponse
@@ -24837,6 +24962,109 @@ func ParseUpdateLimitResponse(rsp *http.Response) (*UpdateLimitResponse, error) 
 	return response, nil
 }
 
+// ParsePollLiveTailResponse parses an HTTP response from a PollLiveTailWithResponse call
+func ParsePollLiveTailResponse(rsp *http.Response) (*PollLiveTailResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PollLiveTailResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Logs *[]PollLiveTailResponseBody `json:"logs,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseInitLiveTailResponse parses an HTTP response from a InitLiveTailWithResponse call
+func ParseInitLiveTailResponse(rsp *http.Response) (*InitLiveTailResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &InitLiveTailResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest InitLiveTailResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListLogsResponse parses an HTTP response from a ListLogsWithResponse call
 func ParseListLogsResponse(rsp *http.Response) (*ListLogsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -24940,141 +25168,26 @@ func ParseCreateLogResponse(rsp *http.Response) (*CreateLogResponse, error) {
 	return response, nil
 }
 
-// ParseDeleteLogResponse parses an HTTP response from a DeleteLogWithResponse call
-func ParseDeleteLogResponse(rsp *http.Response) (*DeleteLogResponse, error) {
+// ParseListLogViewsResponse parses an HTTP response from a ListLogViewsWithResponse call
+func ParseListLogViewsResponse(rsp *http.Response) (*ListLogViewsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteLogResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetLogByIdResponse parses an HTTP response from a GetLogByIdWithResponse call
-func ParseGetLogByIdResponse(rsp *http.Response) (*GetLogByIdResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetLogByIdResponse{
+	response := &ListLogViewsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Log
+		var dest LogView
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateLogResponse parses an HTTP response from a UpdateLogWithResponse call
-func ParseUpdateLogResponse(rsp *http.Response) (*UpdateLogResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateLogResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Log
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
@@ -25156,60 +25269,6 @@ func ParseListDashboardsForLogResponse(rsp *http.Response) (*ListDashboardsForLo
 	return response, nil
 }
 
-// ParseGetMetricsForLogResponse parses an HTTP response from a GetMetricsForLogWithResponse call
-func ParseGetMetricsForLogResponse(rsp *http.Response) (*GetMetricsForLogResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetMetricsForLogResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest MetricItem
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListMonitorsForLogResponse parses an HTTP response from a ListMonitorsForLogWithResponse call
 func ParseListMonitorsForLogResponse(rsp *http.Response) (*ListMonitorsForLogResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -25237,53 +25296,6 @@ func ParseListMonitorsForLogResponse(rsp *http.Response) (*ListMonitorsForLogRes
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListLogSetsResponse parses an HTTP response from a ListLogSetsWithResponse call
-func ParseListLogSetsResponse(rsp *http.Response) (*ListLogSetsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListLogSetsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest map[string][]LogsetLog
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
@@ -25428,20 +25440,83 @@ func ParseCreateMonitorResponse(rsp *http.Response) (*CreateMonitorResponse, err
 	return response, nil
 }
 
-// ParseSendTestNotificationsResponse parses an HTTP response from a SendTestNotificationsWithResponse call
-func ParseSendTestNotificationsResponse(rsp *http.Response) (*SendTestNotificationsResponse, error) {
+// ParseListMonitorDowntimesResponse parses an HTTP response from a ListMonitorDowntimesWithResponse call
+func ParseListMonitorDowntimesResponse(rsp *http.Response) (*ListMonitorDowntimesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &SendTestNotificationsResponse{
+	response := &ListMonitorDowntimesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Downtimes *[]MonitorDowntime `json:"downtimes,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateMonitorDowntimeResponse parses an HTTP response from a CreateMonitorDowntimeWithResponse call
+func ParseCreateMonitorDowntimeResponse(rsp *http.Response) (*CreateMonitorDowntimeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateMonitorDowntimeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest MonitorDowntime
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -25455,6 +25530,428 @@ func ParseSendTestNotificationsResponse(rsp *http.Response) (*SendTestNotificati
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteMonitorDowntimeResponse parses an HTTP response from a DeleteMonitorDowntimeWithResponse call
+func ParseDeleteMonitorDowntimeResponse(rsp *http.Response) (*DeleteMonitorDowntimeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteMonitorDowntimeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateMonitorDowntimeResponse parses an HTTP response from a UpdateMonitorDowntimeWithResponse call
+func ParseUpdateMonitorDowntimeResponse(rsp *http.Response) (*UpdateMonitorDowntimeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateMonitorDowntimeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MonitorDowntime
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListMonitorTemplatesResponse parses an HTTP response from a ListMonitorTemplatesWithResponse call
+func ParseListMonitorTemplatesResponse(rsp *http.Response) (*ListMonitorTemplatesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListMonitorTemplatesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Templates *[]MonitorTemplate `json:"templates,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateMonitorTemplateResponse parses an HTTP response from a CreateMonitorTemplateWithResponse call
+func ParseCreateMonitorTemplateResponse(rsp *http.Response) (*CreateMonitorTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateMonitorTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest MonitorTemplate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteMonitorTemplateResponse parses an HTTP response from a DeleteMonitorTemplateWithResponse call
+func ParseDeleteMonitorTemplateResponse(rsp *http.Response) (*DeleteMonitorTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteMonitorTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetMonitorTemplateResponse parses an HTTP response from a GetMonitorTemplateWithResponse call
+func ParseGetMonitorTemplateResponse(rsp *http.Response) (*GetMonitorTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetMonitorTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MonitorTemplate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateMonitorTemplateResponse parses an HTTP response from a UpdateMonitorTemplateWithResponse call
+func ParseUpdateMonitorTemplateResponse(rsp *http.Response) (*UpdateMonitorTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateMonitorTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MonitorTemplate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
@@ -25681,8 +26178,8 @@ func ParseGetMonitorEventsResponse(rsp *http.Response) (*GetMonitorEventsRespons
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			GroupsHistory *[]MonitorEvent `json:"groups_history,omitempty"`
-			MonitorEvents *[]MonitorEvent `json:"monitor_events,omitempty"`
+			GroupsHistory *[]MonitorGroupHistory `json:"groups_history,omitempty"`
+			MonitorEvents *[]MonitorEvent        `json:"monitor_events,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -25729,15 +26226,85 @@ func ParseGetMonitorEventsResponse(rsp *http.Response) (*GetMonitorEventsRespons
 	return response, nil
 }
 
-// ParseMuteMonitorResponse parses an HTTP response from a MuteMonitorWithResponse call
-func ParseMuteMonitorResponse(rsp *http.Response) (*MuteMonitorResponse, error) {
+// ParseListMonitorNotificationsResponse parses an HTTP response from a ListMonitorNotificationsWithResponse call
+func ParseListMonitorNotificationsResponse(rsp *http.Response) (*ListMonitorNotificationsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &MuteMonitorResponse{
+	response := &ListMonitorNotificationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			MonitorNotifications *[]MonitorNotification `json:"monitor_notifications,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateMonitorStatusResponse parses an HTTP response from a UpdateMonitorStatusWithResponse call
+func ParseUpdateMonitorStatusResponse(rsp *http.Response) (*UpdateMonitorStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateMonitorStatusResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -25756,217 +26323,6 @@ func ParseMuteMonitorResponse(rsp *http.Response) (*MuteMonitorResponse, error) 
 			return nil, err
 		}
 		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListOrgsResponse parses an HTTP response from a ListOrgsWithResponse call
-func ParseListOrgsResponse(rsp *http.Response) (*ListOrgsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListOrgsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Organisations *[]Organization `json:"organisations,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateOrgResponse parses an HTTP response from a CreateOrgWithResponse call
-func ParseCreateOrgResponse(rsp *http.Response) (*CreateOrgResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateOrgResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Organization
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetOrgByIdResponse parses an HTTP response from a GetOrgByIdWithResponse call
-func ParseGetOrgByIdResponse(rsp *http.Response) (*GetOrgByIdResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetOrgByIdResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Organization
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateOrgResponse parses an HTTP response from a UpdateOrgWithResponse call
-func ParseUpdateOrgResponse(rsp *http.Response) (*UpdateOrgResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateOrgResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Organization
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ErrorResponse
@@ -26146,15 +26502,123 @@ func ParseListAccessForMemberResponse(rsp *http.Response) (*ListAccessForMemberR
 	return response, nil
 }
 
-// ParseListParsersResponse parses an HTTP response from a ListParsersWithResponse call
-func ParseListParsersResponse(rsp *http.Response) (*ListParsersResponse, error) {
+// ParseGetParsersUsageRatioByLogIdResponse parses an HTTP response from a GetParsersUsageRatioByLogIdWithResponse call
+func ParseGetParsersUsageRatioByLogIdResponse(rsp *http.Response) (*GetParsersUsageRatioByLogIdResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListParsersResponse{
+	response := &GetParsersUsageRatioByLogIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ParsersUsageMetricsByLogId
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetParsersUsageMetricsByLogIdResponse parses an HTTP response from a GetParsersUsageMetricsByLogIdWithResponse call
+func ParseGetParsersUsageMetricsByLogIdResponse(rsp *http.Response) (*GetParsersUsageMetricsByLogIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetParsersUsageMetricsByLogIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ParsersUsageMetricsByLogId
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostPatternsResponse parses an HTTP response from a PostPatternsWithResponse call
+func ParsePostPatternsResponse(rsp *http.Response) (*PostPatternsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostPatternsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -26162,170 +26626,12 @@ func ParseListParsersResponse(rsp *http.Response) (*ListParsersResponse, error) 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Parsers *[]Parser `json:"parsers,omitempty"`
+			Patterns []struct {
+				Id       string `json:"id"`
+				LogId    string `json:"log_id"`
+				Template string `json:"template"`
+			} `json:"patterns"`
 		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAiGenerateParserResponse parses an HTTP response from a AiGenerateParserWithResponse call
-func ParseAiGenerateParserResponse(rsp *http.Response) (*AiGenerateParserResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AiGenerateParserResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Parser
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteParserResponse parses an HTTP response from a DeleteParserWithResponse call
-func ParseDeleteParserResponse(rsp *http.Response) (*DeleteParserResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteParserResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAiUpdateParserResponse parses an HTTP response from a AiUpdateParserWithResponse call
-func ParseAiUpdateParserResponse(rsp *http.Response) (*AiUpdateParserResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AiUpdateParserResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Parser
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -26337,13 +26643,6 @@ func ParseAiUpdateParserResponse(rsp *http.Response) (*AiUpdateParserResponse, e
 			return nil, err
 		}
 		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
@@ -26387,115 +26686,40 @@ func ParseListPermissionsResponse(rsp *http.Response) (*ListPermissionsResponse,
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Roles *[]Permission `json:"roles,omitempty"`
+			Resources *[]Permission `json:"resources,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSONDefault = &dest
+		response.JSON400 = &dest
 
-	}
-
-	return response, nil
-}
-
-// ParseListPoliciesResponse parses an HTTP response from a ListPoliciesWithResponse call
-func ParseListPoliciesResponse(rsp *http.Response) (*ListPoliciesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListPoliciesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Policies *[]Policy `json:"policies,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSONDefault = &dest
+		response.JSON403 = &dest
 
-	}
-
-	return response, nil
-}
-
-// ParseCreatePolicyResponse parses an HTTP response from a CreatePolicyWithResponse call
-func ParseCreatePolicyResponse(rsp *http.Response) (*CreatePolicyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreatePolicyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Policy
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSONDefault = &dest
+		response.JSON429 = &dest
 
-	}
-
-	return response, nil
-}
-
-// ParseListPoliciesByPrincipalResponse parses an HTTP response from a ListPoliciesByPrincipalWithResponse call
-func ParseListPoliciesByPrincipalResponse(rsp *http.Response) (*ListPoliciesByPrincipalResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListPoliciesByPrincipalResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Policies *[]Policy `json:"policies,omitempty"`
-		}
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest ErrorResponse
@@ -26537,474 +26761,6 @@ func ParseListPoliciesByResourceResponse(rsp *http.Response) (*ListPoliciesByRes
 	return response, nil
 }
 
-// ParseDeletePolicyResponse parses an HTTP response from a DeletePolicyWithResponse call
-func ParseDeletePolicyResponse(rsp *http.Response) (*DeletePolicyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeletePolicyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetPolicyResponse parses an HTTP response from a GetPolicyWithResponse call
-func ParseGetPolicyResponse(rsp *http.Response) (*GetPolicyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetPolicyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Policy
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdatePolicyResponse parses an HTTP response from a UpdatePolicyWithResponse call
-func ParseUpdatePolicyResponse(rsp *http.Response) (*UpdatePolicyResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdatePolicyResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Policy
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListRolesResponse parses an HTTP response from a ListRolesWithResponse call
-func ParseListRolesResponse(rsp *http.Response) (*ListRolesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListRolesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Roles *[]Role `json:"roles,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateRoleResponse parses an HTTP response from a CreateRoleWithResponse call
-func ParseCreateRoleResponse(rsp *http.Response) (*CreateRoleResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateRoleResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Role
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteRoleResponse parses an HTTP response from a DeleteRoleWithResponse call
-func ParseDeleteRoleResponse(rsp *http.Response) (*DeleteRoleResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteRoleResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetRoleResponse parses an HTTP response from a GetRoleWithResponse call
-func ParseGetRoleResponse(rsp *http.Response) (*GetRoleResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetRoleResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Role
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateRoleResponse parses an HTTP response from a UpdateRoleWithResponse call
-func ParseUpdateRoleResponse(rsp *http.Response) (*UpdateRoleResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateRoleResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Role
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListSavedSearchesResponse parses an HTTP response from a ListSavedSearchesWithResponse call
-func ParseListSavedSearchesResponse(rsp *http.Response) (*ListSavedSearchesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListSavedSearchesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			SavedSearches *[]SavedSearch `json:"saved_searches,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateSavedSearchResponse parses an HTTP response from a CreateSavedSearchWithResponse call
-func ParseCreateSavedSearchResponse(rsp *http.Response) (*CreateSavedSearchResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateSavedSearchResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest SavedSearch
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteSavedSearchByIdResponse parses an HTTP response from a DeleteSavedSearchByIdWithResponse call
-func ParseDeleteSavedSearchByIdResponse(rsp *http.Response) (*DeleteSavedSearchByIdResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteSavedSearchByIdResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetSavedSearchByIdResponse parses an HTTP response from a GetSavedSearchByIdWithResponse call
-func ParseGetSavedSearchByIdResponse(rsp *http.Response) (*GetSavedSearchByIdResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetSavedSearchByIdResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SavedSearch
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateSavedSearchResponse parses an HTTP response from a UpdateSavedSearchWithResponse call
-func ParseUpdateSavedSearchResponse(rsp *http.Response) (*UpdateSavedSearchResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateSavedSearchResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SavedSearch
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseSearchResponse parses an HTTP response from a SearchWithResponse call
 func ParseSearchResponse(rsp *http.Response) (*SearchResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -27021,15 +26777,19 @@ func ParseSearchResponse(rsp *http.Response) (*SearchResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Events       *[]Event                          `json:"events,omitempty"`
-			Explain      *QueryExplain                     `json:"explain,omitempty"`
-			Groups       *[]Group                          `json:"groups,omitempty"`
-			GroupsSeries *[]GroupSeriesItem                `json:"groups_series,omitempty"`
-			Links        *SearchCompletedLinksAsyncEnabled `json:"links,omitempty"`
-			Metadata     *QueryMetadata                    `json:"metadata,omitempty"`
-			Pagination   *Pagination                       `json:"pagination,omitempty"`
-			Result       *[]QueryResult                    `json:"result,omitempty"`
-			Totals       *map[string]interface{}           `json:"totals,omitempty"`
+			Events *[]Event `json:"events,omitempty"`
+
+			// Explain details on the query execution
+			Explain      *QueryExplain      `json:"explain,omitempty"`
+			Groups       *[]Group           `json:"groups,omitempty"`
+			GroupsSeries *[]GroupSeriesItem `json:"groups_series,omitempty"`
+
+			// Links Navigation links for traversing the result set.
+			Links      *SearchCompletedLinksAsyncEnabled `json:"links,omitempty"`
+			Metadata   *QueryMetadata                    `json:"metadata,omitempty"`
+			Pagination *Pagination                       `json:"pagination,omitempty"`
+			Result     *[]QueryResult                    `json:"result,omitempty"`
+			Totals     *map[string]interface{}           `json:"totals,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -27085,15 +26845,27 @@ func ParsePostSearchResponse(rsp *http.Response) (*PostSearchResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Events       *[]Event                          `json:"events,omitempty"`
-			Explain      *QueryExplain                     `json:"explain,omitempty"`
-			Groups       *[]Group                          `json:"groups,omitempty"`
-			GroupsSeries *[]GroupSeriesItem                `json:"groups_series,omitempty"`
-			Links        *SearchCompletedLinksAsyncEnabled `json:"links,omitempty"`
-			Metadata     *QueryMetadata                    `json:"metadata,omitempty"`
-			Pagination   *Pagination                       `json:"pagination,omitempty"`
-			Result       *[]QueryResult                    `json:"result,omitempty"`
-			Totals       *map[string]interface{}           `json:"totals,omitempty"`
+			// Events list of events matching the filter, if the query was an event query
+			Events *[]Event `json:"events,omitempty"`
+
+			// Explain details on the query execution
+			Explain *QueryExplain `json:"explain,omitempty"`
+			// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+			Groups *[]Group `json:"groups,omitempty"`
+
+			// GroupsSeries the list of timeseries for group by queries
+			GroupsSeries *[]GroupSeriesItem `json:"groups_series,omitempty"`
+
+			// Links Navigation links for traversing the result set.
+			Links      *SearchCompletedLinksAsyncEnabled `json:"links,omitempty"`
+			Metadata   *QueryMetadata                    `json:"metadata,omitempty"`
+			Pagination *Pagination                       `json:"pagination,omitempty"`
+			// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+			Result *[]QueryResult `json:"result,omitempty"`
+			Totals *struct {
+				// Timeseries the timeseries for non-group by queries
+				Timeseries *[]TimeSlice `json:"timeseries,omitempty"`
+			} `json:"totals,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -27106,783 +26878,6 @@ func ParsePostSearchResponse(rsp *http.Response) (*PostSearchResponse, error) {
 			return nil, err
 		}
 		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteSearchStatusResponse parses an HTTP response from a DeleteSearchStatusWithResponse call
-func ParseDeleteSearchStatusResponse(rsp *http.Response) (*DeleteSearchStatusResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteSearchStatusResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 410:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON410 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetSearchStatusResponse parses an HTTP response from a GetSearchStatusWithResponse call
-func ParseGetSearchStatusResponse(rsp *http.Response) (*GetSearchStatusResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetSearchStatusResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Events       *[]Event               `json:"events,omitempty"`
-			Explain      *QueryExplain          `json:"explain,omitempty"`
-			Groups       *[]Group               `json:"groups,omitempty"`
-			GroupsSeries *[]GroupSeriesItem     `json:"groups_series,omitempty"`
-			Links        *SearchInProgressLinks `json:"links,omitempty"`
-			Metadata     *QueryMetadata         `json:"metadata,omitempty"`
-			Pagination   *Pagination            `json:"pagination,omitempty"`
-
-			// Progress A value between 0 and 100 indicating how much of the processing has finished.
-			Progress *int           `json:"progress,omitempty"`
-			Result   *[]QueryResult `json:"result,omitempty"`
-
-			// StartTime The time the query was started at, in human readable format.
-			StartTime *string `json:"start_time,omitempty"`
-
-			// Status The current status of the query. Possible value:
-			// * `COMPLETED` - the query finished successfully.
-			// * `IN_PROGRESS` - the query is still running.
-			// * `CANCELLED_BY_USER` - the query was stopped as a result of a `DELETE` request being issued.
-			// * `TIMED_OUT` - the query was stopped as it was not polled in time (as indicated by the `Retry-After`
-			//   header in the response for the initial search request, or last poll).
-			// * `INTERNAL_SERVER_ERROR` - the query failed due to internal server error.
-			Status *string                 `json:"status,omitempty"`
-			Totals *map[string]interface{} `json:"totals,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest struct {
-			Events       *[]Event                          `json:"events,omitempty"`
-			Explain      *QueryExplain                     `json:"explain,omitempty"`
-			Groups       *[]Group                          `json:"groups,omitempty"`
-			GroupsSeries *[]GroupSeriesItem                `json:"groups_series,omitempty"`
-			Links        *SearchCompletedLinksAsyncEnabled `json:"links,omitempty"`
-			Metadata     *QueryMetadata                    `json:"metadata,omitempty"`
-			Pagination   *Pagination                       `json:"pagination,omitempty"`
-
-			// Progress A value between 0 and 100 indicating how much of the processing has finished.
-			Progress *int           `json:"progress,omitempty"`
-			Result   *[]QueryResult `json:"result,omitempty"`
-
-			// StartTime The time the query was started at, in human readable format.
-			StartTime *string `json:"start_time,omitempty"`
-
-			// Status The current status of the query. Possible value:
-			// * `COMPLETED` - the query finished successfully.
-			// * `IN_PROGRESS` - the query is still running.
-			// * `CANCELLED_BY_USER` - the query was stopped as a result of a `DELETE` request being issued.
-			// * `TIMED_OUT` - the query was stopped as it was not polled in time (as indicated by the `Retry-After`
-			//   header in the response for the initial search request, or last poll).
-			// * `INTERNAL_SERVER_ERROR` - the query failed due to internal server error.
-			Status *string                 `json:"status,omitempty"`
-			Totals *map[string]interface{} `json:"totals,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 410:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON410 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListIdpResponse parses an HTTP response from a ListIdpWithResponse call
-func ParseListIdpResponse(rsp *http.Response) (*ListIdpResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListIdpResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Idps *[]Idp `json:"idps,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateIdpResponse parses an HTTP response from a CreateIdpWithResponse call
-func ParseCreateIdpResponse(rsp *http.Response) (*CreateIdpResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateIdpResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Idp
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteIdpResponse parses an HTTP response from a DeleteIdpWithResponse call
-func ParseDeleteIdpResponse(rsp *http.Response) (*DeleteIdpResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteIdpResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetIdpResponse parses an HTTP response from a GetIdpWithResponse call
-func ParseGetIdpResponse(rsp *http.Response) (*GetIdpResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetIdpResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Idp
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateIdpResponse parses an HTTP response from a UpdateIdpWithResponse call
-func ParseUpdateIdpResponse(rsp *http.Response) (*UpdateIdpResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateIdpResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteSsoMappingResponse parses an HTTP response from a DeleteSsoMappingWithResponse call
-func ParseDeleteSsoMappingResponse(rsp *http.Response) (*DeleteSsoMappingResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteSsoMappingResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListSsoMappingsResponse parses an HTTP response from a ListSsoMappingsWithResponse call
-func ParseListSsoMappingsResponse(rsp *http.Response) (*ListSsoMappingsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListSsoMappingsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Mappings *[]SsoMappings `json:"mappings,omitempty"`
-		}
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateSsoMappingsResponse parses an HTTP response from a CreateSsoMappingsWithResponse call
-func ParseCreateSsoMappingsResponse(rsp *http.Response) (*CreateSsoMappingsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateSsoMappingsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest SsoMappings
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateSsoMappingsResponse parses an HTTP response from a UpdateSsoMappingsWithResponse call
-func ParseUpdateSsoMappingsResponse(rsp *http.Response) (*UpdateSsoMappingsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateSsoMappingsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListSubscriptionsResponse parses an HTTP response from a ListSubscriptionsWithResponse call
-func ParseListSubscriptionsResponse(rsp *http.Response) (*ListSubscriptionsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListSubscriptionsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SubscriptionsResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetSubscriptionByIdResponse parses an HTTP response from a GetSubscriptionByIdWithResponse call
-func ParseGetSubscriptionByIdResponse(rsp *http.Response) (*GetSubscriptionByIdResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetSubscriptionByIdResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Subscription
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
@@ -28149,6 +27144,100 @@ func ParseListTagsByNameResponse(rsp *http.Response) (*ListTagsByNameResponse, e
 	return response, nil
 }
 
+// ParseSearchTimeseriesResponse parses an HTTP response from a SearchTimeseriesWithResponse call
+func ParseSearchTimeseriesResponse(rsp *http.Response) (*SearchTimeseriesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SearchTimeseriesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]MetricTimeseries
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetTimeseriesFromMetricDefinitionResponse parses an HTTP response from a GetTimeseriesFromMetricDefinitionWithResponse call
+func ParseGetTimeseriesFromMetricDefinitionResponse(rsp *http.Response) (*GetTimeseriesFromMetricDefinitionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetTimeseriesFromMetricDefinitionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]MetricTimeseries
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetTopKeysByIdResponse parses an HTTP response from a GetTopKeysByIdWithResponse call
 func ParseGetTopKeysByIdResponse(rsp *http.Response) (*GetTopKeysByIdResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -28176,6 +27265,13 @@ func ParseGetTopKeysByIdResponse(rsp *http.Response) (*GetTopKeysByIdResponse, e
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest ErrorResponse
@@ -28225,7 +27321,7 @@ func ParseGetUsageResponse(rsp *http.Response) (*GetUsageResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ListMetricsResponse
+		var dest MetricItem
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -28237,6 +27333,13 @@ func ParseGetUsageResponse(rsp *http.Response) (*GetUsageResponse, error) {
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
@@ -28489,6 +27592,62 @@ func ParseCreateUserResponse(rsp *http.Response) (*CreateUserResponse, error) {
 	return response, nil
 }
 
+// ParseListAllUsersResponse parses an HTTP response from a ListAllUsersWithResponse call
+func ParseListAllUsersResponse(rsp *http.Response) (*ListAllUsersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAllUsersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Users *[]MultiOrgUser `json:"users,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseDeleteUserByIdResponse parses an HTTP response from a DeleteUserByIdWithResponse call
 func ParseDeleteUserByIdResponse(rsp *http.Response) (*DeleteUserByIdResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -28680,7 +27839,70 @@ func ParseListMembershipsResponse(rsp *http.Response) (*ListMembershipsResponse,
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest OrgAccessList
+		var dest struct {
+			Organisations *[]Organization `json:"organisations,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeactivateUserResponse parses an HTTP response from a DeactivateUserWithResponse call
+func ParseDeactivateUserResponse(rsp *http.Response) (*DeactivateUserResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeactivateUserResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest User
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -28742,7 +27964,7 @@ func ParseListGroupsForMemberResponse(rsp *http.Response) (*ListGroupsForMemberR
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			Groups *[]GroupDefn `json:"groups,omitempty"`
+			Groups *[]UserGroup `json:"groups,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -28876,137 +28098,27 @@ func ParsePatchUserPreferencesResponse(rsp *http.Response) (*PatchUserPreference
 	return response, nil
 }
 
-// ParseListWidgetsResponse parses an HTTP response from a ListWidgetsWithResponse call
-func ParseListWidgetsResponse(rsp *http.Response) (*ListWidgetsResponse, error) {
+// ParseReactivateUserResponse parses an HTTP response from a ReactivateUserWithResponse call
+func ParseReactivateUserResponse(rsp *http.Response) (*ReactivateUserResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListWidgetsResponse{
+	response := &ReactivateUserResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Widgets *[]Widget `json:"widgets,omitempty"`
-		}
+		var dest User
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateWidgetResponse parses an HTTP response from a CreateWidgetWithResponse call
-func ParseCreateWidgetResponse(rsp *http.Response) (*CreateWidgetResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateWidgetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Widget
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteWidgetResponse parses an HTTP response from a DeleteWidgetWithResponse call
-func ParseDeleteWidgetResponse(rsp *http.Response) (*DeleteWidgetResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteWidgetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -29047,22 +28159,22 @@ func ParseDeleteWidgetResponse(rsp *http.Response) (*DeleteWidgetResponse, error
 	return response, nil
 }
 
-// ParseGetWidgetResponse parses an HTTP response from a GetWidgetWithResponse call
-func ParseGetWidgetResponse(rsp *http.Response) (*GetWidgetResponse, error) {
+// ParseResendUserInvitationResponse parses an HTTP response from a ResendUserInvitationWithResponse call
+func ParseResendUserInvitationResponse(rsp *http.Response) (*ResendUserInvitationResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetWidgetResponse{
+	response := &ResendUserInvitationResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Widget
+		var dest ResendUserInvitationResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -29074,6 +28186,13 @@ func ParseGetWidgetResponse(rsp *http.Response) (*GetWidgetResponse, error) {
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest ErrorResponse
@@ -29101,67 +28220,20 @@ func ParseGetWidgetResponse(rsp *http.Response) (*GetWidgetResponse, error) {
 	return response, nil
 }
 
-// ParsePatchWidgetResponse parses an HTTP response from a PatchWidgetWithResponse call
-func ParsePatchWidgetResponse(rsp *http.Response) (*PatchWidgetResponse, error) {
+// ParseWidgetCreationAssistantResponse parses an HTTP response from a WidgetCreationAssistantWithResponse call
+func ParseWidgetCreationAssistantResponse(rsp *http.Response) (*WidgetCreationAssistantResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PatchWidgetResponse{
+	response := &WidgetCreationAssistantResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateWidgetResponse parses an HTTP response from a UpdateWidgetWithResponse call
-func ParseUpdateWidgetResponse(rsp *http.Response) (*UpdateWidgetResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateWidgetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
