@@ -67,10 +67,13 @@ fi
 echo "==> merging covdata ($covdata_inputs) -> coverage.txt"
 go tool covdata textfmt -i="$covdata_inputs" -o "$raw_profile"
 
-echo "==> filtering generated code (internal/api/gen.go) -> coverage.filtered.txt"
+echo "==> filtering generated code and test infrastructure -> coverage.filtered.txt"
+# Excluded from accounting: generated internal/api/gen.go, and the
+# integration/ package itself (test harness, not product code — its live
+# paths only execute with credentials and would dilute the ratchet).
 {
 	head -n1 "$raw_profile"
-	grep -v "^${gen_file}:" "$raw_profile" | tail -n +2
+	grep -v -e "^${gen_file}:" -e "^${module}/integration/" "$raw_profile" | tail -n +2
 } >"$filtered_profile"
 
 echo "==> writing HTML report -> coverage.html"
