@@ -46,6 +46,13 @@ jobs:
 
       - name: Build change digest (oasdiff)
         if: steps.compare.outputs.changed == 'true'
+        env:
+          # setup-go@v7 pins GOTOOLCHAIN=local, which makes `go run
+          # oasdiff@latest` fail outright when oasdiff requires a newer Go
+          # than go.mod's (seen in #10: "requires go >= 1.26 (running go
+          # 1.25.0; GOTOOLCHAIN=local)" and an empty digest). auto restores
+          # the toolchain auto-switch for this step only.
+          GOTOOLCHAIN: auto
         run: |
           # stderr (Go toolchain/module downloads) goes to a log, NOT into
           # the report — it used to fill the issue with "go: downloading"
