@@ -52,30 +52,40 @@ func pathPrefixExists(paths map[string]bool, want string) bool {
 	return false
 }
 
-// specCreatePathExceptions documents descriptor CreatePaths that are real,
-// documented Bronto endpoints not captured by this vendored spec snapshot.
-// Anything not listed here must have a literal match in api/openapi.yaml.
-var specCreatePathExceptions = map[string]bool{
-	// POST /datasets creates a dataset from {"collection","dataset"} (see
-	// the bronto skill's api-overview.md); this vendored spec only
-	// documents the equivalent via POST /logs (logset/log fields).
-	"/datasets": true,
-}
+// specCreatePathExceptions documents descriptor CreatePaths that are real
+// Bronto endpoints not captured by this vendored spec snapshot. Anything
+// not listed here must have a literal match in api/openapi.yaml.
+// (Currently empty; the 2026-07-17 re-vendor added /datasets upstream,
+// retiring the previous exception for it.)
+var specCreatePathExceptions = map[string]bool{}
 
 // specIDBaseExceptions documents descriptors with no per-ID path in this
 // vendored spec. (Currently empty; tags is no longer in the registry.)
 var specIDBaseExceptions = map[string]bool{}
 
+// specLiveButUndocumented lists base paths the published upstream spec
+// stopped documenting (2026-07-17 re-vendor removed 35 paths) but that the
+// live API still serves. dashboards and saved-searches are live-verified on
+// every PR by integration TestResourcesCRUD; parsers is untested live but
+// was working when last documented. Re-check at every re-vendor: if an
+// entry here starts 404ing live, drop the CLI command instead of keeping
+// the exception.
+var specLiveButUndocumented = map[string]bool{
+	"/dashboards":     true,
+	"/saved-searches": true,
+	"/parsers":        true,
+}
+
 func TestResourceRegistryMatchesSpec(t *testing.T) {
 	paths := specPaths(t)
 	for _, d := range resourceRegistry {
-		if !paths[d.Base] {
+		if !paths[d.Base] && !specLiveButUndocumented[d.Base] {
 			t.Errorf("%s: Base %q not found in api/openapi.yaml", d.Name, d.Base)
 		}
-		if cp := d.createPath(); !specCreatePathExceptions[cp] && !paths[cp] {
+		if cp := d.createPath(); !specCreatePathExceptions[cp] && !specLiveButUndocumented[cp] && !paths[cp] {
 			t.Errorf("%s: CreatePath %q not found in api/openapi.yaml", d.Name, cp)
 		}
-		if idb := d.idBase(); !specIDBaseExceptions[idb] && !pathPrefixExists(paths, idb+"/{") {
+		if idb := d.idBase(); !specIDBaseExceptions[idb] && !specLiveButUndocumented[idb] && !pathPrefixExists(paths, idb+"/{") {
 			t.Errorf("%s: IDBase %q has no matching '.../{...}' path in api/openapi.yaml", d.Name, idb)
 		}
 	}
