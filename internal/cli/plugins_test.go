@@ -12,7 +12,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // stubPlugin installs stub lookPath/runPlugin implementations for the

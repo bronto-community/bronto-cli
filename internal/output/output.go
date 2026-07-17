@@ -14,7 +14,7 @@ import (
 
 	"github.com/itchyny/gojq"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 type Format string

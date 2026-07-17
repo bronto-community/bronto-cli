@@ -16,7 +16,7 @@
 
 ## Global Constraints
 
-- Module `github.com/svrnm/bronto-cli`; Go `1.25.0`; `CGO_ENABLED=0 go build ./...`; gofmt clean; golangci-lint 0 issues per commit (`go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run`).
+- Module `github.com/bronto-community/bronto-cli`; Go `1.25.0`; `CGO_ENABLED=0 go build ./...`; gofmt clean; golangci-lint 0 issues per commit (`go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run`).
 - Allowed runtime deps NOW: cobra, pelletier/go-toml/v2, mattn/go-isatty, oapi-codegen/runtime, **zalando/go-keyring, golang.org/x/term**. Test-only: rogpeppe/go-internal.
 - stdout = data only; confirmations/summaries/warnings → stderr; `--quiet` silences stderr chatter; never prompt when stdin is not a TTY.
 - Exit codes 0/1/2/3/4/5; stable snake_case error codes via clierr. 413 → `payload_too_large` (exit 1); 429 stays `rate_limited` (exit 5, retryable).
@@ -121,7 +121,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 var fixedNow = func() time.Time { return time.Date(2026, 7, 7, 12, 0, 0, 0, time.UTC) }
@@ -277,8 +277,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/svrnm/bronto-cli/internal/api"
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/api"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func URL(region, override string) string {
@@ -461,7 +461,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func TestSendOneShotMessage(t *testing.T) {

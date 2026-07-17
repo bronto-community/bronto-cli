@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
-	"github.com/svrnm/bronto-cli/internal/ingest"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/ingest"
 )
 
 func newSendCmd() *cobra.Command {

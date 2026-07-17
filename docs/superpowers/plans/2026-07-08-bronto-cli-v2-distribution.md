@@ -6,8 +6,8 @@
 
 ## Global Constraints
 
-- Module `github.com/svrnm/bronto-cli`; Go `1.25.0`; every commit: `go test ./...` green, `CGO_ENABLED=0 go build ./...`, gofmt clean, `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run` 0 issues. NO new runtime deps. No telemetry, ever.
-- Version injection: goreleaser ldflags must target `github.com/svrnm/bronto-cli/internal/version.{Version,Commit,Date}` (verify the exact var names in internal/version/version.go).
+- Module `github.com/bronto-community/bronto-cli`; Go `1.25.0`; every commit: `go test ./...` green, `CGO_ENABLED=0 go build ./...`, gofmt clean, `go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run` 0 issues. NO new runtime deps. No telemetry, ever.
+- Version injection: goreleaser ldflags must target `github.com/bronto-community/bronto-cli/internal/version.{Version,Commit,Date}` (verify the exact var names in internal/version/version.go).
 - Docs are tested where feasible: README/skill command examples that can run offline get testscript coverage (`--help` forms, exit codes); no rot.
 - Conventional commits.
 
@@ -30,7 +30,7 @@ Commit: `refactor: plan-5 deferred cleanups (typed secret errors, contract consi
 
 **Files:** Create `.goreleaser.yaml`, `Dockerfile` (scratch, multi-stage), `Dockerfile.distroless`, `scripts/install.sh`, `Makefile` additions (`release-dry`, `snapshot`).
 
-- `.goreleaser.yaml` (v2 schema): builds: darwin/linux/windows × amd64/arm64, `CGO_ENABLED=0`, `-trimpath`, ldflags `-s -w -X <module>/internal/version.Version={{.Version}} -X ...Commit={{.ShortCommit}} -X ...Date={{.Date}}`; archives (tar.gz, zip for windows) with LICENSE+README; checksums; changelog from conventional commits (groups feat/fix); nfpms (deb+rpm, maintainer bronto-cli contributors, completions packaged via post-generate hooks — generate completion files in a before hook: `./bronto completion bash > ...` etc.); brews section targeting a `svrnm/homebrew-tap` repo (skip_upload: auto — harmless placeholder until the tap exists); release: github, draft: false, prerelease: auto.
+- `.goreleaser.yaml` (v2 schema): builds: darwin/linux/windows × amd64/arm64, `CGO_ENABLED=0`, `-trimpath`, ldflags `-s -w -X <module>/internal/version.Version={{.Version}} -X ...Commit={{.ShortCommit}} -X ...Date={{.Date}}`; archives (tar.gz, zip for windows) with LICENSE+README; checksums; changelog from conventional commits (groups feat/fix); nfpms (deb+rpm, maintainer bronto-cli contributors, completions packaged via post-generate hooks — generate completion files in a before hook: `./bronto completion bash > ...` etc.); brews section targeting a `bronto-community/homebrew-tap` repo (skip_upload: auto — harmless placeholder until the tap exists); release: github, draft: false, prerelease: auto.
 - `Dockerfile`: multi-stage — golang:1.25-alpine builder (CGO_ENABLED=0, trimpath, same ldflags with a build ARG VERSION) → `FROM scratch` + `COPY --from=alpine /etc/ssl/certs/ca-certificates.crt` + binary; ENTRYPOINT ["/bronto"]. `Dockerfile.distroless`: same builder → `gcr.io/distroless/static`.
 - `scripts/install.sh`: detect OS/arch, download latest GitHub release archive, verify checksum, install to /usr/local/bin (or $BINDIR), POSIX sh, `set -eu`.
 - Verification (binding): `go run github.com/goreleaser/goreleaser/v2@latest check` passes on the config; `go run github.com/goreleaser/goreleaser/v2@latest release --snapshot --clean --skip=publish` builds all targets locally (this is the test — run it; it's slow but definitive; if the network-restricted environment can't fetch goreleaser, `docker build .` at least must succeed if docker exists, else document what was verified); `sh -n scripts/install.sh` syntax check.
@@ -43,7 +43,7 @@ Commit: `feat: goreleaser packaging, container images, install script`.
 
 **Files:** Create `.github/workflows/release.yml`, `.github/workflows/spec-sync.yml`; modify `.github/workflows/ci.yml` (add testscript txtar run already covered by go test — verify; add a docs-examples job if Task 5 adds one).
 
-- `release.yml`: on push tags `v*`: setup-go (go.mod), `goreleaser/goreleaser-action@v6` with `version: '~> v2'`, `args: release --clean`, GITHUB_TOKEN permissions `contents: write`. Also docker build+push of both Dockerfiles to ghcr.io/svrnm/bronto-cli (`:latest` + `:{{version}}` + `-distroless` variants) — `docker/login-action`, `docker/build-push-action`, permissions `packages: write`.
+- `release.yml`: on push tags `v*`: setup-go (go.mod), `goreleaser/goreleaser-action@v6` with `version: '~> v2'`, `args: release --clean`, GITHUB_TOKEN permissions `contents: write`. Also docker build+push of both Dockerfiles to ghcr.io/bronto-community/bronto-cli (`:latest` + `:{{version}}` + `-distroless` variants) — `docker/login-action`, `docker/build-push-action`, permissions `packages: write`.
 - `spec-sync.yml`: weekly cron + workflow_dispatch: fetch the latest spec (document the canonical URL as a TODO-marked env var since Bronto's public spec URL must be confirmed — default to a repo variable `SPEC_URL`, skip gracefully with a notice when unset), diff against `api/openapi.yaml`; when changed: run `go run github.com/oasdiff/oasdiff@latest breaking old new` capturing output, regenerate (`make generate`), `go test ./...`, and open a PR via `peter-evans/create-pull-request@v7` with the oasdiff summary in the body; conformance test failures surface in the PR's CI.
 - Verification: `actionlint` if available via `go run github.com/rhysd/actionlint/cmd/actionlint@latest` (0 errors); otherwise YAML-parse both files in a Go test-free way (`python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1]))' f` or `go run` a yaml check) — document which ran.
 

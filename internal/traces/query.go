@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 const RootOnlyClause = "NOT EXISTS $span.parent_span_id"

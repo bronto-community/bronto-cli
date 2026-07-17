@@ -4,14 +4,14 @@
 # checksums.txt before installing.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/svrnm/bronto-cli/main/scripts/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | sh
 #
 # Environment overrides:
 #   BINDIR   install directory (default: /usr/local/bin)
 #   VERSION  release tag to install, e.g. v0.1.0 (default: latest)
 set -eu
 
-REPO="svrnm/bronto-cli"
+REPO="bronto-community/bronto-cli"
 BINDIR="${BINDIR:-/usr/local/bin}"
 VERSION="${VERSION:-}"
 

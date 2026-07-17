@@ -12,11 +12,11 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"github.com/svrnm/bronto-cli/internal/api"
-	"github.com/svrnm/bronto-cli/internal/clierr"
-	"github.com/svrnm/bronto-cli/internal/config"
-	"github.com/svrnm/bronto-cli/internal/secrets"
-	"github.com/svrnm/bronto-cli/internal/version"
+	"github.com/bronto-community/bronto-cli/internal/api"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/config"
+	"github.com/bronto-community/bronto-cli/internal/secrets"
+	"github.com/bronto-community/bronto-cli/internal/version"
 )
 
 // readPassword reads a password from the given file descriptor without

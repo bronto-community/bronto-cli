@@ -1,4 +1,4 @@
-module github.com/svrnm/bronto-cli
+module github.com/bronto-community/bronto-cli
 
 go 1.25.0
 

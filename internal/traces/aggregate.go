@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
-	"github.com/svrnm/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 const (

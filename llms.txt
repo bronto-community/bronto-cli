@@ -8,7 +8,7 @@ JSONL by default when piped, typed errors, stable exit codes.
 
 ## Install
 
-curl -fsSL https://raw.githubusercontent.com/svrnm/bronto-cli/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | sh
 
 ## Auth (CI / agents)
 

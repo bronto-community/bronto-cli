@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // tracesServer routes /search responses by the first select entry.

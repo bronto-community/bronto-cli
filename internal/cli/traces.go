@@ -5,11 +5,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
-	"github.com/svrnm/bronto-cli/internal/clierr"
-	"github.com/svrnm/bronto-cli/internal/output"
-	"github.com/svrnm/bronto-cli/internal/timerange"
-	"github.com/svrnm/bronto-cli/internal/traces"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/output"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/traces"
 )
 
 func newTracesCmd() *cobra.Command {

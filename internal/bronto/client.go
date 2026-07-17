@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/svrnm/bronto-cli/internal/api"
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/api"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 type Client struct {

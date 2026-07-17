@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Module path: `github.com/svrnm/bronto-cli`; binary name `bronto`; license MIT (as v1).
+- Module path: `github.com/bronto-community/bronto-cli`; binary name `bronto`; license MIT (as v1).
 - Go ≥ 1.24; `CGO_ENABLED=0 go build ./...` must always succeed (static binary requirement).
 - Allowed runtime deps ONLY: `github.com/spf13/cobra`, `github.com/pelletier/go-toml/v2`, `github.com/mattn/go-isatty`, `github.com/oapi-codegen/runtime`. Test-only: `github.com/rogpeppe/go-internal`. Anything else needs explicit approval.
 - stdout carries data only; all messages/progress/errors go to stderr.
@@ -44,7 +44,7 @@
 
 ```bash
 git checkout -b feat/foundation
-go mod init github.com/svrnm/bronto-cli
+go mod init github.com/bronto-community/bronto-cli
 go get github.com/spf13/cobra@latest
 go get github.com/rogpeppe/go-internal@latest
 ```
@@ -140,7 +140,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/version"
+	"github.com/bronto-community/bronto-cli/internal/version"
 )
 
 func NewRootCmd() *cobra.Command {
@@ -165,7 +165,7 @@ package main
 import (
 	"os"
 
-	"github.com/svrnm/bronto-cli/internal/cli"
+	"github.com/bronto-community/bronto-cli/internal/cli"
 )
 
 func main() {
@@ -442,7 +442,7 @@ func run() int {
 }
 ```
 
-Add `go get github.com/mattn/go-isatty@latest` and the imports (`os`, `github.com/mattn/go-isatty`, `github.com/svrnm/bronto-cli/internal/clierr`).
+Add `go get github.com/mattn/go-isatty@latest` and the imports (`os`, `github.com/mattn/go-isatty`, `github.com/bronto-community/bronto-cli/internal/clierr`).
 
 `cmd/bronto/testdata/script/exitcodes.txtar`:
 
@@ -462,7 +462,7 @@ package main
 import (
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func TestUsageErrorsExitTwo(t *testing.T) {
@@ -686,7 +686,7 @@ import (
 
 	toml "github.com/pelletier/go-toml/v2"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 type Source string
@@ -852,7 +852,7 @@ import (
 
 	toml "github.com/pelletier/go-toml/v2"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // loadProjectFile walks up from dir looking for .bronto.toml (like .git).
@@ -1081,7 +1081,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 type Format string
@@ -1443,7 +1443,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // Transport adds auth + User-Agent headers and retries idempotent requests
@@ -1583,10 +1583,10 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/api"
-	"github.com/svrnm/bronto-cli/internal/config"
-	"github.com/svrnm/bronto-cli/internal/output"
-	"github.com/svrnm/bronto-cli/internal/version"
+	"github.com/bronto-community/bronto-cli/internal/api"
+	"github.com/bronto-community/bronto-cli/internal/config"
+	"github.com/bronto-community/bronto-cli/internal/output"
+	"github.com/bronto-community/bronto-cli/internal/version"
 )
 
 // App bundles everything a command needs. Built once per invocation.
@@ -1668,7 +1668,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func execPing(t *testing.T, srvStatus int) (stdout string, err error) {
@@ -1736,8 +1736,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/api"
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/api"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func newPingCmd() *cobra.Command {
@@ -1912,7 +1912,7 @@ import (
 
 	toml "github.com/pelletier/go-toml/v2"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // SetUserValue writes key=value into the profile section of the user config.
@@ -1968,8 +1968,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
-	"github.com/svrnm/bronto-cli/internal/config"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/config"
 )
 
 func newConfigCmd() *cobra.Command {
@@ -2105,7 +2105,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func runAPI(t *testing.T, handler http.HandlerFunc, args ...string) (string, error) {
@@ -2206,8 +2206,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/api"
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/api"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 var allowedMethods = map[string]bool{

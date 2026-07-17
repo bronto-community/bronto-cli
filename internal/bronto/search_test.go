@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 func TestBodyOmitsZeroValues(t *testing.T) {

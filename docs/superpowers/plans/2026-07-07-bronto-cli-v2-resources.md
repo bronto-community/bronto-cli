@@ -17,7 +17,7 @@
 
 ## Global Constraints
 
-- Module `github.com/svrnm/bronto-cli`; Go `1.25.0`; `CGO_ENABLED=0 go build ./...`; gofmt clean; golangci-lint 0 issues per commit (`go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run`).
+- Module `github.com/bronto-community/bronto-cli`; Go `1.25.0`; `CGO_ENABLED=0 go build ./...`; gofmt clean; golangci-lint 0 issues per commit (`go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run`).
 - Dep allowlist adds `github.com/itchyny/gojq` (runtime).
 - stdout data only; confirmations to stderr; NEVER prompt when stdin is not a TTY — destructive ops then REQUIRE `--yes` (else `usage_confirmation_required`, exit 2).
 - Exit codes/error codes as established. Machine output stable.

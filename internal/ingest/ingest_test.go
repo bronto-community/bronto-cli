@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 var fixedNow = func() time.Time { return time.Date(2026, 7, 7, 12, 0, 0, 0, time.UTC) }
