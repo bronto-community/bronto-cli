@@ -21,7 +21,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Fetch upstream spec
         run: curl -fsSL -o /tmp/upstream.yaml "$SPEC_URL"
@@ -39,7 +39,7 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         if: steps.compare.outputs.changed == 'true'
         with:
           go-version-file: go.mod
