@@ -10,7 +10,7 @@ import (
 
 	toml "github.com/pelletier/go-toml/v2"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 type Source string

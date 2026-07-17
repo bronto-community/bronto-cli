@@ -11,7 +11,7 @@ import (
 	toml "github.com/pelletier/go-toml/v2"
 	"github.com/zalando/go-keyring"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 const service = "bronto-cli"

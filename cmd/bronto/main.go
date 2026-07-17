@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/bronto-community/bronto-cli/internal/cli"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/mattn/go-isatty"
-	"github.com/svrnm/bronto-cli/internal/cli"
-	"github.com/svrnm/bronto-cli/internal/clierr"
 )
 
 func main() {

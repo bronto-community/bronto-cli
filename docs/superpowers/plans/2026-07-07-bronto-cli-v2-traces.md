@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Module `github.com/svrnm/bronto-cli`; Go `1.25.0`; `CGO_ENABLED=0 go build ./...`; gofmt clean; golangci-lint 0 issues before each commit (`go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run`).
+- Module `github.com/bronto-community/bronto-cli`; Go `1.25.0`; `CGO_ENABLED=0 go build ./...`; gofmt clean; golangci-lint 0 issues before each commit (`go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run`).
 - NO new dependencies.
 - stdout = data only; stats/hints → stderr (TTY-gated where noted); `--quiet` silences stderr chatter.
 - Exit codes 0/1/2/3/4/5; error codes stable snake_case via `internal/clierr`.
@@ -293,7 +293,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 const RootOnlyClause = "NOT EXISTS $span.parent_span_id"
@@ -381,8 +381,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
-	"github.com/svrnm/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 // aggServer answers /search per the aggregate in select[0].
@@ -560,8 +560,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
-	"github.com/svrnm/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 const (
@@ -1020,7 +1020,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
 )
 
 type ListOptions struct {
@@ -2167,7 +2167,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // tracesServer routes /search responses by the first select entry.
@@ -2330,11 +2330,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
-	"github.com/svrnm/bronto-cli/internal/clierr"
-	"github.com/svrnm/bronto-cli/internal/output"
-	"github.com/svrnm/bronto-cli/internal/timerange"
-	"github.com/svrnm/bronto-cli/internal/traces"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/output"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/traces"
 )
 
 func newTracesCmd() *cobra.Command {

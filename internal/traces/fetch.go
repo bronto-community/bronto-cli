@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
 )
 
 type ListOptions struct {

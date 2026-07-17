@@ -14,9 +14,9 @@ import (
 
 	"github.com/zalando/go-keyring"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
-	"github.com/svrnm/bronto-cli/internal/config"
-	"github.com/svrnm/bronto-cli/internal/secrets"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/config"
+	"github.com/bronto-community/bronto-cli/internal/secrets"
 )
 
 func TestAuthLoginKeyStdinStoresAndDetectsRegion(t *testing.T) {

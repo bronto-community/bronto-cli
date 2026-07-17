@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // Transport adds auth + User-Agent headers and retries idempotent requests

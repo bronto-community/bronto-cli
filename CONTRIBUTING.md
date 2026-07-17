@@ -3,7 +3,7 @@
 ## 5-minute path
 
 ```sh
-git clone https://github.com/svrnm/bronto-cli
+git clone https://github.com/bronto-community/bronto-cli
 cd bronto-cli
 make build   # -> ./bronto (CGO_ENABLED=0 go build -o bronto ./cmd/bronto)
 make test    # go test ./...

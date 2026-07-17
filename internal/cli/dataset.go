@@ -3,7 +3,7 @@ package cli
 import (
 	"strings"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // resolveDataset picks the dataset scope: explicit flags win, then the

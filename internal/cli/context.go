@@ -13,12 +13,12 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/api"
-	"github.com/svrnm/bronto-cli/internal/clierr"
-	"github.com/svrnm/bronto-cli/internal/config"
-	"github.com/svrnm/bronto-cli/internal/output"
-	"github.com/svrnm/bronto-cli/internal/secrets"
-	"github.com/svrnm/bronto-cli/internal/version"
+	"github.com/bronto-community/bronto-cli/internal/api"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/config"
+	"github.com/bronto-community/bronto-cli/internal/output"
+	"github.com/bronto-community/bronto-cli/internal/secrets"
+	"github.com/bronto-community/bronto-cli/internal/version"
 )
 
 // secretLookup resolves a stored API key for a profile. Package-level so

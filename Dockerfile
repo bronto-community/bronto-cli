@@ -9,9 +9,9 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -trimpath \
 	-ldflags "-s -w \
-	-X github.com/svrnm/bronto-cli/internal/version.Version=${VERSION} \
-	-X github.com/svrnm/bronto-cli/internal/version.Commit=${COMMIT} \
-	-X github.com/svrnm/bronto-cli/internal/version.Date=${DATE}" \
+	-X github.com/bronto-community/bronto-cli/internal/version.Version=${VERSION} \
+	-X github.com/bronto-community/bronto-cli/internal/version.Commit=${COMMIT} \
+	-X github.com/bronto-community/bronto-cli/internal/version.Date=${DATE}" \
 	-o /out/bronto ./cmd/bronto
 
 FROM scratch

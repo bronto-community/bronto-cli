@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-06
 **Status:** Approved design, pre-implementation
-**Supersedes:** [svrnm/bronto-cli](https://github.com/svrnm/bronto-cli) (Python/Typer, v0.1.0)
+**Supersedes:** [bronto-community/bronto-cli](https://github.com/bronto-community/bronto-cli) (Python/Typer, v0.1.0)
 
 ## 1. Goals & positioning
 

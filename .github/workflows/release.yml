@@ -36,14 +36,14 @@ jobs:
         id: meta
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          SCRATCH_TAGS="ghcr.io/svrnm/bronto-cli:${VERSION}"
-          DISTROLESS_TAGS="ghcr.io/svrnm/bronto-cli:${VERSION}-distroless"
+          SCRATCH_TAGS="ghcr.io/bronto-community/bronto-cli:${VERSION}"
+          DISTROLESS_TAGS="ghcr.io/bronto-community/bronto-cli:${VERSION}-distroless"
           # Only stable releases (no pre-release suffix like -rc.1) move :latest.
           case "$GITHUB_REF_NAME" in
             *-*) ;;
             *)
-              SCRATCH_TAGS="${SCRATCH_TAGS}"$'\n'"ghcr.io/svrnm/bronto-cli:latest"
-              DISTROLESS_TAGS="${DISTROLESS_TAGS}"$'\n'"ghcr.io/svrnm/bronto-cli:latest-distroless"
+              SCRATCH_TAGS="${SCRATCH_TAGS}"$'\n'"ghcr.io/bronto-community/bronto-cli:latest"
+              DISTROLESS_TAGS="${DISTROLESS_TAGS}"$'\n'"ghcr.io/bronto-community/bronto-cli:latest-distroless"
               ;;
           esac
           {

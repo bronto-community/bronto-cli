@@ -9,7 +9,7 @@ This project is not affiliated with or endorsed by Bronto.
 ### Homebrew (coming soon)
 
 ```sh
-brew install svrnm/tap/bronto
+brew install bronto-community/tap/bronto
 ```
 
 The tap isn't published yet — this will work once `homebrew-tap` exists and the release workflow's cask upload is flipped from `skip_upload` to `auto`. Until then, use one of the options below.
@@ -17,7 +17,7 @@ The tap isn't published yet — this will work once `homebrew-tap` exists and th
 ### curl install script
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/svrnm/bronto-cli/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | sh
 ```
 
 Downloads the latest (or a pinned `VERSION=`) release for your OS/arch from GitHub Releases and verifies its checksum against the release's `checksums.txt` before installing to `/usr/local/bin` (override with `BINDIR=`).
@@ -25,20 +25,20 @@ Downloads the latest (or a pinned `VERSION=`) release for your OS/arch from GitH
 ### go install
 
 ```sh
-go install github.com/svrnm/bronto-cli/cmd/bronto@latest
+go install github.com/bronto-community/bronto-cli/cmd/bronto@latest
 ```
 
 ### Docker
 
 ```sh
-docker run --rm -e BRONTO_API_KEY -e BRONTO_REGION ghcr.io/svrnm/bronto-cli:latest search "status >= 500" --since 1h
+docker run --rm -e BRONTO_API_KEY -e BRONTO_REGION ghcr.io/bronto-community/bronto-cli:latest search "status >= 500" --since 1h
 ```
 
-Two image variants are published on every release: the default (`scratch` + CA certs) and `-distroless` (`ghcr.io/svrnm/bronto-cli:latest-distroless`), both `ENTRYPOINT ["/bronto"]`. Neither image has a shell, so pass credentials as environment variables rather than files (see [Restricted environments](#restricted-environments)).
+Two image variants are published on every release: the default (`scratch` + CA certs) and `-distroless` (`ghcr.io/bronto-community/bronto-cli:latest-distroless`), both `ENTRYPOINT ["/bronto"]`. Neither image has a shell, so pass credentials as environment variables rather than files (see [Restricted environments](#restricted-environments)).
 
 ### Releases
 
-Prebuilt archives (tar.gz for macOS/Linux, zip for Windows) plus `.deb`/`.rpm` packages and shell completions are attached to every [GitHub release](https://github.com/svrnm/bronto-cli/releases).
+Prebuilt archives (tar.gz for macOS/Linux, zip for Windows) plus `.deb`/`.rpm` packages and shell completions are attached to every [GitHub release](https://github.com/bronto-community/bronto-cli/releases).
 
 ## Quickstart
 
@@ -151,7 +151,7 @@ For containers, CI runners, or sandboxes without a usable OS keychain or writabl
 - Set `BRONTO_API_KEY` (and `BRONTO_REGION`) directly — no keychain access is attempted once a key is already resolved.
 - Set `BRONTO_CONFIG_DIR` to a writable path if you need `bronto config set` or profile files to work somewhere other than the default user config directory.
 
-The published scratch-based image (`ghcr.io/svrnm/bronto-cli:latest`) has no shell, package manager, or keychain daemon by design — pass credentials as environment variables when running it.
+The published scratch-based image (`ghcr.io/bronto-community/bronto-cli:latest`) has no shell, package manager, or keychain daemon by design — pass credentials as environment variables when running it.
 
 ## Plugins
 
@@ -162,7 +162,7 @@ Plugins do **not** inherit keychain-stored credentials — only environment vari
 ## Development
 
 ```sh
-git clone https://github.com/svrnm/bronto-cli
+git clone https://github.com/bronto-community/bronto-cli
 cd bronto-cli
 make build   # -> ./bronto
 make test    # go test ./...

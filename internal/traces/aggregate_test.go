@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
-	"github.com/svrnm/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 // aggServer answers /search per the aggregate in select[0].

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // runResource runs the root command with the given args against a stub

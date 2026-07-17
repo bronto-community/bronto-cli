@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/cli"
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/cli"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func TestExitStatusNilErrIsZeroNoRender(t *testing.T) {

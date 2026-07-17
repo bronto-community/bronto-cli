@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/svrnm/bronto-cli/internal/api"
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/api"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func URL(region, override string) string {

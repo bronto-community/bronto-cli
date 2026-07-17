@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 type Spec struct {

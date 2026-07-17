@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func TestUsageErrorsExitTwo(t *testing.T) {

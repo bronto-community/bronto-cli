@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func searchServer(t *testing.T, respond string, capture *map[string]any) *httptest.Server {

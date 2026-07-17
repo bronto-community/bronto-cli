@@ -24,9 +24,9 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
-      - -X github.com/svrnm/bronto-cli/internal/version.Version={{ .Version }}
-      - -X github.com/svrnm/bronto-cli/internal/version.Commit={{ .ShortCommit }}
-      - -X github.com/svrnm/bronto-cli/internal/version.Date={{ .Date }}
+      - -X github.com/bronto-community/bronto-cli/internal/version.Version={{ .Version }}
+      - -X github.com/bronto-community/bronto-cli/internal/version.Commit={{ .ShortCommit }}
+      - -X github.com/bronto-community/bronto-cli/internal/version.Date={{ .Date }}
 
 archives:
   - id: bronto
@@ -79,7 +79,7 @@ nfpms:
       - bronto
     package_name: bronto
     vendor: bronto-cli contributors
-    homepage: https://github.com/svrnm/bronto-cli
+    homepage: https://github.com/bronto-community/bronto-cli
     maintainer: bronto-cli contributors <noreply@github.com>
     description: Community CLI for the Bronto observability platform.
     license: MIT
@@ -107,18 +107,18 @@ homebrew_casks:
       zsh: completions/bronto.zsh
       fish: completions/bronto.fish
     repository:
-      owner: svrnm
+      owner: bronto-community
       name: homebrew-tap
     # Cross-repo pushes need a PAT (the default GITHUB_TOKEN cannot write to
     # homebrew-tap). Flip to "auto" once the tap repo exists and a
     # HOMEBREW_TAP_TOKEN secret is wired into release.yml.
     skip_upload: true
-    homepage: https://github.com/svrnm/bronto-cli
+    homepage: https://github.com/bronto-community/bronto-cli
     description: Community CLI for the Bronto observability platform.
 
 release:
   github:
-    owner: svrnm
+    owner: bronto-community
     name: bronto-cli
   draft: false
   prerelease: auto

@@ -17,7 +17,7 @@
 ## Global Constraints
 
 (Same as Plan 1, restated where binding here.)
-- Module `github.com/svrnm/bronto-cli`; Go directive `1.25.0`; `CGO_ENABLED=0 go build ./...` must succeed; gofmt-clean; golangci-lint (v2 config in repo) must report 0 issues before each commit (`go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run` — binary is in the module cache, fast).
+- Module `github.com/bronto-community/bronto-cli`; Go directive `1.25.0`; `CGO_ENABLED=0 go build ./...` must succeed; gofmt-clean; golangci-lint (v2 config in repo) must report 0 issues before each commit (`go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run` — binary is in the module cache, fast).
 - NO new dependencies. stdlib only for new code.
 - stdout = data only; stats/progress/messages → stderr; `--quiet` silences stderr chatter.
 - Exit codes 0/1/2/3/4/5; error codes stable snake_case via `internal/clierr`.
@@ -308,7 +308,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 type Spec struct {
@@ -437,7 +437,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 func TestBodyOmitsZeroValues(t *testing.T) {
@@ -533,7 +533,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func TestSearchPostsBodyAndParsesResponse(t *testing.T) {
@@ -603,7 +603,7 @@ package bronto
 import (
 	"sort"
 
-	"github.com/svrnm/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 type SearchRequest struct {
@@ -776,7 +776,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/svrnm/bronto-cli/internal/api"
+	"github.com/bronto-community/bronto-cli/internal/api"
 )
 
 type Client struct {
@@ -884,7 +884,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func searchServer(t *testing.T, respond string, capture *map[string]any) *httptest.Server {
@@ -1017,7 +1017,7 @@ package cli
 import (
 	"strings"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // resolveDataset picks the dataset scope: explicit flags win, then the
@@ -1052,9 +1052,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
-	"github.com/svrnm/bronto-cli/internal/output"
-	"github.com/svrnm/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/output"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 func newSearchCmd() *cobra.Command {
@@ -1304,9 +1304,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
-	"github.com/svrnm/bronto-cli/internal/clierr"
-	"github.com/svrnm/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 func newFieldsCmd() *cobra.Command {
@@ -1443,7 +1443,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func TestContextFetchesAndStreams(t *testing.T) {
@@ -1509,8 +1509,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
-	"github.com/svrnm/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 func newContextCmd() *cobra.Command {
@@ -1956,10 +1956,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/svrnm/bronto-cli/internal/bronto"
-	"github.com/svrnm/bronto-cli/internal/clierr"
-	"github.com/svrnm/bronto-cli/internal/output"
-	"github.com/svrnm/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/output"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 func newTailCmd() *cobra.Command {

@@ -5,7 +5,7 @@ package bronto
 import (
 	"sort"
 
-	"github.com/svrnm/bronto-cli/internal/timerange"
+	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 type SearchRequest struct {
