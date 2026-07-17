@@ -10,7 +10,7 @@ import (
 )
 
 // TestQuery_SearchWhereMarkerJSON asserts the core query path over the
-// seeded data: search --where "ci_marker = '<marker>'" -o json returns rows,
+// seeded data: search "ci_marker = '<marker>'" -o json returns rows,
 // and every row carries the marker.
 func TestQuery_SearchWhereMarkerJSON(t *testing.T) {
 	key := skipIfNoCreds(t)

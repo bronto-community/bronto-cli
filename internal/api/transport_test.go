@@ -275,3 +275,36 @@ func TestErrorFromStatus(t *testing.T) {
 		t.Error("2xx must map to nil")
 	}
 }
+
+func TestErrorFromStatusMessageExtraction(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+		want string
+	}{
+		{"message field wins", `{"message":"bad filter"}`, "Bronto API returned 400: bad filter"},
+		{"other JSON shapes surface raw", `{"errors":[{"field":"window"}]}`, `Bronto API returned 400: {"errors":[{"field":"window"}]}`},
+		{"plain text surfaces raw", "Bad Request", "Bronto API returned 400: Bad Request"},
+		{"whitespace-only body omitted", "  \n", "Bronto API returned 400"},
+		{"empty body omitted", "", "Bronto API returned 400"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			e := ErrorFromStatus(400, []byte(c.body))
+			if e == nil {
+				t.Fatal("nil error for 400")
+			}
+			if e.Message != c.want {
+				t.Errorf("message = %q, want %q", e.Message, c.want)
+			}
+		})
+	}
+
+	t.Run("long body truncated", func(t *testing.T) {
+		e := ErrorFromStatus(400, []byte(strings.Repeat("x", 500)))
+		want := "Bronto API returned 400: " + strings.Repeat("x", 300) + "…"
+		if e.Message != want {
+			t.Errorf("truncated message = %q (len %d), want 300-char snippet + ellipsis", e.Message, len(e.Message))
+		}
+	})
+}

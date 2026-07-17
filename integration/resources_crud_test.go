@@ -157,13 +157,15 @@ func testAPIKeyCRUD(t *testing.T, r *Runner) {
 // never actually fires during the test's lifetime.
 func monitorBody(name, logID string, threshold int) map[string]any {
 	return map[string]any{
-		"name":                name,
-		"filter":              "*",
+		"name": name,
+		// A real query expression: bare "*" is not valid query syntax.
+		"filter":              "status >= 0",
 		"stat":                "COUNT",
 		"comparison_operator": "ABOVE",
 		"threshold":           threshold,
-		"window":              "Last 20 minutes",
-		"logs":                []string{logID},
+		// Format per the documented pattern-monitor example ("Last N minutes").
+		"window": "Last 10 minutes",
+		"logs":   []string{logID},
 		"actions": []map[string]any{
 			{"type": "EMAIL", "email": "bronto-ci@example.com"},
 		},
@@ -177,8 +179,13 @@ func savedSearchBody(name, logID string) map[string]any {
 		"name":       name,
 		"created_by": "bronto-ci",
 		"log_ids":    []string{logID},
+		// SearchDetails' oneOf variants all require from + where + a time
+		// field (same contract the exports command satisfies): from is a
+		// colon-separated log-id string, where always present (may be empty).
 		"search_details": map[string]any{
+			"from":       logID,
 			"time_range": "Last 15 minutes",
+			"where":      "status >= 0",
 		},
 	}
 }

@@ -152,8 +152,8 @@ func pollSeedVisible(ctx context.Context, r *Runner, datasetName, marker string,
 			}
 		}
 		if logID != "" {
-			res, err := r.Run(ctx, "", "search", "-d", logID, "--where",
-				fmt.Sprintf("ci_marker = '%s'", marker), "--since", "1h", "-o", "json", "-n", "1")
+			res, err := r.Run(ctx, "", "search",
+				fmt.Sprintf("ci_marker = '%s'", marker), "-d", logID, "--since", "1h", "-o", "json", "-n", "1")
 			if err == nil {
 				lastStdout, lastStderr, lastStep = res.Stdout, res.Stderr, "search"
 				if res.ExitCode == 0 {
@@ -278,9 +278,11 @@ func randHex(n int) string {
 // selecting datasets by tag ("tag.env = 'prod'"), not by name, so resolving
 // the real log_id via `datasets list` and passing -d is the certain path.
 
-// searchArgs builds ["search", "-d", logID, "--where", where, "--since", "1h", extra...].
+// searchArgs builds ["search", <where>, "-d", logID, "--since", "1h", extra...].
+// The query is a POSITIONAL argument on bronto search (clean-slate v2
+// grammar) — there is no --where flag on search (exports create has one).
 func searchArgs(logID, where string, extra ...string) []string {
-	args := []string{"search", "-d", logID, "--where", where, "--since", "1h"}
+	args := []string{"search", where, "-d", logID, "--since", "1h"}
 	return append(args, extra...)
 }
 
@@ -371,7 +373,7 @@ func TestSearchArgsHelpers(t *testing.T) {
 	const marker = "m-1"
 
 	args := searchArgs(logID, "status >= 500", "-o", "json")
-	want := []string{"search", "-d", logID, "--where", "status >= 500", "--since", "1h", "-o", "json"}
+	want := []string{"search", "status >= 500", "-d", logID, "--since", "1h", "-o", "json"}
 	if !equalStrings(args, want) {
 		t.Fatalf("searchArgs = %v, want %v", args, want)
 	}

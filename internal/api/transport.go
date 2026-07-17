@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
@@ -129,6 +130,14 @@ func ErrorFromStatus(status int, body []byte) *clierr.Error {
 	}
 	if json.Unmarshal(body, &apiMsg) == nil && apiMsg.Message != "" {
 		msg = fmt.Sprintf("Bronto API returned %d: %s", status, apiMsg.Message)
+	} else if trimmed := strings.TrimSpace(string(body)); trimmed != "" {
+		// No recognizable message field: surface a snippet of the raw body —
+		// validation errors often arrive in other shapes, and hiding them
+		// leaves users (and CI) debugging blind.
+		if len(trimmed) > 300 {
+			trimmed = trimmed[:300] + "…"
+		}
+		msg = fmt.Sprintf("Bronto API returned %d: %s", status, trimmed)
 	}
 	switch {
 	case status == http.StatusUnauthorized:
