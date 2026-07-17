@@ -44,17 +44,36 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Breaking-change report (oasdiff, informational)
+      - name: Build change digest (oasdiff)
         if: steps.compare.outputs.changed == 'true'
         run: |
-          go run github.com/oasdiff/oasdiff@latest breaking api/openapi.yaml /tmp/upstream.yaml \
-            > /tmp/oasdiff.txt 2>&1 || true
-          # Indented (not fenced) so report content can never break the
-          # issue's markdown; truncated to keep the issue readable.
-          head -c 6000 /tmp/oasdiff.txt | sed 's/^/    /' > /tmp/oasdiff.md
-          if [ "$(wc -c < /tmp/oasdiff.txt)" -gt 6000 ]; then
-            printf '\n    … report truncated; run oasdiff locally for the full output.\n' >> /tmp/oasdiff.md
+          # stderr (Go toolchain/module downloads) goes to a log, NOT into
+          # the report — it used to fill the issue with "go: downloading"
+          # noise. Both commands are best-effort: spec-digest.sh degrades
+          # gracefully on missing/invalid JSON.
+          go run github.com/oasdiff/oasdiff@latest diff api/openapi.yaml /tmp/upstream.yaml -f json \
+            > /tmp/oasdiff-diff.json 2> /tmp/oasdiff-stderr.log || true
+          go run github.com/oasdiff/oasdiff@latest breaking api/openapi.yaml /tmp/upstream.yaml -f json \
+            > /tmp/oasdiff-breaking.json 2>> /tmp/oasdiff-stderr.log || true
+          scripts/spec-digest.sh /tmp/oasdiff-diff.json /tmp/oasdiff-breaking.json /tmp/oasdiff.md
+          # GitHub issue bodies cap at 65536 chars; leave room for the
+          # surrounding body text.
+          if [ "$(wc -c < /tmp/oasdiff.md)" -gt 55000 ]; then
+            head -c 55000 /tmp/oasdiff.md > /tmp/oasdiff.md.tmp
+            printf '\n\n_…digest truncated; the full oasdiff JSON is in the workflow run artifacts._\n' >> /tmp/oasdiff.md.tmp
+            mv /tmp/oasdiff.md.tmp /tmp/oasdiff.md
           fi
+
+      - name: Upload full oasdiff output
+        if: steps.compare.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: oasdiff-report
+          path: |
+            /tmp/oasdiff-diff.json
+            /tmp/oasdiff-breaking.json
+            /tmp/oasdiff-stderr.log
+          retention-days: 30
 
       - name: Create or update the drift issue
         if: steps.compare.outputs.changed == 'true'
@@ -63,19 +82,23 @@ jobs:
           UPSTREAM_SHA: ${{ steps.compare.outputs.upstream_sha }}
         run: |
           SHORT_SHA=$(printf '%s' "$UPSTREAM_SHA" | cut -c1-12)
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          # The marker carries a report-format version (v2 = digest format):
+          # bumping it makes the workflow refresh an open issue that still
+          # has an old-format body even when the upstream sha is unchanged.
           # shellcheck disable=SC2016 # single-quoted backticks below are markdown, not command substitution
           {
-            printf '<!-- spec-sync:sha256=%s -->\n\n' "$UPSTREAM_SHA"
+            printf '<!-- spec-sync:v2:sha256=%s -->\n\n' "$UPSTREAM_SHA"
             printf 'The published Bronto OpenAPI spec has drifted from the state our vendored `api/openapi.yaml` was built from.\n\n'
             printf -- '- Upstream: %s\n' "$SPEC_URL"
             printf -- '- Upstream sha256: `%s`\n' "$UPSTREAM_SHA"
-            printf -- '- Recorded baseline: `%s`\n\n' "$(cat api/upstream.sha256)"
+            printf -- '- Recorded baseline: `%s`\n' "$(cat api/upstream.sha256)"
+            printf -- '- Full machine-readable diff: [workflow run artifacts](%s)\n\n' "$RUN_URL"
             printf 'To re-vendor:\n\n'
             printf -- '- [ ] Download the upstream spec over `api/openapi.yaml`\n'
             printf -- '- [ ] Re-apply the hand patches (`grep -n "bronto-cli vendor patch" git history / previous spec`)\n'
             printf -- '- [ ] `make generate && go test ./...` (resource conformance test guards drift)\n'
             printf -- '- [ ] Update `api/upstream.sha256` to `%s <date>`\n\n' "$UPSTREAM_SHA"
-            printf 'Breaking-change report (upstream vs. vendored, informational):\n\n'
             cat /tmp/oasdiff.md
           } > /tmp/issue-body.md
 
@@ -90,11 +113,11 @@ jobs:
             gh issue create --repo "$GITHUB_REPOSITORY" --label spec-sync \
               --title "$TITLE" --body-file /tmp/issue-body.md
           elif gh issue view "$EXISTING" --repo "$GITHUB_REPOSITORY" --json body --jq .body \
-              | grep -q "spec-sync:sha256=${UPSTREAM_SHA}"; then
+              | grep -q "spec-sync:v2:sha256=${UPSTREAM_SHA}"; then
             echo "::notice::Open issue #${EXISTING} already reports sha ${SHORT_SHA}; nothing to do."
           else
             gh issue edit "$EXISTING" --repo "$GITHUB_REPOSITORY" \
               --title "$TITLE" --body-file /tmp/issue-body.md
             gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" \
-              --body "Upstream changed again; issue body refreshed for sha \`${SHORT_SHA}\`."
+              --body "Issue body refreshed for upstream sha \`${SHORT_SHA}\` (new upstream state or updated report format)."
           fi
