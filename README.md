@@ -44,11 +44,14 @@ Prebuilt archives (tar.gz for macOS/Linux, zip for Windows) plus `.deb`/`.rpm` p
 
 ```sh
 bronto auth login                              # paste an API key, stored in the OS keychain
+bronto datasets list                           # see what data you have
 bronto search "status >= 500" --since 1h       # one-shot query
 bronto tail "level = 'error'" --window 5m      # follow new events live
 ```
 
-`bronto auth login` prompts for a key interactively (or `--key-stdin` to pipe one in) and picks a region (`eu`/`us`). Everything after that resolves credentials automatically — no further setup.
+`bronto auth login` prompts for a key interactively (or `--key-stdin` to pipe one in) and picks a region (`eu`/`us`). Everything after that resolves credentials automatically.
+
+Query commands need a dataset scope: with a single dataset in the account it is picked automatically; with several, pass `-d <name>` (dataset **names** work everywhere a UUID does) or set a default once with `bronto config set default_dataset <name>`.
 
 ## Command tour
 
@@ -60,8 +63,8 @@ bronto search --select "count()" -g host --since 15m
 bronto tail "level = 'error'" --include timeout --exclude healthz
 bronto traces show <trace-id>
 bronto traces services --since 1h
-bronto fields -d <dataset-uuid> --since 1h
-bronto context --sequence 111721913 -d <dataset-uuid> --timestamp 1711535140632
+bronto fields -d <dataset> --since 1h
+bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
 ```
 
 `traces` also has `list`, `operations`, `aggregate`, and `shape` subcommands over the `.traces` logset.
@@ -74,7 +77,7 @@ bronto monitors get <id>
 bronto dashboards create -f name=Overview -f description=Prod
 bronto parsers update <id> -f name=new-name
 bronto api-keys delete <id> --yes
-bronto exports create --dataset <uuid> --since 1h --where "status=500" --wait
+bronto exports create -d <dataset> --since 1h --where "status=500" --wait
 bronto usage --since 7d
 ```
 
@@ -106,7 +109,7 @@ Output to a non-TTY (piped or redirected) defaults to **JSONL**, one JSON object
 
 ```sh
 bronto search "status >= 500" --since 1h --jq '.message' | wc -l
-bronto datasets list --fields id,name
+bronto datasets list --fields log,log_id
 bronto datasets list --fields '?'          # list available field names instead of data
 ```
 

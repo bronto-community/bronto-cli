@@ -36,7 +36,7 @@ func TestExportsCreateConvenienceFlagsBodyShape(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"CREATED"}`))
 	}, "", "exports", "create",
-		"--dataset", "ds-1", "--where", "status=500", "--since", "1h", "-o", "json")
+		"--dataset", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "--where", "status=500", "--since", "1h", "-o", "json")
 	if err != nil {
 		t.Fatalf("err = %v, out = %q", err, out)
 	}
@@ -48,7 +48,7 @@ func TestExportsCreateConvenienceFlagsBodyShape(t *testing.T) {
 		t.Fatalf("body missing search_details: %v", gotBody)
 	}
 	from, ok := details["from"].(string)
-	if !ok || from != "ds-1" {
+	if !ok || from != "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" {
 		t.Fatalf("search_details.from = %v (expected string)", details["from"])
 	}
 	if details["time_range"] != "Last 1 hour" {
@@ -70,7 +70,7 @@ func TestExportsCreateConvenienceFlagsWhereAlwaysPresent(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"CREATED"}`))
 	}, "", "exports", "create",
-		"--dataset", "ds-1", "--since", "1h")
+		"--dataset", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "--since", "1h")
 	if err != nil {
 		t.Fatalf("err = %v", err)
 	}
@@ -90,7 +90,7 @@ func TestExportsCreateConvenienceFlagsWhereAlwaysPresent(t *testing.T) {
 func TestExportsCreateBodyVsConvenienceConflict(t *testing.T) {
 	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("server should not be contacted")
-	}, "", "exports", "create", "-f", "search_details.where=x", "--dataset", "ds-1")
+	}, "", "exports", "create", "-f", "search_details.where=x", "--dataset", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 	if err == nil {
 		t.Fatal("expected a conflict error")
 	}
@@ -126,7 +126,7 @@ func TestExportsCreateWaitPollsUntilComplete(t *testing.T) {
 		default:
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
-	}, "", "exports", "create", "--dataset", "ds-1", "--since", "1h", "--wait", "-o", "json")
+	}, "", "exports", "create", "--dataset", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "--since", "1h", "--wait", "-o", "json")
 	if err != nil {
 		t.Fatalf("err = %v, out = %q", err, out)
 	}
@@ -152,7 +152,7 @@ func TestExportsCreateWaitFailedExitsOne(t *testing.T) {
 		default:
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
-	}, "", "exports", "create", "--dataset", "ds-1", "--since", "1h", "--wait")
+	}, "", "exports", "create", "--dataset", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "--since", "1h", "--wait")
 	if err == nil {
 		t.Fatal("expected an error")
 	}
@@ -193,7 +193,7 @@ func TestExportsCreateDownloadWritesFileWithoutAuthHeaderOnLocation(t *testing.T
 		default:
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
-	}, "", "exports", "create", "--dataset", "ds-1", "--since", "1h", "--download", dest)
+	}, "", "exports", "create", "--dataset", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "--since", "1h", "--download", dest)
 	if err != nil {
 		t.Fatalf("err = %v, stderr = %q", err, stderr)
 	}
@@ -236,7 +236,7 @@ func TestExportsCreateDownloadImpliesWaitWithoutFlag(t *testing.T) {
 		default:
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
-	}, "", "exports", "create", "--dataset", "ds-1", "--download", dest)
+	}, "", "exports", "create", "--dataset", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "--download", dest)
 	if err != nil {
 		t.Fatal(err)
 	}

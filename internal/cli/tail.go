@@ -43,7 +43,7 @@ func newTailCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ids, expr, err := resolveDataset(app, datasets, fromExpr)
+			ids, expr, err := resolveDataset(cmd.Context(), app, datasets, fromExpr)
 			if err != nil {
 				return err
 			}
@@ -134,7 +134,7 @@ func newTailCmd() *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
-	f.StringArrayVarP(&datasets, "dataset", "d", nil, "dataset UUID to tail (repeatable)")
+	f.StringArrayVarP(&datasets, "dataset", "d", nil, "dataset name or UUID to tail (repeatable)")
 	f.StringVar(&fromExpr, "from-expr", "", "dataset selector expression")
 	f.DurationVar(&interval, "interval", 3*time.Second, "polling interval (min 1s)")
 	f.StringVar(&window, "window", "30s", "per-poll lookback window (single unit)")

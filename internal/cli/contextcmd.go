@@ -18,8 +18,8 @@ func newContextCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "context",
 		Short: "Show events around a specific log event",
-		Example: "  bronto context --sequence 111721913 -d <dataset-uuid> --timestamp 1711535140632\n" +
-			"  bronto context --sequence 42 -d <dataset-uuid> --timestamp 1711535140632 --direction before",
+		Example: "  bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632\n" +
+			"  bronto context --sequence 42 -d <dataset> --timestamp 1711535140632 --direction before",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			switch direction {
@@ -32,9 +32,13 @@ func newContextCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			logID, err := resolveDatasetRef(cmd.Context(), app, dataset)
+			if err != nil {
+				return err
+			}
 			params := url.Values{
 				"sequence":  []string{strconv.FormatInt(sequence, 10)},
-				"from":      []string{dataset},
+				"from":      []string{logID},
 				"timestamp": []string{strconv.FormatInt(timestamp, 10)},
 				"direction": []string{direction},
 				"limit":     []string{strconv.Itoa(limit)},
@@ -60,7 +64,7 @@ func newContextCmd() *cobra.Command {
 	}
 	f := cmd.Flags()
 	f.Int64Var(&sequence, "sequence", 0, "sequence number of the anchor event (required)")
-	f.StringVarP(&dataset, "dataset", "d", "", "dataset UUID the event belongs to (required)")
+	f.StringVarP(&dataset, "dataset", "d", "", "dataset (name or UUID) the event belongs to (required)")
 	f.Int64Var(&timestamp, "timestamp", 0, "unix-ms timestamp of the anchor event (required)")
 	f.StringVar(&direction, "direction", "both", "before | after | both")
 	f.IntVarP(&limit, "limit", "n", 50, "events per direction")

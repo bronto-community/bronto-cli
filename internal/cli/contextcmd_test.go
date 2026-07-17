@@ -18,7 +18,7 @@ func TestContextFetchesAndStreams(t *testing.T) {
 			t.Errorf("path = %s", r.URL.Path)
 		}
 		q := r.URL.Query()
-		if q.Get("sequence") != "12345" || q.Get("from") != "ds-1" ||
+		if q.Get("sequence") != "12345" || q.Get("from") != "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" ||
 			q.Get("timestamp") != "1700000000000" || q.Get("direction") != "both" || q.Get("limit") != "20" {
 			t.Errorf("query = %v", q)
 		}
@@ -30,7 +30,7 @@ func TestContextFetchesAndStreams(t *testing.T) {
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&bytes.Buffer{})
-	root.SetArgs([]string{"context", "--sequence", "12345", "-d", "ds-1",
+	root.SetArgs([]string{"context", "--sequence", "12345", "-d", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 		"--timestamp", "1700000000000", "-n", "20",
 		"--base-url", srv.URL, "--api-key", "k"})
 	if err := root.Execute(); err != nil {

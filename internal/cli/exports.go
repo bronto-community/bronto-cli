@@ -39,19 +39,27 @@ func newExportsCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create an export",
-		Example: "  bronto exports create --dataset <uuid> --since 1h --where \"status=500\" --wait\n" +
+		Example: "  bronto exports create --dataset <dataset> --since 1h --where \"status=500\" --wait\n" +
 			"  bronto exports create --input body.json\n" +
-			"  bronto exports create --dataset <uuid> --since 1h --download out.json.gz",
+			"  bronto exports create --dataset <dataset> --since 1h --download out.json.gz",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if download != "" {
 				wait = true
 			}
-			body, err := exportRequestBody(cmd, input, fields, dataset, where, since, from, to)
+			app, err := NewApp(cmd)
 			if err != nil {
 				return err
 			}
-			app, err := NewApp(cmd)
+			// Only resolve when the convenience path is actually in play:
+			// with --input the flags conflict and exportRequestBody says so
+			// without a wasted /logs lookup.
+			if dataset != "" && input == "" {
+				if dataset, err = resolveDatasetRef(cmd.Context(), app, dataset); err != nil {
+					return err
+				}
+			}
+			body, err := exportRequestBody(cmd, input, fields, dataset, where, since, from, to)
 			if err != nil {
 				return err
 			}
@@ -93,7 +101,7 @@ func newExportsCreateCmd() *cobra.Command {
 	}
 	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil, "key=value pair for the request body (repeatable)")
 	cmd.Flags().StringVar(&input, "input", "", "request body from file, or - for stdin")
-	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset UUID to export (convenience flag)")
+	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset (name or UUID) to export (convenience flag)")
 	cmd.Flags().StringVar(&where, "where", "", "query filter (convenience flag)")
 	cmd.Flags().StringVar(&since, "since", "", "relative lookback, e.g. 1h (convenience flag)")
 	cmd.Flags().StringVar(&from, "from", "", "absolute start time, RFC3339 (convenience flag)")
@@ -126,7 +134,7 @@ func exportRequestBody(cmd *cobra.Command, input string, fields []string, datase
 	default:
 		return nil, clierr.New("usage_missing_body",
 			"provide --input <file|-> / -f key=value, or --dataset/--where/--since convenience flags").
-			WithHint("Example: --dataset <uuid> --since 1h --where \"status=500\"")
+			WithHint("Example: --dataset <name-or-uuid> --since 1h --where \"status=500\"")
 	}
 }
 
