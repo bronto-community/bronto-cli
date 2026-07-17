@@ -67,7 +67,22 @@ func TestStaleResourceIDs(t *testing.T) {
 		{"name": fmtCIName(old, "no-id")},             // stale but no id: must be skipped, not zero-valued
 	}
 
-	got := staleResourceIDs(rows, "id", now, maxAge)
+	got := staleResourceIDs(rows, "id", "name", now, maxAge)
+	if len(got) != 1 || got[0] != "old-1" {
+		t.Fatalf("staleResourceIDs = %v, want [old-1]", got)
+	}
+}
+
+func TestStaleResourceIDs_NonDefaultNameKey(t *testing.T) {
+	now := time.Unix(1_000_000_000, 0)
+	maxAge := time.Hour
+	old := now.Add(-2 * time.Hour).Unix()
+
+	rows := []map[string]any{
+		{"log_id": "old-1", "log": fmtCIName(old, "dataset")},
+		{"log_id": "no-match", "name": fmtCIName(old, "dataset")}, // wrong key: must be ignored
+	}
+	got := staleResourceIDs(rows, "log_id", "log", now, maxAge)
 	if len(got) != 1 || got[0] != "old-1" {
 		t.Fatalf("staleResourceIDs = %v, want [old-1]", got)
 	}
@@ -78,6 +93,15 @@ func TestResourceIDKeyCoversEverySweptKind(t *testing.T) {
 		if _, ok := resourceIDKey[kind]; !ok {
 			t.Errorf("resourceIDKey has no entry for swept kind %q", kind)
 		}
+	}
+}
+
+func TestNameKeyForDefaultsToName(t *testing.T) {
+	if got := nameKeyFor("monitors"); got != "name" {
+		t.Errorf("nameKeyFor(%q) = %q, want %q", "monitors", got, "name")
+	}
+	if got := nameKeyFor("datasets"); got != "log" {
+		t.Errorf("nameKeyFor(%q) = %q, want %q", "datasets", got, "log")
 	}
 }
 

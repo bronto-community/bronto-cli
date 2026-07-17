@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -12,22 +13,50 @@ import (
 // ciResourceKinds lists the resource kinds the sweeper (and the CRUD suite
 // in resources_crud_test.go) operate over.
 //
-// datasets are deliberately excluded: deleting a log stream is riskier and
-// harder to undo than deleting a monitor/dashboard/saved-search/api-key
-// (it can carry retained data, other resources may reference it by id), so
-// dataset cleanup stays manual for now rather than being swept
-// automatically by CI.
-var ciResourceKinds = []string{"monitors", "dashboards", "saved-searches", "api-keys"}
+// datasets ARE swept (unlike monitors/dashboards/saved-searches/api-keys,
+// this isn't also exercised by resources_crud_test.go — see its own doc
+// comment): the same anchored ^bronto-ci-(\d+)- name + 1h-age rule applies,
+// and deletion is safe by construction for run-scoped names — a name only
+// matches at all if this harness's own resourceName minted it, and only
+// gets deleted once it's stale by an hour, comfortably past this suite's
+// own wall-clock budget. The earlier blanket "datasets are riskier, so
+// cleanup stays manual" exclusion is superseded by that reasoning.
+//
+// parsers are excluded: they're account-wide configuration (there's no
+// per-run "bronto-ci-*"-named parser this harness ever creates), not a
+// throwaway resource this suite leaves behind, so there's nothing for the
+// sweeper to find or clean up.
+var ciResourceKinds = []string{"monitors", "dashboards", "saved-searches", "api-keys", "datasets"}
 
 // resourceIDKey maps each swept resource kind to the JSON key its API uses
 // for the resource's identifier. These differ across kinds (api/openapi.yaml):
 // monitors and api-keys respond with "id"; dashboards and saved-searches use
-// resource-specific id keys.
+// resource-specific id keys; datasets (`bronto datasets list`, which hits
+// GET /logs) respond with Log objects keyed by "log_id".
 var resourceIDKey = map[string]string{
 	"monitors":       "id",
 	"dashboards":     "dashboard_id",
 	"saved-searches": "saved_search_id",
 	"api-keys":       "id",
+	"datasets":       "log_id",
+}
+
+// resourceNameKey maps each swept resource kind to the JSON key its list
+// response uses for the human-assigned name staleResourceIDs matches the
+// bronto-ci-* pattern against. Every kind but datasets uses a plain "name";
+// datasets (Log objects) use "log" (api/openapi.yaml's Log schema, verified
+// against seed_test.go's logIDForDataset, which resolves the same field).
+var resourceNameKey = map[string]string{
+	"datasets": "log",
+}
+
+// nameKeyFor returns the list-response name field for kind, defaulting to
+// "name" for every kind not listed in resourceNameKey.
+func nameKeyFor(kind string) string {
+	if k, ok := resourceNameKey[kind]; ok {
+		return k
+	}
+	return "name"
 }
 
 // sweepMaxAge is how old a bronto-ci-* resource must be before the sweeper
@@ -63,11 +92,13 @@ func isStaleCIResource(name string, now time.Time, maxAge time.Duration) bool {
 
 // staleResourceIDs returns the identifiers (looked up via idKey) of every
 // stale bronto-ci-* resource in rows, as decoded from a `bronto <kind> list
-// -o json` response.
-func staleResourceIDs(rows []map[string]any, idKey string, now time.Time, maxAge time.Duration) []string {
+// -o json` response. nameKey selects which field holds the bronto-ci-*
+// name to match against (see resourceNameKey/nameKeyFor: "name" for every
+// kind except datasets, which uses "log").
+func staleResourceIDs(rows []map[string]any, idKey, nameKey string, now time.Time, maxAge time.Duration) []string {
 	var ids []string
 	for _, row := range rows {
-		name, _ := row["name"].(string)
+		name, _ := row[nameKey].(string)
 		if name == "" || !isStaleCIResource(name, now, maxAge) {
 			continue
 		}
@@ -83,13 +114,20 @@ func staleResourceIDs(rows []map[string]any, idKey string, now time.Time, maxAge
 // a credentialed run, so a prior run that crashed mid-suite (before its own
 // t.Cleanup deletes ran) self-heals on the next run instead of
 // accumulating throwaway resources forever.
+//
+// Every kind is swept even if an earlier one errors: one kind's list/delete
+// trouble (e.g. a transient 5xx) must not hide a leak in another kind, and
+// this is opportunistic best-effort cleanup, not the assertion under test —
+// errors.Join reports every kind's failure together rather than stopping at
+// the first.
 func RunSweeper(ctx context.Context, r *Runner) error {
+	var errs []error
 	for _, kind := range ciResourceKinds {
 		if err := sweepKind(ctx, r, kind); err != nil {
-			return fmt.Errorf("sweeping %s: %w", kind, err)
+			errs = append(errs, fmt.Errorf("sweeping %s: %w", kind, err))
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func sweepKind(ctx context.Context, r *Runner, kind string) error {
@@ -104,7 +142,7 @@ func sweepKind(ctx context.Context, r *Runner, kind string) error {
 	if err := json.Unmarshal([]byte(res.Stdout), &rows); err != nil {
 		return fmt.Errorf("parsing %s list output: %w", kind, err)
 	}
-	for _, id := range staleResourceIDs(rows, resourceIDKey[kind], time.Now(), sweepMaxAge) {
+	for _, id := range staleResourceIDs(rows, resourceIDKey[kind], nameKeyFor(kind), time.Now(), sweepMaxAge) {
 		// Best-effort: one stale resource failing to delete (e.g. a race
 		// with another concurrent CI run's own cleanup, or a 404 because
 		// something else already removed it) must not fail the whole

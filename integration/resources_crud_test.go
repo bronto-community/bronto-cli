@@ -5,15 +5,18 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 // TestResourcesCRUD exercises create/list/get/update/delete (per resource
 // descriptor in internal/cli/resources.go) against every uniform
 // management resource kind the generic factory generates subcommands for,
-// except datasets (excluded from this harness — see sweeper.go). Each kind
-// runs in its own subtest, in parallel (t.Parallel()), each with its own
-// hermetic Runner/config dir.
+// except datasets — this suite never creates/updates/deletes a dataset
+// itself (ingestion auto-creates them; deleting one is exercised only by
+// the sweeper, see sweeper.go's RunSweeper, and by resources.go's own
+// descriptor conformance test). Each kind runs in its own subtest, in
+// parallel (t.Parallel()), each with its own hermetic Runner/config dir.
 //
 // Monitors and saved-searches both reference a real log/dataset id in
 // their create bodies (Monitor.logs, SavedSearch.log_ids —
@@ -133,7 +136,7 @@ func testAPIKeyCRUD(t *testing.T, r *Runner) {
 		writeBodyFile(t, apiKeyBody(name)))
 	id, _ := created["id"].(string)
 	if id == "" {
-		t.Fatalf("api-keys create response missing id: %+v", created)
+		t.Fatalf("api-keys create response missing id: %+v", redactSecrets(created))
 	}
 	t.Cleanup(func() { bestEffortDelete(r, "api-keys", id) })
 
@@ -274,4 +277,24 @@ func assertListContainsName(t *testing.T, r *Runner, kind, name string) {
 // deleted by the test body itself, in which case this 404s harmlessly.
 func bestEffortDelete(r *Runner, kind, id string) {
 	_, _ = r.Run(context.Background(), "", kind, "delete", id, "--yes")
+}
+
+// redactSecrets returns a shallow copy of m with every key/token-like field
+// (any key containing "key" or "token", case-insensitive) replaced by a
+// fixed placeholder, so failure output can safely embed the rest of a
+// response with %+v. The api-keys create response in particular carries an
+// "api_key" field (ApiKey.api_key, api/openapi.yaml — only the key's first
+// 8 characters, but still credential material, not something to echo into
+// test logs or CI output on a whim).
+func redactSecrets(m map[string]any) map[string]any {
+	redacted := make(map[string]any, len(m))
+	for k, v := range m {
+		lk := strings.ToLower(k)
+		if strings.Contains(lk, "key") || strings.Contains(lk, "token") {
+			redacted[k] = "[REDACTED]"
+			continue
+		}
+		redacted[k] = v
+	}
+	return redacted
 }

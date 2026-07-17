@@ -1,7 +1,11 @@
 // Package integration black-box tests the built bronto binary via
-// os/exec: real process, real exit codes, real signal handling — several
-// named coverage gaps (plugin exec, tail's SIGINT path, main()'s own exit
-// mapping) live only there and can't be reached by in-process unit tests.
+// os/exec: real process, real exit codes, real signal handling — named
+// coverage gaps like tail's SIGINT path (tail_sigint_test.go) and main()'s
+// own exit mapping (cmd/bronto/main.go's exitStatus) live only there and
+// can't be reached by in-process unit tests. Plugin exec is NOT one of
+// these, despite living in the same "black box" family: it's already
+// covered in-process by internal/cli/plugins_test.go (defaultRunPlugin,
+// tryPluginDispatch), so nothing here duplicates it.
 //
 // Every test in this package is gated at runtime, not at compile time: there
 // is no //go:build tag, so the package always compiles and lints in any
@@ -43,13 +47,28 @@ type Runner struct {
 	Region    string
 }
 
+// hermeticNoKeySentinel replaces an empty apiKey in NewRunner. An actually-
+// empty BRONTO_API_KEY is indistinguishable, to internal/config/config.go's
+// resolution (its `set` helper skips empty values entirely), from "no env
+// override" — which would leave api_key unresolved and let NewApp's
+// keychain fallback (internal/cli/context.go) resolve whatever key is
+// stored in the developer's real OS keychain, defeating this harness's
+// hermetic isolation. A syntactically-plausible-but-bogus, non-empty key
+// closes that fallback off while still failing predictably
+// (auth_invalid_key) against any live endpoint it happens to reach.
+const hermeticNoKeySentinel = "bronto-it-hermetic-no-key"
+
 // NewRunner returns a Runner wired for t: a hermetic BRONTO_CONFIG_DIR
-// rooted in t.TempDir(), apiKey as BRONTO_API_KEY, and BRONTO_REGION from
-// BRONTO_IT_REGION (default "eu").
+// rooted in t.TempDir(), apiKey as BRONTO_API_KEY (or hermeticNoKeySentinel
+// when apiKey is empty), and BRONTO_REGION from BRONTO_IT_REGION (default
+// "eu").
 func NewRunner(t *testing.T, apiKey string) *Runner {
 	t.Helper()
 	if binPath == "" {
 		t.Fatal("integration: binary path not resolved (TestMain should have set it before m.Run())")
+	}
+	if apiKey == "" {
+		apiKey = hermeticNoKeySentinel
 	}
 	return &Runner{
 		Bin:       binPath,
@@ -117,24 +136,6 @@ func configureCancel(cmd *exec.Cmd) {
 	cmd.WaitDelay = 10 * time.Second
 }
 
-// TestConfigureCancel verifies that configureCancel sets both Cancel and WaitDelay.
-func TestConfigureCancel(t *testing.T) {
-	cmd := exec.Command("true")
-	if cmd.Cancel != nil {
-		t.Errorf("before configureCancel: Cancel already set")
-	}
-	if cmd.WaitDelay != 0 {
-		t.Errorf("before configureCancel: WaitDelay already set")
-	}
-	configureCancel(cmd)
-	if cmd.Cancel == nil {
-		t.Errorf("after configureCancel: Cancel is nil")
-	}
-	if cmd.WaitDelay != 10*time.Second {
-		t.Errorf("after configureCancel: WaitDelay = %v, want 10s", cmd.WaitDelay)
-	}
-}
-
 // Start launches the binary in the background (e.g. a long-running command
 // like tail) and returns the running *exec.Cmd plus its stdout/stderr
 // buffers. Callers MUST stop it with Stop (SIGINT) — never
@@ -171,16 +172,19 @@ func Stop(cmd *exec.Cmd, timeout time.Duration) error {
 
 // env builds the subprocess environment: the ambient environment (PATH,
 // HOME, GOCOVERDIR, ...) so instrumented binaries can run and flush
-// coverage at all, with the hermetic BRONTO_CONFIG_DIR/BRONTO_API_KEY/
-// BRONTO_REGION triplet overriding whatever the ambient environment set for
-// those three keys.
+// coverage at all, but with every ambient BRONTO_* variable stripped except
+// BRONTO_IT_* (this harness's own namespace, never read by the CLI itself)
+// — a developer's shell might have BRONTO_PROFILE/BRONTO_BASE_URL/etc set
+// for their own everyday use of the CLI, and letting any of those leak into
+// a "hermetic" subprocess would silently change its behavior out from
+// under the test. BRONTO_CONFIG_DIR/BRONTO_API_KEY/BRONTO_REGION are then
+// (re)injected from the Runner, always winning.
 func (r *Runner) env() []string {
 	env := make([]string, 0, len(os.Environ())+3)
 	for _, kv := range os.Environ() {
 		key, _, _ := strings.Cut(kv, "=")
-		switch key {
-		case "BRONTO_CONFIG_DIR", "BRONTO_API_KEY", "BRONTO_REGION":
-			continue // overridden below
+		if strings.HasPrefix(key, "BRONTO_") && !strings.HasPrefix(key, "BRONTO_IT_") {
+			continue // stripped: only BRONTO_IT_* passes through unmodified
 		}
 		env = append(env, kv)
 	}
