@@ -78,6 +78,43 @@ func normalizeTopKeys(payload map[string]any) []map[string]any {
 			return rows
 		}
 	}
+
+	// Live shape: {"<log-id>": {"<key>": {rank, type, field_type, values}}}
+	// (response additionalProperties -> TopKeys -> TopKeysPerLogOrMetric),
+	// with per-key metadata one or two map levels down. Ranks are summed
+	// when the same key appears under multiple logs.
+	counts := map[string]float64{}
+	collect := func(key string, meta map[string]any) {
+		if n, ok := meta["rank"].(float64); ok {
+			counts[key] += n
+		} else if _, seen := counts[key]; !seen {
+			counts[key] = 0
+		}
+	}
+	for k, v := range payload {
+		m, ok := v.(map[string]any)
+		if !ok {
+			continue
+		}
+		if isTopKeyMeta(m) {
+			collect(k, m)
+			continue
+		}
+		for innerKey, innerVal := range m {
+			if im, ok := innerVal.(map[string]any); ok && isTopKeyMeta(im) {
+				collect(innerKey, im)
+			}
+		}
+	}
+	if len(counts) > 0 {
+		rows := make([]map[string]any, 0, len(counts))
+		for k, n := range counts {
+			rows = append(rows, map[string]any{"key": k, "count": n})
+		}
+		sortKeyCountRows(rows)
+		return rows
+	}
+
 	// flat {key: numericCount} object
 	var rows []map[string]any
 	for k, v := range payload {
@@ -85,8 +122,32 @@ func normalizeTopKeys(payload map[string]any) []map[string]any {
 			rows = append(rows, map[string]any{"key": k, "count": n})
 		}
 	}
-	sort.Slice(rows, func(i, j int) bool {
-		return rows[i]["count"].(float64) > rows[j]["count"].(float64)
-	})
+	sortKeyCountRows(rows)
 	return rows
+}
+
+// isTopKeyMeta reports whether m looks like a TopKeysPerLogOrMetric object
+// (per-key metadata) rather than another level of key nesting.
+func isTopKeyMeta(m map[string]any) bool {
+	for _, field := range []string{"type", "field_type", "rank"} {
+		if _, ok := m[field]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// sortKeyCountRows orders rows by count descending, then key ascending so
+// equal-count keys print deterministically.
+func sortKeyCountRows(rows []map[string]any) {
+	sort.Slice(rows, func(i, j int) bool {
+		ci, _ := rows[i]["count"].(float64)
+		cj, _ := rows[j]["count"].(float64)
+		if ci != cj {
+			return ci > cj
+		}
+		ki, _ := rows[i]["key"].(string)
+		kj, _ := rows[j]["key"].(string)
+		return ki < kj
+	})
 }

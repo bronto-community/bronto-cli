@@ -316,19 +316,41 @@ func TestMonitorsEventsMuteTest(t *testing.T) {
 		t.Fatalf("events output = %q, err %v", out, err)
 	}
 
-	var gotPath string
+	// Mute goes through the live status endpoint: POST /monitors/{id}/status
+	// with mute_until (-1 forever, 0 unmute, future epoch-millis until then).
+	var gotPath, gotBody string
 	_, stderr, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
 		w.WriteHeader(http.StatusOK)
 	}, "", "monitors", "mute", "m1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if gotPath != "/monitors/m1/mute" {
+	if gotPath != "/monitors/m1/status" {
 		t.Fatalf("path = %q", gotPath)
 	}
-	if !strings.Contains(stderr, "m1") {
+	if gotBody != `{"mute_until":-1}` {
+		t.Fatalf("body = %q", gotBody)
+	}
+	if !strings.Contains(stderr, "Muted monitor m1") {
 		t.Fatalf("stderr missing confirmation: %q", stderr)
+	}
+
+	_, stderr, err = runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		w.WriteHeader(http.StatusOK)
+	}, "", "monitors", "mute", "m1", "--unmute")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotBody != `{"mute_until":0}` {
+		t.Fatalf("unmute body = %q", gotBody)
+	}
+	if !strings.Contains(stderr, "Unmuted monitor m1") {
+		t.Fatalf("stderr missing unmute confirmation: %q", stderr)
 	}
 
 	_, stderr, err = runResource(t, func(w http.ResponseWriter, r *http.Request) {

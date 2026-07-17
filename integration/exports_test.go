@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/klauspost/compress/zstd"
 )
 
 // TestExports_CreateWaitDownload exercises `exports create` with the
@@ -59,7 +61,7 @@ func TestExports_CreateWaitDownload(t *testing.T) {
 	if len(payload) == 0 {
 		t.Fatal("downloaded export file is empty")
 	}
-	if !bytes.Contains(payload, []byte(marker)) && !gzipContains(payload, marker) {
+	if !bytes.Contains(payload, []byte(marker)) && !zstdContains(payload, marker) && !gzipContains(payload, marker) {
 		// Dump enough of the payload to identify what actually came back
 		// (empty result set? status envelope instead of content? unexpected
 		// compression?) — the first live run failed here with an opaque
@@ -98,11 +100,30 @@ func exportIDFromRow(row map[string]any) string {
 	return ""
 }
 
+// zstdContains reports whether payload, decompressed as Zstandard,
+// contains needle. Live exports download as zstd-compressed objects
+// (magic 28 b5 2f fd, observed in CI) because the CLI streams the
+// presigned object-store response verbatim — see downloadExport in
+// internal/cli/exports.go.
+func zstdContains(payload []byte, needle string) bool {
+	if len(payload) < 4 || payload[0] != 0x28 || payload[1] != 0xb5 || payload[2] != 0x2f || payload[3] != 0xfd {
+		return false
+	}
+	zr, err := zstd.NewReader(bytes.NewReader(payload))
+	if err != nil {
+		return false
+	}
+	defer zr.Close()
+	decompressed, err := io.ReadAll(zr)
+	if err != nil {
+		return false
+	}
+	return bytes.Contains(decompressed, []byte(needle))
+}
+
 // gzipContains reports whether payload, decompressed as gzip, contains
-// needle. The downloaded export's exact encoding is uncertain (the CLI
-// streams the presigned object-store response verbatim — see
-// downloadExport in internal/cli/exports.go), so this is a defensive
-// fallback for the plain byte-containment check above.
+// needle — a defensive fallback alongside zstdContains in case the
+// object-store encoding ever changes.
 func gzipContains(payload []byte, needle string) bool {
 	if len(payload) < 2 || payload[0] != 0x1f || payload[1] != 0x8b {
 		return false
