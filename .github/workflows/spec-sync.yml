@@ -1,106 +1,100 @@
-name: Spec Sync
+# Watches the published Bronto OpenAPI spec and raises (or updates) a GitHub
+# issue when it drifts from the upstream state our vendored api/openapi.yaml
+# was built from. Deliberately does NOT touch api/openapi.yaml: the vendored
+# spec carries hand-applied patches (grep "bronto-cli vendor patch"), so a
+# human re-vendors, re-patches, regenerates, and updates api/upstream.sha256.
+name: Spec sync
 
 on:
   schedule:
-    # Weekly, Monday 06:00 UTC.
-    - cron: "0 6 * * 1"
-  workflow_dispatch: {}
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+  workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
+  issues: write
+
+env:
+  SPEC_URL: ${{ vars.SPEC_URL || 'https://s3.eu-west-1.amazonaws.com/docs.brontobytes.io/redocusaurus/brontobytes.yaml' }}
 
 jobs:
-  sync:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check SPEC_URL configuration
-        id: check
-        env:
-          SPEC_URL: ${{ vars.SPEC_URL }}
-        run: |
-          if [ -z "$SPEC_URL" ]; then
-            echo "::notice title=spec-sync skipped::The 'SPEC_URL' repository variable is not set. Configure vars.SPEC_URL to the canonical Bronto OpenAPI spec URL (TODO: confirm the public spec URL) to enable automatic spec-sync PRs. Skipping."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Fetch upstream spec
-        if: steps.check.outputs.skip == 'false'
-        env:
-          SPEC_URL: ${{ vars.SPEC_URL }}
-        run: curl -fsSL "$SPEC_URL" -o /tmp/openapi.upstream.yaml
+        run: curl -fsSL -o /tmp/upstream.yaml "$SPEC_URL"
 
-      - name: Diff against vendored spec
-        id: diff
-        if: steps.check.outputs.skip == 'false'
+      - name: Compare against vendored baseline
+        id: compare
         run: |
-          if diff -q api/openapi.yaml /tmp/openapi.upstream.yaml > /dev/null 2>&1; then
-            echo "::notice title=spec-sync no-op::Upstream spec matches api/openapi.yaml. Nothing to do."
+          UPSTREAM_SHA=$(sha256sum /tmp/upstream.yaml | cut -d' ' -f1)
+          BASELINE_SHA=$(cut -d' ' -f1 < api/upstream.sha256)
+          echo "upstream_sha=${UPSTREAM_SHA}" >> "$GITHUB_OUTPUT"
+          if [ "$UPSTREAM_SHA" = "$BASELINE_SHA" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Upstream spec unchanged (sha ${UPSTREAM_SHA})."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/setup-go@v5
-        if: steps.check.outputs.skip == 'false' && steps.diff.outputs.changed == 'true'
+        if: steps.compare.outputs.changed == 'true'
         with:
           go-version-file: go.mod
 
-      - name: oasdiff breaking-changes report
-        id: oasdiff
-        if: steps.check.outputs.skip == 'false' && steps.diff.outputs.changed == 'true'
+      - name: Breaking-change report (oasdiff, informational)
+        if: steps.compare.outputs.changed == 'true'
         run: |
-          go run github.com/oasdiff/oasdiff@latest breaking api/openapi.yaml /tmp/openapi.upstream.yaml > /tmp/oasdiff-report.txt 2>&1 || true
-          # Unique delimiter guards against output injection if the report
-          # text ever contains the delimiter line itself.
-          EOF_MARK="OASDIFF_EOF_$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
+          go run github.com/oasdiff/oasdiff@latest breaking api/openapi.yaml /tmp/upstream.yaml \
+            > /tmp/oasdiff.txt 2>&1 || true
+          # Indented (not fenced) so report content can never break the
+          # issue's markdown; truncated to keep the issue readable.
+          head -c 6000 /tmp/oasdiff.txt | sed 's/^/    /' > /tmp/oasdiff.md
+          if [ "$(wc -c < /tmp/oasdiff.txt)" -gt 6000 ]; then
+            printf '\n    … report truncated; run oasdiff locally for the full output.\n' >> /tmp/oasdiff.md
+          fi
+
+      - name: Create or update the drift issue
+        if: steps.compare.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM_SHA: ${{ steps.compare.outputs.upstream_sha }}
+        run: |
+          SHORT_SHA=$(printf '%s' "$UPSTREAM_SHA" | cut -c1-12)
+          # shellcheck disable=SC2016 # single-quoted backticks below are markdown, not command substitution
           {
-            echo "report<<${EOF_MARK}"
-            cat /tmp/oasdiff-report.txt
-            echo "${EOF_MARK}"
-          } >> "$GITHUB_OUTPUT"
+            printf '<!-- spec-sync:sha256=%s -->\n\n' "$UPSTREAM_SHA"
+            printf 'The published Bronto OpenAPI spec has drifted from the state our vendored `api/openapi.yaml` was built from.\n\n'
+            printf -- '- Upstream: %s\n' "$SPEC_URL"
+            printf -- '- Upstream sha256: `%s`\n' "$UPSTREAM_SHA"
+            printf -- '- Recorded baseline: `%s`\n\n' "$(cat api/upstream.sha256)"
+            printf 'To re-vendor:\n\n'
+            printf -- '- [ ] Download the upstream spec over `api/openapi.yaml`\n'
+            printf -- '- [ ] Re-apply the hand patches (`grep -n "bronto-cli vendor patch" git history / previous spec`)\n'
+            printf -- '- [ ] `make generate && go test ./...` (resource conformance test guards drift)\n'
+            printf -- '- [ ] Update `api/upstream.sha256` to `%s <date>`\n\n' "$UPSTREAM_SHA"
+            printf 'Breaking-change report (upstream vs. vendored, informational):\n\n'
+            cat /tmp/oasdiff.md
+          } > /tmp/issue-body.md
 
-      - name: Stage upstream spec artifact
-        if: steps.check.outputs.skip == 'false' && steps.diff.outputs.changed == 'true'
-        run: cp /tmp/openapi.upstream.yaml api/openapi.upstream.yaml
+          gh label create spec-sync --repo "$GITHUB_REPOSITORY" \
+            --description "Upstream OpenAPI spec drift" --color BFD4F2 2>/dev/null || true
 
-      - name: Open pull request
-        if: steps.check.outputs.skip == 'false' && steps.diff.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          add-paths: api/openapi.upstream.yaml
-          commit-message: "chore: attach upstream OpenAPI spec update"
-          branch: spec-sync/update
-          delete-branch: true
-          labels: |
-            spec-sync
-            needs-vendor-patch
-          title: "spec-sync: upstream OpenAPI spec changed"
-          body: |
-            The upstream Bronto OpenAPI spec at `${{ vars.SPEC_URL }}` differs from the
-            vendored `api/openapi.yaml`. This PR attaches the raw fetched spec as
-            `api/openapi.upstream.yaml` for review — it does **not** overwrite the
-            vendored spec automatically, because `api/openapi.yaml` carries hand-applied
-            vendor patches (see `api/oapi-codegen.yaml` and the three
-            `NOTE(bronto-cli vendor patch)` blocks in `api/openapi.yaml`).
+          EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --label spec-sync \
+            --state open --json number --jq '.[0].number // empty')
+          TITLE="Upstream OpenAPI spec changed (sha ${SHORT_SHA})"
 
-            ### oasdiff breaking-changes report
-
-            ```
-            ${{ steps.oasdiff.outputs.report }}
-            ```
-
-            ### Checklist to land this update
-
-            - [ ] Review `api/openapi.upstream.yaml` against `api/openapi.yaml`
-            - [ ] Re-apply the three vendor patches (search both files for
-                  `bronto-cli vendor patch`)
-            - [ ] Replace `api/openapi.yaml` with the patched upstream spec
-            - [ ] Run `make generate` and commit the regenerated code
-            - [ ] Run `go test ./...` and resolve any conformance failures
-            - [ ] Delete `api/openapi.upstream.yaml` before merging
-            - [ ] Review the oasdiff breaking-changes report above for client-facing impact
+          if [ -z "$EXISTING" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --label spec-sync \
+              --title "$TITLE" --body-file /tmp/issue-body.md
+          elif gh issue view "$EXISTING" --repo "$GITHUB_REPOSITORY" --json body --jq .body \
+              | grep -q "spec-sync:sha256=${UPSTREAM_SHA}"; then
+            echo "::notice::Open issue #${EXISTING} already reports sha ${SHORT_SHA}; nothing to do."
+          else
+            gh issue edit "$EXISTING" --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" --body-file /tmp/issue-body.md
+            gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" \
+              --body "Upstream changed again; issue body refreshed for sha \`${SHORT_SHA}\`."
+          fi
