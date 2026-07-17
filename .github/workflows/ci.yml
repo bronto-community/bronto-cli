@@ -18,6 +18,68 @@ jobs:
       - run: go test ./...
       - run: CGO_ENABLED=0 go build ./...
 
+  # coverage runs on ubuntu alongside (and slightly duplicating) the
+  # ubuntu leg of the `test` matrix above. It is kept separate rather
+  # than folded into `test (ubuntu-latest)` because the branch
+  # protection ruleset requires status checks named exactly
+  # `test (ubuntu-latest)` and `test (macos-latest)`; renaming or
+  # removing either would break every PR. The ruleset can adopt
+  # `coverage` as a required check later.
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: scripts/coverage.sh
+      - run: scripts/coverage-gate.sh
+      - name: Write coverage summary
+        if: always()
+        env:
+          LC_NUMERIC: C
+        run: |
+          if [ ! -f coverage.filtered.txt ]; then
+            echo "coverage.filtered.txt not produced; see the coverage.sh step above" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          {
+            echo "## Coverage"
+            echo
+            total="$(go tool cover -func=coverage.filtered.txt | tail -1 | awk '{print $NF}')"
+            echo "**Total (gen.go excluded): ${total}**"
+            echo
+            echo "| Package | Coverage |"
+            echo "| --- | --- |"
+            awk '
+              NR == 1 { next }
+              {
+                split($1, parts, ":")
+                file = parts[1]
+                n = split(file, segs, "/")
+                pkg = segs[1]
+                for (i = 2; i < n; i++) pkg = pkg "/" segs[i]
+                total[pkg] += $2
+                if ($3 > 0) covered[pkg] += $2
+              }
+              END {
+                for (p in total) {
+                  pct = (total[p] > 0) ? covered[p] / total[p] * 100 : 0
+                  printf "%s\t%.1f\n", p, pct
+                }
+              }
+            ' coverage.filtered.txt | sort | sed -E 's#^github\.com/[^/]+/[^/]+/##' | awk -F'\t' '{ printf "| %s | %.1f%% |\n", $1, $2 }'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: |
+            coverage.html
+            coverage.filtered.txt
+          if-no-files-found: warn
+
   lint:
     runs-on: ubuntu-latest
     steps:
