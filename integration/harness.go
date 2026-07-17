@@ -89,6 +89,7 @@ type Result struct {
 func (r *Runner) Run(ctx context.Context, stdin string, args ...string) (Result, error) {
 	cmd := exec.CommandContext(ctx, r.Bin, args...)
 	cmd.Env = r.env()
+	configureCancel(cmd)
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
 	}
@@ -106,6 +107,32 @@ func (r *Runner) Run(ctx context.Context, stdin string, args ...string) (Result,
 		return res, err
 	}
 	return res, nil
+}
+
+// configureCancel sets cmd.Cancel to send SIGINT instead of the stdlib
+// default Kill, and sets cmd.WaitDelay to allow graceful shutdown.
+// This ensures coverage counters flush on context cancellation.
+func configureCancel(cmd *exec.Cmd) {
+	cmd.Cancel = func() error { return cmd.Process.Signal(os.Interrupt) }
+	cmd.WaitDelay = 10 * time.Second
+}
+
+// TestConfigureCancel verifies that configureCancel sets both Cancel and WaitDelay.
+func TestConfigureCancel(t *testing.T) {
+	cmd := exec.Command("true")
+	if cmd.Cancel != nil {
+		t.Errorf("before configureCancel: Cancel already set")
+	}
+	if cmd.WaitDelay != 0 {
+		t.Errorf("before configureCancel: WaitDelay already set")
+	}
+	configureCancel(cmd)
+	if cmd.Cancel == nil {
+		t.Errorf("after configureCancel: Cancel is nil")
+	}
+	if cmd.WaitDelay != 10*time.Second {
+		t.Errorf("after configureCancel: WaitDelay = %v, want 10s", cmd.WaitDelay)
+	}
 }
 
 // Start launches the binary in the background (e.g. a long-running command

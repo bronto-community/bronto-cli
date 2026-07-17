@@ -21,15 +21,14 @@ import (
 // than a fabricated UUID: it's genuinely uncertain whether the API
 // validates that these ids reference an existing log, and a fabricated-but-
 // well-formed UUID risks a 400 we can't fully explain from the spec alone.
-// If the account has no datasets yet, both subtests skip with an
-// explanation instead of guessing.
+// Monitors and saved-searches skip individually when the account has no
+// datasets; dashboards and api-keys always run.
 func TestResourcesCRUD(t *testing.T) {
 	key := skipIfNoCreds(t)
 
-	logID := firstDatasetLogID(t, NewRunner(t, key))
-
 	t.Run("monitors", func(t *testing.T) {
 		t.Parallel()
+		logID := firstDatasetLogID(t, NewRunner(t, key))
 		testMonitorCRUD(t, NewRunner(t, key), logID)
 	})
 	t.Run("dashboards", func(t *testing.T) {
@@ -38,6 +37,7 @@ func TestResourcesCRUD(t *testing.T) {
 	})
 	t.Run("saved-searches", func(t *testing.T) {
 		t.Parallel()
+		logID := firstDatasetLogID(t, NewRunner(t, key))
 		testSavedSearchCRUD(t, NewRunner(t, key), logID)
 	})
 	t.Run("api-keys", func(t *testing.T) {
