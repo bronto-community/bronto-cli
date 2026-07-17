@@ -190,6 +190,9 @@ func (a *App) PrinterFor(format output.Format) (*output.Printer, error) {
 			WithHint("Pass -o json or -o jsonl alongside --jq.")
 	}
 	p := output.NewPrinter(a.Stdout, format)
+	if !a.Quiet {
+		p.SetNoticeWriter(a.Stderr)
+	}
 	if a.ListFieldsOnly {
 		p.SetListFields(true)
 	} else if len(a.FieldFilter) > 0 {

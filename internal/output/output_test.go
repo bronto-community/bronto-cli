@@ -392,3 +392,68 @@ func TestPrintJSONFieldFilterOnUnmarshaledArray(t *testing.T) {
 		t.Fatalf("names missing: %s", buf.String())
 	}
 }
+
+func TestTableCellRendering(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatTable)
+	err := p.PrintRows([]string{"epoch", "meta", "list", "frac"}, []map[string]any{{
+		"epoch": 1.782717959599e+12,
+		"meta":  map[string]any{"a": 1.0},
+		"list":  []any{"x", "y"},
+		"frac":  1.5,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "1782717959599") {
+		t.Errorf("integral float must render without scientific notation: %s", out)
+	}
+	if !strings.Contains(out, `{"a":1}`) {
+		t.Errorf("nested map must render as compact JSON: %s", out)
+	}
+	if !strings.Contains(out, `["x","y"]`) {
+		t.Errorf("nested list must render as compact JSON: %s", out)
+	}
+	if !strings.Contains(out, "1.5") {
+		t.Errorf("fractional float must render normally: %s", out)
+	}
+	if strings.Contains(out, "map[") {
+		t.Errorf("Go map syntax leaked into table output: %s", out)
+	}
+}
+
+func TestTableZeroRowsPrintsNotice(t *testing.T) {
+	var buf, notice bytes.Buffer
+	p := NewPrinter(&buf, FormatTable)
+	p.SetNoticeWriter(&notice)
+	if err := p.PrintRows([]string{"a"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if buf.Len() != 0 {
+		t.Errorf("stdout must stay empty on zero rows, got %q", buf.String())
+	}
+	if got := notice.String(); got != "No results.\n" {
+		t.Errorf("notice = %q, want No results.", got)
+	}
+
+	// Without a notice writer (machine contexts): silent, no panic.
+	var bare bytes.Buffer
+	if err := NewPrinter(&bare, FormatTable).PrintRows([]string{"a"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if bare.Len() != 0 {
+		t.Errorf("no-notice printer must print nothing, got %q", bare.String())
+	}
+
+	// Machine formats keep their exact empty encodings.
+	var jbuf bytes.Buffer
+	jp := NewPrinter(&jbuf, FormatJSON)
+	jp.SetNoticeWriter(&notice)
+	if err := jp.PrintRows([]string{"a"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(jbuf.String()) != "[]" {
+		t.Errorf("json empty = %q, want []", jbuf.String())
+	}
+}

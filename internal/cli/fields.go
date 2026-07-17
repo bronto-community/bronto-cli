@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -59,7 +60,7 @@ func newFieldsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return p.PrintRows([]string{"key", "count"}, rows)
+			return p.PrintRows(fieldsColumns(rows), rows)
 		},
 	}
 	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset name or UUID (omit for all datasets)")
@@ -86,13 +87,29 @@ func normalizeTopKeys(payload map[string]any) []map[string]any {
 	// Live shape: {"<log-id>": {"<key>": {rank, type, field_type, values}}}
 	// (response additionalProperties -> TopKeys -> TopKeysPerLogOrMetric),
 	// with per-key metadata one or two map levels down. Ranks are summed
-	// when the same key appears under multiple logs.
-	counts := map[string]float64{}
+	// when the same key appears under multiple logs; type/field_type carry
+	// through (rank is deprecated and often 0 live, so the metadata is the
+	// actually-useful part).
+	type keyMeta struct {
+		count    float64
+		typ, src string
+	}
+	agg := map[string]*keyMeta{}
 	collect := func(key string, meta map[string]any) {
+		km := agg[key]
+		if km == nil {
+			km = &keyMeta{}
+			agg[key] = km
+		}
 		if n, ok := meta["rank"].(float64); ok {
-			counts[key] += n
-		} else if _, seen := counts[key]; !seen {
-			counts[key] = 0
+			km.count += n
+		}
+		if s, ok := meta["type"].(string); ok && km.typ == "" {
+			km.typ = strings.ToLower(s)
+		}
+		if s, ok := meta["field_type"].(string); ok && km.src == "" {
+			// MESSAGE_KVP / ATTRIBUTE read poorly in a table.
+			km.src = strings.ToLower(strings.TrimSuffix(s, "_KVP"))
 		}
 	}
 	for k, v := range payload {
@@ -110,10 +127,17 @@ func normalizeTopKeys(payload map[string]any) []map[string]any {
 			}
 		}
 	}
-	if len(counts) > 0 {
-		rows := make([]map[string]any, 0, len(counts))
-		for k, n := range counts {
-			rows = append(rows, map[string]any{"key": k, "count": n})
+	if len(agg) > 0 {
+		rows := make([]map[string]any, 0, len(agg))
+		for k, km := range agg {
+			row := map[string]any{"key": k, "count": km.count}
+			if km.typ != "" {
+				row["type"] = km.typ
+			}
+			if km.src != "" {
+				row["source"] = km.src
+			}
+			rows = append(rows, row)
 		}
 		sortKeyCountRows(rows)
 		return rows
@@ -128,6 +152,39 @@ func normalizeTopKeys(payload map[string]any) []map[string]any {
 	}
 	sortKeyCountRows(rows)
 	return rows
+}
+
+// fieldsColumns picks the table/csv columns from what the rows actually
+// carry: count only when at least one is non-zero (the live API's rank is
+// deprecated and usually 0 — a column of zeros is worse than none), and
+// type/source when present.
+func fieldsColumns(rows []map[string]any) []string {
+	cols := []string{"key"}
+	hasCount, hasType, hasSource := false, false, false
+	for _, r := range rows {
+		if n, ok := r["count"].(float64); ok && n > 0 {
+			hasCount = true
+		}
+		if _, ok := r["type"]; ok {
+			hasType = true
+		}
+		if _, ok := r["source"]; ok {
+			hasSource = true
+		}
+	}
+	if hasCount {
+		cols = append(cols, "count")
+	}
+	if hasType {
+		cols = append(cols, "type")
+	}
+	if hasSource {
+		cols = append(cols, "source")
+	}
+	if len(cols) == 1 {
+		cols = append(cols, "count") // legacy shapes: keep the old two-column view
+	}
+	return cols
 }
 
 // isTopKeyMeta reports whether m looks like a TopKeysPerLogOrMetric object

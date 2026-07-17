@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"sort"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -58,9 +60,16 @@ type Printer struct {
 	jq         *gojq.Code
 	listFields bool                // SetListFields: print field names instead of data
 	seenFields map[string]struct{} // streaming PrintRow "?" mode: keys already printed
+	notice     io.Writer           // SetNoticeWriter: human notes ("No results."); nil = silent
 }
 
 func NewPrinter(w io.Writer, f Format) *Printer { return &Printer{w: w, format: f} }
+
+// SetNoticeWriter enables human-facing notices (typically stderr): in table
+// mode an empty result prints "No results." there instead of nothing at
+// all — silence is indistinguishable from breakage. Machine formats
+// (json/jsonl/csv) stay byte-exact regardless.
+func (p *Printer) SetNoticeWriter(w io.Writer) { p.notice = w }
 
 // SetFieldFilter restricts output to the given fields. For table/csv the
 // fields become the columns, overriding whatever columns the caller passed
@@ -86,6 +95,19 @@ func cell(row map[string]any, col string) string {
 	v, ok := row[col]
 	if !ok || v == nil {
 		return ""
+	}
+	switch t := v.(type) {
+	case float64:
+		// JSON numbers decode as float64; render integral values (ids,
+		// epoch timestamps) without Go's scientific notation.
+		if t == math.Trunc(t) && math.Abs(t) < 1e15 {
+			return strconv.FormatInt(int64(t), 10)
+		}
+	case map[string]any, []any, []map[string]any, []string:
+		// Nested structures as compact JSON, not Go's map[k:v] syntax.
+		if b, err := json.Marshal(v); err == nil {
+			return string(b)
+		}
 	}
 	return fmt.Sprint(v)
 }
@@ -193,6 +215,12 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 		cw.Flush()
 		return cw.Error()
 	default: // table
+		if len(rows) == 0 {
+			if p.notice != nil {
+				_, _ = fmt.Fprintln(p.notice, "No results.")
+			}
+			return nil
+		}
 		tw := tabwriter.NewWriter(p.w, 2, 4, 2, ' ', 0)
 		_, _ = fmt.Fprintln(tw, strings.ToUpper(strings.Join(columns, "\t")))
 		for _, r := range rows {

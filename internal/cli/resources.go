@@ -17,6 +17,7 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/api"
 	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/output"
 )
 
 // resourceDesc describes one uniform Bronto management resource: the
@@ -36,6 +37,11 @@ type resourceDesc struct {
 
 	ListRowKeys []string // payload keys to try for the list rows array; nil = auto
 	Columns     []string // table/csv columns; nil = auto via bronto.EventColumns
+
+	// ListTransform, if set, enriches list rows for the human formats
+	// (table/csv) only — e.g. deriving a readable last_activity column.
+	// json/jsonl keep the API payload untouched.
+	ListTransform func(rows []map[string]any) []map[string]any
 
 	NoCreate bool
 	NoUpdate bool
@@ -84,7 +90,12 @@ var resourceRegistry = []resourceDesc{
 	// delete are documented for a single parser.
 	{Name: "parsers", Base: "/parsers", NoGet: true},
 	{Name: "api-keys", Base: "/api-keys", Singular: "API key", NoGet: true},
-	{Name: "datasets", Base: "/logs", CreatePath: "/datasets", UpdateMethod: http.MethodPut},
+	{Name: "datasets", Base: "/logs", CreatePath: "/datasets", UpdateMethod: http.MethodPut,
+		// The raw /logs rows are unreadable as a table (duplicate name
+		// fields, a metadata blob with epoch floats); curate the human
+		// view and derive LAST_ACTIVITY from metadata.last_heartbeat_at.
+		Columns:       []string{"collection", "dataset", "last_activity", "log_id"},
+		ListTransform: datasetListRows},
 	// exports has no update verb; its create is hand-written (exports.go) to
 	// support the convenience flags / --wait / --download workflow and
 	// replaces the generic factory create (see newResourceCmd's extras
@@ -305,7 +316,14 @@ func newResourceListCmd(desc resourceDesc) *cobra.Command {
 				return err
 			}
 			rows := rowsFromPayload(payload, desc.ListRowKeys...)
-			p, err := app.Printer(false)
+			format, err := app.DetectFormat(false)
+			if err != nil {
+				return err
+			}
+			if desc.ListTransform != nil && (format == output.FormatTable || format == output.FormatCSV) {
+				rows = desc.ListTransform(rows)
+			}
+			p, err := app.PrinterFor(format)
 			if err != nil {
 				return err
 			}
