@@ -62,7 +62,12 @@ jobs:
             > /tmp/oasdiff-diff.json 2> /tmp/oasdiff-stderr.log || true
           go run github.com/oasdiff/oasdiff@latest breaking api/openapi.yaml /tmp/upstream.yaml -f json \
             > /tmp/oasdiff-breaking.json 2>> /tmp/oasdiff-stderr.log || true
-          scripts/spec-digest.sh /tmp/oasdiff-diff.json /tmp/oasdiff-breaking.json /tmp/oasdiff.md
+          # CLI endpoint inventory: lets the digest classify spec changes
+          # by impact on bronto commands (new-and-uncovered / removed-but-
+          # used / modified-backing-a-command).
+          go run ./internal/tools/endpointmap \
+            > /tmp/cli-endpoints.json 2>> /tmp/oasdiff-stderr.log || true
+          scripts/spec-digest.sh /tmp/oasdiff-diff.json /tmp/oasdiff-breaking.json /tmp/oasdiff.md /tmp/cli-endpoints.json
           # GitHub issue bodies cap at 65536 chars; leave room for the
           # surrounding body text.
           if [ "$(wc -c < /tmp/oasdiff.md)" -gt 55000 ]; then
@@ -79,6 +84,7 @@ jobs:
           path: |
             /tmp/oasdiff-diff.json
             /tmp/oasdiff-breaking.json
+            /tmp/cli-endpoints.json
             /tmp/oasdiff-stderr.log
           retention-days: 30
 

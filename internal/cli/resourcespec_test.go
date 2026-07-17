@@ -74,6 +74,68 @@ var specLiveButUndocumented = map[string]bool{
 	"/dashboards":     true,
 	"/saved-searches": true,
 	"/parsers":        true,
+	// monitors test's endpoint also vanished from the published spec in
+	// the same 2026-07-17 reorg; untested live (it notifies every monitor
+	// in the account), kept until a live 404 says otherwise.
+	"/monitors/send-test-notifications": true,
+}
+
+// normalizeParams rewrites every {param} segment to a bare {} so patterns
+// and spec paths compare regardless of parameter naming ("/monitors/{*}"
+// vs "/monitors/{monitorId}"). Mirrors the `norm` helper in
+// scripts/spec-digest.sh — keep the two in sync.
+func normalizeParams(p string) string {
+	var b strings.Builder
+	for {
+		open := strings.IndexByte(p, '{')
+		if open < 0 {
+			b.WriteString(p)
+			return b.String()
+		}
+		closing := strings.IndexByte(p[open:], '}')
+		if closing < 0 {
+			b.WriteString(p)
+			return b.String()
+		}
+		b.WriteString(p[:open])
+		b.WriteString("{}")
+		p = p[open+closing+1:]
+	}
+}
+
+// TestEndpointInventoryMatchesSpec keeps EndpointInventory (the CLI-impact
+// input for spec-sync's digest) honest: every pattern must match a path in
+// the vendored spec — exactly, as a prefix (e.g. "/logs/{*}" is satisfied
+// by "/logs/{logId}/dashboards" even though the bare per-ID path is no
+// longer documented), or via the specLiveButUndocumented set.
+func TestEndpointInventoryMatchesSpec(t *testing.T) {
+	normSpec := map[string]bool{}
+	for p := range specPaths(t) {
+		normSpec[normalizeParams(p)] = true
+	}
+	undocumented := func(pattern string) bool {
+		for base := range specLiveButUndocumented {
+			if pattern == base || strings.HasPrefix(pattern, base+"/") {
+				return true
+			}
+		}
+		return false
+	}
+	for _, e := range EndpointInventory() {
+		norm := normalizeParams(e.Pattern)
+		ok := normSpec[norm] || undocumented(e.Pattern)
+		if !ok {
+			for p := range normSpec {
+				if strings.HasPrefix(p, norm+"/") {
+					ok = true
+					break
+				}
+			}
+		}
+		if !ok {
+			t.Errorf("endpoint inventory pattern %q (%s) matches nothing in api/openapi.yaml and is not a documented live-but-undocumented exception", e.Pattern, e.Command)
+		}
+	}
 }
 
 func TestResourceRegistryMatchesSpec(t *testing.T) {
