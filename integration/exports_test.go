@@ -60,7 +60,16 @@ func TestExports_CreateWaitDownload(t *testing.T) {
 		t.Fatal("downloaded export file is empty")
 	}
 	if !bytes.Contains(payload, []byte(marker)) && !gzipContains(payload, marker) {
-		t.Fatalf("downloaded export (%d bytes) does not contain marker %s", len(payload), marker)
+		// Dump enough of the payload to identify what actually came back
+		// (empty result set? status envelope instead of content? unexpected
+		// compression?) — the first live run failed here with an opaque
+		// "461 bytes" and no way to tell which.
+		preview := payload
+		if len(preview) > 512 {
+			preview = preview[:512]
+		}
+		t.Fatalf("downloaded export (%d bytes) does not contain marker %s\nfirst bytes (hex): % x\npreview: %q",
+			len(payload), marker, payload[:min(16, len(payload))], preview)
 	}
 
 	rows := mustRunJSONArray(t, r, "exports", "list", "-o", "json")

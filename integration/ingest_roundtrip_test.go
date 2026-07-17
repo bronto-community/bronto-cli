@@ -140,15 +140,17 @@ func TestIngestRoundtrip_StructuredFieldsPassthrough(t *testing.T) {
 		t.Fatal("search returned no rows for the seeded marker")
 	}
 
+	// Structured fields surface under the message_kvs. namespace on live
+	// rows (see eventField in seed_test.go).
 	var sawLevel, sawStatus, sawTrace bool
 	for _, row := range rows {
-		if l, ok := row["level"].(string); ok && l != "" {
+		if l, ok := eventField(row, "level").(string); ok && l != "" {
 			sawLevel = true
 		}
-		if _, ok := row["status"]; ok {
+		if v := eventField(row, "status"); v != nil && v != "" {
 			sawStatus = true
 		}
-		if tid, ok := row["trace_id"].(string); ok && tid != "" {
+		if tid, ok := eventField(row, "trace_id").(string); ok && tid != "" {
 			sawTrace = true
 		}
 	}

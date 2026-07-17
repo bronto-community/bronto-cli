@@ -19,8 +19,8 @@ import (
 // parallel (t.Parallel()), each with its own hermetic Runner/config dir.
 //
 // Monitors and saved-searches both reference a real log/dataset id in
-// their create bodies (Monitor.logs, SavedSearch.log_ids —
-// api/openapi.yaml), so this fetches one via `bronto datasets list` rather
+// their create bodies (monitor queries[].from, SavedSearch.log_ids), so
+// this fetches one via `bronto datasets list` rather
 // than a fabricated UUID: it's genuinely uncertain whether the API
 // validates that these ids reference an existing log, and a fabricated-but-
 // well-formed UUID risks a 400 we can't fully explain from the spec alone.
@@ -83,17 +83,17 @@ func testDashboardCRUD(t *testing.T, r *Runner) {
 
 	created := mustRunJSONObject(t, r, "dashboards", "create", "--input",
 		writeBodyFile(t, map[string]any{"name": name}))
-	id, _ := created["dashboard_id"].(string)
+	id := resourceID(created, "dashboard_id")
 	if id == "" {
-		t.Fatalf("dashboards create response missing dashboard_id: %+v", created)
+		t.Fatalf("dashboards create response missing id: %+v", created)
 	}
 	t.Cleanup(func() { bestEffortDelete(r, "dashboards", id) })
 
 	assertListContainsName(t, r, "dashboards", name)
 
 	got := mustRunJSONObject(t, r, "dashboards", "get", id)
-	if gotID, _ := got["dashboard_id"].(string); gotID != id {
-		t.Fatalf("dashboards get dashboard_id = %q, want %q", gotID, id)
+	if gotID := resourceID(got, "dashboard_id"); gotID != id {
+		t.Fatalf("dashboards get id = %q, want %q", gotID, id)
 	}
 
 	mustRunJSONObject(t, r, "dashboards", "update", id, "--input",
@@ -107,17 +107,17 @@ func testSavedSearchCRUD(t *testing.T, r *Runner, logID string) {
 
 	created := mustRunJSONObject(t, r, "saved-searches", "create", "--input",
 		writeBodyFile(t, savedSearchBody(name, logID)))
-	id, _ := created["saved_search_id"].(string)
+	id := resourceID(created, "saved_search_id")
 	if id == "" {
-		t.Fatalf("saved-searches create response missing saved_search_id: %+v", created)
+		t.Fatalf("saved-searches create response missing id: %+v", created)
 	}
 	t.Cleanup(func() { bestEffortDelete(r, "saved-searches", id) })
 
 	assertListContainsName(t, r, "saved-searches", name)
 
 	got := mustRunJSONObject(t, r, "saved-searches", "get", id)
-	if gotID, _ := got["saved_search_id"].(string); gotID != id {
-		t.Fatalf("saved-searches get saved_search_id = %q, want %q", gotID, id)
+	if gotID := resourceID(got, "saved_search_id"); gotID != id {
+		t.Fatalf("saved-searches get id = %q, want %q", gotID, id)
 	}
 
 	// UpdateSavedSearchRequest requires log_ids/name/search_details even
@@ -151,24 +151,30 @@ func testAPIKeyCRUD(t *testing.T, r *Runner) {
 
 // --- request body builders -------------------------------------------------
 
-// monitorBody builds a minimal CreateMonitorRequest (api/openapi.yaml):
-// required fields are name, filter, stat, comparison_operator, threshold,
-// window, logs, actions. threshold is set absurdly high so the monitor
-// never actually fires during the test's lifetime.
+// monitorBody builds a minimal CreateMonitorRequest per the LIVE API's
+// current shape (upstream spec): required fields are name,
+// comparison_operator, threshold, window, actions, queries. The vendored
+// spec's filter/stat/logs fields predate the queries[] redesign — the live
+// API rejects them with 400 "provided object should contain property
+// queries". Each queries[] entry is a QueryDefinition (name/select/where +
+// from log-ids). threshold is set absurdly high so the monitor never
+// actually fires during the test's lifetime.
 func monitorBody(name, logID string, threshold int) map[string]any {
 	return map[string]any{
-		"name": name,
-		// A real query expression: bare "*" is not valid query syntax.
-		"filter":              "status >= 0",
-		"stat":                "COUNT",
+		"name":                name,
 		"comparison_operator": "ABOVE",
 		"threshold":           threshold,
 		// Format per the documented pattern-monitor example ("Last N minutes").
 		"window": "Last 10 minutes",
-		"logs":   []string{logID},
 		"actions": []map[string]any{
 			{"type": "EMAIL", "email": "bronto-ci@example.com"},
 		},
+		"queries": []map[string]any{{
+			"name":   "q1",
+			"select": []string{"count(*)"},
+			"where":  "status >= 0",
+			"from":   []string{logID},
+		}},
 	}
 }
 
@@ -206,6 +212,18 @@ func apiKeyBody(name string) map[string]any {
 }
 
 // --- shared CRUD helpers ----------------------------------------------------
+
+// resourceID extracts a resource's id from a create/get response. The live
+// API returns a plain "id" field (confirmed in the first live run); the
+// vendored spec's per-kind names (saved_search_id, dashboard_id) are
+// accepted as fallbacks until the spec re-vendor settles the shape.
+func resourceID(row map[string]any, legacyKey string) string {
+	if v, _ := row["id"].(string); v != "" {
+		return v
+	}
+	v, _ := row[legacyKey].(string)
+	return v
+}
 
 // firstDatasetLogID fetches the log_id of the first dataset in the account
 // (via `bronto datasets list`, which datasets.Base "/logs" - see

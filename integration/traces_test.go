@@ -2,6 +2,7 @@ package integration
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -27,6 +28,14 @@ func TestTraces_ServicesTolerant(t *testing.T) {
 	res, err := r.Run(t.Context(), "", "traces", "services", "--since", "1h", "-o", "json")
 	if err != nil {
 		t.Fatalf("running traces services: %v", err)
+	}
+	// An account with no OTel ingestion has NO datasets in the .traces
+	// logset at all, and the API 404s the from_expr with "No datasets
+	// matched" (exit 4 resource_not_found) rather than returning an empty
+	// result. That is the expected state of the CI test account — tolerate
+	// it the same way an empty array is tolerated.
+	if res.ExitCode == 4 && strings.Contains(res.Stderr, "resource_not_found") {
+		t.Skipf("account has no .traces datasets (traces services 404): %s", strings.TrimSpace(res.Stderr))
 	}
 	if res.ExitCode != 0 {
 		t.Fatalf("traces services exited %d\nstdout: %s\nstderr: %s", res.ExitCode, res.Stdout, res.Stderr)

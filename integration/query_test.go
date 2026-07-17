@@ -33,7 +33,7 @@ func TestQuery_SearchWhereMarkerJSON(t *testing.T) {
 		t.Fatal("search returned no rows for the seeded marker")
 	}
 	for _, row := range rows {
-		if m, _ := row["ci_marker"].(string); m != marker {
+		if m, _ := eventField(row, "ci_marker").(string); m != marker {
 			t.Fatalf("row ci_marker = %q, want %q: %+v", m, marker, row)
 		}
 	}
@@ -48,7 +48,10 @@ func TestQuery_FieldsFlagFiltersColumns(t *testing.T) {
 	r := NewRunner(t, key)
 	logID := logIDForDataset(t, r, dataset)
 
-	res, err := r.Run(t.Context(), "", searchMarkerArgs(logID, marker, "--fields", "ci_marker,level", "-o", "json", "-n", "5")...)
+	// The printed row keys are the CLI's flattened dotted keys (see
+	// eventField), so --fields must name the message_kvs.-namespaced forms.
+	res, err := r.Run(t.Context(), "", searchMarkerArgs(logID, marker,
+		"--fields", "message_kvs.ci_marker,message_kvs.level", "-o", "json", "-n", "5")...)
 	if err != nil {
 		t.Fatalf("running search: %v", err)
 	}
@@ -62,12 +65,21 @@ func TestQuery_FieldsFlagFiltersColumns(t *testing.T) {
 	if len(rows) == 0 {
 		t.Fatal("search returned no rows for the seeded marker")
 	}
+	sawMarker := false
 	for _, row := range rows {
 		for k := range row {
-			if k != "ci_marker" && k != "level" {
-				t.Fatalf("--fields ci_marker,level leaked extra key %q: %+v", k, row)
+			if k != "message_kvs.ci_marker" && k != "message_kvs.level" {
+				t.Fatalf("--fields leaked extra key %q: %+v", k, row)
 			}
 		}
+		if m, _ := row["message_kvs.ci_marker"].(string); m == marker {
+			sawMarker = true
+		}
+	}
+	// Guard against a vacuous pass (rows with zero matching keys would
+	// trivially satisfy the leak check above).
+	if !sawMarker {
+		t.Fatalf("no filtered row carried message_kvs.ci_marker=%s: %+v", marker, rows)
 	}
 }
 
@@ -78,7 +90,9 @@ func TestQuery_JQExpression(t *testing.T) {
 	r := NewRunner(t, key)
 	logID := logIDForDataset(t, r, dataset)
 
-	res, err := r.Run(t.Context(), "", searchMarkerArgs(logID, marker, "--jq", ".ci_marker", "-o", "json", "-n", "5")...)
+	// Flattened row keys contain literal dots, so jq needs the bracket form.
+	jqExpr := `.["message_kvs.ci_marker"]`
+	res, err := r.Run(t.Context(), "", searchMarkerArgs(logID, marker, "--jq", jqExpr, "-o", "json", "-n", "5")...)
 	if err != nil {
 		t.Fatalf("running search: %v", err)
 	}
@@ -86,7 +100,7 @@ func TestQuery_JQExpression(t *testing.T) {
 		t.Fatalf("search exited %d\nstdout: %s\nstderr: %s", res.ExitCode, res.Stdout, res.Stderr)
 	}
 	if !strings.Contains(res.Stdout, marker) {
-		t.Fatalf("--jq \".ci_marker\" output does not contain the marker: %s", res.Stdout)
+		t.Fatalf("--jq %q output does not contain the marker: %s", jqExpr, res.Stdout)
 	}
 }
 
@@ -119,30 +133,34 @@ func TestQuery_JSONLLineParses(t *testing.T) {
 
 // TestQuery_FieldsCommandListsMarkerKey asserts `bronto fields` (top-key
 // discovery) surfaces the ci_marker field name, since every seeded event
-// carries it.
+// carries it. The /top-keys index lags behind search visibility (the first
+// live run returned [] right after the seed poll passed), so this polls
+// with the same budget the seed itself uses instead of asserting once.
 func TestQuery_FieldsCommandListsMarkerKey(t *testing.T) {
 	key := skipIfNoCreds(t)
 	dataset, _ := seededData(t)
 	r := NewRunner(t, key)
 	logID := logIDForDataset(t, r, dataset)
 
-	res, err := r.Run(t.Context(), "", "fields", "-d", logID, "--since", "1h", "-o", "json")
-	if err != nil {
-		t.Fatalf("running fields: %v", err)
-	}
-	if res.ExitCode != 0 {
-		t.Fatalf("fields exited %d\nstdout: %s\nstderr: %s", res.ExitCode, res.Stdout, res.Stderr)
-	}
-	var rows []map[string]any
-	if err := json.Unmarshal([]byte(res.Stdout), &rows); err != nil {
-		t.Fatalf("fields -o json did not parse: %v\noutput: %s", err, res.Stdout)
-	}
-	for _, row := range rows {
-		if k, _ := row["key"].(string); k == "ci_marker" {
-			return
+	PollUntil(t, seedPollBudget(), seedPollInterval, func() (bool, error) {
+		res, err := r.Run(t.Context(), "", "fields", "-d", logID, "--since", "1h", "-o", "json")
+		if err != nil {
+			return false, err
 		}
-	}
-	t.Fatalf("fields output does not list the ci_marker key: %s", res.Stdout)
+		if res.ExitCode != 0 {
+			return false, fmt.Errorf("fields exited %d\nstdout: %s\nstderr: %s", res.ExitCode, res.Stdout, res.Stderr)
+		}
+		var rows []map[string]any
+		if err := json.Unmarshal([]byte(res.Stdout), &rows); err != nil {
+			return false, fmt.Errorf("fields -o json did not parse: %w\noutput: %s", err, res.Stdout)
+		}
+		for _, row := range rows {
+			if k, _ := row["key"].(string); k == "ci_marker" || k == "message_kvs.ci_marker" {
+				return true, nil
+			}
+		}
+		return false, fmt.Errorf("fields output does not list the ci_marker key yet: %s", res.Stdout)
+	})
 }
 
 // TestQuery_ContextAroundSeededEvent exercises `bronto context`: it first

@@ -302,6 +302,18 @@ func searchMarkerArgs(logID, marker string, extra ...string) []string {
 	return searchArgs(logID, fmt.Sprintf("ci_marker = '%s'", marker), append(selects, extra...)...)
 }
 
+// eventField reads a structured field from a search -o json row. The live
+// API nests ingested KV fields under message_kvs, and the CLI flattens
+// nested maps to dotted keys (bronto.Flatten), so a seeded "level" field
+// surfaces as "message_kvs.level". The bare key is checked first in case a
+// field ever appears at the top level.
+func eventField(row map[string]any, key string) any {
+	if v, ok := row[key]; ok {
+		return v
+	}
+	return row["message_kvs."+key]
+}
+
 // --- hermetic self-tests ------------------------------------------------------
 //
 // These need no live credentials and always run, giving this file (and the
