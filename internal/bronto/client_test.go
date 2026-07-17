@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
@@ -80,6 +81,55 @@ func TestSearchMapsAPIErrors(t *testing.T) {
 	_, err := NewClient(srv.Client(), srv.URL).Search(context.Background(), SearchRequest{})
 	if clierr.ExitCode(err) != 3 {
 		t.Fatalf("exit = %d, want 3", clierr.ExitCode(err))
+	}
+}
+
+// TestSearchInvalidBaseURLIsRequestBuildError pins the http.NewRequestWithContext
+// error path in Search: a malformed URL (bad percent-encoding) fails at
+// request-construction time, before any network call.
+func TestSearchInvalidBaseURLIsRequestBuildError(t *testing.T) {
+	_, err := NewClient(http.DefaultClient, "http://example.com/%zz").Search(context.Background(), SearchRequest{})
+	if err == nil {
+		t.Fatal("want an error for a malformed base URL")
+	}
+	var ce *clierr.Error
+	if errors.As(err, &ce) {
+		t.Fatalf("want the raw request-build error (not a clierr.Error), got %v", err)
+	}
+}
+
+// TestGetJSONInvalidURLIsRequestBuildError mirrors the above for GetJSON's
+// own http.NewRequestWithContext call.
+func TestGetJSONInvalidURLIsRequestBuildError(t *testing.T) {
+	var out map[string]any
+	err := NewClient(http.DefaultClient, "http://example.com").GetJSON(context.Background(), "/%zz", nil, &out)
+	if err == nil {
+		t.Fatal("want an error for a malformed path")
+	}
+	var ce *clierr.Error
+	if errors.As(err, &ce) {
+		t.Fatalf("want the raw request-build error (not a clierr.Error), got %v", err)
+	}
+}
+
+// errBodyReader always fails on Read, simulating a connection dropped
+// mid-response (as opposed to a non-2xx status, which is a distinct branch).
+type errBodyReader struct{}
+
+func (errBodyReader) Read([]byte) (int, error) { return 0, errors.New("body read boom") }
+func (errBodyReader) Close() error             { return nil }
+
+type errBodyRoundTripper struct{}
+
+func (errBodyRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
+	return &http.Response{StatusCode: 200, Header: http.Header{}, Body: errBodyReader{}}, nil
+}
+
+func TestDoBodyReadErrorPropagates(t *testing.T) {
+	c := NewClient(&http.Client{Transport: errBodyRoundTripper{}}, "http://x")
+	_, err := c.Search(context.Background(), SearchRequest{})
+	if err == nil || !strings.Contains(err.Error(), "body read boom") {
+		t.Fatalf("err = %v, want it to surface the body read error", err)
 	}
 }
 

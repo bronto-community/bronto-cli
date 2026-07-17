@@ -3,11 +3,16 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
@@ -85,6 +90,49 @@ func TestAPIRejectsBadMethod(t *testing.T) {
 	err := root.Execute()
 	if err == nil || clierr.ExitCode(err) != 2 {
 		t.Fatalf("want usage error exit 2, got %v (exit %d)", err, clierr.ExitCode(err))
+	}
+}
+
+func TestReadBodyInputFromFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "body.json")
+	if err := os.WriteFile(path, []byte(`{"a":1}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cmd := &cobra.Command{}
+	got, err := readBodyInput(cmd, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != `{"a":1}` {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestReadBodyInputFromStdin(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.SetIn(strings.NewReader("piped body"))
+	got, err := readBodyInput(cmd, "-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "piped body" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestReadBodyInputMissingFileIsUsageError(t *testing.T) {
+	cmd := &cobra.Command{}
+	_, err := readBodyInput(cmd, filepath.Join(t.TempDir(), "does-not-exist.json"))
+	if err == nil {
+		t.Fatal("want error for a missing file")
+	}
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "usage_input_file" {
+		t.Fatalf("want usage_input_file clierr.Error, got %T: %v", err, err)
+	}
+	if clierr.ExitCode(err) != 2 {
+		t.Fatalf("exit = %d, want 2", clierr.ExitCode(err))
 	}
 }
 

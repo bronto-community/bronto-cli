@@ -467,23 +467,44 @@ func newMonitorEventsCmd() *cobra.Command {
 }
 
 func newMonitorMuteCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:     "mute <id>",
-		Short:   "Mute a monitor",
-		Example: "  bronto monitors mute <id>",
-		Args:    cobra.ExactArgs(1),
+	var until int64
+	var unmute bool
+	cmd := &cobra.Command{
+		Use:   "mute <id>",
+		Short: "Mute (or unmute) a monitor",
+		Example: "  bronto monitors mute <id>\n" +
+			"  bronto monitors mute <id> --until 1710958395538\n" +
+			"  bronto monitors mute <id> --unmute",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
 			}
-			if _, err := doJSONRequest(cmd.Context(), app, http.MethodPost, "/monitors/"+url.PathEscape(args[0])+"/mute", nil); err != nil {
+			// The live status endpoint takes mute_until: -1 mutes forever,
+			// 0 unmutes, a future epoch-millis timestamp mutes until then.
+			muteUntil := until
+			if unmute {
+				muteUntil = 0
+			}
+			body, err := json.Marshal(map[string]int64{"mute_until": muteUntil})
+			if err != nil {
 				return err
 			}
-			_, _ = fmt.Fprintf(app.Stderr, "Muted monitor %s.\n", args[0])
+			if _, err := doJSONRequest(cmd.Context(), app, http.MethodPost, "/monitors/"+url.PathEscape(args[0])+"/status", body); err != nil {
+				return err
+			}
+			if unmute {
+				_, _ = fmt.Fprintf(app.Stderr, "Unmuted monitor %s.\n", args[0])
+			} else {
+				_, _ = fmt.Fprintf(app.Stderr, "Muted monitor %s.\n", args[0])
+			}
 			return nil
 		},
 	}
+	cmd.Flags().Int64Var(&until, "until", -1, "mute until this epoch-millis timestamp (-1 = forever)")
+	cmd.Flags().BoolVar(&unmute, "unmute", false, "unmute the monitor instead")
+	return cmd
 }
 
 func newMonitorTestCmd() *cobra.Command {

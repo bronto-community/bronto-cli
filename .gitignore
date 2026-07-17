@@ -3,3 +3,8 @@
 /completions/
 *.test
 .env
+/covdata/
+/coverage.txt
+/coverage.filtered.txt
+/coverage.html
+/bronto.itest

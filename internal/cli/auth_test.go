@@ -12,6 +12,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
@@ -229,6 +230,153 @@ func TestAuthStatusShowsCorruptCredentialsParseError(t *testing.T) {
 	status, _ := rows[0]["status"].(string)
 	if !strings.Contains(status, "cannot parse") {
 		t.Fatalf("status cell = %q, want it to surface the parse error", status)
+	}
+}
+
+func TestRegionCandidatesExplicitBaseURLAndRegion(t *testing.T) {
+	cands := regionCandidates(&config.Config{}, "us", "https://custom.example.com")
+	if len(cands) != 1 || cands[0].region != "us" || cands[0].baseURL != "https://custom.example.com" {
+		t.Fatalf("cands = %+v", cands)
+	}
+}
+
+func TestRegionCandidatesBaseURLFallsBackToConfigRegion(t *testing.T) {
+	// The only env lookup that matters here is BRONTO_REGION; stub Getenv to
+	// answer just that one and "" for everything else so precedence stays clean.
+	cfg, err := config.Load(config.LoadOptions{
+		Getenv: func(k string) string {
+			if k == "BRONTO_REGION" {
+				return "us"
+			}
+			return ""
+		},
+		WorkDir: t.TempDir(), UserConfigDir: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cands := regionCandidates(cfg, "", "https://custom.example.com")
+	if len(cands) != 1 || cands[0].region != "us" || cands[0].baseURL != "https://custom.example.com" {
+		t.Fatalf("cands = %+v", cands)
+	}
+}
+
+func TestRegionCandidatesBaseURLWithNoRegionAnywhere(t *testing.T) {
+	// A zero-value Config has no values map at all: Get("region") reports
+	// not-ok, exercising the "no region resolvable" arm.
+	cands := regionCandidates(&config.Config{}, "", "https://custom.example.com")
+	if len(cands) != 1 || cands[0].region != "" || cands[0].baseURL != "https://custom.example.com" {
+		t.Fatalf("cands = %+v", cands)
+	}
+}
+
+func TestRegionCandidatesNoBaseURLDefaultsToBothRegions(t *testing.T) {
+	cands := regionCandidates(&config.Config{}, "", "")
+	if len(cands) != 2 {
+		t.Fatalf("cands = %+v, want 2 default regions", cands)
+	}
+	if cands[0].region != "eu" || cands[0].baseURL != "https://api.eu.bronto.io" {
+		t.Fatalf("cands[0] = %+v", cands[0])
+	}
+	if cands[1].region != "us" || cands[1].baseURL != "https://api.us.bronto.io" {
+		t.Fatalf("cands[1] = %+v", cands[1])
+	}
+}
+
+func TestRegionCandidatesNoBaseURLWithExplicitRegion(t *testing.T) {
+	cands := regionCandidates(&config.Config{}, "us", "")
+	if len(cands) != 1 || cands[0].region != "us" || cands[0].baseURL != "https://api.us.bronto.io" {
+		t.Fatalf("cands = %+v", cands)
+	}
+}
+
+func TestConfigDirHonorsBrontoConfigDirOverride(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("BRONTO_CONFIG_DIR", dir)
+	got, err := configDir()
+	if err != nil || got != dir {
+		t.Fatalf("configDir() = %q, %v; want %q, nil", got, err, dir)
+	}
+}
+
+func TestConfigDirFallsBackToUserConfigDir(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", "")
+	got, err := configDir()
+	want, wantErr := os.UserConfigDir()
+	if err != wantErr {
+		t.Fatalf("err = %v, want %v", err, wantErr)
+	}
+	if got != want {
+		t.Fatalf("configDir() = %q, want %q", got, want)
+	}
+}
+
+func TestAcquireKeyStdinTrimsWhitespace(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.SetIn(strings.NewReader("  the-key  \n"))
+	key, err := acquireKey(cmd, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if key != "the-key" {
+		t.Fatalf("key = %q, want trimmed", key)
+	}
+}
+
+type errReader struct{}
+
+func (errReader) Read([]byte) (int, error) { return 0, errors.New("read boom") }
+
+func TestAcquireKeyStdinReadErrorPropagates(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.SetIn(errReader{})
+	_, err := acquireKey(cmd, true)
+	if err == nil || err.Error() != "read boom" {
+		t.Fatalf("want raw read error, got %v", err)
+	}
+}
+
+func TestAcquireKeyStdinEmptyIsUsageError(t *testing.T) {
+	cmd := &cobra.Command{}
+	cmd.SetIn(strings.NewReader("   \n"))
+	_, err := acquireKey(cmd, true)
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "usage_key_required" {
+		t.Fatalf("want usage_key_required, got %v", err)
+	}
+}
+
+func TestAcquireKeyTTYPromptSuccess(t *testing.T) {
+	oldOut, oldIn, oldRead := stdoutIsTTY, stdinIsTTY, readPassword
+	stdoutIsTTY = func() bool { return true }
+	stdinIsTTY = func() bool { return true }
+	readPassword = func(int) ([]byte, error) { return []byte("  prompted-key \n"), nil }
+	t.Cleanup(func() { stdoutIsTTY, stdinIsTTY, readPassword = oldOut, oldIn, oldRead })
+
+	cmd := &cobra.Command{}
+	cmd.SetErr(&bytes.Buffer{})
+	key, err := acquireKey(cmd, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if key != "prompted-key" {
+		t.Fatalf("key = %q, want trimmed prompted key", key)
+	}
+}
+
+func TestAcquireKeyTTYPromptReadPasswordErrorIsUsageError(t *testing.T) {
+	oldOut, oldIn, oldRead := stdoutIsTTY, stdinIsTTY, readPassword
+	stdoutIsTTY = func() bool { return true }
+	stdinIsTTY = func() bool { return true }
+	readPassword = func(int) ([]byte, error) { return nil, errors.New("tty gone") }
+	t.Cleanup(func() { stdoutIsTTY, stdinIsTTY, readPassword = oldOut, oldIn, oldRead })
+
+	cmd := &cobra.Command{}
+	cmd.SetErr(&bytes.Buffer{})
+	_, err := acquireKey(cmd, false)
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "usage_key_required" {
+		t.Fatalf("want usage_key_required, got %v", err)
 	}
 }
 

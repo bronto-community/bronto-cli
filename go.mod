@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/itchyny/gojq v0.12.19
+	github.com/klauspost/compress v1.19.0
 	github.com/mattn/go-isatty v0.0.23
 	github.com/oapi-codegen/runtime v1.6.0
 	github.com/pelletier/go-toml/v2 v2.4.3

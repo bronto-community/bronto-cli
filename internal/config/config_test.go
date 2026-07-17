@@ -164,6 +164,52 @@ func TestInjectOnlyWhenAbsent(t *testing.T) {
 	}
 }
 
+func TestValuesReturnsIndependentCopy(t *testing.T) {
+	cfg, err := Load(LoadOptions{
+		Getenv:  env(map[string]string{"BRONTO_API_KEY": "sekret", "BRONTO_REGION": "us"}),
+		WorkDir: t.TempDir(), UserConfigDir: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	vals := cfg.Values()
+	if vals["api_key"].Val != "sekret" || vals["region"].Val != "us" {
+		t.Fatalf("Values() = %+v", vals)
+	}
+	// Mutating the returned map must not affect the Config's own state.
+	vals["region"] = Value{Val: "mutated", Source: SourceFlag}
+	if v, _ := cfg.Get("region"); v.Val != "us" {
+		t.Fatalf("Values() leaked a mutable reference: cfg.region = %+v", v)
+	}
+}
+
+func TestLoadProjectFileEmptyWorkDirUsesGetwd(t *testing.T) {
+	// WorkDir=="" makes loadProjectFile fall back to os.Getwd(), which during
+	// `go test` is the package's own source directory. No .bronto.toml lives
+	// anywhere above it in this repo, so the walk-up must terminate cleanly
+	// with no project file found (not an error).
+	cfg, err := Load(LoadOptions{Getenv: env(nil), WorkDir: "", UserConfigDir: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := cfg.Get("default_dataset"); ok {
+		t.Fatalf("unexpected default_dataset from an unrelated ancestor .bronto.toml: %+v", cfg.Values())
+	}
+}
+
+func TestProjectFileMalformedTOMLIsParseError(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".bronto.toml"), "not [valid toml =\n")
+
+	_, err := Load(LoadOptions{Getenv: env(nil), WorkDir: dir, UserConfigDir: t.TempDir()})
+	if err == nil {
+		t.Fatal("want config_parse_error for malformed project file")
+	}
+	if clierr.ExitCode(err) != 2 {
+		t.Fatalf("exit code = %d, want 2 (config_parse_error)", clierr.ExitCode(err))
+	}
+}
+
 func TestHasProfile(t *testing.T) {
 	t.Setenv("BRONTO_CONFIG_DIR", "") // neutralize any ambient override
 	dir := t.TempDir()

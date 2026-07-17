@@ -1,0 +1,60 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  # integration-nightly runs the same black-box suite as ci.yml's
+  # `integration` job, unattended and on its own schedule: it doubles as an
+  # API-drift and dead-key detector (per the plan) even on days with no PRs,
+  # and gives the eventual-consistency poll a longer budget
+  # (BRONTO_IT_NIGHTLY=1 -> 10 minutes instead of 3 — see seedPollBudget in
+  # integration/seed_test.go) since nothing here is blocking a PR merge.
+  integration-nightly:
+    runs-on: ubuntu-latest
+    environment: bronto-it
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          # Same audit-mode-during-burn-in posture as ci.yml's `integration`
+          # job; see that job's comment for the full rationale and the
+          # exports --download presigned-URL trap.
+          egress-policy: audit
+
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build instrumented binary
+        run: go build -cover -covermode=atomic -coverpkg=./... -o bronto.itest ./cmd/bronto
+
+      - name: Run integration suite
+        env:
+          BRONTO_IT_BIN: ${{ github.workspace }}/bronto.itest
+          GOCOVERDIR: ${{ github.workspace }}/covdata/int
+          BRONTO_IT_NIGHTLY: "1"
+          BRONTO_IT_MGMT_KEY: ${{ secrets.BRONTO_IT_MGMT_KEY }}
+          BRONTO_IT_INGEST_KEY: ${{ secrets.BRONTO_IT_INGEST_KEY }}
+          BRONTO_IT_REGION: ${{ vars.BRONTO_IT_REGION || 'eu' }}
+        run: |
+          mkdir -p "$GOCOVERDIR"
+          go test -count=1 ./integration/
+
+      # Keep artifacts on failure (and always, for consistency with ci.yml):
+      # a failed nightly run is exactly the "API drift / dead key" signal
+      # this job exists to catch, and the covdata + any test output are the
+      # first thing to look at.
+      - name: Upload integration covdata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-nightly-covdata
+          path: covdata/int
+          if-no-files-found: warn
