@@ -109,6 +109,9 @@ var resourceRegistry = []resourceDesc{
 // Shared by every generic resource verb and by the monitors extras
 // (events/mute/test).
 func doJSONRequest(ctx context.Context, app *App, method, path string, body []byte) (any, error) {
+	if app.DryRun && method != http.MethodGet && method != http.MethodHead {
+		return dryRunPlan(method, path, body), nil
+	}
 	var reqBody io.Reader
 	if body != nil {
 		reqBody = bytes.NewReader(body)
@@ -141,6 +144,35 @@ func doJSONRequest(ctx context.Context, app *App, method, path string, body []by
 		return nil, err
 	}
 	return doc, nil
+}
+
+// dryRunPlan is what doJSONRequest returns for a mutating call under
+// --dry-run: the exact request that WOULD have been sent. Commands print
+// it through the normal output engine, so -o json yields a stable,
+// machine-checkable plan document.
+func dryRunPlan(method, path string, body []byte) map[string]any {
+	plan := map[string]any{"dry_run": true, "method": method, "path": path}
+	if len(body) > 0 {
+		var decoded any
+		if err := json.Unmarshal(body, &decoded); err == nil {
+			plan["body"] = decoded
+		} else {
+			plan["body"] = string(body)
+		}
+	}
+	return plan
+}
+
+// isDryRunPlan reports whether payload came from dryRunPlan — for commands
+// whose success path prints a side-effect message ("Deleted X.") that
+// would be a lie under --dry-run.
+func isDryRunPlan(payload any) bool {
+	m, ok := payload.(map[string]any)
+	if !ok {
+		return false
+	}
+	v, _ := m["dry_run"].(bool)
+	return v
 }
 
 // resourceRequestBody resolves the create/update request body from exactly
@@ -436,16 +468,23 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			prompt := fmt.Sprintf("Delete %s %s?", desc.singular(), args[0])
-			if err := confirmDestructive(cmd, app, prompt, yes); err != nil {
-				if errors.Is(err, errAborted) {
-					_, _ = fmt.Fprintln(app.Stderr, "Aborted.")
-					return nil
+			if !app.DryRun {
+				prompt := fmt.Sprintf("Delete %s %s?", desc.singular(), args[0])
+				if err := confirmDestructive(cmd, app, prompt, yes); err != nil {
+					if errors.Is(err, errAborted) {
+						_, _ = fmt.Fprintln(app.Stderr, "Aborted.")
+						return nil
+					}
+					return err
 				}
+			}
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodDelete, desc.idBase()+"/"+url.PathEscape(args[0]), nil)
+			if err != nil {
 				return err
 			}
-			if _, err := doJSONRequest(cmd.Context(), app, http.MethodDelete, desc.idBase()+"/"+url.PathEscape(args[0]), nil); err != nil {
-				return err
+			if isDryRunPlan(payload) {
+				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would delete %s %s.\n", desc.singular(), args[0])
+				return nil
 			}
 			_, _ = fmt.Fprintf(app.Stderr, "Deleted %s %s.\n", desc.singular(), args[0])
 			return nil
@@ -509,8 +548,13 @@ func newMonitorMuteCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if _, err := doJSONRequest(cmd.Context(), app, http.MethodPost, "/monitors/"+url.PathEscape(args[0])+"/status", body); err != nil {
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodPost, "/monitors/"+url.PathEscape(args[0])+"/status", body)
+			if err != nil {
 				return err
+			}
+			if isDryRunPlan(payload) {
+				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would set mute_until=%d on monitor %s.\n", muteUntil, args[0])
+				return nil
 			}
 			if unmute {
 				_, _ = fmt.Fprintf(app.Stderr, "Unmuted monitor %s.\n", args[0])
@@ -536,8 +580,13 @@ func newMonitorTestCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if _, err := doJSONRequest(cmd.Context(), app, http.MethodPost, "/monitors/send-test-notifications", nil); err != nil {
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodPost, "/monitors/send-test-notifications", nil)
+			if err != nil {
 				return err
+			}
+			if isDryRunPlan(payload) {
+				_, _ = fmt.Fprintln(app.Stderr, "DRY RUN: would send test notifications for all monitors.")
+				return nil
 			}
 			_, _ = fmt.Fprintln(app.Stderr, "Sent test notifications.")
 			return nil

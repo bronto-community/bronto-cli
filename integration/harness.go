@@ -45,6 +45,14 @@ type Runner struct {
 	ConfigDir string
 	APIKey    string
 	Region    string
+
+	// OmitEnvKey drops BRONTO_API_KEY from the child env: needed by tests
+	// that exercise stored-credential resolution (auth login/status), where
+	// an env key would take precedence and mask the store entirely.
+	OmitEnvKey bool
+	// ExtraEnv entries are appended last (they win over earlier entries) —
+	// e.g. a PATH override for plugin-dispatch tests.
+	ExtraEnv []string
 }
 
 // hermeticNoKeySentinel replaces an empty apiKey in NewRunner. An actually-
@@ -188,11 +196,14 @@ func (r *Runner) env() []string {
 		}
 		env = append(env, kv)
 	}
-	return append(env,
+	env = append(env,
 		"BRONTO_CONFIG_DIR="+r.ConfigDir,
-		"BRONTO_API_KEY="+r.APIKey,
 		"BRONTO_REGION="+r.Region,
 	)
+	if !r.OmitEnvKey {
+		env = append(env, "BRONTO_API_KEY="+r.APIKey)
+	}
+	return append(env, r.ExtraEnv...)
 }
 
 // mgmtKey returns BRONTO_IT_MGMT_KEY.

@@ -68,6 +68,13 @@ func newExportsCreateCmd() *cobra.Command {
 				return err
 			}
 			obj, _ := payload.(map[string]any)
+			if isDryRunPlan(payload) {
+				p, perr := app.Printer(false)
+				if perr != nil {
+					return perr
+				}
+				return p.PrintJSON(payload)
+			}
 			if !wait {
 				p, err := app.Printer(false)
 				if err != nil {
@@ -181,17 +188,33 @@ func exportID(obj map[string]any) string {
 // Note: FAILED is not in the vendored spec's status enum (CREATED/IN_PROGRESS/COMPLETE)
 // but is handled defensively as a real-world edge case.
 func waitForExport(ctx context.Context, app *App, id string) (map[string]any, error) {
+	// Progress on stderr in human mode only: a silent multi-second poll
+	// reads as a hang. \r-rewritten so it collapses to one line.
+	progress := app.StdoutIsTTY && !app.Quiet
+	start := time.Now()
+	clearLine := func() {
+		if progress {
+			_, _ = fmt.Fprintf(app.Stderr, "\r\x1b[2K")
+		}
+	}
 	for {
 		payload, err := doJSONRequest(ctx, app, http.MethodGet, "/exports/"+url.PathEscape(id), nil)
 		if err != nil {
+			clearLine()
 			return nil, err
 		}
 		obj, _ := payload.(map[string]any)
 		status, _ := obj["status"].(string)
+		if progress {
+			_, _ = fmt.Fprintf(app.Stderr, "\r\x1b[2KWaiting for export %s… %s (%ds)",
+				id, status, int(time.Since(start).Seconds()))
+		}
 		switch status {
 		case "COMPLETE":
+			clearLine()
 			return obj, nil
 		case "FAILED":
+			clearLine()
 			msg := fmt.Sprintf("export %s failed", id)
 			if fd, ok := obj["failure_detail"].(string); ok && fd != "" {
 				msg = fd

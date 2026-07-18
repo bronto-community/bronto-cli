@@ -79,6 +79,16 @@ func newSendCmd() *cobra.Command {
 
 			if cmd.Flags().Changed("message") {
 				ev := ingest.LineToEvent(message, nil)
+				if app.DryRun {
+					p, perr := app.Printer(false)
+					if perr != nil {
+						return perr
+					}
+					return p.PrintJSON(map[string]any{
+						"dry_run": true, "ingest_url": url, "dataset": dataset,
+						"collection": collection, "events": []map[string]any{ev},
+					})
+				}
 				if err := sender.Send(cmd.Context(), []map[string]any{ev}); err != nil {
 					return err
 				}
@@ -88,6 +98,9 @@ func newSendCmd() *cobra.Command {
 				return nil
 			}
 
+			if app.DryRun {
+				return dryRunSendStream(cmd, app, url, dataset, collection)
+			}
 			return runSendStream(cmd, app, sender, batchSize, batchBytes, flushInterval)
 		},
 	}
@@ -202,4 +215,31 @@ func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSiz
 			return nil
 		}
 	}
+}
+
+// dryRunSendStream consumes stdin like the real stream path would, but
+// only counts events/bytes and prints a plan instead of posting anything.
+func dryRunSendStream(cmd *cobra.Command, app *App, url, dataset, collection string) error {
+	sc := bufio.NewScanner(cmd.InOrStdin())
+	sc.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
+	events, bytes := 0, 0
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" {
+			continue
+		}
+		events++
+		bytes += len(line)
+	}
+	if err := sc.Err(); err != nil {
+		return err
+	}
+	p, err := app.Printer(false)
+	if err != nil {
+		return err
+	}
+	return p.PrintJSON(map[string]any{
+		"dry_run": true, "ingest_url": url, "dataset": dataset,
+		"collection": collection, "events": events, "bytes": bytes,
+	})
 }

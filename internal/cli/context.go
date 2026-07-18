@@ -58,15 +58,20 @@ type App struct {
 	// need to surface the underlying problem instead of reporting a plain
 	// "no key" can check this field.
 	SecretLookupErr error
+
+	// DryRun makes doJSONRequest print mutating calls as a plan instead of
+	// executing them (reads still run, so dataset-name resolution works).
+	DryRun bool
 }
 
 func NewApp(cmd *cobra.Command) (*App, error) {
 	flags := map[string]string{}
-	for _, name := range []string{"api-key", "profile", "region", "base-url", "output"} {
+	for _, name := range []string{"api-key", "profile", "region", "base-url", "output", "timeout", "max-retries"} {
 		if f := cmd.Flags().Lookup(name); f != nil && f.Changed {
 			key := map[string]string{
 				"api-key": "api_key", "base-url": "base_url",
 				"profile": "profile", "region": "region", "output": "output",
+				"timeout": "timeout", "max-retries": "max_retries",
 			}[name]
 			flags[key] = f.Value.String()
 		}
@@ -147,6 +152,11 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 	// CRITICAL: httpClient captures cfg.APIKey() at construction time, so the
 	// keychain injection above MUST happen before this line.
 	httpClient := api.NewHTTPClient(cfg.APIKey(), version.Version)
+	if debug, _ := cmd.Flags().GetBool("debug"); debug {
+		if tr, ok := httpClient.Transport.(*api.Transport); ok {
+			tr.Base = &api.DebugTransport{Base: http.DefaultTransport, W: cmd.ErrOrStderr()}
+		}
+	}
 	if v, ok := cfg.Get("timeout"); ok {
 		secs, err := strconv.Atoi(v.Val)
 		if err != nil || secs <= 0 {
@@ -155,7 +165,19 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 		}
 		httpClient.Timeout = time.Duration(secs) * time.Second
 	}
+	if v, ok := cfg.Get("max_retries"); ok {
+		n, err := strconv.Atoi(v.Val)
+		if err != nil || n < 0 {
+			return nil, clierr.New("config_invalid_max_retries",
+				fmt.Sprintf("max_retries must be a non-negative integer, got %q", v.Val))
+		}
+		if tr, ok := httpClient.Transport.(*api.Transport); ok {
+			tr.MaxRetries = n
+		}
+	}
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	return &App{
+		DryRun:          dryRun,
 		Config:          cfg,
 		Stdout:          cmd.OutOrStdout(),
 		Stderr:          cmd.ErrOrStderr(),

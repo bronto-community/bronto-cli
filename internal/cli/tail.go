@@ -21,6 +21,7 @@ func newTailCmd() *cobra.Command {
 		interval           time.Duration
 		window             string
 		limit              int
+		dedupSize          int
 		includes, excludes []string
 		highlights         []string
 		noFollow           bool
@@ -38,6 +39,9 @@ func newTailCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if interval < time.Second {
 				return clierr.New("usage_invalid_interval", "interval must be at least 1s")
+			}
+			if dedupSize <= 0 {
+				return clierr.New("usage_invalid_dedup_size", "dedup-size must be a positive integer")
 			}
 			app, err := NewApp(cmd)
 			if err != nil {
@@ -91,7 +95,7 @@ func newTailCmd() *cobra.Command {
 				Limit:  limit, MostRecentFirst: &mrf,
 			}
 			client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
-			dedup := bronto.NewDedup(20000)
+			dedup := bronto.NewDedup(dedupSize)
 
 			for {
 				resp, err := client.Search(cmd.Context(), req)
@@ -143,6 +147,7 @@ func newTailCmd() *cobra.Command {
 	f.StringArrayVar(&excludes, "exclude", nil, "hide lines matching this regex (repeatable)")
 	f.StringArrayVar(&highlights, "highlight", nil, "highlight regex matches in the output (repeatable)")
 	f.BoolVar(&noFollow, "no-follow", false, "fetch the current window once, then exit")
+	f.IntVar(&dedupSize, "dedup-size", 20000, "events remembered for duplicate suppression across polls; very high-volume streams may need more")
 	return cmd
 }
 
