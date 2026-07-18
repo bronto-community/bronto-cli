@@ -21,7 +21,7 @@ func SetUserValue(dir, profile, key, value string) error {
 	}
 	path := filepath.Join(dir, "bronto", "config.toml")
 	uf := userFile{Profiles: map[string]map[string]string{}}
-	if b, err := os.ReadFile(path); err == nil {
+	if b, err := os.ReadFile(path); err == nil { // #nosec G304 -- rewriting the user's own config file in place
 		if err := toml.Unmarshal(b, &uf); err != nil {
 			return clierr.New("config_parse_error", "cannot parse "+path+": "+err.Error())
 		}
@@ -37,7 +37,7 @@ func SetUserValue(dir, profile, key, value string) error {
 	}
 	uf.Profiles[profile][key] = value
 
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return err
 	}
 	b, err := toml.Marshal(uf)
@@ -51,7 +51,7 @@ func SetUserValue(dir, profile, key, value string) error {
 func SetDefaultProfile(dir, name string) error {
 	path := filepath.Join(dir, "bronto", "config.toml")
 	uf := userFile{Profiles: map[string]map[string]string{}}
-	if b, err := os.ReadFile(path); err == nil {
+	if b, err := os.ReadFile(path); err == nil { // #nosec G304 -- rewriting the user's own config file in place
 		if err := toml.Unmarshal(b, &uf); err != nil {
 			return clierr.New("config_parse_error", "cannot parse "+path+": "+err.Error())
 		}
@@ -60,7 +60,7 @@ func SetDefaultProfile(dir, name string) error {
 		}
 	}
 	uf.DefaultProfile = name
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return err
 	}
 	b, err := toml.Marshal(uf)

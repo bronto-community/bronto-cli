@@ -34,7 +34,7 @@ var lookPath = exec.LookPath
 var runPlugin = defaultRunPlugin
 
 func defaultRunPlugin(path string, args []string, stdin io.Reader, stdout, stderr io.Writer) (int, error) {
-	c := exec.Command(path, args...)
+	c := exec.Command(path, args...) // #nosec G204 -- executing the user's own bronto-<name> plugin from PATH is the feature
 	c.Stdin = stdin
 	c.Stdout = stdout
 	c.Stderr = stderr
@@ -104,7 +104,7 @@ func tryPluginDispatch(rootCmd *cobra.Command, argv []string) error {
 	}
 	path, lerr := lookPath("bronto-" + name)
 	if lerr != nil {
-		return nil
+		return nil //nolint:nilerr // no bronto-<name> on PATH means "not a plugin", not an error
 	}
 	code, rerr := runPlugin(path, rest, os.Stdin, os.Stdout, os.Stderr)
 	if rerr != nil {

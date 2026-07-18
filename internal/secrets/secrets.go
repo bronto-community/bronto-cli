@@ -109,7 +109,7 @@ func readFileMap() (map[string]string, string, error) {
 		return nil, "", err
 	}
 	m := map[string]string{}
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) // #nosec G304 -- path is derived from the resolved config dir, not remote input
 	if err != nil {
 		if os.IsNotExist(err) {
 			return m, path, nil
@@ -128,7 +128,7 @@ func fileStore(account, key string) error {
 		return err
 	}
 	m[account] = key
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return err
 	}
 	b, err := toml.Marshal(m)

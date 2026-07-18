@@ -1,0 +1,8 @@
+# Default owner for everything in the repo.
+* @svrnm
+
+# Workflow changes are security-sensitive (secrets, runners, release
+# pipeline) — explicitly owned even when other rules change.
+/.github/workflows/ @svrnm
+/.goreleaser.yaml @svrnm
+/Dockerfile* @svrnm

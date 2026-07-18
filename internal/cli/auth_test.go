@@ -303,7 +303,7 @@ func TestConfigDirFallsBackToUserConfigDir(t *testing.T) {
 	t.Setenv("BRONTO_CONFIG_DIR", "")
 	got, err := configDir()
 	want, wantErr := os.UserConfigDir()
-	if err != wantErr {
+	if !errors.Is(err, wantErr) {
 		t.Fatalf("err = %v, want %v", err, wantErr)
 	}
 	if got != want {

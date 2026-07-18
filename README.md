@@ -1,5 +1,10 @@
 # bronto-cli
 
+[![CI](https://github.com/bronto-community/bronto-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/bronto-community/bronto-cli/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/bronto-community/bronto-cli)](https://github.com/bronto-community/bronto-cli/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/bronto-community/bronto-cli)](https://goreportcard.com/report/github.com/bronto-community/bronto-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A community command-line client for the [Bronto](https://bronto.io) observability platform. It wraps Bronto's REST and ingestion APIs in a single scriptable binary: search and tail logs, explore OpenTelemetry traces, send events, and manage resources (datasets, monitors, dashboards, parsers, exports, API keys) — all with JSONL-by-default output, typed errors, and stable exit codes so it drops cleanly into shell pipelines and agent tool calls.
 
 This project is not affiliated with or endorsed by Bronto.

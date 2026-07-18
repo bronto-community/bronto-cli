@@ -164,7 +164,7 @@ func readBodyInput(cmd *cobra.Command, input string) ([]byte, error) {
 	if input == "-" {
 		return io.ReadAll(cmd.InOrStdin())
 	}
-	f, err := os.Open(input)
+	f, err := os.Open(input) // #nosec G304 -- input is the user's own --input path; reading user files is the feature
 	if err != nil {
 		return nil, clierr.New("usage_input_file", err.Error())
 	}

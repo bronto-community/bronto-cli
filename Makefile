@@ -1,4 +1,4 @@
-.PHONY: build test lint generate check-generate release-dry snapshot coverage coverage-baseline it
+.PHONY: build test lint generate check-generate release-dry snapshot coverage coverage-baseline it vuln
 
 build:
 	CGO_ENABLED=0 go build -o bronto ./cmd/bronto
@@ -7,7 +7,7 @@ test:
 	go test ./...
 
 lint:
-	golangci-lint run
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 run
 
 generate:
 	go generate ./...
@@ -61,3 +61,7 @@ release-dry:
 # without publishing anything, for verifying packaging end-to-end.
 snapshot:
 	go run github.com/goreleaser/goreleaser/v2@latest release --snapshot --clean --skip=publish
+
+# vuln scans all packages against the Go vulnerability database.
+vuln:
+	go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...

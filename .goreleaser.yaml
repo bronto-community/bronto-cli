@@ -53,6 +53,25 @@ archives:
 checksum:
   name_template: checksums.txt
 
+# Keyless (OIDC) cosign signature over the checksums file: verifying one
+# signature transitively verifies every archive/package via its checksum.
+# Certificate identity is the release workflow itself.
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    output: true
+    certificate: "${artifact}.pem"
+    args:
+      - sign-blob
+      - "--output-signature=${signature}"
+      - "--output-certificate=${certificate}"
+      - "${artifact}"
+      - "--yes"
+
+# SPDX SBOM per archive (syft), uploaded alongside the release assets.
+sboms:
+  - artifacts: archive
+
 changelog:
   sort: asc
   use: github
