@@ -92,26 +92,6 @@ func TestTailNoFollowSeeded(t *testing.T) {
 	}
 }
 
-// TestMonitorsTestTolerant covers `monitors test` live. Its endpoint
-// (/monitors/send-test-notifications) is live-but-undocumented after the
-// 2026-07-17 spec reorg — tolerate a 404 with a skip. The test account is
-// throwaway; test notifications go to the transient monitors' example.com
-// email actions at worst.
-func TestMonitorsTestTolerant(t *testing.T) {
-	key := skipIfNoCreds(t)
-	r := NewRunner(t, key)
-	res, err := r.Run(t.Context(), "", "monitors", "test")
-	if err != nil {
-		t.Fatalf("running monitors test: %v", err)
-	}
-	if res.ExitCode == 4 && strings.Contains(res.Stderr, "resource_not_found") {
-		t.Skipf("live API no longer serves send-test-notifications (404) — drop the command and this skip: %s", strings.TrimSpace(res.Stderr))
-	}
-	if res.ExitCode != 0 {
-		t.Fatalf("monitors test exited %d\nstdout: %s\nstderr: %s", res.ExitCode, res.Stdout, res.Stderr)
-	}
-}
-
 // TestAuthLoginKeyStdin exercises the full credential round trip with NO
 // env key: login --key-stdin stores the key (file fallback on CI runners
 // without a keychain), and auth status must then resolve it from the store.

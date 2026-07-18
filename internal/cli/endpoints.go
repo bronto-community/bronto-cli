@@ -29,7 +29,6 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/logs", Command: "bronto ping"},
 	{Pattern: "/monitors/{*}/events", Command: "bronto monitors events"},
 	{Pattern: "/monitors/{*}/status", Command: "bronto monitors mute"},
-	{Pattern: "/monitors/send-test-notifications", Command: "bronto monitors test"},
 }
 
 // EndpointInventory returns every management-API path pattern the CLI

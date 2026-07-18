@@ -63,7 +63,7 @@ func NewRootCmd() *cobra.Command {
 	for _, d := range resourceRegistry {
 		switch d.Name {
 		case "monitors":
-			cmd.AddCommand(newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd(), newMonitorTestCmd()))
+			cmd.AddCommand(newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd()))
 		case "exports":
 			cmd.AddCommand(newResourceCmd(d, newExportsCreateCmd()))
 		default:

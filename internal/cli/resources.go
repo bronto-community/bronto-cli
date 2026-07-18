@@ -107,7 +107,7 @@ var resourceRegistry = []resourceDesc{
 // URL and decodes a JSON response body (nil for empty bodies, e.g. 204).
 // Non-2xx responses become a typed *clierr.Error via api.ErrorFromStatus.
 // Shared by every generic resource verb and by the monitors extras
-// (events/mute/test).
+// (events/mute).
 func doJSONRequest(ctx context.Context, app *App, method, path string, body []byte) (any, error) {
 	if app.DryRun && method != http.MethodGet && method != http.MethodHead {
 		return dryRunPlan(method, path, body), nil
@@ -494,7 +494,7 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 	return cmd
 }
 
-// --- Monitors extras: events/mute/test have no place in the uniform
+// --- Monitors extras: events/mute have no place in the uniform
 // list/get/create/update/delete shape, so they're hand-written and attached
 // alongside the generated monitors subcommands (see root.go).
 
@@ -567,29 +567,4 @@ func newMonitorMuteCmd() *cobra.Command {
 	cmd.Flags().Int64Var(&until, "until", -1, "mute until this epoch-millis timestamp (-1 = forever)")
 	cmd.Flags().BoolVar(&unmute, "unmute", false, "unmute the monitor instead")
 	return cmd
-}
-
-func newMonitorTestCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:     "test",
-		Short:   "Send test notifications for all monitors",
-		Example: "  bronto monitors test",
-		Args:    cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			app, err := NewApp(cmd)
-			if err != nil {
-				return err
-			}
-			payload, err := doJSONRequest(cmd.Context(), app, http.MethodPost, "/monitors/send-test-notifications", nil)
-			if err != nil {
-				return err
-			}
-			if isDryRunPlan(payload) {
-				_, _ = fmt.Fprintln(app.Stderr, "DRY RUN: would send test notifications for all monitors.")
-				return nil
-			}
-			_, _ = fmt.Fprintln(app.Stderr, "Sent test notifications.")
-			return nil
-		},
-	}
 }

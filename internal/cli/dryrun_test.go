@@ -77,16 +77,6 @@ func TestDryRunMuteAndTestMessages(t *testing.T) {
 	if !strings.Contains(stderr, "DRY RUN: would set mute_until=-1 on monitor m1.") {
 		t.Fatalf("mute stderr = %q", stderr)
 	}
-
-	_, stderr, err = runResource(t, func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("server must not be contacted under --dry-run")
-	}, "", "monitors", "test", "--dry-run")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(stderr, "DRY RUN: would send test notifications") {
-		t.Fatalf("test stderr = %q", stderr)
-	}
 }
 
 func TestDryRunExportsCreatePrintsPlanNotPoll(t *testing.T) {

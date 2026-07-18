@@ -74,10 +74,6 @@ var specLiveButUndocumented = map[string]bool{
 	"/dashboards":     true,
 	"/saved-searches": true,
 	"/parsers":        true,
-	// monitors test's endpoint also vanished from the published spec in
-	// the same 2026-07-17 reorg; untested live (it notifies every monitor
-	// in the account), kept until a live 404 says otherwise.
-	"/monitors/send-test-notifications": true,
 }
 
 // normalizeParams rewrites every {param} segment to a bare {} so patterns
