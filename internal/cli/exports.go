@@ -231,7 +231,7 @@ func downloadExport(ctx context.Context, app *App, location, path string) error 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return clierr.New("export_download_failed", fmt.Sprintf("download returned HTTP %d", resp.StatusCode))
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600) // #nosec G304 -- path is the user's own --download destination
 	if err != nil {
 		return err
 	}

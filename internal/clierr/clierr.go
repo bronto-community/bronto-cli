@@ -4,6 +4,7 @@ package clierr
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -52,18 +53,7 @@ func ExitCode(err error) int {
 }
 
 func asCLIError(err error, target **Error) bool {
-	for err != nil {
-		if ce, ok := err.(*Error); ok {
-			*target = ce
-			return true
-		}
-		u, ok := err.(interface{ Unwrap() error })
-		if !ok {
-			return false
-		}
-		err = u.Unwrap()
-	}
-	return false
+	return errors.As(err, target)
 }
 
 // Render writes err to w. machineMode selects the stable JSON envelope.

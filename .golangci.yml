@@ -2,6 +2,19 @@ version: "2"
 run:
   timeout: 5m
 linters:
+  # v2 defaults (errcheck, govet, ineffassign, staticcheck, unused) plus an
+  # explicit hardening/quality set. Keep this list intentional: adding a
+  # linter is a commitment to keeping it green.
+  enable:
+    - gosec
+    - errorlint
+    - gocritic
+    - misspell
+    - unconvert
+    - prealloc
+    - copyloopvar
+    - nilerr
+    - unparam
   exclusions:
     rules:
       - path: internal/api/gen\.go
@@ -10,3 +23,20 @@ linters:
           - staticcheck
           - unused
           - ineffassign
+          - gosec
+          - gocritic
+          - prealloc
+          - unconvert
+          - errorlint
+          - unparam
+      # Test helpers legitimately ignore some errors and use weaker patterns
+      # (fixed seeds, permissive file modes on t.TempDir paths).
+      - path: _test\.go
+        linters:
+          - gosec
+          - prealloc
+      # The integration harness execs the locally-built binary under test —
+      # G204's "tainted subprocess input" is the harness's entire job.
+      - path: ^integration/
+        linters:
+          - gosec

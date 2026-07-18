@@ -97,7 +97,7 @@ func newTailCmd() *cobra.Command {
 				resp, err := client.Search(cmd.Context(), req)
 				if err != nil {
 					if cmd.Context().Err() != nil {
-						return nil // cancelled mid-request: clean exit
+						return nil //nolint:nilerr // cancelled mid-request (SIGINT): clean exit by contract
 					}
 					return err
 				}
@@ -186,7 +186,7 @@ func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, 
 		if origin != "" {
 			h := fnv.New32a()
 			_, _ = h.Write([]byte(origin))
-			c := originColors[h.Sum32()%uint32(len(originColors))]
+			c := originColors[int(h.Sum32())%len(originColors)]
 			line += "\x1b[" + c + "m" + origin + "\x1b[0m "
 		}
 		return line + raw

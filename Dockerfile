@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26-alpine AS builder
 ARG VERSION=dev
 ARG COMMIT=none
 ARG DATE=unknown
@@ -15,6 +15,15 @@ RUN CGO_ENABLED=0 go build -trimpath \
 	-o /out/bronto ./cmd/bronto
 
 FROM scratch
+ARG VERSION=dev
+ARG COMMIT=none
+LABEL org.opencontainers.image.source="https://github.com/bronto-community/bronto-cli" \
+	org.opencontainers.image.description="Community CLI for the Bronto observability platform" \
+	org.opencontainers.image.licenses="MIT" \
+	org.opencontainers.image.version="${VERSION}" \
+	org.opencontainers.image.revision="${COMMIT}"
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /out/bronto /bronto
+# Distroless' conventional nonroot uid/gid; nothing in the image needs root.
+USER 65532:65532
 ENTRYPOINT ["/bronto"]

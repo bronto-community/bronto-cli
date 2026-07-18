@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
@@ -20,7 +21,8 @@ func TestAPICmdMissingPositionalArgIsUsageError(t *testing.T) {
 	if err == nil {
 		t.Fatal("want error for missing positional arg")
 	}
-	if _, ok := err.(*clierr.Error); !ok {
+	var ce *clierr.Error
+	if !errors.As(err, &ce) {
 		t.Fatalf("want *clierr.Error, got %T: %v", err, err)
 	}
 	if got := clierr.ExitCode(err); got != 2 {

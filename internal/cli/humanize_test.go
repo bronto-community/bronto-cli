@@ -79,7 +79,7 @@ func TestUsageSeriesRows(t *testing.T) {
 	}
 
 	// Two named queries -> metric column prepended.
-	multi := append(queries, map[string]any{
+	multi := append(append([]map[string]any{}, queries...), map[string]any{
 		"name":   "search_usage",
 		"key":    "events_total",
 		"series": []any{map[string]any{"@time": "bogus-format", "count": "1", "value": "2"}},

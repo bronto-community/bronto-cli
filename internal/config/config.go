@@ -128,14 +128,14 @@ func loadUserFile(dir string, getenv func(string) string) (*userFile, error) {
 	if dir == "" {
 		d, err := os.UserConfigDir()
 		if err != nil {
-			return nil, nil
+			return nil, nil //nolint:nilerr // no resolvable config dir simply means no user config layer
 		}
 		dir = d
 	}
 	path := filepath.Join(dir, "bronto", "config.toml")
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) // #nosec G304 -- fixed filename under the user's own config dir
 	if err != nil {
-		return nil, nil // absent is fine
+		return nil, nil //nolint:nilerr // absent user config file is fine
 	}
 	var uf userFile
 	if err := toml.Unmarshal(b, &uf); err != nil {
