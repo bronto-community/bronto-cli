@@ -1,0 +1,76 @@
+# Golden output-format contracts: the same canned search/datasets responses
+# rendered through every format. These files ARE the output contract —
+# a diff here means a breaking change for scripts and agents consuming
+# bronto output.
+
+exec bronto search x -d 11111111-1111-1111-1111-111111111111 --api-key k --base-url $STUB_URL --since 1h -o table
+cmp stdout search-table.golden
+
+exec bronto search x -d 11111111-1111-1111-1111-111111111111 --api-key k --base-url $STUB_URL --since 1h -o json
+cmp stdout search-json.golden
+
+exec bronto search x -d 11111111-1111-1111-1111-111111111111 --api-key k --base-url $STUB_URL --since 1h -o jsonl
+cmp stdout search-jsonl.golden
+
+exec bronto search x -d 11111111-1111-1111-1111-111111111111 --api-key k --base-url $STUB_URL --since 1h -o csv --fields @time,message_kvs.level
+cmp stdout search-csv.golden
+
+exec bronto search x -d 11111111-1111-1111-1111-111111111111 --api-key k --base-url $STUB_URL --since 1h -o raw
+cmp stdout search-raw.golden
+
+# --jq contract: one result per line, bracket form for dotted keys
+exec bronto search x -d 11111111-1111-1111-1111-111111111111 --api-key k --base-url $STUB_URL --since 1h -o jsonl --jq '.["message_kvs.level"]'
+cmp stdout search-jq.golden
+
+# datasets list: curated columns (last_activity excluded — wall-clock relative)
+exec bronto datasets list --api-key k --base-url $STUB_URL -o csv --fields collection,dataset,log_id
+cmp stdout datasets-csv.golden
+
+# dataset-name resolution works end to end (name -> log id via /logs)
+exec bronto search x -d web --api-key k --base-url $STUB_URL --since 1h -o jsonl
+cmp stdout search-jsonl.golden
+
+# machine error envelope: stable JSON on stderr, nothing on stdout
+! exec bronto search x -d nope --api-key k --base-url $STUB_URL --since 1h -o json
+! stdout .
+cmp stderr error-envelope.golden
+-- search-table.golden --
+@TIME                        @STATUS  @RAW                        MESSAGE_KVS.LEVEL  MESSAGE_KVS.STATUS
+2026-01-02 03:04:05.000 UTC  info     {"level":"info","msg":"a"}  info               200
+2026-01-02 03:04:06.000 UTC  warn     {"level":"warn","msg":"b"}  warn               500
+-- search-json.golden --
+[
+  {
+    "@raw": "{\"level\":\"info\",\"msg\":\"a\"}",
+    "@status": "info",
+    "@time": "2026-01-02 03:04:05.000 UTC",
+    "message_kvs.level": "info",
+    "message_kvs.status": 200
+  },
+  {
+    "@raw": "{\"level\":\"warn\",\"msg\":\"b\"}",
+    "@status": "warn",
+    "@time": "2026-01-02 03:04:06.000 UTC",
+    "message_kvs.level": "warn",
+    "message_kvs.status": 500
+  }
+]
+-- search-jsonl.golden --
+{"@raw":"{\"level\":\"info\",\"msg\":\"a\"}","@status":"info","@time":"2026-01-02 03:04:05.000 UTC","message_kvs.level":"info","message_kvs.status":200}
+{"@raw":"{\"level\":\"warn\",\"msg\":\"b\"}","@status":"warn","@time":"2026-01-02 03:04:06.000 UTC","message_kvs.level":"warn","message_kvs.status":500}
+-- search-csv.golden --
+@time,message_kvs.level
+2026-01-02 03:04:05.000 UTC,info
+2026-01-02 03:04:06.000 UTC,warn
+-- search-raw.golden --
+{"level":"info","msg":"a"}
+{"level":"warn","msg":"b"}
+-- search-jq.golden --
+"info"
+"warn"
+-- datasets-csv.golden --
+collection,dataset,log_id
+prod,web,11111111-1111-1111-1111-111111111111
+prod,app,22222222-2222-2222-2222-222222222222
+-- error-envelope.golden --
+{"error":{"code":"dataset_not_found","message":"no dataset named \"nope\"","retryable":false}}

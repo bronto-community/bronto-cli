@@ -56,6 +56,12 @@ func newFieldsCmd() *cobra.Command {
 				return err
 			}
 			rows := normalizeTopKeys(payload)
+			// The live /top-keys endpoint ignores its limit param (observed
+			// 2026-07-18: -n 3 returned 9 keys), so enforce -n here after
+			// the deterministic sort.
+			if limit > 0 && len(rows) > limit {
+				rows = rows[:limit]
+			}
 			p, err := app.Printer(false)
 			if err != nil {
 				return err

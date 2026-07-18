@@ -41,6 +41,11 @@ func NewRootCmd() *cobra.Command {
 	pf.String("jq", "", "jq expression applied to json/jsonl output (each result prints on its own line); "+
 		"values that fail the expression are skipped")
 	pf.StringSlice("fields", nil, "select specific fields (comma-separated); use '?' to list available field names")
+	pf.Int("timeout", 0, "HTTP timeout in seconds (config: timeout, env: BRONTO_TIMEOUT)")
+	pf.Int("max-retries", 2, "retries for idempotent requests on 429/5xx (config: max_retries, env: BRONTO_MAX_RETRIES)")
+	pf.Bool("debug", false, "trace API requests/responses on stderr (API key redacted)")
+	pf.Bool("dry-run", false, "print mutating API calls instead of executing them (reads still run)")
+	cmd.AddCommand(newVersionCmd())
 	cmd.AddCommand(newConfigCmd())
 	cmd.AddCommand(newAuthCmd())
 	cmd.AddCommand(newLoginAliasCmd())
@@ -58,7 +63,7 @@ func NewRootCmd() *cobra.Command {
 	for _, d := range resourceRegistry {
 		switch d.Name {
 		case "monitors":
-			cmd.AddCommand(newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd(), newMonitorTestCmd()))
+			cmd.AddCommand(newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd()))
 		case "exports":
 			cmd.AddCommand(newResourceCmd(d, newExportsCreateCmd()))
 		default:

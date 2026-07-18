@@ -104,6 +104,7 @@ bronto auth status
 bronto config list
 bronto plugins list
 bronto ping
+bronto version
 ```
 
 Anything without a dedicated command is reachable via the escape hatch: `bronto api GET /monitors -f limit=10` or `bronto api POST /search --input query.json`.
@@ -118,6 +119,9 @@ bronto datasets list --fields log,log_id
 bronto datasets list --fields '?'          # list available field names instead of data
 ```
 
+- `--dry-run` prints any mutating API call as a plan document (`{"dry_run":true,"method":"POST","path":"/monitors","body":{…}}`) instead of executing it — reads still run, so dataset-name resolution keeps working. Destructive commands skip their confirmation prompt (nothing destructive can happen).
+- `--debug` traces every API request/response on stderr (method, URL, status, latency, truncated bodies — the API key never appears).
+- `--timeout <seconds>` and `--max-retries <n>` tune the HTTP client per invocation (also config keys / `BRONTO_TIMEOUT`, `BRONTO_MAX_RETRIES`).
 - `--jq '<expr>'` runs a [gojq](https://github.com/itchyny/gojq) expression over json/jsonl output, one result per line. Unlike the `jq` CLI, a value that errors or halts on the expression is silently **skipped** — every other row still prints.
 - `--fields a,b,c` narrows table/json/jsonl/csv output to those columns/keys.
 - Errors go to stderr; in machine mode (non-TTY stderr) they're a stable JSON envelope: `{"error":{"code":"...","message":"...","retryable":true|false}}`.

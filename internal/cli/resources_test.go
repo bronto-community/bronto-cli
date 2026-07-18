@@ -301,7 +301,7 @@ func TestAPIKeysListAutoColumns(t *testing.T) {
 	}
 }
 
-func TestMonitorsEventsMuteTest(t *testing.T) {
+func TestMonitorsEventsMute(t *testing.T) {
 	out, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet || r.URL.Path != "/monitors/m1/events" {
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
@@ -351,18 +351,5 @@ func TestMonitorsEventsMuteTest(t *testing.T) {
 	}
 	if !strings.Contains(stderr, "Unmuted monitor m1") {
 		t.Fatalf("stderr missing unmute confirmation: %q", stderr)
-	}
-
-	_, stderr, err = runResource(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/monitors/send-test-notifications" || r.Method != http.MethodPost {
-			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
-		}
-		w.WriteHeader(http.StatusOK)
-	}, "", "monitors", "test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if stderr == "" {
-		t.Fatal("expected a confirmation message on stderr")
 	}
 }
