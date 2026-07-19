@@ -115,3 +115,21 @@ func TestRenderHumanIncludesHintAndDocs(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderMachineEnvelopeIncludesHint(t *testing.T) {
+	var buf strings.Builder
+	Render(&buf, New("auth_invalid_key", "bad key").WithHint("Run 'bronto auth login'."), true)
+	var env map[string]map[string]any
+	if err := json.Unmarshal([]byte(buf.String()), &env); err != nil {
+		t.Fatal(err)
+	}
+	if env["error"]["hint"] != "Run 'bronto auth login'." {
+		t.Fatalf("envelope = %v", env)
+	}
+
+	buf.Reset()
+	Render(&buf, New("x", "plain message"), true)
+	if strings.Contains(buf.String(), `"hint"`) {
+		t.Fatalf("hintless error must omit the field: %s", buf.String())
+	}
+}

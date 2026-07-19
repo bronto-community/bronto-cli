@@ -127,9 +127,16 @@ func ErrorFromStatus(status int, body []byte) *clierr.Error {
 	msg := fmt.Sprintf("Bronto API returned %d", status)
 	var apiMsg struct {
 		Message string `json:"message"`
+		Details string `json:"details"`
 	}
-	if json.Unmarshal(body, &apiMsg) == nil && apiMsg.Message != "" {
-		msg = fmt.Sprintf("Bronto API returned %d: %s", status, apiMsg.Message)
+	if err := json.Unmarshal(body, &apiMsg); err == nil && (apiMsg.Message != "" || apiMsg.Details != "") {
+		// Live Bronto errors carry "details"; some shapes use "message".
+		// Either beats echoing the whole upstream JSON blob at the user.
+		detail := apiMsg.Message
+		if detail == "" {
+			detail = apiMsg.Details
+		}
+		msg = fmt.Sprintf("Bronto API returned %d: %s", status, detail)
 	} else if trimmed := strings.TrimSpace(string(body)); trimmed != "" {
 		// No recognizable message field: surface a snippet of the raw body —
 		// validation errors often arrive in other shapes, and hiding them
@@ -142,7 +149,7 @@ func ErrorFromStatus(status int, body []byte) *clierr.Error {
 	switch {
 	case status == http.StatusUnauthorized:
 		return clierr.New("auth_invalid_key", msg).
-			WithHint("Check BRONTO_API_KEY or run 'bronto auth status'.")
+			WithHint("Run 'bronto auth login' to store a valid management key, or set BRONTO_API_KEY. 'bronto auth status' shows what is configured.")
 	case status == http.StatusForbidden:
 		return clierr.New("auth_insufficient_role", msg).
 			WithHint("You are likely using an ingestion key. This CLI needs a management key (Settings → API Keys in the Bronto UI).").

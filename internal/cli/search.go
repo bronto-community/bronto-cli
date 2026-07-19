@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/output"
 	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
@@ -54,6 +55,11 @@ func newSearchCmd() *cobra.Command {
 			ids, expr, err := resolveDataset(cmd.Context(), app, datasets, fromExpr)
 			if err != nil {
 				return err
+			}
+			if limit < 1 || limit > 10000 {
+				return clierr.New("usage_invalid_limit",
+					fmt.Sprintf("limit must be between 1 and 10000, got %d", limit)).
+					WithHint("The API caps event queries at 10000 results; use pagination or narrower time ranges for more.")
 			}
 			spec, err := timerange.Resolve(since, from, to, nil)
 			if err != nil {

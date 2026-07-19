@@ -4,6 +4,7 @@ package cli
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -25,6 +26,7 @@ func NewRootCmd() *cobra.Command {
 		Run:           func(cmd *cobra.Command, _ []string) { _ = cmd.Help() },
 	}
 	cmd.SetVersionTemplate("{{.Version}}\n")
+	cmd.SuggestionsMinimumDistance = 2
 	cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
 		return clierr.New("usage_invalid_flag", err.Error()).
 			WithHint("Run 'bronto --help' for usage.")
@@ -119,8 +121,16 @@ func wrapArgsValidators(cmd *cobra.Command) {
 			if errors.As(err, &ce) {
 				return err
 			}
-			return clierr.New("usage_invalid_args", err.Error()).
-				WithHint("Run '" + c.CommandPath() + " --help' for usage.")
+			hint := "Run '" + c.CommandPath() + " --help' for usage."
+			// "unknown command" deserves a did-you-mean: cobra computes
+			// suggestions but its plumbing never fires through custom Args
+			// validators, so surface them in the hint ourselves.
+			if len(args) > 0 && strings.Contains(err.Error(), "unknown command") {
+				if suggestions := c.SuggestionsFor(args[0]); len(suggestions) > 0 {
+					hint = fmt.Sprintf("Did you mean %q? %s", suggestions[0], hint)
+				}
+			}
+			return clierr.New("usage_invalid_args", err.Error()).WithHint(hint)
 		}
 	}
 	for _, sub := range cmd.Commands() {

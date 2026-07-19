@@ -283,6 +283,7 @@ func TestErrorFromStatusMessageExtraction(t *testing.T) {
 		want string
 	}{
 		{"message field wins", `{"message":"bad filter"}`, "Bronto API returned 400: bad filter"},
+		{"details field extracted", `{"code":400,"type":"Bad Request","correlation_id":"abc","details":"provided object should contain property queries"}`, "Bronto API returned 400: provided object should contain property queries"},
 		{"other JSON shapes surface raw", `{"errors":[{"field":"window"}]}`, `Bronto API returned 400: {"errors":[{"field":"window"}]}`},
 		{"plain text surfaces raw", "Bad Request", "Bronto API returned 400: Bad Request"},
 		{"whitespace-only body omitted", "  \n", "Bronto API returned 400"},

@@ -3,6 +3,8 @@ package cli
 import (
 	"testing"
 	"time"
+
+	"github.com/bronto-community/bronto-cli/internal/output"
 )
 
 func TestTimeAgo(t *testing.T) {
@@ -45,8 +47,12 @@ func TestHumanBytes(t *testing.T) {
 	}
 }
 
+func datasetListRows2(rows []map[string]any) []map[string]any {
+	return datasetListRows(rows, output.FormatTable)
+}
+
 func TestDatasetListRowsDerivesLastActivity(t *testing.T) {
-	rows := datasetListRows([]map[string]any{
+	rows := datasetListRows2([]map[string]any{
 		{"dataset": "a", "metadata": map[string]any{"last_heartbeat_at": float64(time.Now().Add(-2 * time.Hour).UnixMilli())}},
 		{"dataset": "b"}, // no metadata: no derived column, no panic
 	})
@@ -108,5 +114,15 @@ func TestFieldsColumnsAdaptive(t *testing.T) {
 	cols = fieldsColumns([]map[string]any{{"key": "a", "count": 0.0}})
 	if len(cols) != 2 || cols[1] != "count" {
 		t.Fatalf("cols = %v", cols)
+	}
+}
+
+func TestDatasetListRowsCSVUsesAbsoluteTime(t *testing.T) {
+	ms := float64(time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC).UnixMilli())
+	rows := datasetListRows([]map[string]any{
+		{"dataset": "a", "metadata": map[string]any{"last_heartbeat_at": ms}},
+	}, output.FormatCSV)
+	if got, _ := rows[0]["last_activity"].(string); got != "2026-07-01T12:00:00Z" {
+		t.Errorf("csv last_activity = %q, want RFC3339", got)
 	}
 }

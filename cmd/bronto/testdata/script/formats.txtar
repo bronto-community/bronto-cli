@@ -90,4 +90,4 @@ collection,dataset,log_id
 prod,web,11111111-1111-1111-1111-111111111111
 prod,app,22222222-2222-2222-2222-222222222222
 -- error-envelope.golden --
-{"error":{"code":"dataset_not_found","message":"no dataset named \"nope\"","retryable":false}}
+{"error":{"code":"dataset_not_found","hint":"This account has: app, web. Run 'bronto datasets list' for details.","message":"no dataset named \"nope\"","retryable":false}}

@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/bronto-community/bronto-cli/internal/output"
 )
 
 // timeAgo renders an epoch-milliseconds timestamp as a coarse relative age
@@ -49,13 +51,19 @@ func humanBytes(b float64) string {
 }
 
 // datasetListRows derives the human columns for `bronto datasets list`:
-// last_activity from metadata.last_heartbeat_at (epoch ms).
-func datasetListRows(rows []map[string]any) []map[string]any {
+// last_activity from metadata.last_heartbeat_at (epoch ms) — relative
+// ("6h ago") in the table, absolute RFC3339 in csv (relative timestamps
+// in a machine-consumed format defeat the point of csv).
+func datasetListRows(rows []map[string]any, format output.Format) []map[string]any {
 	now := time.Now()
 	for _, row := range rows {
 		meta, _ := row["metadata"].(map[string]any)
 		if hb, ok := numericValue(meta["last_heartbeat_at"]); ok && hb > 0 {
-			row["last_activity"] = timeAgo(hb, now)
+			if format == output.FormatCSV {
+				row["last_activity"] = time.UnixMilli(int64(hb)).UTC().Format(time.RFC3339)
+			} else {
+				row["last_activity"] = timeAgo(hb, now)
+			}
 		}
 	}
 	return rows
@@ -82,7 +90,7 @@ func numericValue(v any) (float64, bool) {
 // collectionListRows expands /collections rows — maps of collection name
 // to dataset arrays — into one row per collection with a dataset count
 // and joined names, which is what a human scanning the table wants.
-func collectionListRows(rows []map[string]any) []map[string]any {
+func collectionListRows(rows []map[string]any, _ output.Format) []map[string]any {
 	var out []map[string]any
 	for _, row := range rows {
 		names := make([]string, 0, len(row))

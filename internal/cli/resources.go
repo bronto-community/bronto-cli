@@ -40,8 +40,10 @@ type resourceDesc struct {
 
 	// ListTransform, if set, enriches list rows for the human formats
 	// (table/csv) only — e.g. deriving a readable last_activity column.
-	// json/jsonl keep the API payload untouched.
-	ListTransform func(rows []map[string]any) []map[string]any
+	// json/jsonl keep the API payload untouched. The format lets a
+	// transform render human-relative values for table but absolute
+	// machine-friendly ones for csv.
+	ListTransform func(rows []map[string]any, format output.Format) []map[string]any
 
 	NoCreate bool
 	NoUpdate bool
@@ -390,7 +392,7 @@ func newResourceListCmd(desc resourceDesc) *cobra.Command {
 				return err
 			}
 			if desc.ListTransform != nil && (format == output.FormatTable || format == output.FormatCSV) {
-				rows = desc.ListTransform(rows)
+				rows = desc.ListTransform(rows, format)
 			}
 			p, err := app.PrinterFor(format)
 			if err != nil {
