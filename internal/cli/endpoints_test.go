@@ -18,11 +18,14 @@ func TestEndpointInventoryShape(t *testing.T) {
 		byPattern[e.Pattern] = e.Command
 	}
 
-	// Registry expansion: every resource contributes its Base and a per-ID
-	// pattern.
+	// Registry expansion: every resource contributes its Base, and a per-ID
+	// pattern unless it is list-only.
 	for _, d := range resourceRegistry {
 		if byPattern[d.Base] == "" {
 			t.Errorf("registry Base %q missing from inventory", d.Base)
+		}
+		if d.NoGet && d.NoUpdate && d.NoDelete {
+			continue
 		}
 		if byPattern[d.idBase()+"/{*}"] == "" {
 			t.Errorf("registry per-ID pattern %q missing from inventory", d.idBase()+"/{*}")

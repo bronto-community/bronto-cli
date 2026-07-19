@@ -353,3 +353,78 @@ func TestMonitorsEventsMute(t *testing.T) {
 		t.Fatalf("stderr missing unmute confirmation: %q", stderr)
 	}
 }
+
+func TestUserActionCommands(t *testing.T) {
+	for _, action := range []string{"deactivate", "reactivate", "resend-invite"} {
+		var gotMethod, gotPath string
+		_, stderr, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+			gotMethod, gotPath = r.Method, r.URL.Path
+			w.WriteHeader(http.StatusOK)
+		}, "", "users", action, "u1")
+		if err != nil {
+			t.Fatalf("%s: %v", action, err)
+		}
+		if gotMethod != http.MethodPost || gotPath != "/users/u1/"+action {
+			t.Fatalf("%s: %s %s", action, gotMethod, gotPath)
+		}
+		if !strings.Contains(stderr, "u1") {
+			t.Fatalf("%s stderr = %q", action, stderr)
+		}
+	}
+
+	// dry-run: no contact, honest message
+	_, stderr, err := runResource(t, func(_ http.ResponseWriter, _ *http.Request) {
+		t.Fatal("server must not be contacted under --dry-run")
+	}, "", "users", "deactivate", "u1", "--dry-run")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stderr, "DRY RUN: would deactivate user u1.") {
+		t.Fatalf("dry-run stderr = %q", stderr)
+	}
+}
+
+func TestGroupMembersCommand(t *testing.T) {
+	out, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/groups/g1/members" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"members":[{"id":"u1","email":"a@b.c"}]}`))
+	}, "", "groups", "members", "g1", "-o", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal([]byte(out), &rows); err != nil || len(rows) != 1 || rows[0]["id"] != "u1" {
+		t.Fatalf("members out = %q err=%v", out, err)
+	}
+}
+
+// TestExpansionResourcesRouteCorrectly spot-checks the new registry rows'
+// generated verbs against their spec paths (nested attach + PUT vs PATCH).
+func TestExpansionResourcesRouteCorrectly(t *testing.T) {
+	var gotMethod, gotPath string
+	record := func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		_, _ = w.Write([]byte(`{}`))
+	}
+	cases := []struct {
+		args                 []string
+		wantMethod, wantPath string
+	}{
+		{[]string{"monitors", "templates", "list"}, http.MethodGet, "/monitors/templates"},
+		{[]string{"monitors", "downtimes", "update", "d1", "-f", "name=x"}, http.MethodPut, "/monitors/downtimes/d1"},
+		{[]string{"limits", "update", "l1", "-f", "name=x"}, http.MethodPatch, "/limits/l1"},
+		{[]string{"webhooks", "create", "-f", "name=x", "-f", "url=https://example.com/h"}, http.MethodPost, "/integrations/webhooks"},
+		{[]string{"slack", "list"}, http.MethodGet, "/integrations/slack"},
+		{[]string{"log-views", "list"}, http.MethodGet, "/logs/views"},
+	}
+	for _, c := range cases {
+		if _, _, err := runResource(t, record, "", c.args...); err != nil {
+			t.Fatalf("%v: %v", c.args, err)
+		}
+		if gotMethod != c.wantMethod || gotPath != c.wantPath {
+			t.Fatalf("%v -> %s %s, want %s %s", c.args, gotMethod, gotPath, c.wantMethod, c.wantPath)
+		}
+	}
+}

@@ -60,15 +60,39 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newUsageCmd())
 	cmd.AddCommand(newPluginsCmd())
 
+	topLevel := map[string]*cobra.Command{}
 	for _, d := range resourceRegistry {
+		if d.AttachTo != "" {
+			continue // nested resources attach after their parent exists
+		}
+		var rc *cobra.Command
 		switch d.Name {
 		case "monitors":
-			cmd.AddCommand(newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd()))
+			rc = newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd())
 		case "exports":
-			cmd.AddCommand(newResourceCmd(d, newExportsCreateCmd()))
+			rc = newResourceCmd(d, newExportsCreateCmd())
+		case "users":
+			rc = newResourceCmd(d,
+				newUserActionCmd("deactivate", "Deactivate a user"),
+				newUserActionCmd("reactivate", "Reactivate a deactivated user"),
+				newUserActionCmd("resend-invite", "Resend a pending user's invitation"))
+		case "groups":
+			rc = newResourceCmd(d, newGroupMembersCmd())
 		default:
-			cmd.AddCommand(newResourceCmd(d))
+			rc = newResourceCmd(d)
 		}
+		topLevel[d.Name] = rc
+		cmd.AddCommand(rc)
+	}
+	for _, d := range resourceRegistry {
+		if d.AttachTo == "" {
+			continue
+		}
+		parent, ok := topLevel[d.AttachTo]
+		if !ok {
+			panic("resource " + d.Name + " attaches to unknown command " + d.AttachTo)
+		}
+		parent.AddCommand(newResourceCmd(d))
 	}
 
 	wrapArgsValidators(cmd)

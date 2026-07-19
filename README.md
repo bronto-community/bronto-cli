@@ -84,9 +84,13 @@ bronto parsers update <id> -f name=new-name
 bronto api-keys delete <id> --yes
 bronto exports create -d <dataset> --since 1h --where "status=500" --wait
 bronto usage --since 7d
+bronto users list
+bronto groups create -f name=oncall
+bronto monitors templates list
+bronto webhooks create -f name=alerts -f url=https://example.com/hook
 ```
 
-Every resource (`datasets`, `monitors`, `dashboards`, `parsers`, `exports`, `api-keys`, `saved-searches`) shares the same `list | get <id> | create | update <id> | delete <id>` pattern; `create`/`update` take repeated `-f key=value` or `--input file.json`/`--input -`, and `delete` prompts for confirmation unless `--yes` is passed.
+Every resource (`datasets`, `monitors` — incl. `monitors templates` and `monitors downtimes` — `dashboards`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, plus read-only `collections` and `log-views`) shares the same `list | get <id> | create | update <id> | delete <id>` pattern (list-only where the API documents no other verbs); `create`/`update` take repeated `-f key=value` or `--input file.json`/`--input -`, and `delete` prompts for confirmation unless `--yes` is passed.
 
 **Pipe** — send data in:
 
