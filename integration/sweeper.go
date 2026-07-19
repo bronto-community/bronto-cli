@@ -26,7 +26,9 @@ import (
 // per-run "bronto-ci-*"-named parser this harness ever creates), not a
 // throwaway resource this suite leaves behind, so there's nothing for the
 // sweeper to find or clean up.
-var ciResourceKinds = []string{"monitors", "dashboards", "saved-searches", "api-keys", "datasets"}
+// groups and webhooks joined with the wave-3 resource expansion — their
+// CRUD tests mint bronto-ci-* names like every other kind.
+var ciResourceKinds = []string{"monitors", "dashboards", "saved-searches", "api-keys", "datasets", "groups", "webhooks"}
 
 // resourceIDKey maps each swept resource kind to the JSON key its API uses
 // for the resource's identifier. These differ across kinds (api/openapi.yaml):
@@ -35,6 +37,8 @@ var ciResourceKinds = []string{"monitors", "dashboards", "saved-searches", "api-
 // GET /logs) respond with Log objects keyed by "log_id".
 var resourceIDKey = map[string]string{
 	"monitors":       "id",
+	"groups":         "id",
+	"webhooks":       "id",
 	"dashboards":     "dashboard_id",
 	"saved-searches": "saved_search_id",
 	"api-keys":       "id",

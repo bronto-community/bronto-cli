@@ -143,6 +143,9 @@ func TestResourceRegistryMatchesSpec(t *testing.T) {
 		if cp := d.createPath(); !specCreatePathExceptions[cp] && !specLiveButUndocumented[cp] && !paths[cp] {
 			t.Errorf("%s: CreatePath %q not found in api/openapi.yaml", d.Name, cp)
 		}
+		if d.NoGet && d.NoUpdate && d.NoDelete {
+			continue // list-only resource: no per-ID path to conform to
+		}
 		if idb := d.idBase(); !specIDBaseExceptions[idb] && !specLiveButUndocumented[idb] && !pathPrefixExists(paths, idb+"/{") {
 			t.Errorf("%s: IDBase %q has no matching '.../{...}' path in api/openapi.yaml", d.Name, idb)
 		}

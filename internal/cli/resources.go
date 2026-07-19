@@ -47,6 +47,19 @@ type resourceDesc struct {
 	NoUpdate bool
 	NoDelete bool
 	NoGet    bool
+
+	// AttachTo nests this resource's command under a parent command name
+	// instead of the root (e.g. templates/downtimes under monitors).
+	AttachTo string
+}
+
+// display is the human command path used in examples: "monitors templates"
+// for attached resources, plain Name otherwise.
+func (d resourceDesc) display() string {
+	if d.AttachTo != "" {
+		return d.AttachTo + " " + d.Name
+	}
+	return d.Name
 }
 
 func (d resourceDesc) idBase() string {
@@ -96,6 +109,26 @@ var resourceRegistry = []resourceDesc{
 		// view and derive LAST_ACTIVITY from metadata.last_heartbeat_at.
 		Columns:       []string{"collection", "dataset", "last_activity", "log_id"},
 		ListTransform: datasetListRows},
+	// Read-only catalogs: list is the only verb the API documents.
+	{Name: "collections", Base: "/collections", Singular: "collection",
+		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true},
+	{Name: "log-views", Base: "/logs/views", Singular: "log view",
+		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true},
+	{Name: "limits", Base: "/limits", Singular: "limit"},
+	{Name: "encryption-keys", Base: "/encryption-keys", Singular: "encryption key"},
+	// No per-ID GET documented for these three; update is full-body PUT.
+	{Name: "forward-configs", Base: "/forward-configs", Singular: "forward config",
+		UpdateMethod: http.MethodPut, NoGet: true},
+	{Name: "webhooks", Base: "/integrations/webhooks", Singular: "webhook",
+		UpdateMethod: http.MethodPut, NoGet: true},
+	{Name: "slack", Base: "/integrations/slack", Singular: "Slack integration",
+		UpdateMethod: http.MethodPut, NoGet: true},
+	{Name: "templates", AttachTo: "monitors", Base: "/monitors/templates",
+		Singular: "monitor template", UpdateMethod: http.MethodPut},
+	{Name: "downtimes", AttachTo: "monitors", Base: "/monitors/downtimes",
+		Singular: "downtime", UpdateMethod: http.MethodPut, NoGet: true},
+	{Name: "users", Base: "/users", Singular: "user"},
+	{Name: "groups", Base: "/groups", Singular: "group"},
 	// exports has no update verb; its create is hand-written (exports.go) to
 	// support the convenience flags / --wait / --download workflow and
 	// replaces the generic factory create (see newResourceCmd's extras
@@ -336,7 +369,7 @@ func newResourceListCmd(desc resourceDesc) *cobra.Command {
 	return &cobra.Command{
 		Use:     "list",
 		Short:   fmt.Sprintf("List %s", desc.Name),
-		Example: fmt.Sprintf("  bronto %s list", desc.Name),
+		Example: fmt.Sprintf("  bronto %s list", desc.display()),
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			app, err := NewApp(cmd)
@@ -368,7 +401,7 @@ func newResourceGetCmd(desc resourceDesc) *cobra.Command {
 	return &cobra.Command{
 		Use:     "get <id>",
 		Short:   fmt.Sprintf("Get a %s by ID", desc.singular()),
-		Example: fmt.Sprintf("  bronto %s get <id>", desc.Name),
+		Example: fmt.Sprintf("  bronto %s get <id>", desc.display()),
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
@@ -394,8 +427,8 @@ func newResourceCreateCmd(desc resourceDesc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: fmt.Sprintf("Create a %s", desc.singular()),
-		Example: "  bronto " + desc.Name + " create -f name=x -f limit=10\n" +
-			"  bronto " + desc.Name + " create --input body.json",
+		Example: "  bronto " + desc.display() + " create -f name=x -f limit=10\n" +
+			"  bronto " + desc.display() + " create --input body.json",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			body, err := resourceRequestBody(cmd, input, fields)
@@ -461,7 +494,7 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "delete <id>",
 		Short:   fmt.Sprintf("Delete a %s", desc.singular()),
-		Example: fmt.Sprintf("  bronto %s delete <id> --yes", desc.Name),
+		Example: fmt.Sprintf("  bronto %s delete <id> --yes", desc.display()),
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
@@ -567,4 +600,59 @@ func newMonitorMuteCmd() *cobra.Command {
 	cmd.Flags().Int64Var(&until, "until", -1, "mute until this epoch-millis timestamp (-1 = forever)")
 	cmd.Flags().BoolVar(&unmute, "unmute", false, "unmute the monitor instead")
 	return cmd
+}
+
+// newUserActionCmd builds one of the users verb-actions (deactivate,
+// reactivate, resend-invite): POST /users/{id}/<action> with no body.
+func newUserActionCmd(action, short string) *cobra.Command {
+	return &cobra.Command{
+		Use:     action + " <id>",
+		Short:   short,
+		Example: "  bronto users " + action + " <id>",
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			app, err := NewApp(cmd)
+			if err != nil {
+				return err
+			}
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodPost,
+				"/users/"+url.PathEscape(args[0])+"/"+action, nil)
+			if err != nil {
+				return err
+			}
+			if isDryRunPlan(payload) {
+				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would %s user %s.\n", action, args[0])
+				return nil
+			}
+			_, _ = fmt.Fprintf(app.Stderr, "%s: user %s.\n", short, args[0])
+			return nil
+		},
+	}
+}
+
+// newGroupMembersCmd lists a group's members (GET /groups/{id}/members).
+func newGroupMembersCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "members <id>",
+		Short:   "List the members of a group",
+		Example: "  bronto groups members <id>",
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			app, err := NewApp(cmd)
+			if err != nil {
+				return err
+			}
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet,
+				"/groups/"+url.PathEscape(args[0])+"/members", nil)
+			if err != nil {
+				return err
+			}
+			rows := rowsFromPayload(payload)
+			p, err := app.Printer(false)
+			if err != nil {
+				return err
+			}
+			return p.PrintRows(bronto.EventColumns(rows, 8), rows)
+		},
+	}
 }
