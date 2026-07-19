@@ -55,11 +55,27 @@ func TestGroupsCRUD(t *testing.T) {
 	}
 	t.Cleanup(func() { bestEffortDelete(r, "groups", id) })
 
-	assertListContainsName(t, r, "groups", name)
+	// Group reads lag creation on the live API (observed in CI: both the
+	// list and the per-ID get can miss a group ~2s after create; the same
+	// sequence succeeds seconds later), so poll every post-create read
+	// instead of asserting once.
+	PollUntil(t, 30*time.Second, 2*time.Second, func() (bool, error) {
+		res, err := r.Run(t.Context(), "", "groups", "list", "-o", "json")
+		if err != nil {
+			return false, err
+		}
+		var rows []map[string]any
+		if err := json.Unmarshal([]byte(res.Stdout), &rows); err != nil {
+			return false, fmt.Errorf("groups list did not parse: %w\noutput: %s", err, res.Stdout)
+		}
+		for _, row := range rows {
+			if n, _ := row["name"].(string); n == name {
+				return true, nil
+			}
+		}
+		return false, fmt.Errorf("groups list does not contain %q yet", name)
+	})
 
-	// The per-ID read lags creation on the live API (observed in CI: list
-	// showed the group while get still 404ed ~2s after create), so poll
-	// the get instead of asserting once.
 	PollUntil(t, 30*time.Second, 2*time.Second, func() (bool, error) {
 		res, err := r.Run(t.Context(), "", "groups", "get", id, "-o", "json")
 		if err != nil {
