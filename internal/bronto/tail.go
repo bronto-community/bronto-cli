@@ -1,6 +1,7 @@
 package bronto
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -61,11 +62,19 @@ func (d *Dedup) Admit(key string) bool {
 	return true
 }
 
-// SortEvents orders a poll batch by @time, with numeric @sequence as the
-// tiebreaker (0 when absent). A single lexicographic key keeps the
-// ordering total even when only some events carry a sequence.
+// SortEvents orders a poll batch chronologically by @time, with numeric
+// @sequence as the tiebreaker (0 when absent). @time compares numerically
+// when both values are numbers (epoch timestamps: "9" < "10" must hold —
+// lexicographic comparison would invert it) and as strings otherwise
+// (the API's fixed-width "2026-01-02 03:04:05.000 UTC" form sorts
+// correctly either way).
 func SortEvents(evs []map[string]any) {
 	sort.SliceStable(evs, func(i, j int) bool {
+		if ni, iok := numeric(evs[i]["@time"]); iok {
+			if nj, jok := numeric(evs[j]["@time"]); jok && ni != nj {
+				return ni < nj
+			}
+		}
 		ti, tj := fmt.Sprint(evs[i]["@time"]), fmt.Sprint(evs[j]["@time"])
 		if ti != tj {
 			return ti < tj
@@ -80,6 +89,10 @@ func numeric(v any) (float64, bool) {
 	switch n := v.(type) {
 	case float64:
 		return n, true
+	case json.Number:
+		if f, err := n.Float64(); err == nil {
+			return f, true
+		}
 	case int64:
 		return float64(n), true
 	case int:

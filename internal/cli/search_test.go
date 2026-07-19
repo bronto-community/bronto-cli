@@ -202,3 +202,26 @@ func TestSearchLimitValidatedClientSide(t *testing.T) {
 		}
 	}
 }
+
+func TestEventTableColumnsExcludePlumbing(t *testing.T) {
+	rows := []map[string]any{{
+		"@time": "t", "@status": "info", "@raw": "r",
+		"links": []any{"x"}, "metadata.sequence": 1, "metadata.context": "c",
+		"message_kvs.level": "info",
+	}}
+	cols := eventTableColumns(rows)
+	for _, c := range cols {
+		if c == "links" || strings.HasPrefix(c, "metadata.") {
+			t.Fatalf("plumbing column %q leaked into the table: %v", c, cols)
+		}
+	}
+	found := false
+	for _, c := range cols {
+		if c == "message_kvs.level" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("real field missing from table columns: %v", cols)
+	}
+}

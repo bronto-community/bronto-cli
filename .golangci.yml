@@ -17,18 +17,6 @@ linters:
     - unparam
   exclusions:
     rules:
-      - path: internal/api/gen\.go
-        linters:
-          - errcheck
-          - staticcheck
-          - unused
-          - ineffassign
-          - gosec
-          - gocritic
-          - prealloc
-          - unconvert
-          - errorlint
-          - unparam
       # Test helpers legitimately ignore some errors and use weaker patterns
       # (fixed seeds, permissive file modes on t.TempDir paths).
       - path: _test\.go

@@ -126,3 +126,28 @@ func TestDatasetListRowsCSVUsesAbsoluteTime(t *testing.T) {
 		t.Errorf("csv last_activity = %q, want RFC3339", got)
 	}
 }
+
+func TestCollectionListRows(t *testing.T) {
+	rows := collectionListRows([]map[string]any{{
+		"prod": []any{
+			map[string]any{"dataset": "web", "id": "1"},
+			map[string]any{"dataset": "api", "id": "2"},
+		},
+		".traces": []any{map[string]any{"dataset": "spans", "id": "3"}},
+	}}, output.FormatTable)
+	if len(rows) != 2 {
+		t.Fatalf("rows = %v", rows)
+	}
+	if rows[0]["collection"] != ".traces" || rows[0]["datasets"] != 1 {
+		t.Fatalf("row0 = %v", rows[0])
+	}
+	if rows[1]["collection"] != "prod" || rows[1]["names"] != "api, web" {
+		t.Fatalf("row1 = %v", rows[1])
+	}
+
+	// Non-map shape passes through untouched.
+	passthrough := collectionListRows([]map[string]any{{"name": "x"}}, output.FormatTable)
+	if len(passthrough) != 1 || passthrough[0]["name"] != "x" {
+		t.Fatalf("passthrough = %v", passthrough)
+	}
+}

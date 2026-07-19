@@ -63,7 +63,7 @@ jobs:
             echo "## Coverage"
             echo
             total="$(go tool cover -func=coverage.filtered.txt | tail -1 | awk '{print $NF}')"
-            echo "**Total (gen.go excluded): ${total}**"
+            echo "**Total (integration harness excluded): ${total}**"
             echo
             echo "| Package | Coverage |"
             echo "| --- | --- |"
