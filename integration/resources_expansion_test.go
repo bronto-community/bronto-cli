@@ -2,8 +2,10 @@ package integration
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestExpansionListSmoke covers every wave-3 registry resource's list verb
@@ -55,10 +57,26 @@ func TestGroupsCRUD(t *testing.T) {
 
 	assertListContainsName(t, r, "groups", name)
 
-	got := mustRunJSONObject(t, r, "groups", "get", id)
-	if gotID := resourceID(got, "group_id"); gotID != id {
-		t.Fatalf("groups get id = %q, want %q", gotID, id)
-	}
+	// The per-ID read lags creation on the live API (observed in CI: list
+	// showed the group while get still 404ed ~2s after create), so poll
+	// the get instead of asserting once.
+	PollUntil(t, 30*time.Second, 2*time.Second, func() (bool, error) {
+		res, err := r.Run(t.Context(), "", "groups", "get", id, "-o", "json")
+		if err != nil {
+			return false, err
+		}
+		if res.ExitCode != 0 {
+			return false, fmt.Errorf("groups get exited %d\nstderr: %s", res.ExitCode, res.Stderr)
+		}
+		var got map[string]any
+		if err := json.Unmarshal([]byte(res.Stdout), &got); err != nil {
+			return false, fmt.Errorf("groups get did not parse: %w", err)
+		}
+		if gotID := resourceID(got, "group_id"); gotID != id {
+			return false, fmt.Errorf("groups get id = %q, want %q", gotID, id)
+		}
+		return true, nil
+	})
 
 	mustRunJSONObject(t, r, "groups", "update", id, "-f", "name="+name+"-updated")
 	mustExitZero(t, r, "groups", "members", id)
