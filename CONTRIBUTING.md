@@ -35,7 +35,7 @@ To add a new one:
 1. Add an entry to `resourceRegistry` in `internal/cli/resources.go` — a `resourceDesc{Name, Base, ...}` giving the subcommand name and its collection path (e.g. `/monitors`), plus any overrides (`IDBase`, `CreatePath`, `UpdateMethod`, `Columns`, `NoCreate`/`NoUpdate`/`NoDelete`/`NoGet` for partial resources).
 2. Run `go test ./internal/cli/...` — `resourcespec_test.go` parses `api/openapi.yaml` and asserts your descriptor's `Base`/`CreatePath`/`IDBase` correspond to real paths in the vendored spec. A typo or a stale endpoint fails the build instead of silently 404ing at runtime. If your resource genuinely deviates from the vendored spec snapshot (a real, documented endpoint the spec doesn't capture), add it to `specCreatePathExceptions` with a comment explaining why.
 3. Add a short registration test alongside `resources_test.go` if the resource has any non-default behavior (custom columns, disabled verbs).
-4. Update `skill.md` and `README.md` only if the resource is one of the six workhorse commands or changes the command tour's shape — the registry itself is self-documenting via `bronto <resource> --help`.
+4. Add the new resource's name to `skill.md`'s resource list and the README command tour — `TestSkillDocCoversAllCommands` fails the build if a registered command is absent from `skill.md`, so agents always learn about new commands. (An earlier "only document workhorse commands" policy let eleven resources ship undocumented; the test now prevents that.)
 
 ## TDD and lint expectations
 

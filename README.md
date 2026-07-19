@@ -5,7 +5,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/bronto-community/bronto-cli)](https://goreportcard.com/report/github.com/bronto-community/bronto-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A community command-line client for the [Bronto](https://bronto.io) observability platform. It wraps Bronto's REST and ingestion APIs in a single scriptable binary: search and tail logs, explore OpenTelemetry traces, send events, and manage resources (datasets, monitors, dashboards, parsers, exports, API keys) — all with JSONL-by-default output, typed errors, and stable exit codes so it drops cleanly into shell pipelines and agent tool calls.
+A community command-line client for the [Bronto](https://bronto.io) observability platform. One scriptable binary wraps Bronto's REST and ingestion APIs: search and tail logs, explore OpenTelemetry traces, send events, and manage every resource from datasets to monitors.
+
+Built for pipelines and agents: JSONL by default when piped, typed errors with machine-readable hints, stable exit codes, and `--dry-run` plans for every mutating call.
 
 This project is not affiliated with or endorsed by Bronto.
 
@@ -57,6 +59,20 @@ bronto tail "level = 'error'" --window 5m      # follow new events live
 `bronto auth login` prompts for a key interactively (or `--key-stdin` to pipe one in) and picks a region (`eu`/`us`). Everything after that resolves credentials automatically.
 
 Query commands need a dataset scope: with a single dataset in the account it is picked automatically; with several, pass `-d <name>` (dataset **names** work everywhere a UUID does) or set a default once with `bronto config set default_dataset <name>`.
+
+At a terminal, `bronto search "status >= 500" --since 1h` renders a table:
+
+```
+@TIME                        @STATUS  @RAW                                       MESSAGE_KVS.STATUS
+2026-07-19 09:14:05.312 UTC  error    {"level":"error","status":502,"path":...}  502
+2026-07-19 09:13:58.007 UTC  error    {"level":"error","status":500,"path":...}  500
+```
+
+Piped, the same command emits JSONL — one full event per line, 64-bit ids preserved exactly:
+
+```json
+{"@time":"2026-07-19 09:14:05.312 UTC","@status":"error","message_kvs.status":502,"metadata.sequence":4367602734065516544,...}
+```
 
 ## Command tour
 
@@ -156,9 +172,34 @@ Environment variables:
 | `BRONTO_API_KEY` | API key (bypasses the keychain) |
 | `BRONTO_REGION` | `eu` or `us` |
 | `BRONTO_PROFILE` | named profile to use |
-| `BRONTO_TIMEOUT` | request timeout override |
+| `BRONTO_TIMEOUT` | request timeout override (seconds) |
+| `BRONTO_MAX_RETRIES` | retries for idempotent requests on 429/5xx |
 | `BRONTO_INGEST_URL` | override the ingestion endpoint (`bronto send`) |
 | `BRONTO_CONFIG_DIR` | override the user config directory (parent of `bronto/config.toml`) |
+
+Config keys (settable via `bronto config set`, project `.bronto.toml`, or profile files — flags and env always win):
+
+| Key | Env | Purpose | Default |
+|---|---|---|---|
+| `region` | `BRONTO_REGION` | `eu` or `us` | `eu` |
+| `base_url` | — | full API base URL override | derived from region |
+| `output` | — | default output format | table (TTY) / jsonl (piped) |
+| `default_dataset` | — | dataset name/UUID or `from_expr` used when `-d` is omitted | — |
+| `timeout` | `BRONTO_TIMEOUT` | HTTP timeout in seconds | 30 |
+| `max_retries` | `BRONTO_MAX_RETRIES` | retries for idempotent requests | 2 |
+| `ingest_url` | `BRONTO_INGEST_URL` | ingestion endpoint for `bronto send` | derived from region |
+| `profile` | `BRONTO_PROFILE` | named profile | `default` |
+
+`api_key` is deliberately **not** file-settable — keys live in the keychain or `BRONTO_API_KEY` only.
+
+## Troubleshooting
+
+- **`auth_invalid_key` (exit 3)** — the key is wrong or an ingestion key was used where a management key is needed. Run `bronto auth login`, or check `bronto auth status` (exits non-zero when the credential is broken, so you can gate scripts on it).
+- **No OS keychain (containers, CI)** — set `BRONTO_API_KEY` directly; the keychain is never touched once a key is resolved. `bronto auth login` falls back to a credentials file with a warning.
+- **`usage_confirmation_required` (exit 2)** — a destructive command ran without a TTY; pass `--yes` (or `--dry-run` to preview).
+- **`usage_missing_dataset`** — the account has several datasets; the error lists them. Pick one with `-d <name>` or set `default_dataset`.
+- **Wrong region** — `bronto ping` shows the resolved base URL and latency; override with `--region` / `BRONTO_REGION`.
+- **What is it actually sending?** — add `--debug` for a curl-style trace (API key never printed), or `--dry-run` to see mutating request bodies without executing.
 
 ## Restricted environments
 

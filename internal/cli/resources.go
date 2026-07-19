@@ -323,7 +323,7 @@ func confirmDestructive(cmd *cobra.Command, app *App, prompt string, yes bool) e
 
 // newResourceCmd builds the "<name>" command with generic list/get/create/
 // update/delete subcommands driven by desc. extras are hand-written
-// subcommands (e.g. monitors' events/mute/test) to attach alongside the
+// subcommands (e.g. monitors' events/mute) to attach alongside the
 // generated ones; an extra whose first Use word matches a generated verb
 // (e.g. a hand-written "create" for exports, Task 4) REPLACES it instead of
 // being added twice.

@@ -172,3 +172,31 @@ func brontoCodeSpans(doc string) []codeSpan {
 	}
 	return spans
 }
+
+// TestSkillDocCoversAllCommands is the other half of doc-rot protection:
+// TestSkillDocCommandsAreReal catches PHANTOM commands in the docs; this
+// catches MISSING ones — every registered top-level command must at least
+// be named in skill.md, so new commands can't ship invisible to agents.
+// (The 2026-07-19 fresh-eyes review found eleven resources absent.)
+func TestSkillDocCoversAllCommands(t *testing.T) {
+	root := NewRootCmd()
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	data, err := os.ReadFile(filepath.Join(filepath.Dir(thisFile), "..", "..", "skill.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := string(data)
+	for _, c := range root.Commands() {
+		name := c.Name()
+		switch name {
+		case "help", "completion": // cobra builtins
+			continue
+		}
+		if !strings.Contains(doc, name) {
+			t.Errorf("skill.md never mentions the %q command — agents won't know it exists", name)
+		}
+	}
+}
