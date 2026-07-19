@@ -107,7 +107,7 @@ func normalizeTopKeys(payload map[string]any) []map[string]any {
 			km = &keyMeta{}
 			agg[key] = km
 		}
-		if n, ok := meta["rank"].(float64); ok {
+		if n, ok := numericValue(meta["rank"]); ok {
 			km.count += n
 		}
 		if s, ok := meta["type"].(string); ok && km.typ == "" {
@@ -152,7 +152,7 @@ func normalizeTopKeys(payload map[string]any) []map[string]any {
 	// flat {key: numericCount} object
 	var rows []map[string]any
 	for k, v := range payload {
-		if n, ok := v.(float64); ok {
+		if n, ok := numericValue(v); ok {
 			rows = append(rows, map[string]any{"key": k, "count": n})
 		}
 	}
@@ -168,7 +168,7 @@ func fieldsColumns(rows []map[string]any) []string {
 	cols := []string{"key"}
 	hasCount, hasType, hasSource := false, false, false
 	for _, r := range rows {
-		if n, ok := r["count"].(float64); ok && n > 0 {
+		if n, ok := numericValue(r["count"]); ok && n > 0 {
 			hasCount = true
 		}
 		if _, ok := r["type"]; ok {

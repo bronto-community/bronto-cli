@@ -160,9 +160,28 @@ func printEvents(app *App, events []map[string]any) error {
 		}
 		return nil
 	}
-	max := 0
 	if f == output.FormatTable {
-		max = 8
+		return p.PrintRows(eventTableColumns(rows), rows)
 	}
-	return p.PrintRows(bronto.EventColumns(rows, max), rows)
+	return p.PrintRows(bronto.EventColumns(rows, 0), rows)
+}
+
+// eventTableColumns picks the human table columns for event rows: the
+// usual priority/discovery order, but with the bulky plumbing fields
+// (links, metadata.*) excluded — they turned the default search table
+// into hundreds of characters per row. json/jsonl/csv keep every field;
+// --fields overrides this selection entirely.
+func eventTableColumns(rows []map[string]any) []string {
+	filtered := make([]map[string]any, 0, len(rows))
+	for _, r := range rows {
+		fr := make(map[string]any, len(r))
+		for k, v := range r {
+			if k == "links" || strings.HasPrefix(k, "metadata.") {
+				continue
+			}
+			fr[k] = v
+		}
+		filtered = append(filtered, fr)
+	}
+	return bronto.EventColumns(filtered, 8)
 }

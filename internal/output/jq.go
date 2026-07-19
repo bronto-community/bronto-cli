@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 
 	"github.com/itchyny/gojq"
 
@@ -42,7 +43,7 @@ func CompileJQ(expr string) (*gojq.Code, error) {
 // errors or halts on some or all inputs still completes and exits cleanly,
 // having printed results for every input it could.
 func runJQ(w io.Writer, code *gojq.Code, v any) error {
-	iter := code.Run(v)
+	iter := code.Run(normalizeForJQ(v))
 	for {
 		res, ok := iter.Next()
 		if !ok {
@@ -59,5 +60,46 @@ func runJQ(w io.Writer, code *gojq.Code, v any) error {
 		if _, err := w.Write(b); err != nil {
 			return err
 		}
+	}
+}
+
+// normalizeForJQ rewrites json.Number values (produced by the lossless
+// UseNumber decode path) into types gojq accepts: exact int where the
+// value fits (preserving >2^53 sequence ids), *big.Int beyond that, float
+// otherwise. gojq rejects json.Number outright, so without this every
+// numeric field would error out of --jq expressions.
+func normalizeForJQ(v any) any {
+	switch t := v.(type) {
+	case json.Number:
+		if i, err := t.Int64(); err == nil {
+			return int(i)
+		}
+		if bi, ok := new(big.Int).SetString(t.String(), 10); ok {
+			return bi
+		}
+		if f, err := t.Float64(); err == nil {
+			return f
+		}
+		return t.String()
+	case map[string]any:
+		out := make(map[string]any, len(t))
+		for k, val := range t {
+			out[k] = normalizeForJQ(val)
+		}
+		return out
+	case []any:
+		out := make([]any, len(t))
+		for i, val := range t {
+			out[i] = normalizeForJQ(val)
+		}
+		return out
+	case []map[string]any:
+		out := make([]any, len(t))
+		for i, m := range t {
+			out[i] = normalizeForJQ(m)
+		}
+		return out
+	default:
+		return v
 	}
 }

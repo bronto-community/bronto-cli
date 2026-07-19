@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"net/url"
 	"strconv"
 	"strings"
@@ -131,6 +132,10 @@ func toNumber(v any) float64 {
 	switch t := v.(type) {
 	case float64:
 		return t
+	case json.Number:
+		if n, err := t.Float64(); err == nil {
+			return n
+		}
 	case string:
 		if n, err := strconv.ParseFloat(t, 64); err == nil {
 			return n

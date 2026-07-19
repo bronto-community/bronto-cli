@@ -111,7 +111,11 @@ var resourceRegistry = []resourceDesc{
 		ListTransform: datasetListRows},
 	// Read-only catalogs: list is the only verb the API documents.
 	{Name: "collections", Base: "/collections", Singular: "collection",
-		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true},
+		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true,
+		// The API returns {collection: [datasets…]} maps; untransformed,
+		// the table renderer turned collection names into column headers.
+		Columns:       []string{"collection", "datasets", "names"},
+		ListTransform: collectionListRows},
 	{Name: "log-views", Base: "/logs/views", Singular: "log view",
 		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true},
 	{Name: "limits", Base: "/limits", Singular: "limit"},
@@ -173,7 +177,7 @@ func doJSONRequest(ctx context.Context, app *App, method, path string, body []by
 		return nil, nil
 	}
 	var doc any
-	if err := json.Unmarshal(respBody, &doc); err != nil {
+	if err := bronto.DecodeJSON(respBody, &doc); err != nil {
 		return nil, err
 	}
 	return doc, nil
@@ -187,7 +191,7 @@ func dryRunPlan(method, path string, body []byte) map[string]any {
 	plan := map[string]any{"dry_run": true, "method": method, "path": path}
 	if len(body) > 0 {
 		var decoded any
-		if err := json.Unmarshal(body, &decoded); err == nil {
+		if err := bronto.DecodeJSON(body, &decoded); err == nil {
 			plan["body"] = decoded
 		} else {
 			plan["body"] = string(body)

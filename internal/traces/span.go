@@ -5,6 +5,7 @@
 package traces
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -92,6 +93,14 @@ func toInt64(v any) int64 {
 	switch n := v.(type) {
 	case float64:
 		return int64(n)
+	case json.Number:
+		if i, err := n.Int64(); err == nil {
+			return i
+		}
+		if f, err := n.Float64(); err == nil {
+			return int64(f)
+		}
+		return 0
 	case int64:
 		return n
 	case int:
@@ -110,6 +119,11 @@ func toFloat(v any) float64 {
 	switch n := v.(type) {
 	case float64:
 		return n
+	case json.Number:
+		if f, err := n.Float64(); err == nil {
+			return f
+		}
+		return 0
 	case int64:
 		return float64(n)
 	case int:

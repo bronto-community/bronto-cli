@@ -78,5 +78,15 @@ func (c *Client) do(req *http.Request, out any) error {
 	if out == nil || len(body) == 0 {
 		return nil
 	}
-	return json.Unmarshal(body, out)
+	return DecodeJSON(body, out)
+}
+
+// DecodeJSON unmarshals API payloads with json.Number preserved: Bronto
+// sequence numbers exceed 2^53, so a float64 round-trip silently corrupts
+// them (observed live: …516544 became …516500). Every decode of API
+// response bytes must go through this, not plain json.Unmarshal.
+func DecodeJSON(data []byte, out any) error {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	return dec.Decode(out)
 }

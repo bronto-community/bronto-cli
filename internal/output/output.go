@@ -97,6 +97,8 @@ func cell(row map[string]any, col string) string {
 		return ""
 	}
 	switch t := v.(type) {
+	case json.Number:
+		return string(t)
 	case float64:
 		// JSON numbers decode as float64; render integral values (ids,
 		// epoch timestamps) without Go's scientific notation.
@@ -226,7 +228,7 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 		for _, r := range rows {
 			vals := make([]string, len(columns))
 			for i, c := range columns {
-				vals[i] = cell(r, c)
+				vals[i] = truncateCell(cell(r, c))
 			}
 			_, _ = fmt.Fprintln(tw, strings.Join(vals, "\t"))
 		}
@@ -355,4 +357,20 @@ func (p *Printer) PrintJSON(v any) error {
 		enc.SetIndent("", "  ")
 	}
 	return enc.Encode(v)
+}
+
+// tableCellCap bounds how wide a single table cell may render: raw event
+// JSON and similar blobs otherwise make the table unreadable. Applies to
+// the table format only — csv/json/jsonl always carry full values.
+const tableCellCap = 120
+
+func truncateCell(s string) string {
+	if len(s) <= tableCellCap {
+		return s
+	}
+	runes := []rune(s)
+	if len(runes) <= tableCellCap {
+		return s
+	}
+	return string(runes[:tableCellCap-1]) + "…"
 }

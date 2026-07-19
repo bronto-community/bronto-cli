@@ -1,7 +1,10 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -51,9 +54,64 @@ func datasetListRows(rows []map[string]any) []map[string]any {
 	now := time.Now()
 	for _, row := range rows {
 		meta, _ := row["metadata"].(map[string]any)
-		if hb, _ := meta["last_heartbeat_at"].(float64); hb > 0 {
+		if hb, ok := numericValue(meta["last_heartbeat_at"]); ok && hb > 0 {
 			row["last_activity"] = timeAgo(hb, now)
 		}
 	}
 	return rows
+}
+
+// numericValue coerces decoded JSON numbers — json.Number after
+// bronto.DecodeJSON, float64 from plain unmarshals in tests — to float64.
+func numericValue(v any) (float64, bool) {
+	switch t := v.(type) {
+	case float64:
+		return t, true
+	case json.Number:
+		if f, err := t.Float64(); err == nil {
+			return f, true
+		}
+	case int64:
+		return float64(t), true
+	case int:
+		return float64(t), true
+	}
+	return 0, false
+}
+
+// collectionListRows expands /collections rows — maps of collection name
+// to dataset arrays — into one row per collection with a dataset count
+// and joined names, which is what a human scanning the table wants.
+func collectionListRows(rows []map[string]any) []map[string]any {
+	var out []map[string]any
+	for _, row := range rows {
+		names := make([]string, 0, len(row))
+		for k := range row {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		for _, collection := range names {
+			datasets, ok := row[collection].([]any)
+			if !ok {
+				// Not the map-of-arrays shape: keep the row untouched.
+				out = append(out, row)
+				break
+			}
+			dsNames := make([]string, 0, len(datasets))
+			for _, d := range datasets {
+				if m, ok := d.(map[string]any); ok {
+					if n, _ := m["dataset"].(string); n != "" {
+						dsNames = append(dsNames, n)
+					}
+				}
+			}
+			sort.Strings(dsNames)
+			out = append(out, map[string]any{
+				"collection": collection,
+				"datasets":   len(datasets),
+				"names":      strings.Join(dsNames, ", "),
+			})
+		}
+	}
+	return out
 }

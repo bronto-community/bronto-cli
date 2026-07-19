@@ -220,8 +220,12 @@ func TestAuthStatusShowsCorruptCredentialsParseError(t *testing.T) {
 	root.SetOut(&out)
 	root.SetErr(&bytes.Buffer{})
 	root.SetArgs([]string{"auth", "status", "-o", "json"})
-	if err := root.Execute(); err != nil {
-		t.Fatal(err)
+	err := root.Execute()
+	// The row still prints, but a non-ok status must ALSO exit non-zero
+	// (auth error, exit 3) so scripts can gate on `auth status`.
+	var ce *clierr.Error
+	if err == nil || !errors.As(err, &ce) || ce.Code != "auth_status_not_ok" || clierr.ExitCode(err) != 3 {
+		t.Fatalf("want auth_status_not_ok exit 3, got %v (%d)", err, clierr.ExitCode(err))
 	}
 	var rows []map[string]any
 	if err := json.Unmarshal(out.Bytes(), &rows); err != nil || len(rows) != 1 {
@@ -230,6 +234,22 @@ func TestAuthStatusShowsCorruptCredentialsParseError(t *testing.T) {
 	status, _ := rows[0]["status"].(string)
 	if !strings.Contains(status, "cannot parse") {
 		t.Fatalf("status cell = %q, want it to surface the parse error", status)
+	}
+}
+
+// TestAuthStatusOKExitsZero pins the healthy path: status ok -> exit 0.
+func TestAuthStatusOKExitsZero(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"logs":[]}`))
+	}))
+	defer srv.Close()
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"auth", "status", "--api-key", "k", "--base-url", srv.URL})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("healthy auth status must exit 0, got %v", err)
 	}
 }
 
