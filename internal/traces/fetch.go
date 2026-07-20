@@ -39,8 +39,8 @@ func (a *Aggregator) ListSpans(ctx context.Context, opts ListOptions) ([]map[str
 	if err != nil {
 		return nil, err
 	}
-	rows := make([]map[string]any, 0, len(resp.EventRows()))
-	for _, r := range resp.EventRows() {
+	rows := make([]map[string]any, 0, len(resp.SelectedRows()))
+	for _, r := range resp.SelectedRows() {
 		s := RowToSpan(r)
 		rows = append(rows, map[string]any{
 			"@time":       r["@time"],
@@ -80,7 +80,7 @@ func (a *Aggregator) FetchTraceSpans(ctx context.Context, traceIDs []string) ([]
 		if err != nil {
 			return nil, err
 		}
-		for _, row := range resp.EventRows() {
+		for _, row := range resp.SelectedRows() {
 			spans = append(spans, RowToSpan(row))
 		}
 	}
@@ -105,7 +105,7 @@ func (a *Aggregator) FindSampleTraceIDs(ctx context.Context, where string, sampl
 	}
 	seen := map[string]bool{}
 	var ids []string
-	for _, row := range resp.EventRows() {
+	for _, row := range resp.SelectedRows() {
 		id := str(row, "$span.trace_id")
 		if id == "" || seen[id] {
 			continue

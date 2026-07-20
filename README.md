@@ -106,7 +106,7 @@ bronto monitors templates list
 bronto webhooks create -f name=alerts -f url=https://example.com/hook
 ```
 
-Every resource (`datasets`, `monitors` — incl. `monitors templates` and `monitors downtimes` — `dashboards`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, plus read-only `collections` and `log-views`) shares the same `list | get <id> | create | update <id> | delete <id>` pattern (list-only where the API documents no other verbs); `create`/`update` take repeated `-f key=value` or `--input file.json`/`--input -`, and `delete` prompts for confirmation unless `--yes` is passed.
+Every resource (`datasets`, `monitors` — incl. `monitors templates` and `monitors downtimes` — `dashboards`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, plus read-only `collections` and `log-views`) shares the same `list | get <id|name> | create | update <id|name> | delete <id|name> --yes` pattern (list-only where the API documents no other verbs). Everywhere an id is accepted, a unique **name** works too (users: email; datasets: `collection/name` qualifies duplicates) — ambiguous names error with the candidates; `create`/`update` take repeated `-f key=value` or `--input file.json`/`--input -`, and `delete` prompts for confirmation unless `--yes` is passed.
 
 **Pipe** — send data in:
 

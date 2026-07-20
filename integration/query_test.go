@@ -48,10 +48,10 @@ func TestQuery_FieldsFlagFiltersColumns(t *testing.T) {
 	r := NewRunner(t, key)
 	logID := logIDForDataset(t, r, dataset)
 
-	// The printed row keys are the CLI's flattened dotted keys (see
-	// eventField), so --fields must name the message_kvs.-namespaced forms.
+	// searchMarkerArgs passes --select, so rows are the PROJECTION with
+	// bare keys (SelectedRows) — --fields names them directly.
 	res, err := r.Run(t.Context(), "", searchMarkerArgs(logID, marker,
-		"--fields", "message_kvs.ci_marker,message_kvs.level", "-o", "json", "-n", "5")...)
+		"--fields", "ci_marker,level", "-o", "json", "-n", "5")...)
 	if err != nil {
 		t.Fatalf("running search: %v", err)
 	}
@@ -68,18 +68,18 @@ func TestQuery_FieldsFlagFiltersColumns(t *testing.T) {
 	sawMarker := false
 	for _, row := range rows {
 		for k := range row {
-			if k != "message_kvs.ci_marker" && k != "message_kvs.level" {
+			if k != "ci_marker" && k != "level" {
 				t.Fatalf("--fields leaked extra key %q: %+v", k, row)
 			}
 		}
-		if m, _ := row["message_kvs.ci_marker"].(string); m == marker {
+		if m, _ := row["ci_marker"].(string); m == marker {
 			sawMarker = true
 		}
 	}
 	// Guard against a vacuous pass (rows with zero matching keys would
 	// trivially satisfy the leak check above).
 	if !sawMarker {
-		t.Fatalf("no filtered row carried message_kvs.ci_marker=%s: %+v", marker, rows)
+		t.Fatalf("no filtered row carried ci_marker=%s: %+v", marker, rows)
 	}
 }
 
@@ -115,8 +115,8 @@ func TestQuery_JQExpression(t *testing.T) {
 	r := NewRunner(t, key)
 	logID := logIDForDataset(t, r, dataset)
 
-	// Flattened row keys contain literal dots, so jq needs the bracket form.
-	jqExpr := `.["message_kvs.ci_marker"]`
+	// searchMarkerArgs passes --select: projected rows carry bare keys.
+	jqExpr := `.ci_marker`
 	res, err := r.Run(t.Context(), "", searchMarkerArgs(logID, marker, "--jq", jqExpr, "-o", "json", "-n", "5")...)
 	if err != nil {
 		t.Fatalf("running search: %v", err)

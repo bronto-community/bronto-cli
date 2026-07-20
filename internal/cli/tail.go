@@ -105,7 +105,7 @@ func newTailCmd() *cobra.Command {
 					}
 					return err
 				}
-				batch := resp.EventRows()
+				batch := resp.SelectedRows()
 				fresh := batch[:0:0]
 				for _, ev := range batch {
 					if dedup.Admit(dedup.Key(ev)) {

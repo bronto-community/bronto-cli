@@ -84,3 +84,38 @@ func TestGroupRowsMergesGroupObject(t *testing.T) {
 		t.Fatalf("row1 = %v", rows[1])
 	}
 }
+
+// TestSelectedRowsVsEventRows pins the live /search contract discovered
+// 2026-07-20: every response populates BOTH events (raw) and result (the
+// select projection). Projection consumers must use SelectedRows —
+// EventRows silently ignores the select.
+func TestSelectedRowsVsEventRows(t *testing.T) {
+	body := `{"events":[{"@raw":"raw","attributes":{}}],"result":[{"$span.trace_id":"t1"}]}`
+	var resp SearchResponse
+	if err := DecodeJSON([]byte(body), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := resp.EventRows()[0]["@raw"]; !ok {
+		t.Fatal("EventRows must prefer the raw events")
+	}
+	if resp.SelectedRows()[0]["$span.trace_id"] != "t1" {
+		t.Fatal("SelectedRows must prefer the projection")
+	}
+	// fallbacks when only one side is populated
+	var evOnly SearchResponse
+	_ = DecodeJSON([]byte(`{"events":[{"a":1}]}`), &evOnly)
+	if len(evOnly.SelectedRows()) != 1 {
+		t.Fatal("SelectedRows must fall back to events")
+	}
+}
+
+// TestGroupRowsBracketedString pins the live group shape: a bracketed
+// string, not a map.
+func TestGroupRowsBracketedString(t *testing.T) {
+	var resp SearchResponse
+	_ = DecodeJSON([]byte(`{"groups":[{"group":"[events-helper]","value":3009.0,"count":3009}]}`), &resp)
+	rows := resp.GroupRows()
+	if rows[0]["group"] != "events-helper" {
+		t.Fatalf("group = %v, want brackets stripped", rows[0]["group"])
+	}
+}

@@ -43,7 +43,15 @@ func (a *Aggregator) groupAggregate(ctx context.Context, aggregate string, group
 	for _, row := range rows {
 		vals := parseGroup(row["group"])
 		key := strings.Join(vals, "\x1f")
-		out[key] = aggEntry{Vals: vals, V: toFloat(row[aggregate])}
+		// result rows key the value by the aggregate expression
+		// ("count(*)": "3009.0"); groups rows carry it under "value"
+		// (live shape, found 2026-07-20 — reading only the former showed
+		// every service with 0 spans).
+		v := row[aggregate]
+		if v == nil {
+			v = row["value"]
+		}
+		out[key] = aggEntry{Vals: vals, V: toFloat(v)}
 	}
 	return out, nil
 }

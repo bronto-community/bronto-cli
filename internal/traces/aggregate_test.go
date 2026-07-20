@@ -227,3 +227,23 @@ func TestParseGroupForms(t *testing.T) {
 		t.Fatalf("map form: %v", got)
 	}
 }
+
+// TestGroupAggregateLiveShape pins the live groups-row shape: group as a
+// bracketed string and the aggregate value under "value" (not keyed by
+// the aggregate expression) — reading only the latter showed every
+// service with 0 spans.
+func TestGroupAggregateLiveShape(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"groups":[{"group":"[svc-a]","count":3009,"stat":"count(*)","value":3009.0}]}`))
+	}))
+	defer srv.Close()
+	agg := &Aggregator{Client: bronto.NewClient(srv.Client(), srv.URL)}
+	got, err := agg.groupAggregate(context.Background(), "count(*)", []string{"$service.name"}, "", 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, ok := got["svc-a"]
+	if !ok || e.V != 3009 {
+		t.Fatalf("agg = %+v", got)
+	}
+}

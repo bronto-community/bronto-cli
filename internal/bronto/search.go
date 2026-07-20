@@ -4,6 +4,7 @@ package bronto
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
@@ -75,11 +76,26 @@ type SearchResponse struct {
 	} `json:"pagination"`
 }
 
+// EventRows returns FULL event objects (@raw, message_kvs, metadata…):
+// the live API populates BOTH events (raw) and result (the select
+// projection) on every search, so this is the right accessor only for
+// commands presenting whole events (plain search, tail's raw lines).
 func (r *SearchResponse) EventRows() []map[string]any {
 	if len(r.Events) > 0 {
 		return r.Events
 	}
 	return r.Result
+}
+
+// SelectedRows returns the select PROJECTION. Any consumer that asked for
+// specific columns must read these: reading EventRows instead silently
+// ignores the select — live traces commands rendered empty span fields
+// for exactly that reason (found 2026-07-20).
+func (r *SearchResponse) SelectedRows() []map[string]any {
+	if len(r.Result) > 0 {
+		return r.Result
+	}
+	return r.Events
 }
 
 func (r *SearchResponse) GroupRows() []map[string]any {
@@ -92,6 +108,12 @@ func (r *SearchResponse) GroupRows() []map[string]any {
 					for gk, gv := range obj {
 						row[gk] = gv
 					}
+					continue
+				}
+				// live shape: a bracketed string "[a, b]" — strip the
+				// brackets so tables don't render raw list syntax.
+				if s, ok := v.(string); ok {
+					row["group"] = strings.Trim(strings.TrimSpace(s), "[]")
 					continue
 				}
 			}

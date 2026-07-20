@@ -259,7 +259,7 @@ func newTracesShowCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			eventRows := resp.EventRows()
+			eventRows := resp.SelectedRows()
 			if len(eventRows) == 0 {
 				return clierr.New("trace_not_found", fmt.Sprintf("no spans found for trace %s", id)).
 					WithHint("Widen the window with --since (default 1h).")

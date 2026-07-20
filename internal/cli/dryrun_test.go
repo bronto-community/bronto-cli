@@ -39,11 +39,11 @@ func TestDryRunDeleteSkipsConfirmationAndContact(t *testing.T) {
 	// with it, nothing is destructive so no confirmation is needed.
 	_, stderr, err := runResource(t, func(_ http.ResponseWriter, _ *http.Request) {
 		t.Fatal("server must not be contacted under --dry-run")
-	}, "", "monitors", "delete", "m1", "--dry-run")
+	}, "", "monitors", "delete", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1", "--dry-run")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(stderr, "DRY RUN: would delete monitor m1.") {
+	if !strings.Contains(stderr, "DRY RUN: would delete monitor aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1.") {
 		t.Fatalf("stderr = %q", stderr)
 	}
 }
@@ -54,7 +54,7 @@ func TestDryRunReadsStillExecute(t *testing.T) {
 	contacted := false
 	out, _, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) {
 		contacted = true
-		_, _ = w.Write([]byte(`[{"id":"m1"}]`))
+		_, _ = w.Write([]byte(`[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1"}]`))
 	}, "", "monitors", "list", "--dry-run", "-o", "json")
 	if err != nil {
 		t.Fatal(err)
@@ -62,7 +62,7 @@ func TestDryRunReadsStillExecute(t *testing.T) {
 	if !contacted {
 		t.Fatal("reads must still execute under --dry-run")
 	}
-	if !strings.Contains(out, "m1") {
+	if !strings.Contains(out, "aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1") {
 		t.Fatalf("out = %q", out)
 	}
 }
@@ -70,11 +70,11 @@ func TestDryRunReadsStillExecute(t *testing.T) {
 func TestDryRunMuteAndTestMessages(t *testing.T) {
 	_, stderr, err := runResource(t, func(_ http.ResponseWriter, _ *http.Request) {
 		t.Fatal("server must not be contacted under --dry-run")
-	}, "", "monitors", "mute", "m1", "--dry-run")
+	}, "", "monitors", "mute", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1", "--dry-run")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(stderr, "DRY RUN: would set mute_until=-1 on monitor m1.") {
+	if !strings.Contains(stderr, "DRY RUN: would set mute_until=-1 on monitor aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1.") {
 		t.Fatalf("mute stderr = %q", stderr)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -53,6 +54,30 @@ type resourceDesc struct {
 	// AttachTo nests this resource's command under a parent command name
 	// instead of the root (e.g. templates/downtimes under monitors).
 	AttachTo string
+
+	// NameKeys are the list-row fields resolveResourceRef matches a
+	// non-UUID reference against (default: ["name"]; users use email).
+	NameKeys []string
+	// IDKey is the list-row field carrying the resource id when it is not
+	// plain "id" (e.g. groups' group_id, datasets' log_id).
+	IDKey string
+}
+
+func (d resourceDesc) nameKeys() []string {
+	if len(d.NameKeys) > 0 {
+		return d.NameKeys
+	}
+	return []string{"name"}
+}
+
+func (d resourceDesc) rowID(row map[string]any) string {
+	if d.IDKey != "" {
+		if v, _ := row[d.IDKey].(string); v != "" {
+			return v
+		}
+	}
+	v, _ := row["id"].(string)
+	return v
 }
 
 // display is the human command path used in examples: "monitors templates"
@@ -98,13 +123,21 @@ func (d resourceDesc) singular() string {
 // the documented exceptions there). Tags is intentionally absent: the API
 // models it as base-path PUT/DELETE + /tags/search; use `bronto api`.
 var resourceRegistry = []resourceDesc{
-	{Name: "monitors", Base: "/monitors", UpdateMethod: http.MethodPut},
-	{Name: "dashboards", Base: "/dashboards"},
-	{Name: "saved-searches", Base: "/saved-searches", Singular: "saved search"},
+	{Name: "monitors", Base: "/monitors", UpdateMethod: http.MethodPut,
+		Columns: []string{"name", "window", "threshold", "created", "id"}},
+	{Name: "dashboards", Base: "/dashboards",
+		Columns:       []string{"name", "description", "widgets_count", "created", "id"},
+		ListTransform: dashboardListRows},
+	{Name: "saved-searches", Base: "/saved-searches", Singular: "saved search",
+		Columns: []string{"name", "description", "created", "id"}},
 	// The vendored spec has no GET /parsers/{parser_id}: only patch and
 	// delete are documented for a single parser.
-	{Name: "parsers", Base: "/parsers", NoGet: true},
-	{Name: "api-keys", Base: "/api-keys", Singular: "API key", NoGet: true},
+	{Name: "parsers", Base: "/parsers", NoGet: true,
+		Columns: []string{"name", "description", "type", "enabled", "created", "id"}},
+	{Name: "api-keys", Base: "/api-keys", Singular: "API key", NoGet: true,
+		// api_key is masked by resourceListPolish — full key material was
+		// rendering into terminals/scrollback via the auto columns.
+		Columns: []string{"name", "api_key", "created", "id"}},
 	{Name: "datasets", Base: "/logs", CreatePath: "/datasets", UpdateMethod: http.MethodPut,
 		// The raw /logs rows are unreadable as a table (duplicate name
 		// fields, a metadata blob with epoch floats); curate the human
@@ -119,8 +152,13 @@ var resourceRegistry = []resourceDesc{
 		Columns:       []string{"collection", "datasets", "names"},
 		ListTransform: collectionListRows},
 	{Name: "log-views", Base: "/logs/views", Singular: "log view",
-		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true},
-	{Name: "limits", Base: "/limits", Singular: "limit"},
+		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true,
+		// Rows carry only components + this_template_tags; derive the
+		// human columns from them.
+		Columns:       []string{"log_type", "components_count"},
+		ListTransform: logViewListRows},
+	{Name: "limits", Base: "/limits", Singular: "limit",
+		Columns: []string{"category", "description", "value", "unit", "created", "id"}},
 	{Name: "encryption-keys", Base: "/encryption-keys", Singular: "encryption key"},
 	// No per-ID GET documented for these three; update is full-body PUT.
 	{Name: "forward-configs", Base: "/forward-configs", Singular: "forward config",
@@ -130,16 +168,21 @@ var resourceRegistry = []resourceDesc{
 	{Name: "slack", Base: "/integrations/slack", Singular: "Slack integration",
 		UpdateMethod: http.MethodPut, NoGet: true},
 	{Name: "templates", AttachTo: "monitors", Base: "/monitors/templates",
-		Singular: "monitor template", UpdateMethod: http.MethodPut},
+		Singular: "monitor template", UpdateMethod: http.MethodPut,
+		Columns: []string{"name", "description", "monitor_type", "window", "threshold", "id"}},
 	{Name: "downtimes", AttachTo: "monitors", Base: "/monitors/downtimes",
 		Singular: "downtime", UpdateMethod: http.MethodPut, NoGet: true},
-	{Name: "users", Base: "/users", Singular: "user"},
-	{Name: "groups", Base: "/groups", Singular: "group"},
+	{Name: "users", Base: "/users", Singular: "user",
+		Columns:       []string{"email", "first_name", "last_name", "last_login", "id"},
+		NameKeys:      []string{"email"},
+		ListTransform: userListRows},
+	{Name: "groups", Base: "/groups", Singular: "group",
+		Columns: []string{"name", "description", "created_at", "group_id"}, IDKey: "group_id"},
 	// exports has no update verb; its create is hand-written (exports.go) to
 	// support the convenience flags / --wait / --download workflow and
 	// replaces the generic factory create (see newResourceCmd's extras
 	// override rule).
-	{Name: "exports", Singular: "export", Base: "/exports", NoUpdate: true},
+	{Name: "exports", Singular: "export", Base: "/exports", NoUpdate: true, IDKey: "export_id"},
 }
 
 // doJSONRequest issues an authenticated request against the resolved base
@@ -390,8 +433,11 @@ func newResourceListCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if desc.ListTransform != nil && (format == output.FormatTable || format == output.FormatCSV) {
-				rows = desc.ListTransform(rows, format)
+			if format == output.FormatTable || format == output.FormatCSV {
+				rows = resourceListPolish(rows, format)
+				if desc.ListTransform != nil {
+					rows = desc.ListTransform(rows, format)
+				}
 			}
 			p, err := app.PrinterFor(format)
 			if err != nil {
@@ -413,7 +459,11 @@ func newResourceGetCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, desc.idBase()+"/"+url.PathEscape(args[0]), nil)
+			id, err := resolveResourceRef(cmd.Context(), app, desc, args[0])
+			if err != nil {
+				return err
+			}
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, desc.idBase()+"/"+url.PathEscape(id), nil)
 			if err != nil {
 				return err
 			}
@@ -478,7 +528,11 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			payload, err := doJSONRequest(cmd.Context(), app, desc.updateMethod(), desc.idBase()+"/"+url.PathEscape(args[0]), body)
+			id, err := resolveResourceRef(cmd.Context(), app, desc, args[0])
+			if err != nil {
+				return err
+			}
+			payload, err := doJSONRequest(cmd.Context(), app, desc.updateMethod(), desc.idBase()+"/"+url.PathEscape(id), body)
 			if err != nil {
 				return err
 			}
@@ -516,7 +570,11 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 					return err
 				}
 			}
-			payload, err := doJSONRequest(cmd.Context(), app, http.MethodDelete, desc.idBase()+"/"+url.PathEscape(args[0]), nil)
+			id, err := resolveResourceRef(cmd.Context(), app, desc, args[0])
+			if err != nil {
+				return err
+			}
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodDelete, desc.idBase()+"/"+url.PathEscape(id), nil)
 			if err != nil {
 				return err
 			}
@@ -547,7 +605,11 @@ func newMonitorEventsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, "/monitors/"+url.PathEscape(args[0])+"/events", nil)
+			id, err := resolveKindRef(cmd.Context(), app, "monitors", args[0])
+			if err != nil {
+				return err
+			}
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, "/monitors/"+url.PathEscape(id)+"/events", nil)
 			if err != nil {
 				return err
 			}
@@ -586,7 +648,11 @@ func newMonitorMuteCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			payload, err := doJSONRequest(cmd.Context(), app, http.MethodPost, "/monitors/"+url.PathEscape(args[0])+"/status", body)
+			id, err := resolveKindRef(cmd.Context(), app, "monitors", args[0])
+			if err != nil {
+				return err
+			}
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodPost, "/monitors/"+url.PathEscape(id)+"/status", body)
 			if err != nil {
 				return err
 			}
@@ -620,8 +686,12 @@ func newUserActionCmd(action, short string) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			id, err := resolveKindRef(cmd.Context(), app, "users", args[0])
+			if err != nil {
+				return err
+			}
 			payload, err := doJSONRequest(cmd.Context(), app, http.MethodPost,
-				"/users/"+url.PathEscape(args[0])+"/"+action, nil)
+				"/users/"+url.PathEscape(id)+"/"+action, nil)
 			if err != nil {
 				return err
 			}
@@ -647,8 +717,12 @@ func newGroupMembersCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			id, err := resolveKindRef(cmd.Context(), app, "groups", args[0])
+			if err != nil {
+				return err
+			}
 			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet,
-				"/groups/"+url.PathEscape(args[0])+"/members", nil)
+				"/groups/"+url.PathEscape(id)+"/members", nil)
 			if err != nil {
 				return err
 			}
@@ -660,4 +734,66 @@ func newGroupMembersCmd() *cobra.Command {
 			return p.PrintRows(bronto.EventColumns(rows, 8), rows)
 		},
 	}
+}
+
+// resolveResourceRef turns a get/update/delete argument into a resource
+// id, mirroring the dataset UX everywhere: UUIDs pass through untouched;
+// datasets delegate to resolveDatasetRef (collection/name aware); every
+// other resource matches the reference against its list's name keys — a
+// unique match resolves, ambiguity and misses error with what IS there.
+func resolveResourceRef(ctx context.Context, app *App, desc resourceDesc, ref string) (string, error) {
+	if uuidRe.MatchString(ref) {
+		return ref, nil
+	}
+	if desc.Name == "datasets" {
+		return resolveDatasetRef(ctx, app, ref)
+	}
+	payload, err := doJSONRequest(ctx, app, http.MethodGet, desc.Base, nil)
+	if err != nil {
+		return "", err
+	}
+	rows := rowsFromPayload(payload, desc.ListRowKeys...)
+	var matchIDs, available []string
+	for _, row := range rows {
+		for _, key := range desc.nameKeys() {
+			if v, _ := row[key].(string); v != "" {
+				if v == ref {
+					matchIDs = append(matchIDs, desc.rowID(row))
+				}
+				available = append(available, v)
+				break
+			}
+		}
+	}
+	switch len(matchIDs) {
+	case 1:
+		if matchIDs[0] == "" {
+			break // matched a row without a usable id: fall through to not-found
+		}
+		return matchIDs[0], nil
+	case 0:
+	default:
+		return "", clierr.New("usage_ambiguous_"+strings.ReplaceAll(desc.singular(), " ", "_"),
+			fmt.Sprintf("%d %s are named %q", len(matchIDs), desc.Name, ref)).
+			WithHint("Pass the id instead: " + capList(matchIDs))
+	}
+	hint := fmt.Sprintf("Run 'bronto %s list' to see ids and names.", desc.display())
+	if len(available) > 0 {
+		sort.Strings(available)
+		hint = fmt.Sprintf("This account has: %s.", capList(available))
+	}
+	return "", clierr.New("resource_not_found",
+		fmt.Sprintf("no %s named %q", desc.singular(), ref)).WithHint(hint)
+}
+
+// resolveKindRef is resolveResourceRef for hand-written extras that know
+// their registry entry only by name (monitors events/mute, groups
+// members, users verb-actions).
+func resolveKindRef(ctx context.Context, app *App, kind, ref string) (string, error) {
+	for _, d := range resourceRegistry {
+		if d.Name == kind {
+			return resolveResourceRef(ctx, app, d, ref)
+		}
+	}
+	return ref, nil
 }
