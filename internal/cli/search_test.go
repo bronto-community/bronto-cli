@@ -186,3 +186,42 @@ func TestSearchMissingDatasetIsUsageError(t *testing.T) {
 		t.Fatalf("hint must list the account's datasets: %v", err)
 	}
 }
+
+func TestSearchLimitValidatedClientSide(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	for _, n := range []string{"0", "10001"} {
+		root := NewRootCmd()
+		root.SetOut(&bytes.Buffer{})
+		root.SetErr(&bytes.Buffer{})
+		root.SetArgs([]string{"search", "x", "-d", "11111111-1111-1111-1111-111111111111",
+			"--api-key", "k", "-n", n})
+		err := root.Execute()
+		var ce *clierr.Error
+		if err == nil || !errors.As(err, &ce) || ce.Code != "usage_invalid_limit" {
+			t.Fatalf("-n %s: want usage_invalid_limit before any network call, got %v", n, err)
+		}
+	}
+}
+
+func TestEventTableColumnsExcludePlumbing(t *testing.T) {
+	rows := []map[string]any{{
+		"@time": "t", "@status": "info", "@raw": "r",
+		"links": []any{"x"}, "metadata.sequence": 1, "metadata.context": "c",
+		"message_kvs.level": "info",
+	}}
+	cols := eventTableColumns(rows)
+	for _, c := range cols {
+		if c == "links" || strings.HasPrefix(c, "metadata.") {
+			t.Fatalf("plumbing column %q leaked into the table: %v", c, cols)
+		}
+	}
+	found := false
+	for _, c := range cols {
+		if c == "message_kvs.level" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("real field missing from table columns: %v", cols)
+	}
+}

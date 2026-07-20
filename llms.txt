@@ -2,9 +2,12 @@
 
 A command-line client for the Bronto observability platform: search and
 tail logs, explore OpenTelemetry traces, send events, and manage Bronto
-resources (datasets, monitors, dashboards, parsers, exports, API keys)
-via a REST-backed CLI. Designed to be scriptable and agent-friendly:
-JSONL by default when piped, typed errors, stable exit codes.
+resources (datasets, monitors incl. templates/downtimes, dashboards,
+parsers, exports, API keys, saved searches, users, groups, webhooks,
+Slack integrations, limits, encryption keys, forward configs) via a
+REST-backed CLI. Designed to be scriptable and agent-friendly: JSONL by
+default when piped, typed errors with machine-readable hints, stable
+exit codes, --dry-run plans for mutating calls, --debug request tracing.
 
 ## Install
 

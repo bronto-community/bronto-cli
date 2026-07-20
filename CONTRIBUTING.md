@@ -11,7 +11,7 @@ make lint    # golangci-lint run
 ./bronto --help
 ```
 
-No code generation, network access, or Bronto account is needed to build and run the test suite — the generated API client (`internal/api/gen.go`) is already checked in, and `internal/*_test.go` files exercise a fake `httptest.Server` rather than the real API.
+No code generation, network access, or Bronto account is needed to build and run the test suite — `internal/*_test.go` files exercise a fake `httptest.Server` rather than the real API.
 
 ## Architecture map
 
@@ -24,7 +24,7 @@ No code generation, network access, or Bronto account is needed to build and run
 - **`internal/output`** — the single output engine used by every command: format detection (table on a TTY, JSONL when piped, or an explicit `-o`), the `--fields` column/key filter, and `--jq` (gojq) post-processing. If a command needs to print anything, it goes through this package rather than rolling its own formatting.
 - **`internal/timerange`** — converts the CLI's relative/absolute time flags (`--since`, `--from`/`--to`) into the search API's mutually-exclusive `time_range` string or `from_ts`/`to_ts` unix-millisecond bounds.
 - **`internal/clierr`** — typed errors: stable machine-readable codes, human-facing hints, and the exit-code contract (0 success, 1 unexpected, 2 usage/config, 3 auth, 4 not found, 5 retryable). Every user-facing error in the codebase should be a `*clierr.Error`, not a bare `fmt.Errorf`.
-- **`internal/api`** — the generated client and types from the vendored OpenAPI spec (`api/openapi.yaml`), plus a hand-written HTTP transport (`transport.go`) shared by `internal/bronto` and the resource commands. `gen.go` is generated — see [Regeneration](#regeneration) — never hand-edit it.
+- **`internal/api`** — the hand-written HTTP layer: the retrying auth transport (`transport.go`), `--debug` tracing (`debug.go`), and status-to-typed-error mapping. The vendored OpenAPI spec (`api/openapi.yaml`) is a conformance/drift reference for `resourcespec_test.go` and spec-sync, not a codegen source.
 
 ## Adding a resource command
 
@@ -35,25 +35,20 @@ To add a new one:
 1. Add an entry to `resourceRegistry` in `internal/cli/resources.go` — a `resourceDesc{Name, Base, ...}` giving the subcommand name and its collection path (e.g. `/monitors`), plus any overrides (`IDBase`, `CreatePath`, `UpdateMethod`, `Columns`, `NoCreate`/`NoUpdate`/`NoDelete`/`NoGet` for partial resources).
 2. Run `go test ./internal/cli/...` — `resourcespec_test.go` parses `api/openapi.yaml` and asserts your descriptor's `Base`/`CreatePath`/`IDBase` correspond to real paths in the vendored spec. A typo or a stale endpoint fails the build instead of silently 404ing at runtime. If your resource genuinely deviates from the vendored spec snapshot (a real, documented endpoint the spec doesn't capture), add it to `specCreatePathExceptions` with a comment explaining why.
 3. Add a short registration test alongside `resources_test.go` if the resource has any non-default behavior (custom columns, disabled verbs).
-4. Update `skill.md` and `README.md` only if the resource is one of the six workhorse commands or changes the command tour's shape — the registry itself is self-documenting via `bronto <resource> --help`.
+4. Add the new resource's name to `skill.md`'s resource list and the README command tour — `TestSkillDocCoversAllCommands` fails the build if a registered command is absent from `skill.md`, so agents always learn about new commands. (An earlier "only document workhorse commands" policy let eleven resources ship undocumented; the test now prevents that.)
 
 ## TDD and lint expectations
 
 Write the failing test first. Every package in `internal/` has a corresponding `_test.go` file exercising it against fakes (`httptest.Server` for HTTP, an injectable `Getenv`/`WorkDir` for config, etc.) — no test in this repo talks to the real Bronto API. Match that pattern for new code: red test, minimal implementation, green, then simplify.
 
-Run `make lint` (`golangci-lint run`, config in `.golangci.yml`) before opening a PR — CI enforces it. The only standing exclusion is `internal/api/gen.go` (generated code is exempt from errcheck/staticcheck/unused/ineffassign).
+Run `make lint` (config in `.golangci.yml`) before opening a PR — CI enforces it.
 
 ## Conventional commits
 
 Commit subjects follow [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`, etc., e.g. `feat: config resolution with precedence, source tracking, profiles`. The release changelog (`.goreleaser.yaml`) groups `feat:`/`fix:` commits into their own sections and excludes `docs:`/`test:`/`chore:` entirely, so an inaccurate prefix will misfile (or hide) your change in release notes.
 
-## Regeneration
+## The vendored spec
 
-The API client in `internal/api/gen.go` is generated from `api/openapi.yaml` via [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) (see the `//go:generate` directive in `internal/api/doc.go`). After editing the spec:
+`api/openapi.yaml` is a vendored snapshot of Bronto's published OpenAPI spec (`api/upstream.sha256` records which). It is a *reference*, not a codegen source: `resourcespec_test.go` asserts every registry path still exists in it, and the weekly spec-sync workflow diffs it against upstream and files a CLI-impact digest. To re-vendor, follow the checklist spec-sync puts in its drift issue.
 
-```sh
-make generate         # go generate ./...
-make check-generate   # regenerates, then fails if that produced a diff
-```
-
-CI runs `check-generate` on every PR (the `generate-clean` job) to catch a spec change committed without its regenerated client, or a hand-edit to `gen.go` that regeneration would clobber.
+`make check-generate` (CI: `generate-clean`) guards against accidental edits to the vendored spec.

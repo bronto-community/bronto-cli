@@ -21,11 +21,15 @@ bronto search "status >= 500" --since 1h
 bronto tail "level = 'error'" --window 5m
 bronto traces show <trace-id>
 bronto send -d app -m 'hello world'
-bronto fields -d <dataset-uuid> --since 1h
-bronto context --sequence 111721913 -d <dataset-uuid> --timestamp 1711535140632
+bronto fields -d <dataset> --since 1h
+bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
 ```
 
 `search` runs a one-shot query. `tail` polls and follows new events. `traces` has subcommands (`list`, `show`, `services`, `operations`, `aggregate`, `shape`) over the `.traces` logset. `send` posts one event (`-m`) or streams NDJSON/text lines from stdin. `fields` discovers top-level keys in a dataset. `context` shows events around a specific anchor event.
+
+`-d`/`--dataset` accepts a dataset **name** or UUID everywhere. With one dataset in the account it is auto-picked; with several, the error lists them.
+
+Agent-critical flags (global): `--dry-run` prints any mutating call as a plan document (`{"dry_run":true,"method":"POST","path":"/monitors","body":{…}}`) instead of executing — reads still run. `--debug` traces requests/responses on stderr (API key never printed). `--timeout <s>` and `--max-retries <n>` tune the HTTP client.
 
 ## Machine-output contract
 
@@ -33,7 +37,8 @@ bronto context --sequence 111721913 -d <dataset-uuid> --timestamp 1711535140632
 - Force a format with `-o json|jsonl|raw|csv|table`.
 - `--jq '<expr>'` runs a jq expression over json/jsonl output, one result per line. Deviation from the `jq` CLI: a value that errors or halts on the expression is silently **skipped**, not a fatal abort — every other row still prints.
 - `--fields a,b,c` narrows output to those columns/keys; `--fields ?` lists the field names available instead of the data. Only works with table/json/jsonl/csv; `-o raw` and custom TTY renderers (`traces show`, `traces shape`) reject `--fields` with a usage error pointing at a machine format.
-- Errors go to stderr. In machine mode (non-TTY stderr) they're a stable JSON envelope: `{"error":{"code":"...","message":"...","retryable":true|false}}`.
+- Errors go to stderr. In machine mode (non-TTY stderr) they're a stable JSON envelope: `{"error":{"code":"...","message":"...","retryable":true|false,"hint":"..."}}` (`hint` present only when there is remediation advice).
+- Numbers are lossless: 64-bit ids (e.g. `metadata.sequence`) survive json/jsonl/`--jq` byte-exact.
 - Exit codes:
 
   | Code | Meaning |
@@ -47,7 +52,7 @@ bronto context --sequence 111721913 -d <dataset-uuid> --timestamp 1711535140632
 
 ## Resource commands
 
-Resources (`datasets`, `monitors`, `dashboards`, `parsers`, `exports`, `api-keys`, `saved-searches`) share one pattern:
+Resources (`datasets`, `monitors` — plus nested `monitors templates` and `monitors downtimes` — `dashboards`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, and read-only `collections` / `log-views`) share one pattern (list-only where the API documents no other verbs):
 
 ```
 bronto <resource> list
@@ -57,6 +62,12 @@ bronto <resource> update <id> -f key=value
 bronto <resource> delete <id> --yes                      # --yes skips the confirmation prompt
 ```
 
+Extras beyond the uniform pattern: `monitors events|mute`, `users deactivate|reactivate|resend-invite`, `groups members`.
+
+## Utility commands
+
+`bronto ping` (reachability + latency), `bronto version` (`-o json` for machine parsing), `bronto config list` (resolved config with provenance), `bronto usage --since 7d` (ingestion/search volume).
+
 ## Escape hatch
 
 Any endpoint without a dedicated command: `bronto api <METHOD> <path>`, e.g. `bronto api GET /monitors -f limit=10` or `bronto api POST /search --input query.json`. Auth and region are resolved the same way as every other command.
@@ -64,8 +75,8 @@ Any endpoint without a dedicated command: `bronto api <METHOD> <path>`, e.g. `br
 ## Exports
 
 ```
-bronto exports create --dataset <uuid> --since 1h --where "status=500" --wait
-bronto exports create --dataset <uuid> --since 1h --download out.json.gz
+bronto exports create --dataset <dataset> --since 1h --where "status=500" --wait
+bronto exports create --dataset <dataset> --since 1h --download out.json.gz
 ```
 
 `--wait` polls until the export is `COMPLETE`/`FAILED`; `--download <path>` implies `--wait` and saves the result.

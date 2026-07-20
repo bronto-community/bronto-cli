@@ -63,9 +63,17 @@ func Render(w io.Writer, err error, machineMode bool) {
 		ce = New("unknown_error", err.Error())
 	}
 	if machineMode {
-		env := map[string]any{"error": map[string]any{
+		inner := map[string]any{
 			"code": ce.Code, "message": ce.Message, "retryable": ce.Retryable,
-		}}
+		}
+		// Remediation must reach machine consumers too — agents acting on
+		// the envelope were losing "run 'bronto auth login'"-class hints
+		// that only the human renderer printed. Additive, so the envelope
+		// contract stays backward-compatible.
+		if ce.Hint != "" {
+			inner["hint"] = ce.Hint
+		}
+		env := map[string]any{"error": inner}
 		b, _ := json.Marshal(env)
 		_, _ = fmt.Fprintln(w, string(b))
 		return

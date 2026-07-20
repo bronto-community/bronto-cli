@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
@@ -59,5 +60,20 @@ func TestBareInvocationPrintsUsage(t *testing.T) {
 	}
 	if !bytes.Contains(out.Bytes(), []byte("Usage:")) {
 		t.Fatalf("bare invocation output missing %q: %q", "Usage:", out.String())
+	}
+}
+
+func TestUnknownCommandSuggests(t *testing.T) {
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"serach"})
+	err := root.Execute()
+	var ce *clierr.Error
+	if err == nil || !errors.As(err, &ce) || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage error, got %v", err)
+	}
+	if !strings.Contains(ce.Hint, `"search"`) {
+		t.Fatalf("hint should suggest search: %q", ce.Hint)
 	}
 }

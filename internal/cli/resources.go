@@ -40,8 +40,10 @@ type resourceDesc struct {
 
 	// ListTransform, if set, enriches list rows for the human formats
 	// (table/csv) only — e.g. deriving a readable last_activity column.
-	// json/jsonl keep the API payload untouched.
-	ListTransform func(rows []map[string]any) []map[string]any
+	// json/jsonl keep the API payload untouched. The format lets a
+	// transform render human-relative values for table but absolute
+	// machine-friendly ones for csv.
+	ListTransform func(rows []map[string]any, format output.Format) []map[string]any
 
 	NoCreate bool
 	NoUpdate bool
@@ -111,7 +113,11 @@ var resourceRegistry = []resourceDesc{
 		ListTransform: datasetListRows},
 	// Read-only catalogs: list is the only verb the API documents.
 	{Name: "collections", Base: "/collections", Singular: "collection",
-		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true},
+		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true,
+		// The API returns {collection: [datasets…]} maps; untransformed,
+		// the table renderer turned collection names into column headers.
+		Columns:       []string{"collection", "datasets", "names"},
+		ListTransform: collectionListRows},
 	{Name: "log-views", Base: "/logs/views", Singular: "log view",
 		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true},
 	{Name: "limits", Base: "/limits", Singular: "limit"},
@@ -158,8 +164,7 @@ func doJSONRequest(ctx context.Context, app *App, method, path string, body []by
 	}
 	resp, err := app.HTTPClient.Do(req)
 	if err != nil {
-		return nil, clierr.New("network_error", err.Error()).WithRetryable().
-			WithHint("Check your network and the API base URL / region.")
+		return nil, bronto.ClassifyTransportError(ctx, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	respBody, err := io.ReadAll(resp.Body)
@@ -173,7 +178,7 @@ func doJSONRequest(ctx context.Context, app *App, method, path string, body []by
 		return nil, nil
 	}
 	var doc any
-	if err := json.Unmarshal(respBody, &doc); err != nil {
+	if err := bronto.DecodeJSON(respBody, &doc); err != nil {
 		return nil, err
 	}
 	return doc, nil
@@ -187,7 +192,7 @@ func dryRunPlan(method, path string, body []byte) map[string]any {
 	plan := map[string]any{"dry_run": true, "method": method, "path": path}
 	if len(body) > 0 {
 		var decoded any
-		if err := json.Unmarshal(body, &decoded); err == nil {
+		if err := bronto.DecodeJSON(body, &decoded); err == nil {
 			plan["body"] = decoded
 		} else {
 			plan["body"] = string(body)
@@ -317,7 +322,7 @@ func confirmDestructive(cmd *cobra.Command, app *App, prompt string, yes bool) e
 
 // newResourceCmd builds the "<name>" command with generic list/get/create/
 // update/delete subcommands driven by desc. extras are hand-written
-// subcommands (e.g. monitors' events/mute/test) to attach alongside the
+// subcommands (e.g. monitors' events/mute) to attach alongside the
 // generated ones; an extra whose first Use word matches a generated verb
 // (e.g. a hand-written "create" for exports, Task 4) REPLACES it instead of
 // being added twice.
@@ -386,7 +391,7 @@ func newResourceListCmd(desc resourceDesc) *cobra.Command {
 				return err
 			}
 			if desc.ListTransform != nil && (format == output.FormatTable || format == output.FormatCSV) {
-				rows = desc.ListTransform(rows)
+				rows = desc.ListTransform(rows, format)
 			}
 			p, err := app.PrinterFor(format)
 			if err != nil {

@@ -30,6 +30,16 @@ cmp stdout datasets-csv.golden
 exec bronto search x -d web --api-key k --base-url $STUB_URL --since 1h -o jsonl
 cmp stdout search-jsonl.golden
 
+# int64 precision: >2^53 sequence survives json byte-exact; jq sees it intact
+exec bronto search x -d 11111111-1111-1111-1111-111111111111 --api-key k --base-url $STUB_URL --since 1h -o jsonl --jq '.["metadata.sequence"]'
+stdout '4367602734065516544'
+! stdout '4367602734065516500'
+
+# the human table excludes links/metadata plumbing
+exec bronto search x -d 11111111-1111-1111-1111-111111111111 --api-key k --base-url $STUB_URL --since 1h -o table
+! stdout 'METADATA'
+! stdout 'LINKS'
+
 # machine error envelope: stable JSON on stderr, nothing on stdout
 ! exec bronto search x -d nope --api-key k --base-url $STUB_URL --since 1h -o json
 ! stdout .
@@ -44,8 +54,15 @@ cmp stderr error-envelope.golden
     "@raw": "{\"level\":\"info\",\"msg\":\"a\"}",
     "@status": "info",
     "@time": "2026-01-02 03:04:05.000 UTC",
+    "links": [
+      {
+        "href": "https://x.example/ctx",
+        "rel": "context"
+      }
+    ],
     "message_kvs.level": "info",
-    "message_kvs.status": 200
+    "message_kvs.status": 200,
+    "metadata.sequence": 4367602734065516544
   },
   {
     "@raw": "{\"level\":\"warn\",\"msg\":\"b\"}",
@@ -56,7 +73,7 @@ cmp stderr error-envelope.golden
   }
 ]
 -- search-jsonl.golden --
-{"@raw":"{\"level\":\"info\",\"msg\":\"a\"}","@status":"info","@time":"2026-01-02 03:04:05.000 UTC","message_kvs.level":"info","message_kvs.status":200}
+{"@raw":"{\"level\":\"info\",\"msg\":\"a\"}","@status":"info","@time":"2026-01-02 03:04:05.000 UTC","links":[{"href":"https://x.example/ctx","rel":"context"}],"message_kvs.level":"info","message_kvs.status":200,"metadata.sequence":4367602734065516544}
 {"@raw":"{\"level\":\"warn\",\"msg\":\"b\"}","@status":"warn","@time":"2026-01-02 03:04:06.000 UTC","message_kvs.level":"warn","message_kvs.status":500}
 -- search-csv.golden --
 @time,message_kvs.level
@@ -73,4 +90,4 @@ collection,dataset,log_id
 prod,web,11111111-1111-1111-1111-111111111111
 prod,app,22222222-2222-2222-2222-222222222222
 -- error-envelope.golden --
-{"error":{"code":"dataset_not_found","message":"no dataset named \"nope\"","retryable":false}}
+{"error":{"code":"dataset_not_found","hint":"This account has: app, web. Run 'bronto datasets list' for details.","message":"no dataset named \"nope\"","retryable":false}}

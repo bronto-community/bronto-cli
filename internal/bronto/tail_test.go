@@ -118,3 +118,16 @@ func TestSortEventsMixedBatchTotalOrder(t *testing.T) {
 		}
 	}
 }
+
+func TestSortEventsNumericTimestamps(t *testing.T) {
+	// Lexicographic comparison would order "9" after "10"; chronological
+	// must not.
+	evs := []map[string]any{
+		{"@time": float64(10), "@raw": "second"},
+		{"@time": float64(9), "@raw": "first"},
+	}
+	SortEvents(evs)
+	if evs[0]["@raw"] != "first" || evs[1]["@raw"] != "second" {
+		t.Fatalf("numeric @time mis-sorted: %v", evs)
+	}
+}

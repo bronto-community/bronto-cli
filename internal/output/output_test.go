@@ -457,3 +457,19 @@ func TestTableZeroRowsPrintsNotice(t *testing.T) {
 		t.Errorf("json empty = %q, want []", jbuf.String())
 	}
 }
+
+func TestTruncateCell(t *testing.T) {
+	if got := truncateCell("short"); got != "short" {
+		t.Fatalf("short cell changed: %q", got)
+	}
+	long := strings.Repeat("x", tableCellCap+50)
+	got := truncateCell(long)
+	if len([]rune(got)) != tableCellCap || !strings.HasSuffix(got, "…") {
+		t.Fatalf("truncated len=%d suffix=%q", len([]rune(got)), got[len(got)-3:])
+	}
+	// multibyte boundary safety
+	uni := strings.Repeat("ü", tableCellCap+10)
+	if r := []rune(truncateCell(uni)); len(r) != tableCellCap || r[len(r)-1] != '…' {
+		t.Fatalf("unicode truncation broke: %d", len(r))
+	}
+}

@@ -5,7 +5,7 @@
 #   3. the integration leg (integration/), which only runs when
 #      BRONTO_IT_MGMT_KEY is set AND the integration/ package exists
 #   4. merge of all covdata directories into a single text profile
-#   5. filtering of generated code (internal/api/gen.go) out of the profile
+#   5. filtering of the integration harness out of the profile
 #   6. a filtered total + an HTML report
 #
 # Pinned pitfalls (do not "simplify" these away):
@@ -26,7 +26,6 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 
 module="github.com/bronto-community/bronto-cli"
-gen_file="$module/internal/api/gen.go"
 
 covdata_dir="$root/covdata"
 unit_dir="$covdata_dir/unit"
@@ -68,12 +67,12 @@ echo "==> merging covdata ($covdata_inputs) -> coverage.txt"
 go tool covdata textfmt -i="$covdata_inputs" -o "$raw_profile"
 
 echo "==> filtering generated code and test infrastructure -> coverage.filtered.txt"
-# Excluded from accounting: generated internal/api/gen.go, and the
+# Excluded from accounting: the
 # integration/ package itself (test harness, not product code — its live
 # paths only execute with credentials and would dilute the ratchet).
 {
 	head -n1 "$raw_profile"
-	grep -v -e "^${gen_file}:" -e "^${module}/integration/" "$raw_profile" | tail -n +2
+	grep -v -e "^${module}/integration/" "$raw_profile" | tail -n +2
 } >"$filtered_profile"
 
 echo "==> writing HTML report -> coverage.html"

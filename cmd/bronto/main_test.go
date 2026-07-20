@@ -26,8 +26,10 @@ func stubAPI() *httptest.Server {
 			`{"collection":"prod","dataset":"app","log":"app","log_id":"22222222-2222-2222-2222-222222222222"}]}`))
 	})
 	mux.HandleFunc("/search", func(w http.ResponseWriter, _ *http.Request) {
+		// metadata.sequence deliberately exceeds 2^53: the goldens pin that
+		// it survives every output format byte-exact (no float64 round-trip).
 		_, _ = w.Write([]byte(`{"events":[` +
-			`{"@time":"2026-01-02 03:04:05.000 UTC","@status":"info","@raw":"{\"level\":\"info\",\"msg\":\"a\"}","message_kvs":{"level":"info","status":200}},` +
+			`{"@time":"2026-01-02 03:04:05.000 UTC","@status":"info","@raw":"{\"level\":\"info\",\"msg\":\"a\"}","message_kvs":{"level":"info","status":200},"metadata":{"sequence":4367602734065516544},"links":[{"rel":"context","href":"https://x.example/ctx"}]},` +
 			`{"@time":"2026-01-02 03:04:06.000 UTC","@status":"warn","@raw":"{\"level\":\"warn\",\"msg\":\"b\"}","message_kvs":{"level":"warn","status":500}}]}`))
 	})
 	return httptest.NewServer(mux)

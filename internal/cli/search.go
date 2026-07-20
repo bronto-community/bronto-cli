@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/output"
 	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
@@ -54,6 +55,11 @@ func newSearchCmd() *cobra.Command {
 			ids, expr, err := resolveDataset(cmd.Context(), app, datasets, fromExpr)
 			if err != nil {
 				return err
+			}
+			if limit < 1 || limit > 10000 {
+				return clierr.New("usage_invalid_limit",
+					fmt.Sprintf("limit must be between 1 and 10000, got %d", limit)).
+					WithHint("The API caps event queries at 10000 results; use pagination or narrower time ranges for more.")
 			}
 			spec, err := timerange.Resolve(since, from, to, nil)
 			if err != nil {
@@ -160,9 +166,28 @@ func printEvents(app *App, events []map[string]any) error {
 		}
 		return nil
 	}
-	max := 0
 	if f == output.FormatTable {
-		max = 8
+		return p.PrintRows(eventTableColumns(rows), rows)
 	}
-	return p.PrintRows(bronto.EventColumns(rows, max), rows)
+	return p.PrintRows(bronto.EventColumns(rows, 0), rows)
+}
+
+// eventTableColumns picks the human table columns for event rows: the
+// usual priority/discovery order, but with the bulky plumbing fields
+// (links, metadata.*) excluded — they turned the default search table
+// into hundreds of characters per row. json/jsonl/csv keep every field;
+// --fields overrides this selection entirely.
+func eventTableColumns(rows []map[string]any) []string {
+	filtered := make([]map[string]any, 0, len(rows))
+	for _, r := range rows {
+		fr := make(map[string]any, len(r))
+		for k, v := range r {
+			if k == "links" || strings.HasPrefix(k, "metadata.") {
+				continue
+			}
+			fr[k] = v
+		}
+		filtered = append(filtered, fr)
+	}
+	return bronto.EventColumns(filtered, 8)
 }

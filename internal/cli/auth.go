@@ -279,8 +279,22 @@ func newAuthStatusCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return p.PrintRows([]string{"profile", "key_source", "key", "region", "base_url", "status"},
-				[]map[string]any{row})
+			if err := p.PrintRows([]string{"profile", "key_source", "key", "region", "base_url", "status"},
+				[]map[string]any{row}); err != nil {
+				return err
+			}
+			// A status command that reports a broken credential must also
+			// exit non-zero, or `bronto auth status && deploy` gates on
+			// nothing. The row above already carries the detail; the error
+			// only sets the exit code (quiet keeps stderr clean of the
+			// duplicate message in machine pipelines — the envelope is
+			// still emitted for parity with every other failure).
+			if status != "ok" {
+				return clierr.New("auth_status_not_ok",
+					fmt.Sprintf("credential check failed: %s", status)).
+					WithHint("Run 'bronto auth login' to store a working key, or set BRONTO_API_KEY.")
+			}
+			return nil
 		},
 	}
 }
