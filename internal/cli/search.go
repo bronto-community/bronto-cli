@@ -110,6 +110,11 @@ func newSearchCmd() *cobra.Command {
 				return p.PrintRows(bronto.EventColumns(rows, 0), rows)
 			default:
 				events := resp.EventRows()
+				if len(selects) > 0 {
+					// The user asked for specific columns: honor the
+					// projection (EventRows would silently ignore --select).
+					events = resp.SelectedRows()
+				}
 				if len(events) == 0 {
 					p, err := app.Printer(false)
 					if err != nil {

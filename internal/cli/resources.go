@@ -132,7 +132,8 @@ var resourceRegistry = []resourceDesc{
 		Columns: []string{"name", "description", "created", "id"}},
 	// The vendored spec has no GET /parsers/{parser_id}: only patch and
 	// delete are documented for a single parser.
-	{Name: "parsers", Base: "/parsers", NoGet: true},
+	{Name: "parsers", Base: "/parsers", NoGet: true,
+		Columns: []string{"name", "description", "type", "enabled", "created", "id"}},
 	{Name: "api-keys", Base: "/api-keys", Singular: "API key", NoGet: true,
 		// api_key is masked by resourceListPolish — full key material was
 		// rendering into terminals/scrollback via the auto columns.
@@ -151,8 +152,13 @@ var resourceRegistry = []resourceDesc{
 		Columns:       []string{"collection", "datasets", "names"},
 		ListTransform: collectionListRows},
 	{Name: "log-views", Base: "/logs/views", Singular: "log view",
-		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true},
-	{Name: "limits", Base: "/limits", Singular: "limit"},
+		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true,
+		// Rows carry only components + this_template_tags; derive the
+		// human columns from them.
+		Columns:       []string{"log_type", "components_count"},
+		ListTransform: logViewListRows},
+	{Name: "limits", Base: "/limits", Singular: "limit",
+		Columns: []string{"category", "description", "value", "unit", "created", "id"}},
 	{Name: "encryption-keys", Base: "/encryption-keys", Singular: "encryption key"},
 	// No per-ID GET documented for these three; update is full-body PUT.
 	{Name: "forward-configs", Base: "/forward-configs", Singular: "forward config",
@@ -162,7 +168,8 @@ var resourceRegistry = []resourceDesc{
 	{Name: "slack", Base: "/integrations/slack", Singular: "Slack integration",
 		UpdateMethod: http.MethodPut, NoGet: true},
 	{Name: "templates", AttachTo: "monitors", Base: "/monitors/templates",
-		Singular: "monitor template", UpdateMethod: http.MethodPut},
+		Singular: "monitor template", UpdateMethod: http.MethodPut,
+		Columns: []string{"name", "description", "monitor_type", "window", "threshold", "id"}},
 	{Name: "downtimes", AttachTo: "monitors", Base: "/monitors/downtimes",
 		Singular: "downtime", UpdateMethod: http.MethodPut, NoGet: true},
 	{Name: "users", Base: "/users", Singular: "user",

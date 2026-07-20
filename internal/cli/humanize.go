@@ -205,3 +205,19 @@ func dashboardListRows(rows []map[string]any, _ output.Format) []map[string]any 
 	}
 	return rows
 }
+
+// logViewListRows derives readable columns for /logs/views rows, which
+// carry only a components array and template tags.
+func logViewListRows(rows []map[string]any, _ output.Format) []map[string]any {
+	for _, row := range rows {
+		if comps, ok := row["components"].([]any); ok {
+			row["components_count"] = len(comps)
+		}
+		if tags, ok := row["this_template_tags"].(map[string]any); ok {
+			if lt, _ := tags["log_type"].(string); lt != "" {
+				row["log_type"] = lt
+			}
+		}
+	}
+	return rows
+}
