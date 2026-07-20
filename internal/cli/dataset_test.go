@@ -40,8 +40,15 @@ func datasetTestApp(t *testing.T, logsJSON string) (*App, *int) {
 }
 
 const twoDatasets = `{"logs":[
-	{"log":"web","log_id":"11111111-1111-1111-1111-111111111111"},
-	{"log":"app","log_id":"22222222-2222-2222-2222-222222222222"}]}`
+	{"log":"web","collection":"prod","log_id":"11111111-1111-1111-1111-111111111111"},
+	{"log":"app","collection":"prod","log_id":"22222222-2222-2222-2222-222222222222"}]}`
+
+// dupDatasets has "logs" duplicated across two collections — the shape
+// that makes bare-name resolution ambiguous.
+const dupDatasets = `{"logs":[
+	{"log":"logs","collection":"prod","log_id":"33333333-3333-3333-3333-333333333333"},
+	{"log":"logs","collection":"staging","log_id":"44444444-4444-4444-4444-444444444444"},
+	{"log":"web","collection":"prod","log_id":"11111111-1111-1111-1111-111111111111"}]}`
 
 func TestResolveDatasetUUIDPassesThroughWithoutLookup(t *testing.T) {
 	app, calls := datasetTestApp(t, twoDatasets)
@@ -164,5 +171,71 @@ func TestResolveDatasetDefaultDatasetExpression(t *testing.T) {
 	}
 	if ids != nil || expr != "logset = 'prod'" {
 		t.Fatalf("ids=%v expr=%q, want expression form with nil ids", ids, expr)
+	}
+}
+
+func TestResolveDatasetQualifiedName(t *testing.T) {
+	app, _ := datasetTestApp(t, dupDatasets)
+	ids, _, err := resolveDataset(context.Background(), app, []string{"staging/logs"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ids) != 1 || ids[0] != "44444444-4444-4444-4444-444444444444" {
+		t.Fatalf("ids = %v, want staging/logs' id", ids)
+	}
+}
+
+func TestResolveDatasetAmbiguousTeachesQualification(t *testing.T) {
+	app, _ := datasetTestApp(t, dupDatasets)
+	_, _, err := resolveDataset(context.Background(), app, []string{"logs"}, "")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "usage_ambiguous_dataset" {
+		t.Fatalf("want usage_ambiguous_dataset, got %v", err)
+	}
+	if !strings.Contains(ce.Message, "prod/logs") || !strings.Contains(ce.Message, "staging/logs") {
+		t.Fatalf("message must list qualified candidates: %q", ce.Message)
+	}
+	if !strings.Contains(ce.Hint, "-d prod/logs") {
+		t.Fatalf("hint must show a copy-pasteable qualified example: %q", ce.Hint)
+	}
+}
+
+func TestResolveDatasetUnknownQualifiedListsQualified(t *testing.T) {
+	app, _ := datasetTestApp(t, dupDatasets)
+	_, _, err := resolveDataset(context.Background(), app, []string{"nope/nothing"}, "")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "dataset_not_found" {
+		t.Fatalf("want dataset_not_found, got %v", err)
+	}
+	if !strings.Contains(ce.Hint, "staging/logs") {
+		t.Fatalf("hint must list qualified names: %q", ce.Hint)
+	}
+}
+
+func TestResolveDatasetPickListQualifiesOnlyDuplicates(t *testing.T) {
+	app, _ := datasetTestApp(t, dupDatasets)
+	_, _, err := resolveDataset(context.Background(), app, nil, "")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "usage_missing_dataset" {
+		t.Fatalf("want usage_missing_dataset, got %v", err)
+	}
+	// duplicated name shown qualified, unique name bare
+	if !strings.Contains(ce.Hint, "prod/logs") || !strings.Contains(ce.Hint, "staging/logs") {
+		t.Fatalf("duplicates must be qualified in the pick-list: %q", ce.Hint)
+	}
+	if strings.Contains(ce.Hint, "prod/web") {
+		t.Fatalf("unique names must stay bare: %q", ce.Hint)
+	}
+}
+
+func TestResolveDatasetDefaultDatasetQualified(t *testing.T) {
+	app, _ := datasetTestApp(t, dupDatasets)
+	app.Config.Inject("default_dataset", "prod/logs", config.SourceUser)
+	ids, _, err := resolveDataset(context.Background(), app, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ids) != 1 || ids[0] != "33333333-3333-3333-3333-333333333333" {
+		t.Fatalf("ids = %v, want prod/logs via default_dataset", ids)
 	}
 }

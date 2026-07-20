@@ -50,15 +50,15 @@ Prebuilt archives (tar.gz for macOS/Linux, zip for Windows) plus `.deb`/`.rpm` p
 ## Quickstart
 
 ```sh
-bronto auth login                              # paste an API key, stored in the OS keychain
-bronto datasets list                           # see what data you have
-bronto search "status >= 500" --since 1h       # one-shot query
-bronto tail "level = 'error'" --window 5m      # follow new events live
+bronto auth login                                  # paste an API key, stored in the OS keychain
+bronto datasets list                               # see what data you have
+bronto search "status >= 500" -d <dataset> --since 1h   # one-shot query
+bronto tail "level = 'error'" -d <dataset> --window 5m  # follow new events live
 ```
 
 `bronto auth login` prompts for a key interactively (or `--key-stdin` to pipe one in) and picks a region (`eu`/`us`). Everything after that resolves credentials automatically.
 
-Query commands need a dataset scope: with a single dataset in the account it is picked automatically; with several, pass `-d <name>` (dataset **names** work everywhere a UUID does) or set a default once with `bronto config set default_dataset <name>`.
+`-d` takes a dataset **name** from `datasets list` (UUIDs work too). A name that exists in several collections is qualified as `collection/name` — e.g. `-d prod/api-logs`. You can drop `-d` entirely once you set a default (`bronto config set default_dataset <name>`) — or if the account has only one dataset, which is auto-picked.
 
 At a terminal, `bronto search "status >= 500" --since 1h` renders a table:
 
