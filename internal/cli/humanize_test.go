@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -149,5 +150,65 @@ func TestCollectionListRows(t *testing.T) {
 	passthrough := collectionListRows([]map[string]any{{"name": "x"}}, output.FormatTable)
 	if len(passthrough) != 1 || passthrough[0]["name"] != "x" {
 		t.Fatalf("passthrough = %v", passthrough)
+	}
+}
+
+func TestResourceListPolish(t *testing.T) {
+	ms := float64(time.Now().Add(-2 * time.Hour).UnixMilli())
+	rows := resourceListPolish([]map[string]any{{
+		"api_key":    "575731cd-7468-426b-a80c-997523507b05",
+		"invited_at": ms,
+		"metadata":   map[string]any{"created_at": ms, "modified_at": ms},
+		"name":       "x",
+	}}, output.FormatTable)
+	if rows[0]["api_key"] != "575731cd…" {
+		t.Fatalf("api_key must be masked in the human view: %v", rows[0]["api_key"])
+	}
+	if rows[0]["invited_at"] != "2h ago" {
+		t.Fatalf("invited_at = %v, want humanized", rows[0]["invited_at"])
+	}
+	if rows[0]["created"] != "2h ago" || rows[0]["modified"] != "2h ago" {
+		t.Fatalf("metadata provenance not derived: %v", rows[0])
+	}
+
+	// CSV: absolute timestamps, key still masked.
+	csvRows := resourceListPolish([]map[string]any{{
+		"api_key":  "575731cd-7468-426b-a80c-997523507b05",
+		"metadata": map[string]any{"created_at": float64(1751364000000)},
+	}}, output.FormatCSV)
+	if got, _ := csvRows[0]["created"].(string); !strings.HasSuffix(got, "Z") {
+		t.Fatalf("csv created = %v, want RFC3339", csvRows[0]["created"])
+	}
+	if csvRows[0]["api_key"] != "575731cd…" {
+		t.Fatalf("csv api_key must be masked too: %v", csvRows[0]["api_key"])
+	}
+}
+
+func TestUserListRows(t *testing.T) {
+	secs := float64(time.Now().Add(-30 * time.Minute).Unix())
+	rows := userListRows([]map[string]any{{
+		"email":       "a@b.c",
+		"last_logins": map[string]any{"Password": secs, "SSO": secs - 1000},
+	}, {
+		"email": "never@logged.in",
+	}}, output.FormatTable)
+	if rows[0]["last_login"] != "30m ago" {
+		t.Fatalf("last_login = %v", rows[0]["last_login"])
+	}
+	if _, ok := rows[1]["last_login"]; ok {
+		t.Fatalf("no logins must not derive a column: %v", rows[1])
+	}
+}
+
+func TestDashboardListRows(t *testing.T) {
+	rows := dashboardListRows([]map[string]any{
+		{"widget_ids": []any{"a", "b", "c"}},
+		{"name": "no-widgets"},
+	}, output.FormatTable)
+	if rows[0]["widgets_count"] != 3 {
+		t.Fatalf("widgets_count = %v", rows[0]["widgets_count"])
+	}
+	if _, ok := rows[1]["widgets_count"]; ok {
+		t.Fatalf("missing widget_ids must not derive a count: %v", rows[1])
 	}
 }

@@ -56,11 +56,13 @@ Resources (`datasets`, `monitors` — plus nested `monitors templates` and `moni
 
 ```
 bronto <resource> list
-bronto <resource> get <id>
+bronto <resource> get <id-or-name>
 bronto <resource> create -f key=value -f other=value    # or --input body.json / --input -
-bronto <resource> update <id> -f key=value
-bronto <resource> delete <id> --yes                      # --yes skips the confirmation prompt
+bronto <resource> update <id-or-name> -f key=value
+bronto <resource> delete <id-or-name> --yes              # --yes skips the confirmation prompt
 ```
+
+A unique name resolves anywhere an id is accepted (users match by email; datasets support `collection/name`). Ambiguous names error with the candidate ids.
 
 Extras beyond the uniform pattern: `monitors events|mute`, `users deactivate|reactivate|resend-invite`, `groups members`.
 

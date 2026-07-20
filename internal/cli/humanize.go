@@ -123,3 +123,85 @@ func collectionListRows(rows []map[string]any, _ output.Format) []map[string]any
 	}
 	return out
 }
+
+// resourceListPolish is the generic human-view pass applied to EVERY
+// resource list's table/csv rendering (before any per-resource
+// ListTransform):
+//   - key material is masked (api-keys list was printing full keys)
+//   - top-level *_at epoch-millis values render as relative age (table)
+//     or RFC3339 (csv)
+//   - metadata.created_at / metadata.modified_at surface as derived
+//     "created" / "modified" columns so curated column sets can show
+//     readable provenance without exposing the metadata blob
+//
+// json/jsonl stay verbatim: this is presentation, not data.
+func resourceListPolish(rows []map[string]any, format output.Format) []map[string]any {
+	now := time.Now()
+	stamp := func(ms float64) string {
+		if format == output.FormatCSV {
+			return time.UnixMilli(int64(ms)).UTC().Format(time.RFC3339)
+		}
+		return timeAgo(ms, now)
+	}
+	for _, row := range rows {
+		for k, v := range row {
+			if k == "api_key" || k == "key" {
+				if s, _ := v.(string); len(s) > 8 {
+					row[k] = s[:8] + "…"
+				}
+				continue
+			}
+			if strings.HasSuffix(k, "_at") {
+				if ms, ok := numericValue(v); ok && ms > 1e11 {
+					row[k] = stamp(ms)
+				}
+			}
+		}
+		if meta, ok := row["metadata"].(map[string]any); ok {
+			if ms, ok := numericValue(meta["created_at"]); ok && ms > 1e11 {
+				row["created"] = stamp(ms)
+			}
+			if ms, ok := numericValue(meta["modified_at"]); ok && ms > 1e11 {
+				row["modified"] = stamp(ms)
+			}
+		}
+	}
+	return rows
+}
+
+// userListRows derives last_login from the per-method last_logins map
+// (epoch SECONDS, e.g. {"Password": 1784526811}).
+func userListRows(rows []map[string]any, format output.Format) []map[string]any {
+	now := time.Now()
+	for _, row := range rows {
+		logins, ok := row["last_logins"].(map[string]any)
+		if !ok {
+			continue
+		}
+		var latest float64
+		for _, v := range logins {
+			if s, ok := numericValue(v); ok && s > latest {
+				latest = s
+			}
+		}
+		if latest > 0 {
+			if format == output.FormatCSV {
+				row["last_login"] = time.Unix(int64(latest), 0).UTC().Format(time.RFC3339)
+			} else {
+				row["last_login"] = timeAgo(latest*1000, now)
+			}
+		}
+	}
+	return rows
+}
+
+// dashboardListRows derives a widget count — the layout/widgets blobs are
+// meaningless in a table.
+func dashboardListRows(rows []map[string]any, _ output.Format) []map[string]any {
+	for _, row := range rows {
+		if ids, ok := row["widget_ids"].([]any); ok {
+			row["widgets_count"] = len(ids)
+		}
+	}
+	return rows
+}
