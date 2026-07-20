@@ -17,8 +17,15 @@ import (
 var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 type datasetInfo struct {
-	name string
-	id   string
+	name       string
+	collection string
+	id         string
+}
+
+// qualified renders the collection/name form used to disambiguate
+// duplicate dataset names across collections.
+func (d datasetInfo) qualified() string {
+	return d.collection + "/" + d.name
 }
 
 // listDatasets fetches the account's datasets via GET /logs (the same
@@ -31,20 +38,37 @@ func listDatasets(ctx context.Context, app *App) ([]datasetInfo, error) {
 	var out []datasetInfo
 	for _, row := range rowsFromPayload(payload, "logs") {
 		name, _ := row["log"].(string)
+		collection, _ := row["collection"].(string)
 		id, _ := row["log_id"].(string)
 		if id != "" {
-			out = append(out, datasetInfo{name: name, id: id})
+			out = append(out, datasetInfo{name: name, collection: collection, id: id})
 		}
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].name < out[j].name })
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].name != out[j].name {
+			return out[i].name < out[j].name
+		}
+		return out[i].collection < out[j].collection
+	})
 	return out, nil
 }
 
-// datasetNames renders a readable, capped name list for hints.
+// datasetNames renders a readable, capped name list for hints. Names
+// that appear in more than one collection are shown qualified
+// (collection/name) — a pick-list containing "docs-analytics" twice
+// tells the user nothing.
 func datasetNames(ds []datasetInfo) string {
+	counts := map[string]int{}
+	for _, d := range ds {
+		counts[d.name]++
+	}
 	names := make([]string, 0, len(ds))
 	for _, d := range ds {
-		if d.name != "" {
+		switch {
+		case d.name == "":
+		case counts[d.name] > 1:
+			names = append(names, d.qualified())
+		default:
 			names = append(names, d.name)
 		}
 	}
@@ -56,7 +80,10 @@ func datasetNames(ds []datasetInfo) string {
 }
 
 // resolveDatasetRef turns one --dataset value into a log id: UUIDs pass
-// through untouched, anything else is matched against dataset names.
+// through untouched; "collection/name" matches exactly one dataset in
+// that collection; a bare name matches when it is unique across
+// collections, and otherwise errors with the qualified candidates so the
+// user learns the qualification syntax at the moment it is needed.
 func resolveDatasetRef(ctx context.Context, app *App, ref string) (string, error) {
 	if uuidRe.MatchString(ref) {
 		return ref, nil
@@ -65,6 +92,19 @@ func resolveDatasetRef(ctx context.Context, app *App, ref string) (string, error
 	if err != nil {
 		return "", err
 	}
+
+	if collection, name, isQualified := strings.Cut(ref, "/"); isQualified {
+		var qualifiedNames []string
+		for _, d := range ds {
+			if d.collection == collection && d.name == name {
+				return d.id, nil
+			}
+			qualifiedNames = append(qualifiedNames, d.qualified())
+		}
+		return "", clierr.New("dataset_not_found", fmt.Sprintf("no dataset %q", ref)).
+			WithHint(fmt.Sprintf("Use <collection>/<name>. This account has: %s.", capList(qualifiedNames)))
+	}
+
 	var matches []datasetInfo
 	for _, d := range ds {
 		if d.name == ref {
@@ -81,14 +121,23 @@ func resolveDatasetRef(ctx context.Context, app *App, ref string) (string, error
 		}
 		return "", clierr.New("dataset_not_found", fmt.Sprintf("no dataset named %q", ref)).WithHint(hint)
 	default:
-		ids := make([]string, 0, len(matches))
+		qualified := make([]string, 0, len(matches))
 		for _, m := range matches {
-			ids = append(ids, m.id)
+			qualified = append(qualified, m.qualified())
 		}
 		return "", clierr.New("usage_ambiguous_dataset",
-			fmt.Sprintf("%d datasets are named %q", len(matches), ref)).
-			WithHint("Pass a UUID instead: " + strings.Join(ids, ", "))
+			fmt.Sprintf("%d datasets are named %q: %s", len(matches), ref, strings.Join(qualified, ", "))).
+			WithHint(fmt.Sprintf("Qualify it as <collection>/<name> — e.g. -d %s — or pass the UUID from 'bronto datasets list'.", qualified[0]))
 	}
+}
+
+// capList joins names, capped like datasetNames.
+func capList(names []string) string {
+	const maxShown = 15
+	if len(names) > maxShown {
+		names = append(names[:maxShown], fmt.Sprintf("… +%d more", len(names)-maxShown))
+	}
+	return strings.Join(names, ", ")
 }
 
 // resolveDataset picks the dataset scope for search/tail: explicit flags
