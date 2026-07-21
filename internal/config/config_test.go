@@ -271,3 +271,47 @@ func TestSetDefaultProfile(t *testing.T) {
 		t.Fatalf("profile = %q, %v", cfg.Profile(), err)
 	}
 }
+
+// TestBaseURLFromEnv pins the staging/localhost workflow: BRONTO_BASE_URL
+// overrides the region-derived URL, a flag still beats the env, and a
+// pasted trailing slash is tolerated.
+func TestBaseURLFromEnv(t *testing.T) {
+	cfg, err := Load(LoadOptions{
+		Getenv: func(k string) string {
+			if k == "BRONTO_BASE_URL" {
+				return "http://localhost:8080/"
+			}
+			return ""
+		},
+		WorkDir:       t.TempDir(),
+		UserConfigDir: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := cfg.BaseURL(); got != "http://localhost:8080" {
+		t.Fatalf("BaseURL = %q, want env value with trailing slash stripped", got)
+	}
+	if v, _ := cfg.Get("base_url"); v.Source != SourceEnv {
+		t.Fatalf("base_url source = %q, want env", v.Source)
+	}
+
+	// flag > env
+	cfg, err = Load(LoadOptions{
+		Flags: map[string]string{"base_url": "http://flag:1"},
+		Getenv: func(k string) string {
+			if k == "BRONTO_BASE_URL" {
+				return "http://env:2"
+			}
+			return ""
+		},
+		WorkDir:       t.TempDir(),
+		UserConfigDir: t.TempDir(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := cfg.BaseURL(); got != "http://flag:1" {
+		t.Fatalf("BaseURL = %q, want the flag to beat the env", got)
+	}
+}

@@ -171,6 +171,7 @@ Environment variables:
 |---|---|
 | `BRONTO_API_KEY` | API key (bypasses the keychain) |
 | `BRONTO_REGION` | `eu` or `us` |
+| `BRONTO_BASE_URL` | full API base URL (staging, localhost) — overrides the region-derived URL |
 | `BRONTO_PROFILE` | named profile to use |
 | `BRONTO_TIMEOUT` | request timeout override (seconds) |
 | `BRONTO_MAX_RETRIES` | retries for idempotent requests on 429/5xx |
@@ -182,7 +183,7 @@ Config keys (settable via `bronto config set`, project `.bronto.toml`, or profil
 | Key | Env | Purpose | Default |
 |---|---|---|---|
 | `region` | `BRONTO_REGION` | `eu` or `us` | `eu` |
-| `base_url` | — | full API base URL override | derived from region |
+| `base_url` | `BRONTO_BASE_URL` | full API base URL override (staging/localhost) | derived from region |
 | `output` | — | default output format | table (TTY) / jsonl (piped) |
 | `default_dataset` | — | dataset name/UUID or `from_expr` used when `-d` is omitted | — |
 | `timeout` | `BRONTO_TIMEOUT` | HTTP timeout in seconds | 30 |
@@ -200,6 +201,17 @@ Config keys (settable via `bronto config set`, project `.bronto.toml`, or profil
 - **`usage_missing_dataset`** — the account has several datasets; the error lists them. Pick one with `-d <name>` or set `default_dataset`.
 - **Wrong region** — `bronto ping` shows the resolved base URL and latency; override with `--region` / `BRONTO_REGION`.
 - **What is it actually sending?** — add `--debug` for a curl-style trace (API key never printed), or `--dry-run` to see mutating request bodies without executing.
+
+## Staging & local development
+
+Point the CLI at any Bronto-compatible API — a staging environment or a local instance:
+
+```sh
+export BRONTO_BASE_URL=http://localhost:8080   # or --base-url per invocation
+export BRONTO_INGEST_URL=http://localhost:8081 # ingestion host for `bronto send`
+```
+
+Flags beat env, env beats config files, so a one-off `--base-url` always wins. Keep environments cleanly separated with profiles instead: `bronto config set base_url https://api.staging.example --profile staging`, then `--profile staging` (or `BRONTO_PROFILE=staging`) per invocation. `bronto ping` and `bronto auth status` show which base URL actually resolved.
 
 ## Restricted environments
 
