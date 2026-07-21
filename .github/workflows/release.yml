@@ -28,6 +28,14 @@ jobs:
 
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          # Pin the TOOL, not just the installer action: the unpinned
+          # 'latest' broke the v0.2.0 release when cosign v3 changed
+          # sign-blob to require --bundle. v2.6.x produces the .sig/.pem
+          # outputs our goreleaser signs block and SECURITY.md verification
+          # depend on. Migrating to the v3 bundle format is deliberate
+          # future work (goreleaser args + SECURITY.md together).
+          cosign-release: "v2.6.0"
 
       - name: Install syft
         uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
