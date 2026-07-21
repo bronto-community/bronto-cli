@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	toml "github.com/pelletier/go-toml/v2"
 
@@ -43,6 +44,7 @@ type Config struct {
 
 var envKeys = map[string]string{
 	"api_key":     "BRONTO_API_KEY",
+	"base_url":    "BRONTO_BASE_URL",
 	"profile":     "BRONTO_PROFILE",
 	"region":      "BRONTO_REGION",
 	"timeout":     "BRONTO_TIMEOUT",
@@ -178,7 +180,9 @@ func (c *Config) Profile() string { return c.values["profile"].Val }
 
 func (c *Config) BaseURL() string {
 	if v, ok := c.values["base_url"]; ok {
-		return v.Val
+		// Tolerate a trailing slash (common when pasting staging URLs):
+		// every caller appends "/path", so strip it here once.
+		return strings.TrimRight(v.Val, "/")
 	}
 	return fmt.Sprintf("https://api.%s.bronto.io", c.values["region"].Val)
 }
