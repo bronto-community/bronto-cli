@@ -55,6 +55,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Stage docker build context
+        # The image builds COPY these prebuilt binaries (goreleaser just
+        # cross-compiled them natively) instead of compiling inside the
+        # Dockerfile — in-image compilation ran under QEMU for arm64 and
+        # cost ~8-10 minutes per release.
+        run: |
+          install -D dist/bronto_linux_amd64*/bronto docker-ctx/linux/amd64/bronto
+          install -D dist/bronto_linux_arm64*/bronto docker-ctx/linux/arm64/bronto
+
       - name: Set image build metadata
         id: meta
         run: |
@@ -94,14 +103,13 @@ jobs:
       - name: Build and push (scratch image)
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
-          context: .
+          context: docker-ctx
           file: Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
             VERSION=${{ steps.meta.outputs.version }}
             COMMIT=${{ steps.meta.outputs.commit }}
-            DATE=${{ steps.meta.outputs.date }}
           tags: ${{ steps.meta.outputs.scratch_tags }}
           provenance: true
           sbom: true
@@ -109,14 +117,13 @@ jobs:
       - name: Build and push (distroless image)
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
-          context: .
+          context: docker-ctx
           file: Dockerfile.distroless
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
             VERSION=${{ steps.meta.outputs.version }}
             COMMIT=${{ steps.meta.outputs.commit }}
-            DATE=${{ steps.meta.outputs.date }}
           tags: ${{ steps.meta.outputs.distroless_tags }}
           provenance: true
           sbom: true

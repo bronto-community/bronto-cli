@@ -232,3 +232,23 @@ jobs:
         with:
           go-version-file: go.mod
       - run: make vuln
+
+  # Validates the release Dockerfiles (COPY-prebuilt-binary layout) before
+  # a tag ever exercises them: build the scratch image for the host arch
+  # with a locally staged context, no push.
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Stage context and build both images
+        run: |
+          CGO_ENABLED=0 go build -trimpath -o docker-ctx/linux/amd64/bronto ./cmd/bronto
+          docker build -f Dockerfile --build-arg VERSION=ci --build-arg COMMIT="${GITHUB_SHA::7}" docker-ctx
+          docker build -f Dockerfile.distroless --build-arg VERSION=ci --build-arg COMMIT="${GITHUB_SHA::7}" docker-ctx
