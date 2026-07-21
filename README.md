@@ -9,7 +9,7 @@ A community command-line client for the [Bronto](https://bronto.io) observabilit
 
 Built for pipelines and agents: JSONL by default when piped, typed errors with machine-readable hints, stable exit codes, and `--dry-run` plans for every mutating call.
 
-This project is not affiliated with or endorsed by Bronto.
+bronto-cli is an official open-source project from [Bronto](https://bronto.io), maintained as a **community artifact**: free to use, contributions welcome — but not covered by Bronto's product support. Questions, bugs, and feature requests are handled best-effort through [GitHub issues](https://github.com/bronto-community/bronto-cli/issues), not Bronto's support channels.
 
 ## Install
 
