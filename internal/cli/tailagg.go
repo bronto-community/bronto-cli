@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
 
 	"github.com/bronto-community/bronto-cli/internal/bronto"
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/output"
 	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
@@ -64,12 +67,11 @@ func runTailAggregate(ctx context.Context, app *App, client *bronto.Client,
 		for _, r := range rows {
 			key, _ := r["group"].(string)
 			v, _ := r[selects[0]].(float64)
-			h := append(history[key], v)
-			if len(h) > trendLen {
-				h = h[len(h)-trendLen:]
+			history[key] = append(history[key], v)
+			if h := history[key]; len(h) > trendLen {
+				history[key] = h[len(h)-trendLen:]
 			}
-			history[key] = h
-			r["trend"] = sparkline(h)
+			r["trend"] = sparkline(history[key])
 		}
 		if human {
 			frame := renderAggFrame(rows, selects, groups, now)
@@ -98,7 +100,17 @@ func runTailAggregate(ctx context.Context, app *App, client *bronto.Client,
 }
 
 func errAggFormat(f output.Format) error {
-	return fmt.Errorf("tail aggregates stream snapshots and cannot produce %s; use jsonl or table", f)
+	return clierr.New("usage_invalid_output_format",
+		fmt.Sprintf("tail aggregates stream snapshots and cannot produce %s; use jsonl or table", f))
+}
+
+// formatAggValue renders aggregate values: integral counts without
+// decimals, everything else with two.
+func formatAggValue(v float64) string {
+	if v == math.Trunc(v) {
+		return strconv.FormatFloat(v, 'f', 0, 64)
+	}
+	return strconv.FormatFloat(v, 'f', 2, 64)
 }
 
 // aggregateRows normalizes group/aggregate responses into printable rows.
@@ -157,16 +169,18 @@ func renderAggFrame(rows []map[string]any, selects, groups []string, now time.Ti
 	if len(groups) > 0 {
 		header = strings.ToUpper(strings.Join(groups, ","))
 	}
-	cols := []string{header}
+	cols := make([]string, 0, len(selects)+2)
+	cols = append(cols, header)
 	for _, s := range selects {
 		cols = append(cols, strings.ToUpper(s))
 	}
 	cols = append(cols, "TREND")
 	_, _ = fmt.Fprintln(tw, strings.Join(cols, "\t"))
 	for _, r := range rows {
-		vals := []string{fmt.Sprint(r["group"])}
+		vals := make([]string, 0, len(selects)+2)
+		vals = append(vals, fmt.Sprint(r["group"]))
 		for _, s := range selects {
-			vals = append(vals, formatCount(toNumber(r[s])))
+			vals = append(vals, formatAggValue(toNumber(r[s])))
 		}
 		vals = append(vals, fmt.Sprint(r["trend"]))
 		_, _ = fmt.Fprintln(tw, strings.Join(vals, "\t"))

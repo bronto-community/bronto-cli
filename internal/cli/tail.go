@@ -25,6 +25,8 @@ func newTailCmd() *cobra.Command {
 		includes, excludes []string
 		highlights         []string
 		noFollow           bool
+		aggSelects         []string
+		aggGroups          []string
 	)
 	cmd := &cobra.Command{
 		Use:   "tail [query]",
@@ -34,7 +36,8 @@ func newTailCmd() *cobra.Command {
 			"re-ordered across polls (per-batch ordering only); a cross-poll reorder buffer is future work.",
 		Example: "  bronto tail\n" +
 			"  bronto tail \"level = 'error'\" --include 'timeout' --exclude 'healthz'\n" +
-			"  bronto tail --no-follow --window 5m   # catch up, then exit",
+			"  bronto tail --no-follow --window 5m   # catch up, then exit\n" +
+			"  bronto tail -g status --window 1m     # live count(*) by status, redrawn in place",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if interval < time.Second {
@@ -69,6 +72,17 @@ func newTailCmd() *cobra.Command {
 			where := ""
 			if len(args) == 1 {
 				where = args[0]
+			}
+
+			if len(aggSelects) > 0 || len(aggGroups) > 0 {
+				if len(includes) > 0 || len(excludes) > 0 || len(highlights) > 0 {
+					return clierr.New("usage_invalid_flags",
+						"--include/--exclude/--highlight filter event lines and do not apply to aggregates").
+						WithHint("Put the condition in the query instead, e.g. bronto tail \"level = 'error'\" -g host --select 'count(*)'.")
+				}
+				client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
+				return runTailAggregate(cmd.Context(), app, client,
+					ids, expr, where, spec, aggSelects, aggGroups, interval, noFollow)
 			}
 
 			format, err := app.DetectFormat(true)
@@ -147,6 +161,8 @@ func newTailCmd() *cobra.Command {
 	f.StringArrayVar(&excludes, "exclude", nil, "hide lines matching this regex (repeatable)")
 	f.StringArrayVar(&highlights, "highlight", nil, "highlight regex matches in the output (repeatable)")
 	f.BoolVar(&noFollow, "no-follow", false, "fetch the current window once, then exit")
+	f.StringArrayVar(&aggSelects, "select", nil, "aggregate to compute live, e.g. count(*) (repeatable; switches to aggregate mode)")
+	f.StringArrayVarP(&aggGroups, "group-by", "g", nil, "group-by key for live aggregates (repeatable; switches to aggregate mode)")
 	f.IntVar(&dedupSize, "dedup-size", 20000, "events remembered for duplicate suppression across polls; very high-volume streams may need more")
 	return cmd
 }
