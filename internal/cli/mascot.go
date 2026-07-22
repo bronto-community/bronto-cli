@@ -173,22 +173,19 @@ func newHerdCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if count < 1 {
-				count = 1
-			}
-			if count > 5 {
-				count = 5
+			if count > 200 {
+				count = 200
 			}
 			st := pickMascotStyle(app.Color)
 			if noAnim || !app.StdoutIsTTY {
 				printMascotStatic(app, st, 0)
 				return nil
 			}
-			return marchMascots(cmd.Context(), app, st, count)
+			return rainHerd(cmd.Context(), app, st, count)
 		},
 	}
 	cmd.Flags().BoolVar(&noAnim, "no-anim", false, "print a single static frame instead of animating")
-	cmd.Flags().IntVar(&count, "count", 3, "number of brontos in the herd (1-5)")
+	cmd.Flags().IntVar(&count, "count", 0, "brontos on screen at once (0 = scale to the terminal)")
 	return cmd
 }
 
@@ -313,8 +310,11 @@ func marchMascots(ctx context.Context, app *App, st mascotStyle, count int) erro
 		if drawn {
 			_, _ = fmt.Fprintf(app.Stdout, "\x1b[%dA", h) // cursor up h rows
 		}
-		frame := compositeHerd(st, count, x, gap, width)
-		for _, line := range frame {
+		placements := make([][2]int, count)
+		for n := 0; n < count; n++ {
+			placements[n] = [2]int{x + n*gap, 0}
+		}
+		for _, line := range composite(mascotFrame, placements, width, h, st) {
 			_, _ = fmt.Fprintf(app.Stdout, "\x1b[2K%s\n", line) // clear line + draw
 		}
 		drawn = true
@@ -326,38 +326,35 @@ func marchMascots(ctx context.Context, app *App, st mascotStyle, count int) erro
 	return nil
 }
 
-// compositeHerd overlays `count` figures at descending x positions into a
-// single frame of blank-padded lines.
-func compositeHerd(st mascotStyle, count, headX, gap, width int) []string {
-	h := mascotFrameHeight
-	// canvas is EXACTLY the terminal width: cells past the right edge are
-	// clipped, so no rendered line ever exceeds the width and soft-wraps
-	// onto a second physical row (which would desync the cursor-up redraw).
-	canvasW := width
-	if canvasW < 1 {
-		canvasW = 1
+// composite stamps `frame` at each (x, y) placement onto a width×height
+// rune canvas and returns the rendered lines. The canvas is exactly the
+// terminal width so no line ever soft-wraps onto a second physical row
+// (which would desync the cursor-up redraw).
+func composite(frame []string, placements [][2]int, width, height int, st mascotStyle) []string {
+	if width < 1 {
+		width = 1
 	}
-	rows := make([][]rune, h)
+	rows := make([][]rune, height)
 	for i := range rows {
-		rows[i] = []rune(strings.Repeat(" ", canvasW))
+		rows[i] = []rune(strings.Repeat(" ", width))
 	}
-	for n := 0; n < count; n++ {
-		x := headX + n*gap
-		blitFigure(rows, x)
+	for _, p := range placements {
+		blitAt(rows, frame, p[0], p[1])
 	}
-	out := make([]string, h)
+	out := make([]string, height)
 	for i, r := range rows {
 		out[i] = renderCanvasLine(string(trimRightRunes(r)), st)
 	}
 	return out
 }
 
-// blitFigure stamps the classified grid onto the rune canvas at column x
-// (cells off the canvas are clipped; spaces are transparent).
-func blitFigure(rows [][]rune, x int) {
-	for i, row := range mascotFrame {
-		if i >= len(rows) {
-			break
+// blitAt stamps a classified frame onto the rune canvas at (x, y). Cells
+// off the canvas are clipped; ' ' cells are transparent.
+func blitAt(rows [][]rune, frame []string, x, y int) {
+	for i, row := range frame {
+		ry := y + i
+		if ry < 0 || ry >= len(rows) {
+			continue
 		}
 		for j := 0; j < len(row); j++ {
 			c := row[j]
@@ -365,10 +362,117 @@ func blitFigure(rows [][]rune, x int) {
 				continue
 			}
 			col := x + j
-			if col < 0 || col >= len(rows[i]) {
+			if col < 0 || col >= len(rows[ry]) {
 				continue
 			}
-			rows[i][col] = rune(c)
+			rows[ry][col] = rune(c)
+		}
+	}
+}
+
+// rainRNG is a tiny xorshift PRNG — enough for scattering an easter egg,
+// and avoids pulling in math/rand (and its gosec warning) for the job.
+type rainRNG struct{ s uint64 }
+
+func newRainRNG() *rainRNG { return &rainRNG{s: uint64(time.Now().UnixNano()) | 1} }
+
+func (r *rainRNG) Intn(n int) int {
+	r.s ^= r.s << 13
+	r.s ^= r.s >> 7
+	r.s ^= r.s << 17
+	if n <= 0 {
+		return 0
+	}
+	return int(r.s % uint64(n)) //nolint:gosec // modulus is < n, an int, so it always fits
+}
+
+// rainDrop is one drifting bronto in the herd rain.
+type rainDrop struct {
+	x, y, speed int
+}
+
+// rain animation tuning; vars so tests can shrink them.
+var (
+	rainTick    = 120 * time.Millisecond
+	rainDefault = 100 // fallback width×height when the terminal isn't sized
+)
+
+// frameWidthOf / frameHeightOf measure a frame.
+func frameWidthOf(frame []string) int {
+	w := 0
+	for _, r := range frame {
+		if len(r) > w {
+			w = len(r)
+		}
+	}
+	return w
+}
+
+// rainHerd drifts many tiny brontos across the whole screen at varied
+// heights and speeds (asciiquarium-style), respawning on the right as
+// they exit left, until the context is cancelled.
+func rainHerd(ctx context.Context, app *App, st mascotStyle, count int) error {
+	width, height := rainDefault, 24
+	if w, hgt, err := term.GetSize(int(os.Stdout.Fd())); err == nil && w > 0 && hgt > 0 {
+		width, height = w, hgt-1
+	}
+	fig := trimmedFrameOf(mascotFrameTiny)
+	fw, fh := frameWidthOf(fig), len(fig)
+	if height < fh+1 {
+		height = fh + 1
+	}
+	if count <= 0 { // auto: scale to the screen area
+		count = width * height / 260
+		if count < 5 {
+			count = 5
+		}
+		if count > 40 {
+			count = 40
+		}
+	}
+
+	rng := newRainRNG()
+	drops := make([]rainDrop, count)
+	for i := range drops {
+		drops[i] = rainDrop{
+			x:     rng.Intn(width + fw),
+			y:     rng.Intn(height - fh + 1),
+			speed: 1 + rng.Intn(3),
+		}
+	}
+
+	_, _ = fmt.Fprint(app.Stdout, "\x1b[?25l")
+	defer func() { _, _ = fmt.Fprint(app.Stdout, "\x1b[?25h"+mascotReset) }()
+
+	drawn := false
+	for {
+		if ctx.Err() != nil {
+			return nil
+		}
+		placements := make([][2]int, len(drops))
+		for i, d := range drops {
+			placements[i] = [2]int{d.x, d.y}
+		}
+		if drawn {
+			_, _ = fmt.Fprintf(app.Stdout, "\x1b[%dA", height)
+		}
+		for _, line := range composite(fig, placements, width, height, st) {
+			_, _ = fmt.Fprintf(app.Stdout, "\x1b[2K%s\n", line)
+		}
+		drawn = true
+
+		for i := range drops {
+			drops[i].x -= drops[i].speed
+			if drops[i].x < -fw { // exited left: respawn on the right
+				drops[i].x = width + rng.Intn(fw*2)
+				drops[i].y = rng.Intn(height - fh + 1)
+				drops[i].speed = 1 + rng.Intn(3)
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(rainTick):
 		}
 	}
 }

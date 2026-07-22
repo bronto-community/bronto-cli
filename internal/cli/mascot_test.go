@@ -90,21 +90,43 @@ func TestSpeechBubbleWraps(t *testing.T) {
 	}
 }
 
-func TestCompositeHerdPlacesCount(t *testing.T) {
-	st := pickMascotStyle(false)
-	// wide canvas so all members fit (figures past the width are clipped)
-	one := compositeHerd(st, 1, 10, 40, 300)
-	three := compositeHerd(st, 3, 10, 40, 300)
-	countBlocks := func(rows []string) int {
-		n := 0
-		for _, r := range rows {
-			n += strings.Count(r, "█") + strings.Count(r, "░") + strings.Count(r, "▒")
-		}
-		return n
+func countInk(rows []string) int {
+	n := 0
+	for _, r := range rows {
+		n += strings.Count(r, "█") + strings.Count(r, "░") + strings.Count(r, "▒")
 	}
-	c1, c3 := countBlocks(one), countBlocks(three)
-	if c3 < c1*2 {
-		t.Fatalf("3-bronto herd should have ~3x the ink: c1=%d c3=%d", c1, c3)
+	return n
+}
+
+func TestCompositePlacesFigures(t *testing.T) {
+	st := pickMascotStyle(false)
+	h := mascotFrameHeight
+	one := composite(mascotFrame, [][2]int{{10, 0}}, 300, h, st)
+	three := composite(mascotFrame, [][2]int{{10, 0}, {90, 0}, {170, 0}}, 300, h, st)
+	if countInk(three) < countInk(one)*2 {
+		t.Fatalf("3 figures should have ~3x the ink: c1=%d c3=%d", countInk(one), countInk(three))
+	}
+}
+
+func TestCompositeVerticalPlacement(t *testing.T) {
+	st := pickMascotStyle(false)
+	fig := trimmedFrameOf(mascotFrameTiny)
+	// same figure at two different y bands must land on different rows
+	out := composite(fig, [][2]int{{2, 0}, {2, 10}}, 60, 20, st)
+	top, bottom := false, false
+	for i, line := range out {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		if i < len(fig) {
+			top = true
+		}
+		if i >= 10 {
+			bottom = true
+		}
+	}
+	if !top || !bottom {
+		t.Fatalf("figures not placed at both y bands (top=%v bottom=%v)", top, bottom)
 	}
 }
 
@@ -188,14 +210,47 @@ func TestMascotSmallFrameShape(t *testing.T) {
 	}
 }
 
-func TestCompositeHerdClipsToWidth(t *testing.T) {
+func TestCompositeClipsToWidth(t *testing.T) {
 	st := pickMascotStyle(false) // mono: 1 rune per cell, easy to measure width
 	const width = 50
-	frame := compositeHerd(st, 2, width-5, 40, width) // one bronto near the right edge
+	// figures straddling both edges must never produce a line wider than width
+	frame := composite(mascotFrame, [][2]int{{width - 5, 0}, {-10, 0}}, width, mascotFrameHeight, st)
 	for i, line := range frame {
 		if n := len([]rune(line)); n > width {
 			t.Fatalf("row %d is %d cols wide, exceeds terminal width %d — would wrap and stripe", i, n, width)
 		}
+	}
+}
+
+func TestRainRNGDeterministicAndBounded(t *testing.T) {
+	a := &rainRNG{s: 12345}
+	b := &rainRNG{s: 12345}
+	for i := 0; i < 100; i++ {
+		x, y := a.Intn(10), b.Intn(10)
+		if x != y {
+			t.Fatalf("same seed diverged at %d: %d vs %d", i, x, y)
+		}
+		if x < 0 || x >= 10 {
+			t.Fatalf("Intn(10) out of range: %d", x)
+		}
+	}
+	if a.Intn(0) != 0 {
+		t.Fatal("Intn(0) must be 0")
+	}
+}
+
+func TestRainHerdStopsOnCancel(t *testing.T) {
+	old := rainTick
+	rainTick = time.Millisecond
+	defer func() { rainTick = old }()
+	app := &App{Stdout: &bytes.Buffer{}, Stderr: &bytes.Buffer{}, StdoutIsTTY: true}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := rainHerd(ctx, app, pickMascotStyle(false), 6); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(app.Stdout.(*bytes.Buffer).String(), "\x1b[?25h") {
+		t.Fatal("cursor not restored after rain")
 	}
 }
 
