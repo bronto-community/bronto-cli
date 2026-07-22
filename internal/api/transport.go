@@ -11,8 +11,14 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
+// IdempotentHint marks a POST as safe to retry (search queries are
+// reads in POST clothing). The header is internal — stripped before the
+// request leaves the transport.
+const IdempotentHint = "X-Bronto-Cli-Idempotent"
+
 // Transport adds auth + User-Agent headers and retries idempotent requests
-// on 429/502/503/504, honoring Retry-After.
+// on 429/502/503/504, honoring Retry-After. GET/HEAD are always eligible;
+// POSTs opt in via IdempotentHint.
 type Transport struct {
 	APIKey     string
 	UserAgent  string
@@ -27,7 +33,8 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		base = http.DefaultTransport
 	}
 
-	idempotent := req.Method == http.MethodGet || req.Method == http.MethodHead
+	idempotent := req.Method == http.MethodGet || req.Method == http.MethodHead ||
+		req.Header.Get(IdempotentHint) == "true"
 	replayable := req.Body == nil || req.GetBody != nil
 
 	body := req.Body
@@ -36,6 +43,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	for attempt := 0; ; attempt++ {
 		attemptReq := req.Clone(req.Context())
 		attemptReq.Body = body
+		attemptReq.Header.Del(IdempotentHint)
 		attemptReq.Header.Set("X-BRONTO-API-KEY", t.APIKey)
 		attemptReq.Header.Set("User-Agent", t.UserAgent)
 

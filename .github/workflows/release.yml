@@ -47,6 +47,22 @@ jobs:
       - name: Run tests
         run: go test ./...
 
+      - name: Mint homebrew-tap token
+        # Short-lived installation token from the Bronto Community Bot app,
+        # scoped to contents:write on homebrew-tap only. The default
+        # GITHUB_TOKEN cannot push cross-repo.
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        id: tap-token
+        with:
+          # The App ID lives as an ORG SECRET alongside the private key
+          # (not a repo/org variable) — reading it from `vars.` broke the
+          # first v0.2.3 release run with "appId option is required".
+          app-id: ${{ secrets.BRONTO_COMMUNITY_BOT_APP_ID }}
+          private-key: ${{ secrets.BRONTO_COMMUNITY_BOT_PRIVATE_KEY }}
+          owner: bronto-community
+          repositories: homebrew-tap
+          permission-contents: write
+
       - name: Run goreleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
@@ -54,6 +70,7 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ steps.tap-token.outputs.token }}
 
       - name: Stage docker build context
         # The image builds COPY these prebuilt binaries (goreleaser just
