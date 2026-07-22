@@ -28,6 +28,8 @@ bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
 
 `search` runs a one-shot query. `tail` polls and follows new events. `traces` has subcommands (`list`, `show`, `services`, `operations`, `aggregate`, `shape`) over the `.traces` logset. `send` posts one event (`-m`) or streams NDJSON/text lines from stdin. `fields` discovers top-level keys in a dataset. `context` shows events around a specific anchor event.
 
+The default `search` table promotes the most informative parsed fields into columns (ranked by non-null frequency, then value diversity; the raw JSON blob is dropped once three real columns exist) and a TTY run ends with a stderr footer naming the discovery loop: `bronto fields -d <dataset>` lists available fields, `--select` picks columns, and `-x`/`--expand` renders every field of every event vertically, untruncated, including the `metadata.*`/`links` plumbing the table hides. `-x` is table-only — with `-o json`/`jsonl`/`csv`/`raw` it fails usage-style (those formats already carry every field; pass `-o table` to force the expanded view in a pipe).
+
 `-d`/`--dataset` accepts a dataset **name** or UUID everywhere; a name duplicated across collections is qualified as `collection/name` (e.g. `-d prod/api-logs`). With one dataset in the account it is auto-picked; with several, the error lists them.
 
 Agent-critical flags (global): `--dry-run` prints any mutating call as a plan document (`{"dry_run":true,"method":"POST","path":"/monitors","body":{…}}`) instead of executing — reads still run. `--debug` traces requests/responses on stderr (API key never printed). `--timeout <s>` and `--max-retries <n>` tune the HTTP client.

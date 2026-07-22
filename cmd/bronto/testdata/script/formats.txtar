@@ -45,9 +45,9 @@ exec bronto search x -d 11111111-1111-1111-1111-111111111111 --api-key k --base-
 ! stdout .
 cmp stderr error-envelope.golden
 -- search-table.golden --
-@TIME                        @STATUS  @RAW                        MESSAGE_KVS.LEVEL  MESSAGE_KVS.STATUS
-2026-01-02 03:04:05.000 UTC  info     {"level":"info","msg":"a"}  info               200
-2026-01-02 03:04:06.000 UTC  warn     {"level":"warn","msg":"b"}  warn               500
+@TIME                        @STATUS  MESSAGE_KVS.LEVEL  MESSAGE_KVS.STATUS  @RAW
+2026-01-02 03:04:05.000 UTC  info     info               200                 {"level":"info","msg":"a"}
+2026-01-02 03:04:06.000 UTC  warn     warn               500                 {"level":"warn","msg":"b"}
 -- search-json.golden --
 [
   {

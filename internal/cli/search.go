@@ -25,6 +25,7 @@ func newSearchCmd() *cobra.Command {
 		orderBy         string
 		oldestFirst     bool
 		explainOnly     bool
+		expand          bool
 	)
 	cmd := &cobra.Command{
 		Use:   "search [query]",
@@ -40,6 +41,22 @@ func newSearchCmd() *cobra.Command {
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
+			}
+			if expand {
+				if len(groups) > 0 || explainOnly {
+					return clierr.New("usage_invalid_flags",
+						"-x/--expand applies to event results, not aggregates or query plans").
+						WithHint("Drop -x, or drop -g/--group-by and --explain-only.")
+				}
+				f, err := app.DetectFormat(true)
+				if err != nil {
+					return err
+				}
+				if f != output.FormatTable {
+					return clierr.New("usage_invalid_flags",
+						"-x/--expand requires table output").
+						WithHint("json/jsonl already carry every field; pass -o table to force the expanded view in a pipe.")
+				}
 			}
 			where := ""
 			if len(args) == 1 {
@@ -70,7 +87,12 @@ func newSearchCmd() *cobra.Command {
 			}
 			effSelect := selects
 			if len(effSelect) == 0 && len(groups) == 0 && !explainOnly {
-				effSelect = []string{"@time", "@raw"}
+				// "*" makes the API populate the parsed KVs (message_kvs)
+				// in events; without it only @raw comes back and the human
+				// table has nothing to promote. "@raw" must stay explicit:
+				// under a bare "*" the API nulls it out (probed live
+				// 2026-07-22 against do11y/docs-analytics).
+				effSelect = []string{"@time", "@raw", "*"}
 			}
 			req := bronto.SearchRequest{
 				From: ids, FromExpr: expr, Time: spec, Where: where,
@@ -128,7 +150,14 @@ func newSearchCmd() *cobra.Command {
 						return p.PrintRows(bronto.EventColumns(rows, 0), rows)
 					}
 				}
-				return printEvents(app, events)
+				view := eventView{expand: expand}
+				if len(selects) == 0 {
+					view.teachRef = "<dataset>"
+					if len(datasets) > 0 {
+						view.teachRef = datasets[0]
+					}
+				}
+				return printEvents(app, events, view)
 			}
 		},
 	}
@@ -145,12 +174,22 @@ func newSearchCmd() *cobra.Command {
 	f.StringVar(&orderBy, "order-by", "", "SQL-style order, e.g. 'duration_ms DESC'")
 	f.BoolVar(&oldestFirst, "oldest-first", false, "return oldest events first")
 	f.BoolVar(&explainOnly, "explain-only", false, "return only the query plan / cost estimate")
+	f.BoolVarP(&expand, "expand", "x", false, "expanded record view: every field of every event, one per line (table output only)")
 	return cmd
+}
+
+// eventView controls the human rendering of printEvents: expand switches
+// to the vertical detail view; teachRef (the dataset ref as the user
+// typed it, or "<dataset>") enables the discoverability footer for
+// default, unprojected tables — empty disables it.
+type eventView struct {
+	expand   bool
+	teachRef string
 }
 
 // printEvents renders event rows: streaming row-by-row for jsonl/raw,
 // a capped-column table or full rows otherwise.
-func printEvents(app *App, events []map[string]any) error {
+func printEvents(app *App, events []map[string]any, view eventView) error {
 	rows := make([]map[string]any, 0, len(events))
 	for _, e := range events {
 		rows = append(rows, bronto.Flatten(e))
@@ -172,9 +211,46 @@ func printEvents(app *App, events []map[string]any) error {
 		return nil
 	}
 	if f == output.FormatTable {
-		return p.PrintRows(eventTableColumns(rows), rows)
+		if view.expand {
+			return p.PrintExpanded(rows, bronto.PriorityEventKeys, app.Color)
+		}
+		if err := p.PrintRows(eventTableColumns(rows), rows); err != nil {
+			return err
+		}
+		if view.teachRef != "" && !app.Quiet && app.StdoutIsTTY && len(rows) > 0 {
+			ref := view.teachRef
+			if strings.ContainsAny(ref, " \t'\"") {
+				ref = fmt.Sprintf("%q", ref)
+			}
+			_, _ = fmt.Fprintf(app.Stderr,
+				"%s. %s available — 'bronto fields -d %s' lists them; '--select <field,...>' picks columns; '-x' expands a row.\n",
+				countNoun(len(rows), "result"), countNoun(teachableFieldCount(rows), "field"), ref)
+		}
+		return nil
 	}
 	return p.PrintRows(bronto.EventColumns(rows, 0), rows)
+}
+
+// teachableFieldCount is the union of flattened event keys, excluding the
+// plumbing (links, metadata.*) the table never promotes.
+func teachableFieldCount(rows []map[string]any) int {
+	seen := map[string]struct{}{}
+	for _, r := range rows {
+		for k := range r {
+			if k == "links" || strings.HasPrefix(k, "metadata.") {
+				continue
+			}
+			seen[k] = struct{}{}
+		}
+	}
+	return len(seen)
+}
+
+func countNoun(n int, noun string) string {
+	if n == 1 {
+		return "1 " + noun
+	}
+	return fmt.Sprintf("%d %ss", n, noun)
 }
 
 // eventTableColumns picks the human table columns for event rows: the
@@ -194,5 +270,5 @@ func eventTableColumns(rows []map[string]any) []string {
 		}
 		filtered = append(filtered, fr)
 	}
-	return bronto.EventColumns(filtered, 8)
+	return bronto.EventColumnsByFrequency(filtered, 8)
 }

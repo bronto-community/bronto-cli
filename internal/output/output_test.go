@@ -473,3 +473,91 @@ func TestTruncateCell(t *testing.T) {
 		t.Fatalf("unicode truncation broke: %d", len(r))
 	}
 }
+
+func TestPrintExpandedLayoutAndOrder(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatTable)
+	long := strings.Repeat("x", 200)
+	err := p.PrintExpanded([]map[string]any{
+		{"@time": "t1", "@raw": long, "zeta": 1, "alpha": 2},
+		{"@time": "t2"},
+	}, []string{"@time", "@status", "@raw"}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "─ event 1 ") || !strings.Contains(out, "─ event 2 ") {
+		t.Fatalf("missing block headers:\n%s", out)
+	}
+	if !strings.Contains(out, long) {
+		t.Fatalf("long value was truncated:\n%s", out)
+	}
+	// priority first (@time then @raw; @status absent), then alphabetical.
+	iTime := strings.Index(out, "@time")
+	iRaw := strings.Index(out, "@raw")
+	iAlpha := strings.Index(out, "alpha")
+	iZeta := strings.Index(out, "zeta")
+	if iTime >= iRaw || iRaw >= iAlpha || iAlpha >= iZeta {
+		t.Fatalf("key order wrong (time=%d raw=%d alpha=%d zeta=%d):\n%s",
+			iTime, iRaw, iAlpha, iZeta, out)
+	}
+	if strings.Contains(out, "…") {
+		t.Fatalf("expanded view must not truncate:\n%s", out)
+	}
+}
+
+func TestPrintExpandedDimKeys(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatTable)
+	if err := p.PrintExpanded([]map[string]any{{"k": "v"}}, nil, true); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "\x1b[2mk\x1b[0m") {
+		t.Fatalf("expected dimmed key, got:\n%q", buf.String())
+	}
+	buf.Reset()
+	if err := p.PrintExpanded([]map[string]any{{"k": "v"}}, nil, false); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(buf.String(), "\x1b[") {
+		t.Fatalf("no ANSI expected without dimKeys:\n%q", buf.String())
+	}
+}
+
+func TestPrintExpandedFieldsFilterAndListFields(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatTable)
+	p.SetFieldFilter([]string{"b"})
+	err := p.PrintExpanded([]map[string]any{{"a": 1, "b": 2}}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(buf.String(), "a") && strings.Contains(buf.String(), "\t1") {
+		t.Fatalf("field filter not applied:\n%s", buf.String())
+	}
+	if !strings.Contains(buf.String(), "b") {
+		t.Fatalf("filtered field missing:\n%s", buf.String())
+	}
+
+	buf.Reset()
+	p2 := NewPrinter(&buf, FormatTable)
+	p2.SetListFields(true)
+	if err := p2.PrintExpanded([]map[string]any{{"a": 1, "b": 2}}, nil, false); err != nil {
+		t.Fatal(err)
+	}
+	if got := buf.String(); got != "a\nb\n" {
+		t.Fatalf("listFields union got %q", got)
+	}
+}
+
+func TestPrintExpandedEmptyNotice(t *testing.T) {
+	var buf, note bytes.Buffer
+	p := NewPrinter(&buf, FormatTable)
+	p.SetNoticeWriter(&note)
+	if err := p.PrintExpanded(nil, nil, false); err != nil {
+		t.Fatal(err)
+	}
+	if buf.Len() != 0 || !strings.Contains(note.String(), "No results.") {
+		t.Fatalf("stdout=%q notice=%q", buf.String(), note.String())
+	}
+}
