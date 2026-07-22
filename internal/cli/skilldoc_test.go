@@ -195,6 +195,9 @@ func TestSkillDocCoversAllCommands(t *testing.T) {
 		case "help", "completion": // cobra builtins
 			continue
 		}
+		if c.Hidden {
+			continue // hidden easter eggs are deliberately undocumented
+		}
 		if !strings.Contains(doc, name) {
 			t.Errorf("skill.md never mentions the %q command — agents won't know it exists", name)
 		}

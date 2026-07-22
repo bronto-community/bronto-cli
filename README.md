@@ -248,3 +248,6 @@ bronto-cli sends no telemetry, analytics, or usage data anywhere. The only netwo
 ## License
 
 MIT — see [LICENSE](./LICENSE).
+
+The Bronto name and logo are trademarks of Bronto, used with permission and
+**not** covered by the MIT license — see [TRADEMARK.md](./TRADEMARK.md).
