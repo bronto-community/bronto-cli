@@ -225,3 +225,53 @@ func TestEventTableColumnsExcludePlumbing(t *testing.T) {
 		t.Fatalf("real field missing from table columns: %v", cols)
 	}
 }
+
+// TestSearchSavedRunsStoredQuery pins --saved: the stored where/from/
+// time_range become the request, and explicit flags override.
+func TestSearchSavedRunsStoredQuery(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/saved-searches" && r.Method == http.MethodGet:
+			_, _ = w.Write([]byte(`[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-000000000009","name":"oncall-500s"}]`))
+		case r.URL.Path == "/saved-searches/aaaaaaaa-aaaa-aaaa-aaaa-000000000009":
+			_, _ = w.Write([]byte(`{"id":"aaaaaaaa-aaaa-aaaa-aaaa-000000000009","search_details":{"where":"status >= 500","from":"11111111-1111-1111-1111-111111111111:22222222-2222-2222-2222-222222222222","time_range":"Last 15 minutes"}}`))
+		case r.URL.Path == "/search":
+			b, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(b, &gotBody)
+			_, _ = w.Write([]byte(`{"events":[]}`))
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "--saved", "oncall-500s", "--api-key", "k", "--base-url", srv.URL, "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if gotBody["where"] != "status >= 500" || gotBody["time_range"] != "Last 15 minutes" {
+		t.Fatalf("body = %v", gotBody)
+	}
+	from, _ := gotBody["from"].([]any)
+	if len(from) != 2 {
+		t.Fatalf("from = %v, want the stored colon-split log ids", gotBody["from"])
+	}
+
+	// explicit query + --since override the stored values
+	root = NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "level = 'warn'", "--saved", "oncall-500s", "--since", "2h",
+		"--api-key", "k", "--base-url", srv.URL, "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if gotBody["where"] != "level = 'warn'" || gotBody["time_range"] != "Last 2 hours" {
+		t.Fatalf("override body = %v", gotBody)
+	}
+}

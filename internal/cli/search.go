@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -15,6 +18,7 @@ import (
 
 func newSearchCmd() *cobra.Command {
 	var (
+		saved           string
 		datasets        []string
 		fromExpr        string
 		since, from, to string
@@ -52,6 +56,22 @@ func newSearchCmd() *cobra.Command {
 					where = strings.TrimSpace(string(b))
 				}
 			}
+			// --saved fills defaults BEFORE dataset resolution so its
+			// stored from-ids participate in scope selection.
+			var savedTimeRange string
+			if saved != "" {
+				sd, tr, serr := loadSavedSearch(cmd.Context(), app, saved)
+				if serr != nil {
+					return serr
+				}
+				savedTimeRange = tr
+				if where == "" && len(args) == 0 {
+					where = sd.where
+				}
+				if len(datasets) == 0 && fromExpr == "" && len(sd.from) > 0 {
+					datasets = sd.from
+				}
+			}
 			ids, expr, err := resolveDataset(cmd.Context(), app, datasets, fromExpr)
 			if err != nil {
 				return err
@@ -64,6 +84,9 @@ func newSearchCmd() *cobra.Command {
 			spec, err := timerange.Resolve(since, from, to, nil)
 			if err != nil {
 				return err
+			}
+			if spec.IsZero() && savedTimeRange != "" {
+				spec.TimeRange = savedTimeRange
 			}
 			if spec.IsZero() {
 				spec.TimeRange = "Last 15 minutes"
@@ -133,6 +156,7 @@ func newSearchCmd() *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
+	f.StringVar(&saved, "saved", "", "run a saved search by name or id (explicit query/dataset/time flags override its stored values)")
 	f.StringArrayVarP(&datasets, "dataset", "d", nil, "dataset name or UUID to search (repeatable)")
 	f.StringVar(&fromExpr, "from-expr", "", "dataset selector expression, e.g. \"log_id = '<uuid>'\"")
 	f.StringVar(&since, "since", "", "relative lookback: 30s, 15m, 1h, 2d, 1w, 1h30m")
@@ -195,4 +219,40 @@ func eventTableColumns(rows []map[string]any) []string {
 		filtered = append(filtered, fr)
 	}
 	return bronto.EventColumns(filtered, 8)
+}
+
+type savedSearchDetails struct {
+	where string
+	from  []string
+}
+
+// loadSavedSearch resolves a saved search by name/id and extracts its
+// search_details as defaults for the search command: stored where, the
+// colon-separated from log-ids, and the stored time_range (returned
+// separately — it feeds the timerange spec only when no time flags are
+// given).
+func loadSavedSearch(ctx context.Context, app *App, ref string) (savedSearchDetails, string, error) {
+	id, err := resolveKindRef(ctx, app, "saved-searches", ref)
+	if err != nil {
+		return savedSearchDetails{}, "", err
+	}
+	payload, err := doJSONRequest(ctx, app, http.MethodGet, "/saved-searches/"+url.PathEscape(id), nil)
+	if err != nil {
+		return savedSearchDetails{}, "", err
+	}
+	obj, _ := payload.(map[string]any)
+	sd, _ := obj["search_details"].(map[string]any)
+	if sd == nil {
+		return savedSearchDetails{}, "", clierr.New("saved_search_invalid",
+			"saved search has no search_details to run")
+	}
+	out := savedSearchDetails{}
+	if w, _ := sd["where"].(string); w != "" {
+		out.where = w
+	}
+	if f, _ := sd["from"].(string); f != "" {
+		out.from = strings.Split(f, ":")
+	}
+	tr, _ := sd["time_range"].(string)
+	return out, tr, nil
 }
