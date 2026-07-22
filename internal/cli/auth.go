@@ -48,16 +48,23 @@ func newAuthLoginCmd() *cobra.Command {
 }
 
 func newAuthLoginRunner(use, short string) *cobra.Command {
-	var keyStdin bool
+	var keyStdin, device bool
 	cmd := &cobra.Command{
 		Use:   use,
 		Short: short,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if device {
+				if keyStdin {
+					return clierr.New("usage_invalid_flags", "--device and --key-stdin are mutually exclusive")
+				}
+				return runAuthDeviceLogin(cmd)
+			}
 			return runAuthLogin(cmd, keyStdin)
 		},
 	}
 	cmd.Flags().BoolVar(&keyStdin, "key-stdin", false, "read the API key from stdin instead of prompting")
+	cmd.Flags().BoolVar(&device, "device", false, "log in via the browser (RFC 8628 device flow; experimental, needs platform support)")
 	return cmd
 }
 
@@ -70,6 +77,12 @@ func runAuthLogin(cmd *cobra.Command, keyStdin bool) error {
 	if err != nil {
 		return err
 	}
+	return storeLoginKey(cmd, app, key)
+}
+
+// storeLoginKey is the shared tail of every login path (paste, stdin,
+// device flow): detect the region, store the key, persist the profile.
+func storeLoginKey(cmd *cobra.Command, app *App, key string) error {
 	regionFlag, _ := cmd.Flags().GetString("region")
 	baseURLFlag, _ := cmd.Flags().GetString("base-url")
 	region, _, err := detectRegion(cmd.Context(), app.Config, key, regionFlag, baseURLFlag)

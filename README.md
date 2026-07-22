@@ -56,7 +56,7 @@ bronto search "status >= 500" -d <dataset> --since 1h   # one-shot query
 bronto tail "level = 'error'" -d <dataset> --window 5m  # follow new events live
 ```
 
-`bronto auth login` prompts for a key interactively (or `--key-stdin` to pipe one in) and picks a region (`eu`/`us`). Everything after that resolves credentials automatically.
+`bronto auth login` prompts for a key interactively (or `--key-stdin` to pipe one in) and picks a region (`eu`/`us`). Everything after that resolves credentials automatically. `bronto auth login --device` attempts a browser-based device-flow login (experimental — degrades with a clear message where the platform doesn't support it yet).
 
 `-d` takes a dataset **name** from `datasets list` (UUIDs work too). A name that exists in several collections is qualified as `collection/name` — e.g. `-d prod/api-logs`. You can drop `-d` entirely once you set a default (`bronto config set default_dataset <name>`) — or if the account has only one dataset, which is auto-picked.
 

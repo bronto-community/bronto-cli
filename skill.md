@@ -11,7 +11,7 @@ Command-line client for the [Bronto](https://bronto.io) observability platform. 
 
 - CI / agents: set `BRONTO_API_KEY` and `BRONTO_REGION` (`eu` or `us`) in the environment. No further setup needed.
 - Staging/localhost: `BRONTO_BASE_URL` (and `BRONTO_INGEST_URL` for `send`) override the region-derived hosts; `--base-url` wins over env for one-off calls.
-- Humans: `bronto auth login` prompts for a key and stores it in the OS keychain (`--key-stdin` to pipe it instead).
+- Humans: `bronto auth login` prompts for a key and stores it in the OS keychain (`--key-stdin` to pipe it instead). `--device` attempts an RFC 8628 browser login (experimental; if the platform doesn't expose the endpoints yet it fails with a clear hint to paste a key — endpoints configurable via `device_auth_url`/`device_token_url`/`device_client_id`).
 - Scripting from a human's stored credential: `export BRONTO_API_KEY=$(bronto auth token)`.
 - Check what's resolved and from where: `bronto auth status`.
 
