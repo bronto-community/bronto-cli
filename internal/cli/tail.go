@@ -90,9 +90,13 @@ func newTailCmd() *cobra.Command {
 			}
 
 			mrf := false
+			selects := make([]string, 0, 5+len(filter.Fields())+len(app.FieldFilter))
+			selects = append(selects, "@time", "@raw", "@sequence", "@origin", "@status")
+			selects = append(selects, filter.Fields()...)
+			selects = append(selects, app.FieldFilter...)
 			req := bronto.SearchRequest{
 				From: ids, FromExpr: expr, Time: spec, Where: where,
-				Select: []string{"@time", "@raw", "@sequence", "@origin", "@status"},
+				Select: dedupStrings(selects),
 				Limit:  limit, MostRecentFirst: &mrf,
 			}
 			client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
@@ -116,11 +120,11 @@ func newTailCmd() *cobra.Command {
 				bronto.SortEvents(fresh)
 				for _, ev := range fresh {
 					raw := fmt.Sprint(ev["@raw"])
-					if !filter.Match(raw) {
+					if !filter.MatchEvent(ev, raw) {
 						continue
 					}
 					if humanMode {
-						_, _ = fmt.Fprintln(app.Stdout, renderTailLine(ev, raw, hlRes, app.Color))
+						_, _ = fmt.Fprintln(app.Stdout, renderTailLine(ev, raw, hlRes, app.Color, app.FieldFilter))
 						continue
 					}
 					if err := p.PrintRow(nil, bronto.Flatten(ev)); err != nil {
@@ -164,16 +168,41 @@ func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
 	return res, nil
 }
 
+// fieldRulePattern recognizes the "field~regex" form of --include/
+// --exclude: a field name (letters/digits/_/./-/@/$) before the first
+// '~', a regex after. Anything else is a whole-line regex, so regexes
+// containing '~' still work unless they *start* with something that
+// looks like a field name — quote a leading char class to disambiguate.
+var fieldRulePattern = regexp.MustCompile(`^([@$]?[A-Za-z0-9_][A-Za-z0-9_.-]*)~(.+)$`)
+
 func buildFilter(includes, excludes []string) (bronto.TailFilter, error) {
-	inc, err := compileRegexps(includes)
-	if err != nil {
+	var f bronto.TailFilter
+	parse := func(patterns []string, plain *[]*regexp.Regexp, rules *[]bronto.FieldRule) error {
+		for _, p := range patterns {
+			if m := fieldRulePattern.FindStringSubmatch(p); m != nil {
+				re, err := regexp.Compile(m[2])
+				if err != nil {
+					return clierr.New("usage_invalid_regex",
+						fmt.Sprintf("invalid regex in field rule %q: %v", p, err))
+				}
+				*rules = append(*rules, bronto.FieldRule{Field: m[1], Re: re})
+				continue
+			}
+			re, err := regexp.Compile(p)
+			if err != nil {
+				return clierr.New("usage_invalid_regex", fmt.Sprintf("invalid regex %q: %v", p, err))
+			}
+			*plain = append(*plain, re)
+		}
+		return nil
+	}
+	if err := parse(includes, &f.Include, &f.IncludeFields); err != nil {
 		return bronto.TailFilter{}, err
 	}
-	exc, err := compileRegexps(excludes)
-	if err != nil {
+	if err := parse(excludes, &f.Exclude, &f.ExcludeFields); err != nil {
 		return bronto.TailFilter{}, err
 	}
-	return bronto.TailFilter{Include: inc, Exclude: exc}, nil
+	return f, nil
 }
 
 var originColors = []string{"31", "32", "33", "34", "35", "36"}
@@ -193,7 +222,26 @@ func levelColor(level string) string {
 	return ""
 }
 
-func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, color bool) string {
+func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, color bool, fields []string) string {
+	// --fields: render exactly the requested fields, klp-style.
+	if len(fields) > 0 {
+		vals := make([]string, len(fields))
+		for i, f := range fields {
+			if v, ok := ev[f]; ok && v != nil {
+				vals[i] = fmt.Sprint(v)
+			} else {
+				vals[i] = "-"
+			}
+		}
+		line := strings.Join(vals, "  ")
+		if color {
+			if lc := levelColor(fmt.Sprint(ev["@status"])); lc != "" {
+				line = lc + line + "\x1b[0m"
+			}
+		}
+		return line
+	}
+
 	ts := fmt.Sprint(ev["@time"])
 	status := ""
 	if s, ok := ev["@status"]; ok && s != nil {
@@ -231,4 +279,18 @@ func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, 
 		parts = append(parts, origin)
 	}
 	return strings.Join(append(parts, raw), " ")
+}
+
+// dedupStrings preserves order, drops repeats and empties.
+func dedupStrings(in []string) []string {
+	seen := map[string]bool{}
+	out := in[:0:0]
+	for _, s := range in {
+		if s == "" || seen[s] {
+			continue
+		}
+		seen[s] = true
+		out = append(out, s)
+	}
+	return out
 }
