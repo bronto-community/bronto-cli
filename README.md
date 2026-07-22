@@ -135,6 +135,7 @@ Output to a non-TTY (piped or redirected) defaults to **JSONL**, one JSON object
 
 ```sh
 bronto search "status >= 500" --since 1h --jq '.message' | wc -l
+kubectl logs deploy/api | bronto search --local - "level = 'error'"   # offline, no server
 bronto query check "stauts >= 500" -d api-logs      # catches the typo before the server does
 bronto datasets list --fields log,log_id
 bronto datasets list --fields '?'          # list available field names instead of data

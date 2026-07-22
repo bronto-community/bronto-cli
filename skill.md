@@ -32,6 +32,10 @@ bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
 
 Agent-critical flags (global): `--dry-run` prints any mutating call as a plan document (`{"dry_run":true,"method":"POST","path":"/monitors","body":{…}}`) instead of executing — reads still run. `--debug` traces requests/responses on stderr (API key never printed). `--timeout <s>` and `--max-retries <n>` tune the HTTP client.
 
+## Offline mode
+
+`bronto search --local <file|-> "<query>"` evaluates the query client-side over local NDJSON or plain text (downloaded exports, `kubectl logs` dumps) — no server, no auth needed. JSON lines are queryable by their (dotted) keys; plain lines match via `@raw ~ 'regex'`. Composes with `-o`, `--fields`, `--jq`, and `-n`; dataset/time-range/select/group flags don't apply and are rejected.
+
 ## Machine-output contract
 
 - Output to a non-TTY (piped/redirected) defaults to JSONL, one JSON object per line — no flag needed.
