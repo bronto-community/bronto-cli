@@ -92,8 +92,9 @@ func TestSpeechBubbleWraps(t *testing.T) {
 
 func TestCompositeHerdPlacesCount(t *testing.T) {
 	st := pickMascotStyle(false)
-	one := compositeHerd(st, 1, 10, 40, 100)
-	three := compositeHerd(st, 3, 10, 40, 100)
+	// wide canvas so all members fit (figures past the width are clipped)
+	one := compositeHerd(st, 1, 10, 40, 300)
+	three := compositeHerd(st, 3, 10, 40, 300)
 	countBlocks := func(rows []string) int {
 		n := 0
 		for _, r := range rows {
@@ -169,5 +170,55 @@ func TestMarchStopsOnCancel(t *testing.T) {
 	out := app.Stdout.(*bytes.Buffer).String()
 	if !strings.Contains(out, "\x1b[?25h") {
 		t.Fatalf("cursor not restored: %q", out)
+	}
+}
+
+func TestMascotSmallFrameShape(t *testing.T) {
+	if len(mascotFrameSmall) == 0 {
+		t.Fatal("small frame empty — did logo2frames.py run?")
+	}
+	all := strings.Join(mascotFrameSmall, "")
+	for _, c := range []string{"y", "o", "k"} {
+		if !strings.Contains(all, c) {
+			t.Fatalf("small frame missing cell kind %q", c)
+		}
+	}
+	if len(mascotFrameSmall) >= len(mascotFrame) {
+		t.Fatal("small frame should be shorter than the full frame")
+	}
+}
+
+func TestCompositeHerdClipsToWidth(t *testing.T) {
+	st := pickMascotStyle(false) // mono: 1 rune per cell, easy to measure width
+	const width = 50
+	frame := compositeHerd(st, 2, width-5, 40, width) // one bronto near the right edge
+	for i, line := range frame {
+		if n := len([]rune(line)); n > width {
+			t.Fatalf("row %d is %d cols wide, exceeds terminal width %d — would wrap and stripe", i, n, width)
+		}
+	}
+}
+
+func TestRumbleTetherReachesHead(t *testing.T) {
+	fig := trimmedFrameOf(mascotFrameSmall)
+	head := headColumn(fig)
+	if head <= 0 {
+		t.Fatalf("head column not found: %d", head)
+	}
+	out := rumbleLayout("hi", pickMascotStyle(false))
+	// find the last tether line (a lone backslash) and the first figure row
+	var tetherCol = -1
+	for _, l := range out {
+		t := strings.TrimRight(l, " ")
+		if strings.HasSuffix(t, "\\") && strings.Count(t, "\\") == 1 {
+			tetherCol = len(t) - 1
+		}
+	}
+	if tetherCol < 0 {
+		t.Fatalf("no tether in layout:\n%s", strings.Join(out, "\n"))
+	}
+	// the tether should land within a couple columns of the head, not float away
+	if diff := head - tetherCol; diff < -2 || diff > 3 {
+		t.Fatalf("tether at col %d does not meet head at col %d", tetherCol, head)
 	}
 }

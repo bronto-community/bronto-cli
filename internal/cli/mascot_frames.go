@@ -5,8 +5,8 @@
 
 package cli
 
-// mascotFrame is the classified logo grid: each rune is a cell kind —
-// ' ' background, 'y' bright hide, 'o' darker facet, 'k' outline.
+// mascotFrame is the classified logo grid (full size, graze/herd): each
+// rune is a cell kind — ' ' background, 'y' bright hide, 'o' facet, 'k' outline.
 var mascotFrame = []string{
 	"                                                 k",
 	"                                              kkkookkkk",
@@ -29,5 +29,24 @@ var mascotFrame = []string{
 	"       kkoyyyyyoookkkkkk  koyyykooookkkyyyyokooook",
 	"     kkoooookkkkk         koyyykooookkkyyyyokooook",
 	"  kkkkkkk                 kkkkkkkkkkkkkkkkkkkkkkkk",
+	"",
+}
+
+// mascotFrameSmall is the compact grid used by rumble's speech bubble.
+var mascotFrameSmall = []string{
+	"                               kk",
+	"                             koooookk",
+	"                            koyyyyyyyok",
+	"                           kkyyyyooook",
+	"                           kyyyyok",
+	"                         kkoyyyyok",
+	"                   koooooooyyyyykk",
+	"                kkooyyyyyyyyyyyyk",
+	"              kkoyyyooyyyyyyyyyok",
+	"            koyooyyyyyoyyyyyyyook",
+	"         kkoyyyyoyyyyoyyyyyyooook",
+	"       kooyyyyyyooyyoookkyyyooook",
+	"     ooyyooookkkkoyyoookkyyykook",
+	"  kkkookk        kookookkoookook",
 	"",
 }

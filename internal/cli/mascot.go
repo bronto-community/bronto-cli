@@ -120,11 +120,11 @@ func commonIndent(frame []string) int {
 	return min
 }
 
-// trimmedFrame left-aligns the figure by removing the common indent.
-func trimmedFrame() []string {
-	ci := commonIndent(mascotFrame)
-	out := make([]string, len(mascotFrame))
-	for i, row := range mascotFrame {
+// trimmedFrameOf left-aligns a figure by removing its common indent.
+func trimmedFrameOf(frame []string) []string {
+	ci := commonIndent(frame)
+	out := make([]string, len(frame))
+	for i, row := range frame {
 		if len(row) >= ci {
 			out[i] = row[ci:]
 		} else {
@@ -133,6 +133,8 @@ func trimmedFrame() []string {
 	}
 	return out
 }
+
+func trimmedFrame() []string { return trimmedFrameOf(mascotFrame) }
 
 func newGrazeCmd() *cobra.Command {
 	var noAnim bool
@@ -206,19 +208,57 @@ func newRumbleCmd() *cobra.Command {
 				msg = randomTip(cmd)
 			}
 			st := pickMascotStyle(app.Color)
-			for _, line := range speechBubble(msg) {
-				_, _ = fmt.Fprintln(app.Stdout, line)
-			}
-			// a small tether from the bubble down to the figure
-			_, _ = fmt.Fprintln(app.Stdout, "        \\")
-			_, _ = fmt.Fprintln(app.Stdout, "         \\")
-			for _, line := range renderMascot(trimmedFrame(), st, 6) {
+			for _, line := range rumbleLayout(msg, st) {
 				_, _ = fmt.Fprintln(app.Stdout, line)
 			}
 			return nil
 		},
 	}
 	return cmd
+}
+
+// rumbleLayout assembles the speech bubble, a tether, and the compact
+// figure. The bronto faces right (its head is top-right), so — unlike a
+// left-headed cow — the bubble is right-anchored above the head and the
+// tether steps down-right to reach it.
+func rumbleLayout(msg string, st mascotStyle) []string {
+	fig := trimmedFrameOf(mascotFrameSmall)
+	head := headColumn(fig)
+
+	bubble := speechBubble(msg)
+	bw := 0
+	for _, l := range bubble {
+		if len(l) > bw {
+			bw = len(l)
+		}
+	}
+	// place the bubble so its right edge lands a couple of columns left of
+	// the head; clamp so short bubbles don't run off the left.
+	indent := head - bw + 2
+	if indent < 0 {
+		indent = 0
+	}
+	pad := strings.Repeat(" ", indent)
+
+	out := make([]string, 0, len(bubble)+len(fig)+2)
+	for _, l := range bubble {
+		out = append(out, pad+l)
+	}
+	// two-step tether from the bubble's right area down toward the head
+	out = append(out, strings.Repeat(" ", head-2)+"\\")
+	out = append(out, strings.Repeat(" ", head-1)+"\\")
+	out = append(out, renderMascot(fig, st, 0)...)
+	return out
+}
+
+// headColumn is the column of the topmost ink — the tip of the snout.
+func headColumn(frame []string) int {
+	for _, row := range frame {
+		if t := strings.TrimLeft(row, " "); t != "" {
+			return len(row) - len(t)
+		}
+	}
+	return 0
 }
 
 // printMascotStatic draws the figure once (non-TTY / --no-anim path).
@@ -290,8 +330,13 @@ func marchMascots(ctx context.Context, app *App, st mascotStyle, count int) erro
 // single frame of blank-padded lines.
 func compositeHerd(st mascotStyle, count, headX, gap, width int) []string {
 	h := mascotFrameHeight
-	// build each row as a rune canvas so figures can overlap cleanly
-	canvasW := width + mascotFrameWidth() + 4
+	// canvas is EXACTLY the terminal width: cells past the right edge are
+	// clipped, so no rendered line ever exceeds the width and soft-wraps
+	// onto a second physical row (which would desync the cursor-up redraw).
+	canvasW := width
+	if canvasW < 1 {
+		canvasW = 1
+	}
 	rows := make([][]rune, h)
 	for i := range rows {
 		rows[i] = []rune(strings.Repeat(" ", canvasW))
