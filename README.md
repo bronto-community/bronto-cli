@@ -135,6 +135,7 @@ Output to a non-TTY (piped or redirected) defaults to **JSONL**, one JSON object
 
 ```sh
 bronto search "status >= 500" --since 1h --jq '.message' | wc -l
+bronto search "" -d api-logs --since 1h --patterns  # cluster the firehose into templates
 bronto datasets list --fields log,log_id
 bronto datasets list --fields '?'          # list available field names instead of data
 ```
