@@ -26,7 +26,7 @@ bronto fields -d <dataset> --since 1h
 bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
 ```
 
-`search` runs a one-shot query. `tail` polls and follows new events. `traces` has subcommands (`list`, `show`, `services`, `operations`, `aggregate`, `shape`) over the `.traces` logset. `send` posts one event (`-m`) or streams NDJSON/text lines from stdin. `fields` discovers top-level keys in a dataset. `context` shows events around a specific anchor event.
+`search` runs a one-shot query (`--saved <name>` runs a stored saved-search; `--url`/`--open` emit a web-UI deep link instead of executing). `tail` polls and follows new events (`--include 'field~regex'` scopes a filter to one field; `--fields a,b` renders only those fields; severity is auto-colored). `traces` has subcommands (`list`, `show`, `services`, `operations`, `aggregate`, `shape`) over the `.traces` logset. `send` posts one event (`-m`) or streams NDJSON/text lines from stdin. `fields` discovers top-level keys in a dataset. `context` shows events around a specific anchor event.
 
 `-d`/`--dataset` accepts a dataset **name** or UUID everywhere; a name duplicated across collections is qualified as `collection/name` (e.g. `-d prod/api-logs`). With one dataset in the account it is auto-picked; with several, the error lists them.
 

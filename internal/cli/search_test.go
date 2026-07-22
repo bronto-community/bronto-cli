@@ -225,3 +225,96 @@ func TestEventTableColumnsExcludePlumbing(t *testing.T) {
 		t.Fatalf("real field missing from table columns: %v", cols)
 	}
 }
+
+// TestSearchSavedRunsStoredQuery pins --saved: the stored where/from/
+// time_range become the request, and explicit flags override.
+func TestSearchSavedRunsStoredQuery(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/saved-searches" && r.Method == http.MethodGet:
+			_, _ = w.Write([]byte(`[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-000000000009","name":"oncall-500s"}]`))
+		case r.URL.Path == "/saved-searches/aaaaaaaa-aaaa-aaaa-aaaa-000000000009":
+			_, _ = w.Write([]byte(`{"id":"aaaaaaaa-aaaa-aaaa-aaaa-000000000009","search_details":{"where":"status >= 500","from":"11111111-1111-1111-1111-111111111111:22222222-2222-2222-2222-222222222222","time_range":"Last 15 minutes"}}`))
+		case r.URL.Path == "/search":
+			b, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(b, &gotBody)
+			_, _ = w.Write([]byte(`{"events":[]}`))
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "--saved", "oncall-500s", "--api-key", "k", "--base-url", srv.URL, "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if gotBody["where"] != "status >= 500" || gotBody["time_range"] != "Last 15 minutes" {
+		t.Fatalf("body = %v", gotBody)
+	}
+	from, _ := gotBody["from"].([]any)
+	if len(from) != 2 {
+		t.Fatalf("from = %v, want the stored colon-split log ids", gotBody["from"])
+	}
+
+	// explicit query + --since override the stored values
+	root = NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "level = 'warn'", "--saved", "oncall-500s", "--since", "2h",
+		"--api-key", "k", "--base-url", srv.URL, "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if gotBody["where"] != "level = 'warn'" || gotBody["time_range"] != "Last 2 hours" {
+		t.Fatalf("override body = %v", gotBody)
+	}
+}
+
+// TestSearchURLFlag pins --url: prints the web link, never runs the query.
+func TestSearchURLFlag(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/search" {
+			t.Error("--url must not run the search")
+		}
+	}))
+	defer srv.Close()
+
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "status >= 500", "-d", "11111111-1111-1111-1111-111111111111",
+		"--since", "1h", "--url", "--api-key", "k", "--base-url", srv.URL})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	u := strings.TrimSpace(out.String())
+	if !strings.HasPrefix(u, "https://app.eu.bronto.io/search?") {
+		t.Fatalf("url = %q", u)
+	}
+	if !strings.Contains(u, "where=status+%3E%3D+500") || !strings.Contains(u, "time_range=Last+1+hour") {
+		t.Fatalf("url params missing: %q", u)
+	}
+
+	// app_url override wins
+	t.Setenv("BRONTO_APP_URL", "https://staging.ui.example/")
+	root = NewRootCmd()
+	out.Reset()
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "x", "-d", "11111111-1111-1111-1111-111111111111",
+		"--since", "1h", "--url", "--api-key", "k", "--base-url", srv.URL})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(strings.TrimSpace(out.String()), "https://staging.ui.example/search?") {
+		t.Fatalf("app_url override ignored: %q", out.String())
+	}
+}

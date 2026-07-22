@@ -7,10 +7,19 @@ import (
 	"sort"
 )
 
-// TailFilter applies client-side include/exclude regexes to raw lines.
+// FieldRule scopes a regexp to one event field ("gateway~stripe").
+type FieldRule struct {
+	Field string
+	Re    *regexp.Regexp
+}
+
+// TailFilter applies client-side include/exclude rules: plain regexes
+// match the raw line; field rules match a single field's value.
 type TailFilter struct {
-	Include []*regexp.Regexp
-	Exclude []*regexp.Regexp
+	Include       []*regexp.Regexp
+	Exclude       []*regexp.Regexp
+	IncludeFields []FieldRule
+	ExcludeFields []FieldRule
 }
 
 func (f TailFilter) Match(raw string) bool {
@@ -25,6 +34,40 @@ func (f TailFilter) Match(raw string) bool {
 		}
 	}
 	return true
+}
+
+// MatchEvent applies line rules against raw and field rules against the
+// event's (projected) fields. An include-field rule fails when the field
+// is absent; an exclude-field rule only fires when the field matches.
+func (f TailFilter) MatchEvent(ev map[string]any, raw string) bool {
+	if !f.Match(raw) {
+		return false
+	}
+	for _, r := range f.IncludeFields {
+		v, ok := ev[r.Field]
+		if !ok || !r.Re.MatchString(fmt.Sprint(v)) {
+			return false
+		}
+	}
+	for _, r := range f.ExcludeFields {
+		if v, ok := ev[r.Field]; ok && r.Re.MatchString(fmt.Sprint(v)) {
+			return false
+		}
+	}
+	return true
+}
+
+// Fields lists every field referenced by field rules, so callers can add
+// them to the search projection.
+func (f TailFilter) Fields() []string {
+	var out []string
+	for _, r := range f.IncludeFields {
+		out = append(out, r.Field)
+	}
+	for _, r := range f.ExcludeFields {
+		out = append(out, r.Field)
+	}
+	return out
 }
 
 // Dedup remembers event keys across poll cycles with bounded memory:

@@ -215,6 +215,9 @@ func (a *App) PrinterFor(format output.Format) (*output.Printer, error) {
 	if !a.Quiet {
 		p.SetNoticeWriter(a.Stderr)
 	}
+	if a.Color {
+		p.SetCellColorizer(levelCellColor)
+	}
 	if a.ListFieldsOnly {
 		p.SetListFields(true)
 	} else if len(a.FieldFilter) > 0 {
@@ -232,4 +235,15 @@ func (a *App) Printer(streaming bool) (*output.Printer, error) {
 		return nil, err
 	}
 	return a.PrinterFor(f)
+}
+
+// levelCellColor colors severity cells in tables (search @status, event
+// level fields) using the shared levelColor palette. Other columns are
+// untouched.
+func levelCellColor(column, value string) string {
+	switch column {
+	case "@status", "level", "message_kvs.level", "severity":
+		return levelColor(value)
+	}
+	return ""
 }

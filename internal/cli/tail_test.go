@@ -212,7 +212,7 @@ func TestRenderTailLine(t *testing.T) {
 			if c.origin != "" {
 				ev["@origin"] = c.origin
 			}
-			got := renderTailLine(ev, "an error", c.highlights, c.color)
+			got := renderTailLine(ev, "an error", c.highlights, c.color, nil)
 			if got != c.want {
 				t.Fatalf("renderTailLine = %q, want %q", got, c.want)
 			}
@@ -223,7 +223,7 @@ func TestRenderTailLine(t *testing.T) {
 // TestRenderTailLineOriginAbsentVsNil pins: a present-but-nil @origin is
 // treated the same as an absent one (no origin segment rendered).
 func TestRenderTailLineOriginAbsentVsNil(t *testing.T) {
-	got := renderTailLine(map[string]any{"@time": "t1", "@origin": nil}, "raw", nil, false)
+	got := renderTailLine(map[string]any{"@time": "t1", "@origin": nil}, "raw", nil, false, nil)
 	if got != "t1 raw" {
 		t.Fatalf("nil @origin should be treated as absent, got %q", got)
 	}
@@ -240,5 +240,55 @@ func TestTailRejectsNonStreamingFormats(t *testing.T) {
 		if err == nil || clierr.ExitCode(err) != 2 {
 			t.Fatalf("-o %s: want usage exit 2, got %v (%d)", f, err, clierr.ExitCode(err))
 		}
+	}
+}
+
+func TestBuildFilterFieldForm(t *testing.T) {
+	f, err := buildFilter([]string{"gateway~stripe", "plain.*regex"}, []string{"path~health"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(f.IncludeFields) != 1 || f.IncludeFields[0].Field != "gateway" {
+		t.Fatalf("include fields = %+v", f.IncludeFields)
+	}
+	if len(f.Include) != 1 {
+		t.Fatalf("plain includes = %d, want the non-field pattern kept as line regex", len(f.Include))
+	}
+	if len(f.ExcludeFields) != 1 || f.ExcludeFields[0].Field != "path" {
+		t.Fatalf("exclude fields = %+v", f.ExcludeFields)
+	}
+	if _, err := buildFilter([]string{"gateway~["}, nil); err == nil {
+		t.Fatal("invalid field regex must error")
+	}
+}
+
+func TestRenderTailLineLevelColorAndFields(t *testing.T) {
+	ev := map[string]any{"@time": "t1", "@status": "error", "@raw": "boom", "gateway": "stripe"}
+	line := renderTailLine(ev, "boom", nil, true, nil)
+	if !strings.Contains(line, "\x1b[1;31mERROR\x1b[0m") {
+		t.Fatalf("error level must render red: %q", line)
+	}
+	plain := renderTailLine(ev, "boom", nil, false, nil)
+	if plain != "t1 error boom" {
+		t.Fatalf("plain line = %q", plain)
+	}
+
+	// --fields projection: exactly the requested values, missing as "-"
+	got := renderTailLine(ev, "boom", nil, false, []string{"@time", "gateway", "nope"})
+	if got != "t1  stripe  -" {
+		t.Fatalf("fields line = %q", got)
+	}
+	colored := renderTailLine(ev, "boom", nil, true, []string{"gateway"})
+	if !strings.Contains(colored, "\x1b[1;31m") {
+		t.Fatalf("fields line must carry the level color: %q", colored)
+	}
+}
+
+func TestLevelCellColor(t *testing.T) {
+	if levelCellColor("@status", "error") == "" || levelCellColor("level", "warn") == "" {
+		t.Fatal("severity columns must color")
+	}
+	if levelCellColor("name", "error") != "" {
+		t.Fatal("non-severity columns must not color")
 	}
 }
