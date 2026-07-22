@@ -54,7 +54,10 @@ jobs:
         uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         id: tap-token
         with:
-          app-id: ${{ vars.BRONTO_COMMUNITY_BOT_APP_ID }}
+          # The App ID lives as an ORG SECRET alongside the private key
+          # (not a repo/org variable) — reading it from `vars.` broke the
+          # first v0.2.3 release run with "appId option is required".
+          app-id: ${{ secrets.BRONTO_COMMUNITY_BOT_APP_ID }}
           private-key: ${{ secrets.BRONTO_COMMUNITY_BOT_PRIVATE_KEY }}
           owner: bronto-community
           repositories: homebrew-tap
