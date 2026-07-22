@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/bronto-community/bronto-cli/internal/api"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
@@ -117,7 +118,9 @@ func newAPICmd() *cobra.Command {
 				return nil
 			}
 			var doc any
-			if err := json.Unmarshal(respBody, &doc); err != nil {
+			// bronto.DecodeJSON (UseNumber), NOT json.Unmarshal: plain
+			// decoding rounds >2^53 ids (metadata.sequence) through float64.
+			if err := bronto.DecodeJSON(respBody, &doc); err != nil {
 				_, err := app.Stdout.Write(respBody) // non-JSON: pass through
 				return err
 			}
@@ -148,7 +151,9 @@ func parseFieldArgs(fields []string) (map[string]any, error) {
 			return nil, clierr.New("usage_invalid_field", fmt.Sprintf("--field %q is not key=value", kv))
 		}
 		var parsed any
-		if err := json.Unmarshal([]byte(v), &parsed); err == nil {
+		// UseNumber here too: `-f seq=4367602734065516544` must reach the
+		// wire byte-exact (json.Number re-marshals verbatim).
+		if err := bronto.DecodeJSON([]byte(v), &parsed); err == nil {
 			obj[k] = parsed
 		} else {
 			obj[k] = v
