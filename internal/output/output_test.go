@@ -473,3 +473,36 @@ func TestTruncateCell(t *testing.T) {
 		t.Fatalf("unicode truncation broke: %d", len(r))
 	}
 }
+
+func TestTableCellColorizer(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatTable)
+	p.SetCellColorizer(func(col, val string) string {
+		if col == "level" && val == "error" {
+			return "\x1b[1;31m"
+		}
+		return ""
+	})
+	err := p.PrintRows([]string{"level", "msg"}, []map[string]any{
+		{"level": "error", "msg": "boom"},
+		{"level": "info", "msg": "fine"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "\x1b[1;31m") || !strings.Contains(out, "\x1b[0m") {
+		t.Fatalf("colorized cell missing ANSI: %q", out)
+	}
+	if strings.Contains(out, "\xff") {
+		t.Fatalf("tabwriter escape bytes leaked into output: %q", out)
+	}
+	// CSV must stay byte-clean even with a colorizer set
+	var csvBuf bytes.Buffer
+	cp := NewPrinter(&csvBuf, FormatCSV)
+	cp.SetCellColorizer(func(string, string) string { return "\x1b[31m" })
+	_ = cp.PrintRows([]string{"level"}, []map[string]any{{"level": "error"}})
+	if strings.Contains(csvBuf.String(), "\x1b") {
+		t.Fatalf("csv must never carry ANSI: %q", csvBuf.String())
+	}
+}

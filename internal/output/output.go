@@ -58,9 +58,10 @@ type Printer struct {
 
 	fields     []string // SetFieldFilter: table/csv column override, json/jsonl key filter
 	jq         *gojq.Code
-	listFields bool                // SetListFields: print field names instead of data
-	seenFields map[string]struct{} // streaming PrintRow "?" mode: keys already printed
-	notice     io.Writer           // SetNoticeWriter: human notes ("No results."); nil = silent
+	listFields bool                              // SetListFields: print field names instead of data
+	seenFields map[string]struct{}               // streaming PrintRow "?" mode: keys already printed
+	notice     io.Writer                         // SetNoticeWriter: human notes ("No results."); nil = silent
+	colorize   func(column, value string) string // SetCellColorizer: ANSI prefix for a table cell; "" = none
 }
 
 func NewPrinter(w io.Writer, f Format) *Printer { return &Printer{w: w, format: f} }
@@ -70,6 +71,12 @@ func NewPrinter(w io.Writer, f Format) *Printer { return &Printer{w: w, format: 
 // all — silence is indistinguishable from breakage. Machine formats
 // (json/jsonl/csv) stay byte-exact regardless.
 func (p *Printer) SetNoticeWriter(w io.Writer) { p.notice = w }
+
+// SetCellColorizer enables per-cell ANSI coloring in the TABLE format
+// only (csv/json/jsonl stay byte-clean). f returns the ANSI prefix for a
+// column/value pair, or "" for no color; the reset is appended
+// automatically. Escape bytes keep tabwriter's width accounting correct.
+func (p *Printer) SetCellColorizer(f func(column, value string) string) { p.colorize = f }
 
 // SetFieldFilter restricts output to the given fields. For table/csv the
 // fields become the columns, overriding whatever columns the caller passed
@@ -223,12 +230,21 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 			}
 			return nil
 		}
-		tw := tabwriter.NewWriter(p.w, 2, 4, 2, ' ', 0)
+		tw := tabwriter.NewWriter(p.w, 2, 4, 2, ' ', tabwriter.StripEscape)
 		_, _ = fmt.Fprintln(tw, strings.ToUpper(strings.Join(columns, "\t")))
+		// NB: must be the raw \xff byte — string(rune(0xff)) would UTF-8
+		// encode to two bytes tabwriter does not recognize.
+		esc := string([]byte{tabwriter.Escape})
 		for _, r := range rows {
 			vals := make([]string, len(columns))
 			for i, c := range columns {
-				vals[i] = truncateCell(cell(r, c))
+				v := truncateCell(cell(r, c))
+				if p.colorize != nil {
+					if pre := p.colorize(c, v); pre != "" {
+						v = esc + pre + esc + v + esc + "\x1b[0m" + esc
+					}
+				}
+				vals[i] = v
 			}
 			_, _ = fmt.Fprintln(tw, strings.Join(vals, "\t"))
 		}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -91,7 +92,7 @@ func newTailCmd() *cobra.Command {
 			mrf := false
 			req := bronto.SearchRequest{
 				From: ids, FromExpr: expr, Time: spec, Where: where,
-				Select: []string{"@time", "@raw", "@sequence", "@origin"},
+				Select: []string{"@time", "@raw", "@sequence", "@origin", "@status"},
 				Limit:  limit, MostRecentFirst: &mrf,
 			}
 			client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
@@ -177,8 +178,27 @@ func buildFilter(includes, excludes []string) (bronto.TailFilter, error) {
 
 var originColors = []string{"31", "32", "33", "34", "35", "36"}
 
+// levelColor maps a severity value to an ANSI prefix ("" = uncolored).
+// Shared by the tail renderer and the table cell colorizer (tailspin
+// pattern: errors jump out with zero configuration).
+func levelColor(level string) string {
+	switch strings.ToLower(level) {
+	case "error", "fatal", "critical", "err":
+		return "\x1b[1;31m"
+	case "warn", "warning":
+		return "\x1b[33m"
+	case "debug", "trace":
+		return "\x1b[2m"
+	}
+	return ""
+}
+
 func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, color bool) string {
 	ts := fmt.Sprint(ev["@time"])
+	status := ""
+	if s, ok := ev["@status"]; ok && s != nil {
+		status = fmt.Sprint(s)
+	}
 	origin := ""
 	if o, ok := ev["@origin"]; ok && o != nil {
 		origin = fmt.Sprint(o)
@@ -188,6 +208,13 @@ func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, 
 			raw = re.ReplaceAllString(raw, "\x1b[1;33m$0\x1b[0m")
 		}
 		line := "\x1b[2m" + ts + "\x1b[0m "
+		if status != "" {
+			if lc := levelColor(status); lc != "" {
+				line += lc + strings.ToUpper(status) + "\x1b[0m "
+			} else {
+				line += status + " "
+			}
+		}
 		if origin != "" {
 			h := fnv.New32a()
 			_, _ = h.Write([]byte(origin))
@@ -196,8 +223,12 @@ func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, 
 		}
 		return line + raw
 	}
-	if origin != "" {
-		return ts + " " + origin + " " + raw
+	parts := []string{ts}
+	if status != "" {
+		parts = append(parts, status)
 	}
-	return ts + " " + raw
+	if origin != "" {
+		parts = append(parts, origin)
+	}
+	return strings.Join(append(parts, raw), " ")
 }
