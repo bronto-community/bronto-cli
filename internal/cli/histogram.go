@@ -66,7 +66,7 @@ func renderHistogram(buckets []map[string]any, color bool) string {
 		if color && bar != "" {
 			bar = "\x1b[36m" + bar + "\x1b[0m"
 		}
-		sb.WriteString(fmt.Sprintf("%s  %s %s\n", label, bar, formatCount(n)))
+		_, _ = fmt.Fprintf(&sb, "%s  %s %s\n", label, bar, formatCount(n))
 	}
 	bucketNote := ""
 	if len(buckets) > 1 {
@@ -76,7 +76,7 @@ func renderHistogram(buckets []map[string]any, color bool) string {
 			bucketNote = fmt.Sprintf(" (bucket: %s)", d.Round(time.Second))
 		}
 	}
-	sb.WriteString(fmt.Sprintf("total: %s events%s\n", formatCount(total), bucketNote))
+	_, _ = fmt.Fprintf(&sb, "total: %s events%s\n", formatCount(total), bucketNote)
 	return sb.String()
 }
 
