@@ -71,6 +71,10 @@ Extras beyond the uniform pattern: `monitors events|mute`, `users deactivate|rea
 
 `bronto ping` (reachability + latency), `bronto version` (`-o json` for machine parsing), `bronto config list` (resolved config with provenance), `bronto usage --since 7d` (ingestion/search volume).
 
+## Query validation
+
+`bronto query check "<expr>"` validates syntax client-side (caret-positioned errors) and, with `-d <dataset>`, warns on fields not seen recently (did-you-mean included); `--strict` makes unknown fields fatal for CI. Server 400s on searches automatically carry the same local diagnosis when applicable.
+
 ## Escape hatch
 
 Any endpoint without a dedicated command: `bronto api <METHOD> <path>`, e.g. `bronto api GET /monitors -f limit=10` or `bronto api POST /search --input query.json`. Auth and region are resolved the same way as every other command.

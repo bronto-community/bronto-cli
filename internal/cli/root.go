@@ -60,6 +60,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newTracesCmd())
 	cmd.AddCommand(newSendCmd())
 	cmd.AddCommand(newUsageCmd())
+	cmd.AddCommand(newQueryCmd())
 	cmd.AddCommand(newPluginsCmd())
 
 	topLevel := map[string]*cobra.Command{}
