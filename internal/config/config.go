@@ -50,11 +50,14 @@ var envKeys = map[string]string{
 	"timeout":     "BRONTO_TIMEOUT",
 	"max_retries": "BRONTO_MAX_RETRIES",
 	"ingest_url":  "BRONTO_INGEST_URL",
+	"ask_url":     "BRONTO_ASK_URL",
+	"ask_model":   "BRONTO_ASK_MODEL",
+	"ask_api_key": "BRONTO_ASK_API_KEY",
 }
 
 // Keys settable from files (project and user profile sections). api_key is
 // deliberately absent: secrets never come from files.
-var fileKeys = []string{"profile", "region", "base_url", "output", "default_dataset", "timeout", "max_retries", "ingest_url"}
+var fileKeys = []string{"profile", "region", "base_url", "output", "default_dataset", "timeout", "max_retries", "ingest_url", "ask_url", "ask_model"}
 
 type userFile struct {
 	DefaultProfile string                       `toml:"default_profile"`
