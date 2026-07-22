@@ -71,7 +71,7 @@ func NewRootCmd() *cobra.Command {
 		var rc *cobra.Command
 		switch d.Name {
 		case "monitors":
-			rc = newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd())
+			rc = newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd(), newMonitorCheckCmd())
 		case "exports":
 			rc = newResourceCmd(d, newExportsCreateCmd())
 		case "users":
