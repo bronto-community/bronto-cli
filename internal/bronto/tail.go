@@ -60,7 +60,7 @@ func (f TailFilter) MatchEvent(ev map[string]any, raw string) bool {
 // Fields lists every field referenced by field rules, so callers can add
 // them to the search projection.
 func (f TailFilter) Fields() []string {
-	var out []string
+	out := make([]string, 0, len(f.IncludeFields)+len(f.ExcludeFields))
 	for _, r := range f.IncludeFields {
 		out = append(out, r.Field)
 	}

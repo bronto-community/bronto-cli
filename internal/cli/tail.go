@@ -90,7 +90,8 @@ func newTailCmd() *cobra.Command {
 			}
 
 			mrf := false
-			selects := []string{"@time", "@raw", "@sequence", "@origin", "@status"}
+			selects := make([]string, 0, 5+len(filter.Fields())+len(app.FieldFilter))
+			selects = append(selects, "@time", "@raw", "@sequence", "@origin", "@status")
 			selects = append(selects, filter.Fields()...)
 			selects = append(selects, app.FieldFilter...)
 			req := bronto.SearchRequest{
