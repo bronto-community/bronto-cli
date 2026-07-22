@@ -6,6 +6,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os/exec"
+	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -19,6 +22,8 @@ import (
 func newSearchCmd() *cobra.Command {
 	var (
 		saved           string
+		printURL        bool
+		openURL         bool
 		datasets        []string
 		fromExpr        string
 		since, from, to string
@@ -95,6 +100,17 @@ func newSearchCmd() *cobra.Command {
 			if len(effSelect) == 0 && len(groups) == 0 && !explainOnly {
 				effSelect = []string{"@time", "@raw"}
 			}
+			if printURL || openURL {
+				u := searchWebURL(app, ids, expr, where, spec)
+				if printURL {
+					_, err := fmt.Fprintln(app.Stdout, u)
+					return err
+				}
+				if !app.Quiet {
+					_, _ = fmt.Fprintf(app.Stderr, "Opening %s in your browser.\n", u)
+				}
+				return browserOpen(u)
+			}
 			req := bronto.SearchRequest{
 				From: ids, FromExpr: expr, Time: spec, Where: where,
 				Select: effSelect, Groups: groups, Limit: limit, Slices: slices,
@@ -157,6 +173,8 @@ func newSearchCmd() *cobra.Command {
 	}
 	f := cmd.Flags()
 	f.StringVar(&saved, "saved", "", "run a saved search by name or id (explicit query/dataset/time flags override its stored values)")
+	f.BoolVar(&printURL, "url", false, "print a web-UI link for this query instead of running it")
+	f.BoolVar(&openURL, "open", false, "open this query in the web UI instead of running it")
 	f.StringArrayVarP(&datasets, "dataset", "d", nil, "dataset name or UUID to search (repeatable)")
 	f.StringVar(&fromExpr, "from-expr", "", "dataset selector expression, e.g. \"log_id = '<uuid>'\"")
 	f.StringVar(&since, "since", "", "relative lookback: 30s, 15m, 1h, 2d, 1w, 1h30m")
@@ -255,4 +273,54 @@ func loadSavedSearch(ctx context.Context, app *App, ref string) (savedSearchDeta
 	}
 	tr, _ := sd["time_range"].(string)
 	return out, tr, nil
+}
+
+// searchWebURL renders the query + scope + timerange as a web-app deep
+// link. The app host derives from the region (app.<region>.bronto.io)
+// unless the app_url config key / BRONTO_APP_URL overrides it.
+func searchWebURL(app *App, ids []string, fromExpr, where string, spec timerange.Spec) string {
+	base := ""
+	if v, ok := app.Config.Get("app_url"); ok && v.Val != "" {
+		base = strings.TrimRight(v.Val, "/")
+	} else {
+		region := "eu"
+		if v, ok := app.Config.Get("region"); ok && v.Val != "" {
+			region = v.Val
+		}
+		base = "https://app." + region + ".bronto.io"
+	}
+	params := url.Values{}
+	if where != "" {
+		params.Set("where", where)
+	}
+	if len(ids) > 0 {
+		params.Set("from", strings.Join(ids, ":"))
+	}
+	if fromExpr != "" {
+		params.Set("from_expr", fromExpr)
+	}
+	if spec.TimeRange != "" {
+		params.Set("time_range", spec.TimeRange)
+	}
+	if spec.FromTs > 0 {
+		params.Set("from_ts", strconv.FormatInt(spec.FromTs, 10))
+	}
+	if spec.ToTs > 0 {
+		params.Set("to_ts", strconv.FormatInt(spec.ToTs, 10))
+	}
+	u := base + "/search"
+	if enc := params.Encode(); enc != "" {
+		u += "?" + enc
+	}
+	return u
+}
+
+// browserOpen launches the platform browser opener. Seam for tests.
+var browserOpen = func(u string) error {
+	cmd := "xdg-open"
+	if runtime.GOOS == "darwin" {
+		cmd = "open"
+	}
+	c := exec.Command(cmd, u) // #nosec G204 -- fixed opener binary, URL built by us
+	return c.Start()
 }

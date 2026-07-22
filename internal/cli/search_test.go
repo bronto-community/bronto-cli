@@ -275,3 +275,46 @@ func TestSearchSavedRunsStoredQuery(t *testing.T) {
 		t.Fatalf("override body = %v", gotBody)
 	}
 }
+
+// TestSearchURLFlag pins --url: prints the web link, never runs the query.
+func TestSearchURLFlag(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/search" {
+			t.Error("--url must not run the search")
+		}
+	}))
+	defer srv.Close()
+
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "status >= 500", "-d", "11111111-1111-1111-1111-111111111111",
+		"--since", "1h", "--url", "--api-key", "k", "--base-url", srv.URL})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	u := strings.TrimSpace(out.String())
+	if !strings.HasPrefix(u, "https://app.eu.bronto.io/search?") {
+		t.Fatalf("url = %q", u)
+	}
+	if !strings.Contains(u, "where=status+%3E%3D+500") || !strings.Contains(u, "time_range=Last+1+hour") {
+		t.Fatalf("url params missing: %q", u)
+	}
+
+	// app_url override wins
+	t.Setenv("BRONTO_APP_URL", "https://staging.ui.example/")
+	root = NewRootCmd()
+	out.Reset()
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "x", "-d", "11111111-1111-1111-1111-111111111111",
+		"--since", "1h", "--url", "--api-key", "k", "--base-url", srv.URL})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(strings.TrimSpace(out.String()), "https://staging.ui.example/search?") {
+		t.Fatalf("app_url override ignored: %q", out.String())
+	}
+}
