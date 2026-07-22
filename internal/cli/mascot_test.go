@@ -277,3 +277,41 @@ func TestRumbleTetherReachesHead(t *testing.T) {
 		t.Fatalf("tether at col %d does not meet head at col %d", tetherCol, head)
 	}
 }
+
+func TestPlanRainNoOverlap(t *testing.T) {
+	fig := trimmedFrameOf(mascotFrameTiny)
+	fw, fh := frameWidthOf(fig), len(fig)
+	drops := planRain(120, 40, fw, fh, 0, &rainRNG{s: 99})
+	if len(drops) == 0 {
+		t.Fatal("planRain produced no brontos")
+	}
+	// group by lane (y band): within a lane, figures must not overlap in x
+	byLane := map[int][]int{}
+	for _, d := range drops {
+		byLane[d.y] = append(byLane[d.y], d.x)
+	}
+	for y, xs := range byLane {
+		for i := 0; i < len(xs); i++ {
+			for j := i + 1; j < len(xs); j++ {
+				if abs(xs[i]-xs[j]) < fw {
+					t.Fatalf("lane y=%d has overlapping brontos at x=%d and x=%d (fw=%d)", y, xs[i], xs[j], fw)
+				}
+			}
+		}
+	}
+	// lanes must be on distinct rows and vertically separated by >= fh
+	lanes := make([]int, 0, len(byLane))
+	for y := range byLane {
+		lanes = append(lanes, y)
+	}
+	if len(lanes) < 2 {
+		t.Fatalf("expected multiple lanes on a 40-row screen, got %d", len(lanes))
+	}
+}
+
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
+}

@@ -303,7 +303,9 @@ func marchMascots(ctx context.Context, app *App, st mascotStyle, count int) erro
 	// each herd member trails the one ahead by ~1.5 body widths
 	gap := fw*3/2 + 4
 	drawn := false
-	for x := width; x > -(fw + gap*count); x -= marchStep {
+	// brontos face right, so they walk LEFT→RIGHT (head first) — enter
+	// from the left edge, exit the right.
+	for x := -(fw + gap*count); x < width; x += marchStep {
 		if ctx.Err() != nil {
 			break
 		}
@@ -386,9 +388,11 @@ func (r *rainRNG) Intn(n int) int {
 	return int(r.s % uint64(n)) //nolint:gosec // modulus is < n, an int, so it always fits
 }
 
-// rainDrop is one drifting bronto in the herd rain.
+// rainDrop is one drifting bronto in the herd rain. track is the lane's
+// wrap length: x increases each tick and wraps by track, which keeps the
+// even spacing (and thus the no-overlap guarantee) forever.
 type rainDrop struct {
-	x, y, speed int
+	x, y, speed, track int
 }
 
 // rain animation tuning; vars so tests can shrink them.
@@ -421,25 +425,7 @@ func rainHerd(ctx context.Context, app *App, st mascotStyle, count int) error {
 	if height < fh+1 {
 		height = fh + 1
 	}
-	if count <= 0 { // auto: scale to the screen area
-		count = width * height / 260
-		if count < 5 {
-			count = 5
-		}
-		if count > 40 {
-			count = 40
-		}
-	}
-
-	rng := newRainRNG()
-	drops := make([]rainDrop, count)
-	for i := range drops {
-		drops[i] = rainDrop{
-			x:     rng.Intn(width + fw),
-			y:     rng.Intn(height - fh + 1),
-			speed: 1 + rng.Intn(3),
-		}
-	}
+	drops := planRain(width, height, fw, fh, count, newRainRNG())
 
 	_, _ = fmt.Fprint(app.Stdout, "\x1b[?25l")
 	defer func() { _, _ = fmt.Fprint(app.Stdout, "\x1b[?25h"+mascotReset) }()
@@ -462,11 +448,11 @@ func rainHerd(ctx context.Context, app *App, st mascotStyle, count int) error {
 		drawn = true
 
 		for i := range drops {
-			drops[i].x -= drops[i].speed
-			if drops[i].x < -fw { // exited left: respawn on the right
-				drops[i].x = width + rng.Intn(fw*2)
-				drops[i].y = rng.Intn(height - fh + 1)
-				drops[i].speed = 1 + rng.Intn(3)
+			// brontos face right, so they walk LEFT→RIGHT (head first);
+			// wrap by the lane's track length to preserve even spacing.
+			drops[i].x += drops[i].speed
+			if drops[i].x >= drops[i].track-fw {
+				drops[i].x -= drops[i].track
 			}
 		}
 		select {
@@ -475,6 +461,46 @@ func rainHerd(ctx context.Context, app *App, st mascotStyle, count int) error {
 		case <-time.After(rainTick):
 		}
 	}
+}
+
+// planRain lays the herd out in horizontal lanes: one speed per lane
+// (parallax between lanes), figures evenly spaced along a wrap track so
+// they never overlap — within a lane the spacing is fixed, and lanes sit
+// on distinct rows. count<=0 auto-scales to the screen; an explicit count
+// is honored up to what fits without overlap.
+func planRain(width, height, fw, fh, count int, rng *rainRNG) []rainDrop {
+	vgap := 1
+	lanes := height / (fh + vgap)
+	if lanes < 1 {
+		lanes = 1
+	}
+	track := width + fw + 6
+	maxPerLane := track / (fw + 4) // keep ≥4 cols between figures
+	if maxPerLane < 1 {
+		maxPerLane = 1
+	}
+	perLane := 3
+	if count > 0 {
+		perLane = (count + lanes - 1) / lanes
+	}
+	if perLane > maxPerLane {
+		perLane = maxPerLane
+	}
+	if perLane < 1 {
+		perLane = 1
+	}
+
+	var drops []rainDrop
+	for l := 0; l < lanes; l++ {
+		y := l*(fh+vgap) + rng.Intn(2) // tiny jitter so lanes don't look ruled
+		speed := 1 + (l % 3)           // 1..3, varied per lane
+		phase := rng.Intn(track)       // stagger lanes so they don't align
+		for k := 0; k < perLane; k++ {
+			x := (k*track/perLane + phase) % track
+			drops = append(drops, rainDrop{x: x - fw, y: y, speed: speed, track: track})
+		}
+	}
+	return drops
 }
 
 // renderCanvasLine colors a composited row (its runes are already cell
