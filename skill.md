@@ -71,6 +71,8 @@ Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `
 
 A unique name resolves anywhere an id is accepted (users match by email; datasets support `collection/name`). Ambiguous names error with the candidate ids.
 
+`api-keys list` masks key material in **every** format (including json/jsonl) by default so keys don't leak into pipelines or CI logs; pass `--reveal` for the full values.
+
 Extras beyond the uniform pattern: `monitors events|mute|check` (`check --input monitor.json` lints definitions — query syntax, window bounds, dataset existence — with non-zero exit for CI), `users deactivate|reactivate|resend-invite`, `groups members`.
 
 ## Utility commands
