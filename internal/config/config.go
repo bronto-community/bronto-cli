@@ -46,17 +46,24 @@ type Config struct {
 var envKeys = map[string]string{
 	"api_key":     "BRONTO_API_KEY",
 	"base_url":    "BRONTO_BASE_URL",
+	"app_url":     "BRONTO_APP_URL",
+	"org_id":      "BRONTO_ORG_ID",
 	"profile":     "BRONTO_PROFILE",
 	"region":      "BRONTO_REGION",
 	"timeout":     "BRONTO_TIMEOUT",
 	"max_retries": "BRONTO_MAX_RETRIES",
 	"ingest_url":  "BRONTO_INGEST_URL",
+	"ask_url":     "BRONTO_ASK_URL",
+	"ask_model":   "BRONTO_ASK_MODEL",
+	"ask_api_key": "BRONTO_ASK_API_KEY",
 }
 
 // userFileKeys are settable from the user's own config file (under the
 // user config dir). api_key is deliberately absent: secrets never come
-// from files.
-var userFileKeys = []string{"profile", "region", "base_url", "output", "default_dataset", "timeout", "max_retries", "ingest_url"}
+// from files. ask_url/ask_model configure the LLM endpoint for
+// `bronto ask` (ask_api_key is env-only, see SetUserValue); app_url is the
+// web-UI base for `search --url/--open` deep links.
+var userFileKeys = []string{"profile", "region", "base_url", "app_url", "org_id", "output", "default_dataset", "timeout", "max_retries", "ingest_url", "ask_url", "ask_model"}
 
 // projectFileKeys are settable from a discovered .bronto.toml. It walks UP
 // from the working directory (loadProjectFile), so a project file can
@@ -65,7 +72,9 @@ var userFileKeys = []string{"profile", "region", "base_url", "output", "default_
 // ingest_url are therefore excluded here (they name the host directly);
 // region is included but validated (validateRegion) so it cannot smuggle
 // a host through the "https://api.%s.bronto.io" template. 2026-07-23
-// audit, HIGH.
+// audit, HIGH. ask_url and app_url are likewise excluded: a project file
+// must not redirect where `bronto ask` sends the question, nor where
+// `search --open` points the browser.
 var projectFileKeys = []string{"profile", "region", "output", "default_dataset", "timeout", "max_retries"}
 
 type userFile struct {

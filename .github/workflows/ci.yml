@@ -159,7 +159,12 @@ jobs:
           BRONTO_IT_REGION: ${{ vars.BRONTO_IT_REGION || 'eu' }}
         run: |
           mkdir -p "$GOCOVERDIR"
-          go test -count=1 ./integration/
+          # -timeout 20m: the live export leg (TestExports_CreateWaitDownload)
+          # legitimately runs ~8m, close enough to go test's default 10m
+          # package alarm that a slow-but-healthy run was killed on PR #63.
+          # The CLI's own --wait cap (exportWaitTimeout, 15m) still bounds a
+          # genuinely stuck export below this.
+          go test -count=1 -timeout 20m ./integration/
 
       # Collected for later adoption only: the ratchet gate (the `coverage`
       # job above) stays unit-only for now. Merging this PR-run's covdata

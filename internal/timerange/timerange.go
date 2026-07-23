@@ -6,6 +6,7 @@ package timerange
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"time"
@@ -96,8 +97,25 @@ func resolveSince(since string, now func() time.Time) (Spec, error) {
 			return Spec{}, clierr.New("usage_invalid_since",
 				fmt.Sprintf("cannot parse --since %q: number too large", since))
 		}
-		total += time.Duration(n) * unitDur[tok[2]]
+		unit := unitDur[tok[2]]
+		// Guard the scale and the sum against int64 (nanosecond) overflow:
+		// a value can pass ParseInt yet wrap time.Duration (max ~292y),
+		// silently producing a FromTs after ToTs. Check before computing.
+		if n > int64(math.MaxInt64/unit) {
+			return Spec{}, errSinceTooLarge(since)
+		}
+		term := time.Duration(n) * unit
+		if term > math.MaxInt64-total {
+			return Spec{}, errSinceTooLarge(since)
+		}
+		total += term
 	}
 	end := now()
 	return Spec{FromTs: end.Add(-total).UnixMilli(), ToTs: end.UnixMilli()}, nil
+}
+
+func errSinceTooLarge(since string) error {
+	return clierr.New("usage_invalid_since",
+		fmt.Sprintf("--since %q is too large", since)).
+		WithHint("The total range must be under ~292 years. Use absolute --from/--to for very wide ranges.")
 }

@@ -129,18 +129,29 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 			fieldFilter = vals
 		}
 	}
+	ttyNow := stdoutIsTTY()
 	var jqCode *gojq.Code
 	if f := cmd.Flags().Lookup("jq"); f != nil && f.Changed && f.Value.String() != "" {
-		// If the effective output format is already known and is not
-		// json/jsonl, reject the combination up front — no need to even
-		// compile the expression or touch the network.
+		// Reject a --jq/-o mismatch up front — before compiling the
+		// expression or running any command (a mutation must never execute
+		// only to have its response dropped by a late format check). --jq
+		// needs json/jsonl. With an explicit -o, check it. With no -o, the
+		// only incompatible default is a TTY, which DetectFormat resolves to
+		// table for every command; piped defaults (json non-streaming /
+		// jsonl streaming) are both fine.
+		incompatible := false
 		if outFlag != "" {
 			if of, ferr := output.ParseFormat(outFlag); ferr == nil &&
 				of != output.FormatJSON && of != output.FormatJSONL {
-				return nil, clierr.New("usage_invalid_flags",
-					"--jq requires -o json or jsonl").
-					WithHint("Pass -o json or -o jsonl alongside --jq.")
+				incompatible = true
 			}
+		} else if ttyNow {
+			incompatible = true
+		}
+		if incompatible {
+			return nil, clierr.New("usage_invalid_flags",
+				"--jq requires -o json or jsonl").
+				WithHint("Pass -o json or -o jsonl alongside --jq.")
 		}
 		code, err := output.CompileJQ(f.Value.String())
 		if err != nil {
@@ -148,7 +159,6 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 		}
 		jqCode = code
 	}
-	ttyNow := stdoutIsTTY()
 	// CRITICAL: httpClient captures cfg.APIKey() at construction time, so the
 	// keychain injection above MUST happen before this line.
 	httpClient := api.NewHTTPClient(cfg.APIKey(), version.Version)
@@ -215,6 +225,9 @@ func (a *App) PrinterFor(format output.Format) (*output.Printer, error) {
 	if !a.Quiet {
 		p.SetNoticeWriter(a.Stderr)
 	}
+	if a.Color {
+		p.SetCellColorizer(levelCellColor)
+	}
 	if a.ListFieldsOnly {
 		p.SetListFields(true)
 	} else if len(a.FieldFilter) > 0 {
@@ -232,4 +245,15 @@ func (a *App) Printer(streaming bool) (*output.Printer, error) {
 		return nil, err
 	}
 	return a.PrinterFor(f)
+}
+
+// levelCellColor colors severity cells in tables (search @status, event
+// level fields) using the shared levelColor palette. Other columns are
+// untouched.
+func levelCellColor(column, value string) string {
+	switch column {
+	case "@status", "level", "message_kvs.level", "severity":
+		return levelColor(value)
+	}
+	return ""
 }

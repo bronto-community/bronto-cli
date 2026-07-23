@@ -141,12 +141,13 @@ func TestTailAppliesJQFilter(t *testing.T) {
 	}
 }
 
-// originColorCode replicates renderTailLine's fnv-hash-based color pick so
-// tests can assert the exact ANSI sequence without duplicating internals.
+// originColorCode derives the expected ANSI color for an origin by calling
+// the SAME production colorIndex the renderer uses — not a re-implementation
+// (which previously hid a 32-bit index-overflow divergence).
 func originColorCode(origin string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(origin))
-	return originColors[h.Sum32()%uint32(len(originColors))]
+	return originColors[colorIndex(h.Sum32())]
 }
 
 func TestRenderTailLine(t *testing.T) {
@@ -212,7 +213,7 @@ func TestRenderTailLine(t *testing.T) {
 			if c.origin != "" {
 				ev["@origin"] = c.origin
 			}
-			got := renderTailLine(ev, "an error", c.highlights, c.color)
+			got := renderTailLine(ev, "an error", c.highlights, c.color, nil)
 			if got != c.want {
 				t.Fatalf("renderTailLine = %q, want %q", got, c.want)
 			}
@@ -223,7 +224,7 @@ func TestRenderTailLine(t *testing.T) {
 // TestRenderTailLineOriginAbsentVsNil pins: a present-but-nil @origin is
 // treated the same as an absent one (no origin segment rendered).
 func TestRenderTailLineOriginAbsentVsNil(t *testing.T) {
-	got := renderTailLine(map[string]any{"@time": "t1", "@origin": nil}, "raw", nil, false)
+	got := renderTailLine(map[string]any{"@time": "t1", "@origin": nil}, "raw", nil, false, nil)
 	if got != "t1 raw" {
 		t.Fatalf("nil @origin should be treated as absent, got %q", got)
 	}
@@ -239,6 +240,110 @@ func TestTailRejectsNonStreamingFormats(t *testing.T) {
 		err := root.Execute()
 		if err == nil || clierr.ExitCode(err) != 2 {
 			t.Fatalf("-o %s: want usage exit 2, got %v (%d)", f, err, clierr.ExitCode(err))
+		}
+	}
+}
+
+func TestBuildFilterFieldForm(t *testing.T) {
+	f, err := buildFilter([]string{"gateway~stripe", "plain.*regex"}, []string{"path~health"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(f.IncludeFields) != 1 || f.IncludeFields[0].Field != "gateway" {
+		t.Fatalf("include fields = %+v", f.IncludeFields)
+	}
+	if len(f.Include) != 1 {
+		t.Fatalf("plain includes = %d, want the non-field pattern kept as line regex", len(f.Include))
+	}
+	if len(f.ExcludeFields) != 1 || f.ExcludeFields[0].Field != "path" {
+		t.Fatalf("exclude fields = %+v", f.ExcludeFields)
+	}
+	if _, err := buildFilter([]string{"gateway~["}, nil); err == nil {
+		t.Fatal("invalid field regex must error")
+	}
+}
+
+func TestRenderTailLineLevelColorAndFields(t *testing.T) {
+	ev := map[string]any{"@time": "t1", "@status": "error", "@raw": "boom", "gateway": "stripe"}
+	line := renderTailLine(ev, "boom", nil, true, nil)
+	if !strings.Contains(line, "\x1b[1;31mERROR\x1b[0m") {
+		t.Fatalf("error level must render red: %q", line)
+	}
+	plain := renderTailLine(ev, "boom", nil, false, nil)
+	if plain != "t1 error boom" {
+		t.Fatalf("plain line = %q", plain)
+	}
+
+	// --fields projection: exactly the requested values, missing as "-"
+	got := renderTailLine(ev, "boom", nil, false, []string{"@time", "gateway", "nope"})
+	if got != "t1  stripe  -" {
+		t.Fatalf("fields line = %q", got)
+	}
+	colored := renderTailLine(ev, "boom", nil, true, []string{"gateway"})
+	if !strings.Contains(colored, "\x1b[1;31m") {
+		t.Fatalf("fields line must carry the level color: %q", colored)
+	}
+}
+
+func TestLevelCellColor(t *testing.T) {
+	if levelCellColor("@status", "error") == "" || levelCellColor("level", "warn") == "" {
+		t.Fatal("severity columns must color")
+	}
+	if levelCellColor("name", "error") != "" {
+		t.Fatal("non-severity columns must not color")
+	}
+}
+
+// TestTailFieldsProjectsInTableMode pins that tail --fields renders a
+// klp-style projection of just those fields in table mode (the feature #41
+// added — renderTailLine has explicit projection support). PR #66 wrongly
+// rejected this as a silent no-op; the no-op it targeted was already fixed
+// by #41, so the rejection only broke a working feature. This guards
+// against regressing it again.
+func TestTailFieldsProjectsInTableMode(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"events":[{"@time":"t1","@origin":"svc-a","@raw":"boom"}]}`))
+	}))
+	defer srv.Close()
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"tail", "--no-follow", "-o", "table", "--fields", "@time,@origin",
+		"-d", "11111111-1111-1111-1111-111111111111", "--base-url", srv.URL, "--api-key", "k"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("tail --fields in table mode must project, not error: %v", err)
+	}
+	if got := strings.TrimSpace(out.String()); got != "t1  svc-a" {
+		t.Fatalf("projection = %q, want %q", got, "t1  svc-a")
+	}
+}
+
+// TestTailFieldsListRejectedInTableMode covers --fields=? in table mode:
+// the table renderer can't enumerate available fields, so only the "?"
+// form needs a machine format (projection with real field names works).
+func TestTailFieldsListRejectedInTableMode(t *testing.T) {
+	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Error("server must not be contacted: --fields=? must be rejected before polling")
+	}, "", "tail", "--no-follow", "-o", "table", "--fields", "?",
+		"-d", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+	if err == nil || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage error exit 2, got %v", err)
+	}
+}
+
+// TestColorIndexInRangeForHighBitHashes exercises the shared production
+// color-index function directly. The origin color pick was
+// int(h.Sum32())%len(originColors): on 32-bit builds int(uint32) is
+// negative for hashes >= 2^31, and a negative modulo panics with an
+// out-of-range index. colorIndex must use unsigned math so every hash maps
+// in range. Previously the test helper re-implemented this (correctly,
+// unsigned) instead of calling production, hiding the divergence.
+func TestColorIndexInRangeForHighBitHashes(t *testing.T) {
+	for _, sum := range []uint32{0, 1, 0x7fffffff, 0x80000000, 0xdeadbeef, 0xffffffff} {
+		i := colorIndex(sum)
+		if i < 0 || i >= len(originColors) {
+			t.Errorf("colorIndex(%#x) = %d, out of range [0,%d)", sum, i, len(originColors))
 		}
 	}
 }

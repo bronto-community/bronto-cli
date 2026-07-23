@@ -63,7 +63,7 @@ coverage-baseline:
 # binary builds, --help — still run). With it set, it runs live against a
 # Bronto test account (see integration/).
 it:
-	go test -count=1 ./integration/
+	go test -count=1 -timeout 20m ./integration/
 
 # release-dry validates the goreleaser config without building anything.
 # Pinned to the same version release.yml runs, so what's validated locally

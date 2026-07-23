@@ -82,10 +82,12 @@ Piped, the same command emits JSONL — one full event per line, 64-bit ids pres
 bronto search "status >= 500" --since 1h
 bronto search --select "count()" -g host --since 15m
 bronto tail "level = 'error'" --include timeout --exclude healthz
+bronto tail -g status --window 1m                    # live count(*) by status, redrawn in place
 bronto traces show <trace-id>
 bronto traces services --since 1h
 bronto fields -d <dataset> --since 1h
 bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
+bronto repl -d <dataset>                # interactive prompt: edit, rerun, narrow
 ```
 
 `traces` also has `list`, `operations`, `aggregate`, and `shape` subcommands over the `.traces` logset.
@@ -129,6 +131,20 @@ bronto version
 
 Anything without a dedicated command is reachable via the escape hatch: `bronto api GET /monitors -f limit=10` or `bronto api POST /search --input query.json`.
 
+## Ask — natural language to query
+
+Point `bronto ask` at any OpenAI-compatible endpoint (OpenAI, a local Ollama, your gateway):
+
+```sh
+bronto config set ask_url https://api.openai.com/v1/chat/completions
+bronto config set ask_model gpt-4o-mini
+export BRONTO_ASK_API_KEY=sk-...
+
+bronto ask "5xx spikes in checkout since last night"
+```
+
+The generated `bronto search …` command and the reasoning behind each mapping are shown before anything runs (`--yes` skips the prompt; piped without `--yes` it prints the plan as JSON and executes nothing). Only the question and dataset/field *names* are sent to the endpoint — never event data, never your Bronto API key.
+
 ## Scripting & agents
 
 Piped to a non-TTY, the streaming commands (`search`, `tail`, `traces`) default to **JSONL**, one JSON object per line — no flag needed. Every other command (resource `list`/`get`, `usage`, `config list`, …) piped emits one pretty-printed **JSON** document (usually an array): parse it whole, or pass `-o jsonl` for line-delimited rows. Force any format explicitly with `-o table|json|jsonl|raw|csv`.
@@ -136,7 +152,11 @@ Piped to a non-TTY, the streaming commands (`search`, `tail`, `traces`) default 
 ```sh
 bronto search "status >= 500" --since 1h --jq '.message' | wc -l
 bronto search "status >= 500" --since 6h --histogram   # when did it start, how big is it
+bronto search "" -d api-logs --since 1h --patterns  # cluster the firehose into templates
 bronto query check "stauts >= 500" -d api-logs      # catches the typo before the server does
+bronto search --saved oncall-500s --since 30m       # run a stored saved-search
+bronto search "status >= 500" --since 1h --open     # jump to this query in the web UI
+bronto tail "" --include 'gateway~stripe' --fields @time,level,message
 bronto datasets list --fields log,log_id
 bronto datasets list --fields '?'          # list available field names instead of data
 ```
