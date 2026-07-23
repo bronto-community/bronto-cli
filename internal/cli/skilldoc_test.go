@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -59,13 +60,6 @@ func TestSkillDocCommandsAreReal(t *testing.T) {
 	root.InitDefaultHelpFlag()
 	root.InitDefaultVersionFlag()
 
-	commands := map[string]*cobra.Command{}
-	for _, c := range root.Commands() {
-		commands[c.Name()] = c
-	}
-	flags := map[string]bool{}
-	root.Flags().VisitAll(func(f *pflag.Flag) { flags["--"+f.Name] = true })
-
 	_, thisFile, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("runtime.Caller failed")
@@ -79,34 +73,61 @@ func TestSkillDocCommandsAreReal(t *testing.T) {
 			t.Fatalf("reading %s: %v", docFile, err)
 		}
 		for _, span := range brontoCodeSpans(string(data)) {
-			if span.ignore {
-				continue
+			for _, prob := range docSpanProblems(root, span) {
+				t.Errorf("%s: %s (from code span %q)", docFile, prob, span.text)
 			}
-			m := brontoInvocation.FindStringSubmatch(span.text)
-			if m == nil {
-				continue
-			}
-			token := m[1]
-			if strings.HasPrefix(token, "<") && strings.HasSuffix(token, ">") {
-				continue
-			}
-			if strings.HasPrefix(token, "--") {
-				if !flags[token] {
-					t.Errorf("%s: %q is not a registered flag (from code span %q)", docFile, token, span.text)
-				}
-				continue
-			}
-			cmd, ok := commands[token]
-			if !ok {
-				t.Errorf("%s: %q is not a registered command (from code span %q)", docFile, token, span.text)
-				continue
-			}
-			checkDeeperTokens(t, docFile, span, cmd)
 		}
 	}
 }
 
-// checkDeeperTokens resolves the code span's tokens past the first one,
+// docSpanProblems is the doc-rot checker proper: it validates one
+// "bronto ..." code span against the real command tree and returns a
+// problem string per defect found (empty = span is fine). Factored out of
+// TestSkillDocCommandsAreReal so the checker itself is testable — see
+// TestDocCheckerCatchesUnknownFlags, which pins that the checker can
+// actually fail on the defect classes it claims to guard against.
+//
+// Checks performed: the first token after "bronto" must be a registered
+// top-level command or root-level long flag; while the resolved command is
+// a non-runnable group, subsequent bare-word tokens must keep resolving to
+// registered subcommands (via cobra's own Command.Find). Tokens that are
+// "<placeholders>", quoted strings, or anything after the first
+// non-subcommand token are ordinary arguments. Spans marked
+// skilldoc:ignore are exempt.
+func docSpanProblems(root *cobra.Command, span codeSpan) []string {
+	if span.ignore {
+		return nil
+	}
+	m := brontoInvocation.FindStringSubmatch(span.text)
+	if m == nil {
+		return nil
+	}
+	token := m[1]
+	if strings.HasPrefix(token, "<") && strings.HasSuffix(token, ">") {
+		return nil
+	}
+	if strings.HasPrefix(token, "--") {
+		flags := map[string]bool{}
+		root.Flags().VisitAll(func(f *pflag.Flag) { flags["--"+f.Name] = true })
+		if !flags[token] {
+			return []string{fmt.Sprintf("%q is not a registered flag", token)}
+		}
+		return nil
+	}
+	var cmd *cobra.Command
+	for _, c := range root.Commands() {
+		if c.Name() == token {
+			cmd = c
+			break
+		}
+	}
+	if cmd == nil {
+		return []string{fmt.Sprintf("%q is not a registered command", token)}
+	}
+	return deeperTokenProblems(span, cmd)
+}
+
+// deeperTokenProblems resolves the code span's tokens past the first one,
 // descending through the command tree via cobra's own Command.Find as
 // long as the current command is a non-runnable group (HasSubCommands
 // and not Runnable). It stops — treating everything from there on as
@@ -114,28 +135,64 @@ func TestSkillDocCommandsAreReal(t *testing.T) {
 // the first token that is a flag ("-..."), a "<placeholder>", the start
 // of a quoted string (double or single quote), or once the resolved command is
 // runnable (a leaf, or a group with its own default action).
-func checkDeeperTokens(t *testing.T, docFile string, span codeSpan, cmd *cobra.Command) {
-	t.Helper()
+func deeperTokenProblems(span codeSpan, cmd *cobra.Command) []string {
 	words := strings.Fields(span.text)
 	if len(words) < 3 { // "bronto" + first token + at least one more
-		return
+		return nil
 	}
 	cur := cmd
 	for _, w := range words[2:] {
 		if !cur.HasSubCommands() || cur.Runnable() {
-			return
+			return nil
 		}
 		if strings.HasPrefix(w, "-") || strings.HasPrefix(w, "<") ||
 			strings.HasPrefix(w, `"`) || strings.HasPrefix(w, "'") {
-			return
+			return nil
 		}
 		next, _, _ := cur.Find([]string{w})
 		if next == cur {
-			t.Errorf("%s: %q is not a registered subcommand of %q (from code span %q)",
-				docFile, w, cur.CommandPath(), span.text)
-			return
+			return []string{fmt.Sprintf("%q is not a registered subcommand of %q", w, cur.CommandPath())}
 		}
 		cur = next
+	}
+	return nil
+}
+
+// TestDocCheckerCatchesUnknownFlags tests the checker itself: a doc-rot
+// guard that cannot fail on a defect class guards nothing (the 2026-07-23
+// audit found exactly that — renamed or phantom flags in examples sail
+// through because the checker stops at the first "-" token). Every span
+// here uses a real command with a flag that does not exist on it; the
+// checker must report a problem for each.
+func TestDocCheckerCatchesUnknownFlags(t *testing.T) {
+	root := NewRootCmd()
+	root.InitDefaultHelpFlag()
+	root.InitDefaultVersionFlag()
+
+	bad := []string{
+		"bronto search 'error' --no-such-flag",
+		"bronto monitors list --definitely-not-real",
+		"bronto tail --nope 5m",
+		"bronto monitors update <id> --frobnicate x",
+	}
+	for _, text := range bad {
+		if probs := docSpanProblems(root, codeSpan{text: text}); len(probs) == 0 {
+			t.Errorf("checker accepted %q — unknown flag not caught", text)
+		}
+	}
+
+	good := []string{
+		"bronto search 'error' --since 1h -o json",
+		"bronto monitors list -o json",
+		"bronto tail --window 30s",
+		"bronto exports create --dataset <id> --since 1h --wait",
+		"bronto send --dataset <id> --input events.jsonl --dry-run",
+		"bronto api GET /monitors -f limit=10",
+	}
+	for _, text := range good {
+		if probs := docSpanProblems(root, codeSpan{text: text}); len(probs) != 0 {
+			t.Errorf("checker rejected valid span %q: %v", text, probs)
+		}
 	}
 }
 

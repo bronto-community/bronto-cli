@@ -1,4 +1,4 @@
-.PHONY: build test lint generate check-generate release-dry snapshot coverage coverage-baseline it vuln
+.PHONY: build test lint generate check-generate check-spec spec-baseline lint-workflows release-dry snapshot coverage coverage-baseline it vuln
 
 build:
 	CGO_ENABLED=0 go build -o bronto ./cmd/bronto
@@ -14,6 +14,24 @@ generate:
 
 check-generate: generate
 	git diff --exit-code -- internal/api api
+
+# check-spec verifies api/openapi.yaml against the digest recorded in
+# api/vendored.sha256 (--self-test first proves the gate can go red). This
+# is the real spec-integrity gate; see scripts/spec-verify.sh for why
+# check-generate could never fail.
+check-spec:
+	scripts/spec-verify.sh --self-test
+
+# spec-baseline records the current vendored spec digest. Run it (and
+# commit the diff) whenever api/openapi.yaml changes on purpose — the
+# reviewable governance step, same pattern as coverage-baseline.
+spec-baseline:
+	scripts/spec-verify.sh --record
+
+# lint-workflows enforces the version-pin policy on CI/release surfaces
+# (workflows, Makefile tool invocations, Dockerfiles).
+lint-workflows:
+	scripts/workflow-lint.sh
 
 # coverage runs the full coverage pipeline (unit tests + optional
 # integration leg + covdata merge + filtering) and enforces the ratchet
