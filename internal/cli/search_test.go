@@ -275,3 +275,50 @@ func TestSearchSavedRunsStoredQuery(t *testing.T) {
 		t.Fatalf("override body = %v", gotBody)
 	}
 }
+
+func TestSearchPatterns(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		b, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(b, &body)
+		if body["limit"] != 2000.0 {
+			t.Errorf("limit = %v, want the raised patterns default", body["limit"])
+		}
+		_, _ = w.Write([]byte(`{"events":[` +
+			`{"@raw":"GET /a/1 200 5ms"},{"@raw":"GET /a/2 200 8ms"},{"@raw":"GET /a/3 200 3ms"},` +
+			`{"@raw":"pool exhausted worker=1"}]}`))
+	}))
+	defer srv.Close()
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "x", "-d", "11111111-1111-1111-1111-111111111111",
+		"--patterns", "--api-key", "k", "--base-url", srv.URL, "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(out.Bytes(), &rows); err != nil || len(rows) != 2 {
+		t.Fatalf("rows = %q err=%v", out.String(), err)
+	}
+	if rows[0]["count"] != 3.0 || !strings.Contains(rows[0]["pattern"].(string), "<num>") {
+		t.Fatalf("top pattern = %v", rows[0])
+	}
+	if rows[0]["example"] == "" {
+		t.Fatal("machine rows must carry an example line")
+	}
+
+	// conflicts rejected
+	root = NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "x", "-d", "11111111-1111-1111-1111-111111111111",
+		"--patterns", "-g", "level", "--api-key", "k", "--base-url", srv.URL})
+	err := root.Execute()
+	var ce *clierr.Error
+	if err == nil || !errors.As(err, &ce) || ce.Code != "usage_invalid_flags" {
+		t.Fatalf("want usage_invalid_flags, got %v", err)
+	}
+}
