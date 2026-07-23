@@ -13,6 +13,13 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Gate the most credential-dense job in the repo (release token, the
+    # cross-repo HOMEBREW_TAP_TOKEN, and OIDC signing) behind a protected
+    # environment. Create a `release` environment with required reviewers in
+    # repo Settings → Environments so a v* tag push can't mint these secrets
+    # without a human approval. Until that environment has protection rules,
+    # this line is a harmless no-op (GitHub auto-creates an open environment).
+    environment: release
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
