@@ -34,7 +34,7 @@ Agent-critical flags (global): `--dry-run` prints any mutating call as a plan do
 
 ## Machine-output contract
 
-- Output to a non-TTY (piped/redirected) defaults to JSONL, one JSON object per line — no flag needed.
+- Streaming commands (`search`, `tail`, `traces`) piped to a non-TTY default to JSONL, one JSON object per line — no flag needed. Every other command (resource `list`/`get`, `usage`, `config list`, …) piped emits a single pretty-printed JSON document (usually an array) — parse it whole, not line-by-line; pass `-o jsonl` if you want line-delimited rows.
 - Force a format with `-o json|jsonl|raw|csv|table`.
 - `--jq '<expr>'` runs a jq expression over json/jsonl output, one result per line. Deviation from the `jq` CLI: a value that errors or halts on the expression is silently **skipped**, not a fatal abort — every other row still prints.
 - `--fields a,b,c` narrows output to those columns/keys; `--fields ?` lists the field names available instead of the data. Only works with table/json/jsonl/csv; `-o raw` and custom TTY renderers (`traces show`, `traces shape`) reject `--fields` with a usage error pointing at a machine format.
@@ -62,6 +62,8 @@ bronto <resource> create -f key=value -f other=value    # or --input body.json /
 bronto <resource> update <id-or-name> -f key=value
 bronto <resource> delete <id-or-name> --yes              # --yes skips the confirmation prompt
 ```
+
+Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `exports`.
 
 A unique name resolves anywhere an id is accepted (users match by email; datasets support `collection/name`). Ambiguous names error with the candidate ids.
 

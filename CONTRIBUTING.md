@@ -51,4 +51,4 @@ Commit subjects follow [Conventional Commits](https://www.conventionalcommits.or
 
 `api/openapi.yaml` is a vendored snapshot of Bronto's published OpenAPI spec (`api/upstream.sha256` records which). It is a *reference*, not a codegen source: `resourcespec_test.go` asserts every registry path still exists in it, and the weekly spec-sync workflow diffs it against upstream and files a CLI-impact digest. To re-vendor, follow the checklist spec-sync puts in its drift issue.
 
-`make check-generate` (CI: `generate-clean`) guards against accidental edits to the vendored spec.
+`make check-spec` (CI: `repo-gates`) guards the vendored spec: `api/openapi.yaml` must match the digest recorded in `api/vendored.sha256`. Any intentional spec change (re-vendor or patch) must run `make spec-baseline` and commit the updated record in the same PR — that diff is the reviewable governance step, same pattern as the coverage baseline. `make lint-workflows` (same CI job) enforces exact version pins in workflows, the Makefile's tool invocations, and Dockerfile base images.

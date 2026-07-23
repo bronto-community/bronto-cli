@@ -127,6 +127,13 @@ func (l *lexer) next() (token, *ParseError) {
 				continue
 			}
 			if l.in[l.pos] == quote {
+				// A doubled quote is a SQL-style escaped quote inside the
+				// string (traces.Quote emits exactly this: 'O''Brien'),
+				// not a close-then-reopen.
+				if l.pos+1 < len(l.in) && l.in[l.pos+1] == quote {
+					l.pos += 2
+					continue
+				}
 				l.pos++
 				return token{kind: "str", text: l.in[start:l.pos], pos: start}, nil
 			}

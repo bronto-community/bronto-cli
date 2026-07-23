@@ -7,7 +7,7 @@
 
 A community command-line client for the [Bronto](https://bronto.io) observability platform. One scriptable binary wraps Bronto's REST and ingestion APIs: search and tail logs, explore OpenTelemetry traces, send events, and manage every resource from datasets to monitors.
 
-Built for pipelines and agents: JSONL by default when piped, typed errors with machine-readable hints, stable exit codes, and `--dry-run` plans for every mutating call.
+Built for pipelines and agents: streaming commands emit JSONL when piped, typed errors with machine-readable hints, stable exit codes, and `--dry-run` plans for every mutating call.
 
 bronto-cli is an official open-source project from [Bronto](https://bronto.io), maintained as a **community artifact**: free to use, contributions welcome — but not covered by Bronto's product support. Questions, bugs, and feature requests are handled best-effort through [GitHub issues](https://github.com/bronto-community/bronto-cli/issues), not Bronto's support channels.
 
@@ -19,7 +19,7 @@ bronto-cli is an official open-source project from [Bronto](https://bronto.io), 
 brew install bronto-community/tap/bronto
 ```
 
-The tap isn't published yet — this will work once `homebrew-tap` exists and the release workflow's cask upload is flipped from `skip_upload` to `auto`. Until then, use one of the options below.
+The tap isn't published yet — this will work once the `homebrew-tap` repository exists; the release workflow already pushes the formula automatically. Until then, use one of the options below.
 
 ### curl install script
 
@@ -106,7 +106,7 @@ bronto monitors templates list
 bronto webhooks create -f name=alerts -f url=https://example.com/hook
 ```
 
-Every resource (`datasets`, `monitors` — incl. `monitors templates` and `monitors downtimes` — `dashboards`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, plus read-only `collections` and `log-views`) shares the same `list | get <id|name> | create | update <id|name> | delete <id|name> --yes` pattern (list-only where the API documents no other verbs). Everywhere an id is accepted, a unique **name** works too (users: email; datasets: `collection/name` qualifies duplicates) — ambiguous names error with the candidates; `create`/`update` take repeated `-f key=value` or `--input file.json`/`--input -`, and `delete` prompts for confirmation unless `--yes` is passed.
+Every resource (`datasets`, `monitors` — incl. `monitors templates` and `monitors downtimes` — `dashboards`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, plus read-only `collections` and `log-views`) shares the same `list | get <id|name> | create | update <id|name> | delete <id|name> --yes` pattern (list-only where the API documents no other verbs). Everywhere an id is accepted, a unique **name** works too (users: email; datasets: `collection/name` qualifies duplicates) — ambiguous names error with the candidates; `create`/`update` take repeated `-f key=value` or `--input file.json`/`--input -`, and `delete` prompts for confirmation unless `--yes` is passed. Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `exports`.
 
 **Pipe** — send data in:
 
@@ -131,7 +131,7 @@ Anything without a dedicated command is reachable via the escape hatch: `bronto 
 
 ## Scripting & agents
 
-Output to a non-TTY (piped or redirected) defaults to **JSONL**, one JSON object per line — no flag needed. Force a format explicitly with `-o table|json|jsonl|raw|csv`.
+Piped to a non-TTY, the streaming commands (`search`, `tail`, `traces`) default to **JSONL**, one JSON object per line — no flag needed. Every other command (resource `list`/`get`, `usage`, `config list`, …) piped emits one pretty-printed **JSON** document (usually an array): parse it whole, or pass `-o jsonl` for line-delimited rows. Force any format explicitly with `-o table|json|jsonl|raw|csv`.
 
 ```sh
 bronto search "status >= 500" --since 1h --jq '.message' | wc -l
@@ -185,7 +185,7 @@ Config keys (settable via `bronto config set`, project `.bronto.toml`, or profil
 |---|---|---|---|
 | `region` | `BRONTO_REGION` | `eu` or `us` | `eu` |
 | `base_url` | `BRONTO_BASE_URL` | full API base URL override (staging/localhost) | derived from region |
-| `output` | — | default output format | table (TTY) / jsonl (piped) |
+| `output` | — | default output format | table (TTY); piped: jsonl (streaming cmds) / json (others) |
 | `default_dataset` | — | dataset name/UUID or `from_expr` used when `-d` is omitted | — |
 | `timeout` | `BRONTO_TIMEOUT` | HTTP timeout in seconds | 30 |
 | `max_retries` | `BRONTO_MAX_RETRIES` | retries for idempotent requests | 2 |

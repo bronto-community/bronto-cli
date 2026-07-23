@@ -130,32 +130,70 @@ func docSpanProblems(root *cobra.Command, span codeSpan) []string {
 // deeperTokenProblems resolves the code span's tokens past the first one,
 // descending through the command tree via cobra's own Command.Find as
 // long as the current command is a non-runnable group (HasSubCommands
-// and not Runnable). It stops — treating everything from there on as
-// ordinary positional args/flags rather than further subcommands — at
+// and not Runnable). Descent stops — treating everything from there on
+// as ordinary positional args/flags rather than further subcommands — at
 // the first token that is a flag ("-..."), a "<placeholder>", the start
-// of a quoted string (double or single quote), or once the resolved command is
-// runnable (a leaf, or a group with its own default action).
+// of a quoted string (double or single quote), or once the resolved
+// command is runnable (a leaf, or a group with its own default action).
+//
+// Past the descent, every long-flag token ("--x" or "--x=v") must exist
+// on the resolved command (its own flags plus inherited persistent ones).
+// The 2026-07-23 audit found the old checker stopped cold at the first
+// "-" token, so a renamed or phantom flag in any example sailed through —
+// exactly the drift class this guard exists for. Tokens inside quoted
+// arguments are skipped (a quoted query is data, not flags), as are
+// "<placeholder>" flag values and short flags (too example-polymorphic to
+// pin: -f is a different flag on different commands).
 func deeperTokenProblems(span codeSpan, cmd *cobra.Command) []string {
 	words := strings.Fields(span.text)
 	if len(words) < 3 { // "bronto" + first token + at least one more
 		return nil
 	}
+	var probs []string
 	cur := cmd
+	descending := true
+	var inQuote byte
 	for _, w := range words[2:] {
-		if !cur.HasSubCommands() || cur.Runnable() {
-			return nil
+		if inQuote != 0 {
+			if strings.HasSuffix(w, string(inQuote)) {
+				inQuote = 0
+			}
+			continue
 		}
-		if strings.HasPrefix(w, "-") || strings.HasPrefix(w, "<") ||
-			strings.HasPrefix(w, `"`) || strings.HasPrefix(w, "'") {
-			return nil
+		if w[0] == '\'' || w[0] == '"' {
+			if len(w) < 2 || !strings.HasSuffix(w, w[:1]) {
+				inQuote = w[0]
+			}
+			descending = false
+			continue
 		}
-		next, _, _ := cur.Find([]string{w})
-		if next == cur {
-			return []string{fmt.Sprintf("%q is not a registered subcommand of %q", w, cur.CommandPath())}
+		if descending {
+			switch {
+			case !cur.HasSubCommands() || cur.Runnable():
+				descending = false
+			case strings.HasPrefix(w, "-"), strings.HasPrefix(w, "<"):
+				descending = false
+			default:
+				next, _, _ := cur.Find([]string{w})
+				if next == cur {
+					probs = append(probs, fmt.Sprintf("%q is not a registered subcommand of %q", w, cur.CommandPath()))
+					return probs
+				}
+				cur = next
+				continue
+			}
 		}
-		cur = next
+		if strings.HasPrefix(w, "--") {
+			name := strings.TrimPrefix(strings.SplitN(w, "=", 2)[0], "--")
+			if name == "" || name == "help" { // bare "--" separator; lazily-added help flag
+				continue
+			}
+			if cur.Flags().Lookup(name) == nil && cur.InheritedFlags().Lookup(name) == nil {
+				probs = append(probs, fmt.Sprintf("--%s is not a flag of %q", name, cur.CommandPath()))
+			}
+		}
 	}
-	return nil
+	return probs
 }
 
 // TestDocCheckerCatchesUnknownFlags tests the checker itself: a doc-rot
@@ -186,7 +224,7 @@ func TestDocCheckerCatchesUnknownFlags(t *testing.T) {
 		"bronto monitors list -o json",
 		"bronto tail --window 30s",
 		"bronto exports create --dataset <id> --since 1h --wait",
-		"bronto send --dataset <id> --input events.jsonl --dry-run",
+		"bronto send --dataset <id> --message 'one event' --dry-run",
 		"bronto api GET /monitors -f limit=10",
 	}
 	for _, text := range good {
