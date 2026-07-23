@@ -228,7 +228,7 @@ jobs:
       - run: make check-spec
       - run: make lint-workflows
       - name: Install zizmor
-        run: pipx install zizmor==1.5.2
+        run: pipx install zizmor==1.24.1
       - run: make check-actions
 
   # pre-commit runs the same hooks developers get locally (gitleaks,

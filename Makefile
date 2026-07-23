@@ -31,12 +31,12 @@ lint-workflows:
 # (correctness — bad expressions, shellcheck inside run: blocks) and zizmor
 # (security — credential persistence, cache poisoning, template injection,
 # excessive permissions). actionlint is a pinned Go tool; zizmor is a Rust
-# tool developers install once (pipx install zizmor==1.5.2, or see
+# tool developers install once (pipx install zizmor==1.24.1, or see
 # https://docs.zizmor.sh). CI's repo-gates job installs the same pinned
 # zizmor before running this.
 check-actions:
 	go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
-	@command -v zizmor >/dev/null 2>&1 || { echo "zizmor not installed: pipx install zizmor==1.5.2 (https://docs.zizmor.sh)"; exit 1; }
+	@command -v zizmor >/dev/null 2>&1 || { echo "zizmor not installed: pipx install zizmor==1.24.1 (https://docs.zizmor.sh)"; exit 1; }
 	zizmor .github/workflows/
 
 # coverage runs the full coverage pipeline (unit tests + optional
