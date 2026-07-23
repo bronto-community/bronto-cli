@@ -48,19 +48,18 @@ func newTailCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			// Reject --fields up front (before any network) when the output
-			// is the table renderer: renderTailLine builds each line itself
-			// and never consults the printer that applies --fields, so
-			// accepting the flag there would make it a silent no-op — the
-			// same trap traces guards with rejectFieldsForCustomRender.
 			tailFormat, err := app.DetectFormat(true)
 			if err != nil {
 				return err
 			}
-			if tailFormat == output.FormatTable {
-				if err := rejectFieldsForCustomRender(app); err != nil {
-					return err
-				}
+			// tail's table renderer DOES support --fields projection
+			// (klp-style, see renderTailLine), so only --fields=? needs a
+			// machine format here: the streaming table view can't enumerate
+			// available field names up front the way a buffered list can.
+			if tailFormat == output.FormatTable && app.ListFieldsOnly {
+				return clierr.New("usage_invalid_flags",
+					"--fields ? is not supported by tail's table view").
+					WithHint("Use -o jsonl to list available field names.")
 			}
 			ids, expr, err := resolveDataset(cmd.Context(), app, datasets, fromExpr)
 			if err != nil {
