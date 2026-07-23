@@ -48,6 +48,20 @@ func newTailCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// Reject --fields up front (before any network) when the output
+			// is the table renderer: renderTailLine builds each line itself
+			// and never consults the printer that applies --fields, so
+			// accepting the flag there would make it a silent no-op — the
+			// same trap traces guards with rejectFieldsForCustomRender.
+			tailFormat, err := app.DetectFormat(true)
+			if err != nil {
+				return err
+			}
+			if tailFormat == output.FormatTable {
+				if err := rejectFieldsForCustomRender(app); err != nil {
+					return err
+				}
+			}
 			ids, expr, err := resolveDataset(cmd.Context(), app, datasets, fromExpr)
 			if err != nil {
 				return err
@@ -72,19 +86,15 @@ func newTailCmd() *cobra.Command {
 				where = args[0]
 			}
 
-			format, err := app.DetectFormat(true)
-			if err != nil {
-				return err
-			}
-			if format == output.FormatJSON || format == output.FormatCSV {
+			if tailFormat == output.FormatJSON || tailFormat == output.FormatCSV {
 				return clierr.New("usage_invalid_output_format",
-					fmt.Sprintf("tail streams events and cannot produce %s; use jsonl, raw, or table", format))
+					fmt.Sprintf("tail streams events and cannot produce %s; use jsonl, raw, or table", tailFormat))
 			}
-			p, err := app.PrinterFor(format)
+			p, err := app.PrinterFor(tailFormat)
 			if err != nil {
 				return err
 			}
-			humanMode := format == output.FormatTable // table format: TTY default or explicit -o table; PrintRow cannot render tables
+			humanMode := tailFormat == output.FormatTable // table format: TTY default or explicit -o table; PrintRow cannot render tables
 			if !app.Quiet {
 				_, _ = fmt.Fprintf(app.Stderr, "Tailing every %s (window %s). Ctrl-C to stop.\n", interval, window)
 			}
@@ -207,6 +217,15 @@ func buildFilter(includes, excludes []string) (bronto.TailFilter, error) {
 
 var originColors = []string{"31", "32", "33", "34", "35", "36"}
 
+// colorIndex maps an fnv-32a origin hash to an originColors index. Unsigned
+// math is load-bearing: int(uint32) is negative on 32-bit builds for
+// hashes >= 2^31, and a negative modulo would panic with an out-of-range
+// index. Shared with the test so the two can't diverge.
+func colorIndex(sum uint32) int {
+	// #nosec G115 -- len(originColors) is a fixed 6 and the modulus result is 0..5; no overflow is possible
+	return int(sum % uint32(len(originColors)))
+}
+
 // levelColor maps a severity value to an ANSI prefix ("" = uncolored).
 // Shared by the tail renderer and the table cell colorizer (tailspin
 // pattern: errors jump out with zero configuration).
@@ -266,7 +285,7 @@ func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, 
 		if origin != "" {
 			h := fnv.New32a()
 			_, _ = h.Write([]byte(origin))
-			c := originColors[int(h.Sum32())%len(originColors)]
+			c := originColors[colorIndex(h.Sum32())]
 			line += "\x1b[" + c + "m" + origin + "\x1b[0m "
 		}
 		return line + raw

@@ -141,12 +141,13 @@ func TestTailAppliesJQFilter(t *testing.T) {
 	}
 }
 
-// originColorCode replicates renderTailLine's fnv-hash-based color pick so
-// tests can assert the exact ANSI sequence without duplicating internals.
+// originColorCode derives the expected ANSI color for an origin by calling
+// the SAME production colorIndex the renderer uses — not a re-implementation
+// (which previously hid a 32-bit index-overflow divergence).
 func originColorCode(origin string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(origin))
-	return originColors[h.Sum32()%uint32(len(originColors))]
+	return originColors[colorIndex(h.Sum32())]
 }
 
 func TestRenderTailLine(t *testing.T) {
@@ -290,5 +291,48 @@ func TestLevelCellColor(t *testing.T) {
 	}
 	if levelCellColor("name", "error") != "" {
 		t.Fatal("non-severity columns must not color")
+	}
+}
+
+// TestTailFieldsRejectedInTableMode pins the guard for the tail --fields
+// silent no-op: in table mode (explicit -o table, or the TTY default) tail
+// renders via renderTailLine and never touches the printer that carries
+// --fields, so the flag was silently ignored — the exact bug class traces
+// rejects with rejectFieldsForCustomRender. It must now fail up front, and
+// before any network call. 2026-07-23 audit.
+func TestTailFieldsRejectedInTableMode(t *testing.T) {
+	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Error("server must not be contacted: --fields must be rejected before polling")
+	}, "", "tail", "--no-follow", "-o", "table", "--fields", "@origin",
+		"-d", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+	if err == nil || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage error exit 2, got %v", err)
+	}
+}
+
+// TestTailFieldsListRejectedInTableMode covers --fields=? in the same view.
+func TestTailFieldsListRejectedInTableMode(t *testing.T) {
+	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Error("server must not be contacted: --fields=? must be rejected before polling")
+	}, "", "tail", "--no-follow", "-o", "table", "--fields", "?",
+		"-d", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+	if err == nil || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage error exit 2, got %v", err)
+	}
+}
+
+// TestColorIndexInRangeForHighBitHashes exercises the shared production
+// color-index function directly. The origin color pick was
+// int(h.Sum32())%len(originColors): on 32-bit builds int(uint32) is
+// negative for hashes >= 2^31, and a negative modulo panics with an
+// out-of-range index. colorIndex must use unsigned math so every hash maps
+// in range. Previously the test helper re-implemented this (correctly,
+// unsigned) instead of calling production, hiding the divergence.
+func TestColorIndexInRangeForHighBitHashes(t *testing.T) {
+	for _, sum := range []uint32{0, 1, 0x7fffffff, 0x80000000, 0xdeadbeef, 0xffffffff} {
+		i := colorIndex(sum)
+		if i < 0 || i >= len(originColors) {
+			t.Errorf("colorIndex(%#x) = %d, out of range [0,%d)", sum, i, len(originColors))
+		}
 	}
 }
