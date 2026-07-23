@@ -88,6 +88,32 @@ func TestStaleResourceIDs_NonDefaultNameKey(t *testing.T) {
 	}
 }
 
+// TestStaleResourceIDs_LiveShapePlainID pins the sweeper against the live
+// list shape documented by resources_crud_test.go's resourceID(): the live
+// API returns a plain "id" field, and the per-kind keys in resourceIDKey
+// (dashboard_id, saved_search_id) are spec-legacy fallbacks. The sweeper
+// must find stale rows in the live shape even when its idKey names the
+// legacy key — otherwise every stale dashboard and saved-search is
+// silently skipped forever, and because the sweep is best-effort no error
+// ever surfaces to say so.
+func TestStaleResourceIDs_LiveShapePlainID(t *testing.T) {
+	now := time.Unix(1_000_000_000, 0)
+	// Deliberately not sweepMaxAge: the cutoff is a parameter, not a
+	// constant every caller must echo (also keeps unparam honest).
+	maxAge := 30 * time.Minute
+	old := now.Add(-2 * time.Hour).Unix()
+
+	for _, kind := range []string{"dashboards", "saved-searches"} {
+		rows := []map[string]any{
+			{"id": "stale-live-1", "name": fmtCIName(old, "left-behind")},
+		}
+		got := staleResourceIDs(rows, resourceIDKey[kind], "name", now, maxAge)
+		if len(got) != 1 || got[0] != "stale-live-1" {
+			t.Errorf("%s: staleResourceIDs = %v, want [stale-live-1] — live-shape rows (plain \"id\") must be swept", kind, got)
+		}
+	}
+}
+
 func TestResourceIDKeyCoversEverySweptKind(t *testing.T) {
 	for _, kind := range ciResourceKinds {
 		if _, ok := resourceIDKey[kind]; !ok {

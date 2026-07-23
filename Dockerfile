@@ -8,7 +8,7 @@
 
 # CA certs are architecture-independent: run this stage on the BUILD
 # platform so it never executes under emulation.
-FROM --platform=$BUILDPLATFORM alpine:3 AS certs
+FROM --platform=$BUILDPLATFORM alpine:3@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS certs
 RUN apk --no-cache add ca-certificates
 
 FROM scratch

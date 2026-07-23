@@ -157,3 +157,37 @@ func TestAPIInputRespectsContentTypeOverride(t *testing.T) {
 		t.Fatalf("Content-Type = %q, want text/plain", gotCT)
 	}
 }
+
+func TestAPIInt64Fidelity(t *testing.T) {
+	// Found live 2026-07-22: `bronto api POST /search` printed
+	// metadata.sequence 4244404144331292672 as ...292700 — plain
+	// json.Unmarshal rounds >2^53 integers through float64. Both
+	// directions must be byte-exact.
+	const bigID = "4244404144331292672"
+
+	t.Run("response", func(t *testing.T) {
+		out, err := runAPI(t, func(w http.ResponseWriter, r *http.Request) {
+			_, _ = w.Write([]byte(`{"metadata":{"sequence":` + bigID + `}}`))
+		}, "GET", "/search")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(out, bigID) {
+			t.Fatalf("sequence corrupted in output:\n%s", out)
+		}
+	})
+
+	t.Run("request body from -f", func(t *testing.T) {
+		var gotBody []byte
+		_, err := runAPI(t, func(w http.ResponseWriter, r *http.Request) {
+			gotBody, _ = io.ReadAll(r.Body)
+			_, _ = w.Write([]byte(`{}`))
+		}, "POST", "/things", "-f", "seq="+bigID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(gotBody), bigID) {
+			t.Fatalf("sequence corrupted on the wire: %s", gotBody)
+		}
+	})
+}

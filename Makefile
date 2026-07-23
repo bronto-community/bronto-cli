@@ -1,4 +1,4 @@
-.PHONY: build test lint generate check-generate release-dry snapshot coverage coverage-baseline it vuln
+.PHONY: build test lint check-spec spec-baseline lint-workflows release-dry snapshot coverage coverage-baseline it vuln
 
 build:
 	CGO_ENABLED=0 go build -o bronto ./cmd/bronto
@@ -9,11 +9,23 @@ test:
 lint:
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 run
 
-generate:
-	go generate ./...
+# check-spec verifies api/openapi.yaml against the digest recorded in
+# api/vendored.sha256 (--self-test first proves the gate can go red). This
+# is the real spec-integrity gate; see scripts/spec-verify.sh for why
+# check-generate could never fail.
+check-spec:
+	scripts/spec-verify.sh --self-test
 
-check-generate: generate
-	git diff --exit-code -- internal/api api
+# spec-baseline records the current vendored spec digest. Run it (and
+# commit the diff) whenever api/openapi.yaml changes on purpose — the
+# reviewable governance step, same pattern as coverage-baseline.
+spec-baseline:
+	scripts/spec-verify.sh --record
+
+# lint-workflows enforces the version-pin policy on CI/release surfaces
+# (workflows, Makefile tool invocations, Dockerfiles).
+lint-workflows:
+	scripts/workflow-lint.sh
 
 # coverage runs the full coverage pipeline (unit tests + optional
 # integration leg + covdata merge + filtering) and enforces the ratchet
@@ -54,13 +66,15 @@ it:
 	go test -count=1 ./integration/
 
 # release-dry validates the goreleaser config without building anything.
+# Pinned to the same version release.yml runs, so what's validated locally
+# is what the release executes (lint-workflows rejects floating versions).
 release-dry:
-	go run github.com/goreleaser/goreleaser/v2@latest check
+	go run github.com/goreleaser/goreleaser/v2@v2.17.0 check
 
 # snapshot runs a full local release build (all platforms) into dist/
 # without publishing anything, for verifying packaging end-to-end.
 snapshot:
-	go run github.com/goreleaser/goreleaser/v2@latest release --snapshot --clean --skip=publish
+	go run github.com/goreleaser/goreleaser/v2@v2.17.0 release --snapshot --clean --skip=publish
 
 # vuln scans all packages against the Go vulnerability database.
 vuln:
