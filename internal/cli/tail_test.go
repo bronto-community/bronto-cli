@@ -294,23 +294,34 @@ func TestLevelCellColor(t *testing.T) {
 	}
 }
 
-// TestTailFieldsRejectedInTableMode pins the guard for the tail --fields
-// silent no-op: in table mode (explicit -o table, or the TTY default) tail
-// renders via renderTailLine and never touches the printer that carries
-// --fields, so the flag was silently ignored — the exact bug class traces
-// rejects with rejectFieldsForCustomRender. It must now fail up front, and
-// before any network call. 2026-07-23 audit.
-func TestTailFieldsRejectedInTableMode(t *testing.T) {
-	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
-		t.Error("server must not be contacted: --fields must be rejected before polling")
-	}, "", "tail", "--no-follow", "-o", "table", "--fields", "@origin",
-		"-d", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-	if err == nil || clierr.ExitCode(err) != 2 {
-		t.Fatalf("want usage error exit 2, got %v", err)
+// TestTailFieldsProjectsInTableMode pins that tail --fields renders a
+// klp-style projection of just those fields in table mode (the feature #41
+// added — renderTailLine has explicit projection support). PR #66 wrongly
+// rejected this as a silent no-op; the no-op it targeted was already fixed
+// by #41, so the rejection only broke a working feature. This guards
+// against regressing it again.
+func TestTailFieldsProjectsInTableMode(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"events":[{"@time":"t1","@origin":"svc-a","@raw":"boom"}]}`))
+	}))
+	defer srv.Close()
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"tail", "--no-follow", "-o", "table", "--fields", "@time,@origin",
+		"-d", "11111111-1111-1111-1111-111111111111", "--base-url", srv.URL, "--api-key", "k"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("tail --fields in table mode must project, not error: %v", err)
+	}
+	if got := strings.TrimSpace(out.String()); got != "t1  svc-a" {
+		t.Fatalf("projection = %q, want %q", got, "t1  svc-a")
 	}
 }
 
-// TestTailFieldsListRejectedInTableMode covers --fields=? in the same view.
+// TestTailFieldsListRejectedInTableMode covers --fields=? in table mode:
+// the table renderer can't enumerate available fields, so only the "?"
+// form needs a machine format (projection with real field names works).
 func TestTailFieldsListRejectedInTableMode(t *testing.T) {
 	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
 		t.Error("server must not be contacted: --fields=? must be rejected before polling")
