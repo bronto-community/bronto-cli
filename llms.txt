@@ -5,9 +5,11 @@ tail logs, explore OpenTelemetry traces, send events, and manage Bronto
 resources (datasets, monitors incl. templates/downtimes, dashboards,
 parsers, exports, API keys, saved searches, users, groups, webhooks,
 Slack integrations, limits, encryption keys, forward configs) via a
-REST-backed CLI. Designed to be scriptable and agent-friendly: JSONL by
-default when piped, typed errors with machine-readable hints, stable
-exit codes, --dry-run plans for mutating calls, --debug request tracing.
+REST-backed CLI. Designed to be scriptable and agent-friendly: piped
+output is JSONL for streaming commands (search/tail/traces) and a single
+JSON document for everything else, typed errors with machine-readable
+hints, stable exit codes, --dry-run plans for mutating calls, --debug
+request tracing.
 
 ## Install
 

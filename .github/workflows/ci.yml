@@ -189,7 +189,29 @@ jobs:
         with:
           version: v2.12.2
 
-  generate-clean:
+  # repo-gates replaces generate-clean, which could never fail: the repo
+  # has no go:generate directives, so `go generate && git diff` was a
+  # guaranteed no-op (2026-07-23 audit). check-spec verifies the vendored
+  # spec against api/vendored.sha256 (self-testing that the gate can go
+  # red); lint-workflows enforces the version-pin policy on CI surfaces.
+  repo-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - run: make check-spec
+      - run: make lint-workflows
+
+  # pre-commit runs the same hooks developers get locally (gitleaks,
+  # shellcheck, whitespace fixers), so the config can never silently rot
+  # again: the 2026-07-23 audit found it pinning a golangci-lint v1 binary
+  # against the v2 config for months with nothing in CI to notice. The
+  # golangci-lint hook itself is SKIPped here only because the `lint` job
+  # already runs the identical pinned version via the official action.
+  pre-commit:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
@@ -200,7 +222,12 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-      - run: make check-generate
+      - name: Run pre-commit on all files
+        env:
+          SKIP: golangci-lint
+        run: |
+          pipx install pre-commit==4.2.0
+          pre-commit run --all-files --show-diff-on-failure
 
   cross-build:
     runs-on: ubuntu-latest

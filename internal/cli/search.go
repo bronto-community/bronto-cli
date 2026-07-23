@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/output"
 	"github.com/bronto-community/bronto-cli/internal/patterns"
+	"github.com/bronto-community/bronto-cli/internal/query"
 	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
@@ -93,7 +95,7 @@ func newSearchCmd() *cobra.Command {
 			client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
 			resp, err := client.Search(cmd.Context(), req)
 			if err != nil {
-				return err
+				return enrichQueryError(err, where)
 			}
 			if showPatterns {
 				return printPatterns(app, resp.EventRows())
@@ -244,4 +246,23 @@ func printPatterns(app *App, events []map[string]any) error {
 		_, _ = fmt.Fprintf(app.Stderr, "%d pattern(s) from %d event(s)\n", len(rows), len(lines))
 	}
 	return p.PrintRows([]string{"count", "pattern"}, rows)
+}
+
+// enrichQueryError attaches a local parse diagnosis (caret included) to a
+// server-side 400 when our parser also rejects the query. Advisory only:
+// the local grammar is narrower than the server's, so parse failures
+// never block a request — they just explain a rejection after the fact.
+func enrichQueryError(err error, where string) error {
+	var ce *clierr.Error
+	if where == "" || !errors.As(err, &ce) || ce.Code != "api_error" {
+		return err
+	}
+	if _, perr := query.Parse(where); perr != nil {
+		var pe *query.ParseError
+		if errors.As(perr, &pe) {
+			return ce.WithHint("Local query check: " + pe.Msg + "\n  " +
+				strings.ReplaceAll(pe.Caret(where), "\n", "\n  "))
+		}
+	}
+	return err
 }
