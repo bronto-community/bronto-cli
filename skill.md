@@ -32,6 +32,10 @@ bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
 
 Agent-critical flags (global): `--dry-run` prints any mutating call as a plan document (`{"dry_run":true,"method":"POST","path":"/monitors","body":{…}}`) instead of executing — reads still run. `--debug` traces requests/responses on stderr (API key never printed). `--timeout <s>` and `--max-retries <n>` tune the HTTP client.
 
+## Ask (LLM-assisted)
+
+`bronto ask "<question>"` translates natural language into a search using a user-configured OpenAI-compatible endpoint (`bronto config set ask_url <chat-completions URL>`, optional `ask_model`, key via `BRONTO_ASK_API_KEY` env — never the config file). The generated command and its reasoning print BEFORE anything runs; a TTY confirms `[Y/n]`, `--yes` runs immediately, and machine formats without `--yes` emit the plan as JSON instead of executing. Only the question plus dataset/field names are sent to the endpoint — never event data, never the Bronto API key.
+
 ## Machine-output contract
 
 - Streaming commands (`search`, `tail`, `traces`) piped to a non-TTY default to JSONL, one JSON object per line — no flag needed. Every other command (resource `list`/`get`, `usage`, `config list`, …) piped emits a single pretty-printed JSON document (usually an array) — parse it whole, not line-by-line; pass `-o jsonl` if you want line-delimited rows.

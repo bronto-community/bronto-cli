@@ -129,6 +129,20 @@ bronto version
 
 Anything without a dedicated command is reachable via the escape hatch: `bronto api GET /monitors -f limit=10` or `bronto api POST /search --input query.json`.
 
+## Ask — natural language to query
+
+Point `bronto ask` at any OpenAI-compatible endpoint (OpenAI, a local Ollama, your gateway):
+
+```sh
+bronto config set ask_url https://api.openai.com/v1/chat/completions
+bronto config set ask_model gpt-4o-mini
+export BRONTO_ASK_API_KEY=sk-...
+
+bronto ask "5xx spikes in checkout since last night"
+```
+
+The generated `bronto search …` command and the reasoning behind each mapping are shown before anything runs (`--yes` skips the prompt; piped without `--yes` it prints the plan as JSON and executes nothing). Only the question and dataset/field *names* are sent to the endpoint — never event data, never your Bronto API key.
+
 ## Scripting & agents
 
 Piped to a non-TTY, the streaming commands (`search`, `tail`, `traces`) default to **JSONL**, one JSON object per line — no flag needed. Every other command (resource `list`/`get`, `usage`, `config list`, …) piped emits one pretty-printed **JSON** document (usually an array): parse it whole, or pass `-o jsonl` for line-delimited rows. Force any format explicitly with `-o table|json|jsonl|raw|csv`.
