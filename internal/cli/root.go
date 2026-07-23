@@ -62,6 +62,9 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newUsageCmd())
 	cmd.AddCommand(newQueryCmd())
 	cmd.AddCommand(newPluginsCmd())
+	cmd.AddCommand(newGrazeCmd())
+	cmd.AddCommand(newHerdCmd())
+	cmd.AddCommand(newRumbleCmd())
 
 	topLevel := map[string]*cobra.Command{}
 	for _, d := range resourceRegistry {

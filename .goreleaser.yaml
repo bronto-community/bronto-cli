@@ -40,6 +40,7 @@ archives:
       {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
     files:
       - LICENSE
+      - TRADEMARK.md
       - README.md
       - skill.md
       - llms.txt
@@ -114,6 +115,8 @@ nfpms:
         dst: /usr/share/fish/vendor_completions.d/bronto.fish
       - src: LICENSE
         dst: /usr/share/doc/bronto/LICENSE
+      - src: TRADEMARK.md
+        dst: /usr/share/doc/bronto/TRADEMARK.md
 
 homebrew_casks:
   - name: bronto
