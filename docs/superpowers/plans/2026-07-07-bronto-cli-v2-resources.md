@@ -36,7 +36,7 @@ Fix, each with a test where behavioral:
 2. **`--region` validation** in auth login: only `eu|us` (or empty) → else `usage_invalid_region`. Test.
 3. **secrets.Delete semantics**: return nil only when BOTH stores report gone/not-found OR one deleted successfully AND the other is not-found/unsupported; a genuine file I/O error must surface even if keyring deletion succeeded (and vice versa); second logout on a headless box (keyring error + file not-found) → nil (idempotent). Rework the truth table with unit tests using `keyring.MockInitWithError` combinations.
 4. **credentials file hardening**: `fileStore` fails with `config_parse_error`-style typed error when an EXISTING credentials file cannot be parsed (do not silently rewrite, which would drop other profiles); after any successful write, `_ = os.Chmod(path, 0o600)` to repair loose permissions. Tests: corrupt file → Store errors; pre-chmod 0644 file → 0600 after Store.
-5. **ingest**: `enc.SetEscapeHTML(false)` (test: message with `<>&` round-trips unescaped); LineToEvent tolerates leading whitespace before `{` (TrimLeft check). 
+5. **ingest**: `enc.SetEscapeHTML(false)` (test: message with `<>&` round-trips unescaped); LineToEvent tolerates leading whitespace before `{` (TrimLeft check).
 6. **send.go**: remove the dead `region := "eu"` fallback (config default covers it); one-shot detection via `cmd.Flags().Changed("message")` so `-m ""` errors (`usage_missing_message`) instead of silently reading stdin. Tests.
 
 Commit: `refactor: plan-4 deferred cleanups (auth probes, secrets semantics, ingest polish)`. Standard verification gauntlet before commit.
