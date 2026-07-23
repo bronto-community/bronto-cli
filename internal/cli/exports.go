@@ -20,6 +20,12 @@ import (
 // Package-level so tests can shrink it instead of waiting on a real clock.
 var exportPollInterval = 3 * time.Second
 
+// exportWaitTimeout caps how long --wait polls before giving up, so an
+// export stuck below a terminal status can't hang the CLI (or CI)
+// forever. Overridable per-invocation with --wait-timeout; package-level
+// so tests can shrink it.
+var exportWaitTimeout = 15 * time.Minute
+
 // newExportsCreateCmd hand-writes "exports create": unlike every other
 // resource's generic create, it accepts EITHER a raw body (--input/-f, same
 // as the generic path) OR a set of convenience flags (--dataset/--where/
@@ -34,6 +40,7 @@ func newExportsCreateCmd() *cobra.Command {
 	var input string
 	var dataset, where, since, from, to string
 	var wait bool
+	var waitTimeout time.Duration
 	var download string
 
 	cmd := &cobra.Command{
@@ -86,7 +93,7 @@ func newExportsCreateCmd() *cobra.Command {
 			if id == "" {
 				return clierr.New("export_no_id", "create response had no id to poll")
 			}
-			final, err := waitForExport(cmd.Context(), app, id)
+			final, err := waitForExport(cmd.Context(), app, id, waitTimeout)
 			if err != nil {
 				return err
 			}
@@ -114,6 +121,8 @@ func newExportsCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&from, "from", "", "absolute start time, RFC3339 (convenience flag)")
 	cmd.Flags().StringVar(&to, "to", "", "absolute end time, RFC3339 (convenience flag)")
 	cmd.Flags().BoolVar(&wait, "wait", false, "poll GET /exports/{id} every 3s until COMPLETE or FAILED")
+	cmd.Flags().DurationVar(&waitTimeout, "wait-timeout", exportWaitTimeout,
+		"give up waiting after this long (e.g. 5m, 30m); 0 uses the default")
 	cmd.Flags().StringVar(&download, "download", "",
 		"download the completed export to this path (implies --wait)")
 	return cmd
@@ -187,7 +196,8 @@ func exportID(obj map[string]any) string {
 // continues polling.
 // Note: FAILED is not in the vendored spec's status enum (CREATED/IN_PROGRESS/COMPLETE)
 // but is handled defensively as a real-world edge case.
-func waitForExport(ctx context.Context, app *App, id string) (map[string]any, error) {
+func waitForExport(ctx context.Context, app *App, id string, timeout time.Duration) (map[string]any, error) {
+	_ = timeout // RED phase: cap not yet enforced — the loop is still unbounded.
 	// Progress on stderr in human mode only: a silent multi-second poll
 	// reads as a hang. \r-rewritten so it collapses to one line.
 	progress := app.StdoutIsTTY && !app.Quiet
