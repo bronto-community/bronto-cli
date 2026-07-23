@@ -47,6 +47,7 @@ var envKeys = map[string]string{
 	"api_key":     "BRONTO_API_KEY",
 	"base_url":    "BRONTO_BASE_URL",
 	"app_url":     "BRONTO_APP_URL",
+	"org_id":      "BRONTO_ORG_ID",
 	"profile":     "BRONTO_PROFILE",
 	"region":      "BRONTO_REGION",
 	"timeout":     "BRONTO_TIMEOUT",
@@ -62,7 +63,7 @@ var envKeys = map[string]string{
 // from files. ask_url/ask_model configure the LLM endpoint for
 // `bronto ask` (ask_api_key is env-only, see SetUserValue); app_url is the
 // web-UI base for `search --url/--open` deep links.
-var userFileKeys = []string{"profile", "region", "base_url", "app_url", "output", "default_dataset", "timeout", "max_retries", "ingest_url", "ask_url", "ask_model"}
+var userFileKeys = []string{"profile", "region", "base_url", "app_url", "org_id", "output", "default_dataset", "timeout", "max_retries", "ingest_url", "ask_url", "ask_model"}
 
 // projectFileKeys are settable from a discovered .bronto.toml. It walks UP
 // from the working directory (loadProjectFile), so a project file can

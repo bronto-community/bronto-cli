@@ -112,7 +112,10 @@ func newSearchCmd() *cobra.Command {
 				effSelect = []string{"@time", "@raw"}
 			}
 			if printURL || openURL {
-				u := searchWebURL(app, ids, expr, where, spec)
+				u, err := searchWebURL(cmd.Context(), app, ids, expr, where, spec)
+				if err != nil {
+					return err
+				}
 				if printURL {
 					_, err := fmt.Fprintln(app.Stdout, u)
 					return err
@@ -291,9 +294,12 @@ func loadSavedSearch(ctx context.Context, app *App, ref string) (savedSearchDeta
 }
 
 // searchWebURL renders the query + scope + timerange as a web-app deep
-// link. The app host derives from the region (app.<region>.bronto.io)
-// unless the app_url config key / BRONTO_APP_URL overrides it.
-func searchWebURL(app *App, ids []string, fromExpr, where string, spec timerange.Spec) string {
+// link that matches the live UI's own /org/<id>/search route (verified
+// against real links 2026-07-23). The app host derives from the region
+// (app.<region>.bronto.io) unless app_url / BRONTO_APP_URL overrides it;
+// the org id comes from org_id / BRONTO_ORG_ID, else the active org from
+// GET /organizations.
+func searchWebURL(ctx context.Context, app *App, ids []string, fromExpr, where string, spec timerange.Spec) (string, error) {
 	base := ""
 	if v, ok := app.Config.Get("app_url"); ok && v.Val != "" {
 		base = strings.TrimRight(v.Val, "/")
@@ -304,30 +310,73 @@ func searchWebURL(app *App, ids []string, fromExpr, where string, spec timerange
 		}
 		base = "https://app." + region + ".bronto.io"
 	}
-	params := url.Values{}
-	if where != "" {
-		params.Set("where", where)
+	orgID, err := resolveOrgID(ctx, app)
+	if err != nil {
+		return "", err
 	}
+
+	// Param names/shape match the UI: camelCase timeRange, plural logIds,
+	// a default select and list-view display so the link lands like a
+	// fresh search. where is always present (the UI keeps it, even empty).
+	params := url.Values{}
+	params.Set("display", "list")
+	params.Set("groupsSort", "desc")
+	params.Set("groupsSortBy", "value")
+	params.Set("order", "newest")
+	params.Set("select", "*,@raw")
+	params.Set("where", where)
 	if len(ids) > 0 {
-		params.Set("from", strings.Join(ids, ":"))
+		params.Set("logIds", strings.Join(ids, ","))
 	}
 	if fromExpr != "" {
-		params.Set("from_expr", fromExpr)
+		// The UI addresses datasets by id; a from-expr selector has no URL
+		// form, so carry it in where-adjacent context isn't possible —
+		// surface it so the link isn't silently narrower than intended.
+		params.Set("fromExpr", fromExpr)
 	}
-	if spec.TimeRange != "" {
-		params.Set("time_range", spec.TimeRange)
+	switch {
+	case spec.TimeRange != "":
+		params.Set("timeRange", spec.TimeRange)
+	case spec.FromTs > 0 || spec.ToTs > 0:
+		params.Set("fromTs", strconv.FormatInt(spec.FromTs, 10))
+		params.Set("toTs", strconv.FormatInt(spec.ToTs, 10))
 	}
-	if spec.FromTs > 0 {
-		params.Set("from_ts", strconv.FormatInt(spec.FromTs, 10))
+	return base + "/org/" + orgID + "/search?" + params.Encode(), nil
+}
+
+// resolveOrgID returns the org id for deep links: the org_id config
+// override if set, otherwise the active organization from
+// GET /organizations (cached for the process).
+func resolveOrgID(ctx context.Context, app *App) (string, error) {
+	if v, ok := app.Config.Get("org_id"); ok && v.Val != "" {
+		return v.Val, nil
 	}
-	if spec.ToTs > 0 {
-		params.Set("to_ts", strconv.FormatInt(spec.ToTs, 10))
+	payload, err := doJSONRequest(ctx, app, http.MethodGet, "/organizations", nil)
+	if err != nil {
+		return "", err
 	}
-	u := base + "/search"
-	if enc := params.Encode(); enc != "" {
-		u += "?" + enc
+	obj, _ := payload.(map[string]any)
+	orgs, _ := obj["organisations"].([]any) // note: British spelling on the wire
+	var first string
+	for _, o := range orgs {
+		m, _ := o.(map[string]any)
+		id, _ := m["id"].(string)
+		if id == "" {
+			continue
+		}
+		if first == "" {
+			first = id
+		}
+		if active, _ := m["active"].(bool); active {
+			return id, nil
+		}
 	}
-	return u
+	if first != "" {
+		return first, nil
+	}
+	return "", clierr.New("org_not_found",
+		"could not determine the active organization for the deep link").
+		WithHint("Set it explicitly with 'bronto config set org_id <uuid>' (find it in the web-app URL).")
 }
 
 // browserOpen launches the platform browser opener. Seam for tests.
