@@ -1,4 +1,4 @@
-.PHONY: build test lint check-spec spec-baseline lint-workflows release-dry snapshot coverage coverage-baseline it vuln
+.PHONY: build test lint check-spec spec-baseline lint-workflows check-actions release-dry snapshot coverage coverage-baseline it vuln
 
 build:
 	CGO_ENABLED=0 go build -o bronto ./cmd/bronto
@@ -26,6 +26,18 @@ spec-baseline:
 # (workflows, Makefile tool invocations, Dockerfiles).
 lint-workflows:
 	scripts/workflow-lint.sh
+
+# check-actions runs the two GitHub Actions analyzers: actionlint
+# (correctness — bad expressions, shellcheck inside run: blocks) and zizmor
+# (security — credential persistence, cache poisoning, template injection,
+# excessive permissions). actionlint is a pinned Go tool; zizmor is a Rust
+# tool developers install once (pipx install zizmor==1.24.1, or see
+# https://docs.zizmor.sh). CI's repo-gates job installs the same pinned
+# zizmor before running this.
+check-actions:
+	go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+	@command -v zizmor >/dev/null 2>&1 || { echo "zizmor not installed: pipx install zizmor==1.24.1 (https://docs.zizmor.sh)"; exit 1; }
+	zizmor .github/workflows/
 
 # coverage runs the full coverage pipeline (unit tests + optional
 # integration leg + covdata merge + filtering) and enforces the ratchet
