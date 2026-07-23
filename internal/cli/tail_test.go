@@ -141,12 +141,13 @@ func TestTailAppliesJQFilter(t *testing.T) {
 	}
 }
 
-// originColorCode replicates renderTailLine's fnv-hash-based color pick so
-// tests can assert the exact ANSI sequence without duplicating internals.
+// originColorCode derives the expected ANSI color for an origin by calling
+// the SAME production colorIndex the renderer uses — not a re-implementation
+// (which previously hid a 32-bit index-overflow divergence).
 func originColorCode(origin string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(origin))
-	return originColors[h.Sum32()%uint32(len(originColors))]
+	return originColors[colorIndex(h.Sum32())]
 }
 
 func TestRenderTailLine(t *testing.T) {
