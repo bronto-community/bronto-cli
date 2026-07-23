@@ -3,6 +3,7 @@
 package bronto
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -145,7 +146,11 @@ func flattenInto(out map[string]any, prefix string, m map[string]any) {
 	}
 }
 
-var priorityColumns = []string{"@time", "@status", "@raw"}
+// PriorityEventKeys are the event columns that lead human tables and
+// expanded views, in this order.
+var PriorityEventKeys = []string{"@time", "@status", "@raw"}
+
+var priorityColumns = PriorityEventKeys
 
 func EventColumns(rows []map[string]any, max int) []string {
 	seen := map[string]bool{}
@@ -182,6 +187,109 @@ func EventColumns(rows []map[string]any, max int) []string {
 	}
 	if max > 0 && len(cols) > max {
 		cols = cols[:max]
+	}
+	return cols
+}
+
+// rawDropThreshold is the number of promoted (non-priority) columns at
+// which "@raw" is dropped from the table: with that much structure on
+// display the 120-rune blob only crowds out real columns, and json/raw
+// output and the expanded view still carry it.
+const rawDropThreshold = 3
+
+// EventColumnsByFrequency picks human-table columns for full event rows:
+// "@time" and "@status" lead, then discovered keys ranked by how many
+// rows carry a real (non-null, non-empty) value for them (descending —
+// the live API pads absent fields with nulls, so raw key presence says
+// nothing), ties broken by how many DISTINCT values they take
+// (descending — a column that varies tells you more than one that
+// repeats), then alphabetically; capped at max (cap includes the leading
+// keys and "@raw" when retained). Keys ending in ".timestamp" (or named
+// "timestamp"/"@timestamp") are never promoted — they duplicate "@time".
+// "@raw" moves to the LAST column — it is the widest cell — and is
+// dropped entirely once rawDropThreshold other keys made the cut.
+func EventColumnsByFrequency(rows []map[string]any, max int) []string {
+	present := map[string]int{}
+	distinct := map[string]map[string]struct{}{}
+	for _, r := range rows {
+		for k, v := range r {
+			s := ""
+			if v != nil {
+				s = fmt.Sprint(v)
+			}
+			if s == "" || s == "null" {
+				continue // a padded null is not presence
+			}
+			present[k]++
+			if distinct[k] == nil {
+				distinct[k] = map[string]struct{}{}
+			}
+			distinct[k][s] = struct{}{}
+		}
+	}
+	discovered := make([]string, 0, len(present))
+	for k := range present {
+		if k == "@time" || k == "@status" || k == "@raw" {
+			continue
+		}
+		if seg := k[strings.LastIndex(k, ".")+1:]; seg == "timestamp" || seg == "@timestamp" {
+			continue
+		}
+		discovered = append(discovered, k)
+	}
+	sort.Slice(discovered, func(i, j int) bool {
+		ki, kj := discovered[i], discovered[j]
+		if present[ki] != present[kj] {
+			return present[ki] > present[kj]
+		}
+		if len(distinct[ki]) != len(distinct[kj]) {
+			return len(distinct[ki]) > len(distinct[kj])
+		}
+		return ki < kj
+	})
+	lead := make([]string, 0, 2)
+	for _, p := range []string{"@time", "@status"} {
+		if present[p] > 0 {
+			lead = append(lead, p)
+		}
+	}
+	hasRaw := present["@raw"] > 0
+	if max <= 0 {
+		cols := make([]string, 0, len(lead)+len(discovered)+1)
+		cols = append(cols, lead...)
+		cols = append(cols, discovered...)
+		if hasRaw && len(discovered) < rawDropThreshold {
+			cols = append(cols, "@raw")
+		}
+		return cols
+	}
+	room := max - len(lead)
+	if room < 0 {
+		room = 0
+	}
+	if hasRaw {
+		withRaw := room - 1
+		if withRaw < 0 {
+			withRaw = 0
+		}
+		promotable := len(discovered)
+		if promotable > withRaw {
+			promotable = withRaw
+		}
+		if promotable >= rawDropThreshold {
+			hasRaw = false
+		} else {
+			room = withRaw
+		}
+	}
+	if room > len(discovered) {
+		room = len(discovered)
+	}
+	cols := make([]string, 0, len(lead)+room+1)
+	cols = append(cols, lead...)
+	cols = append(cols, discovered[:room]...)
+	if hasRaw {
+		cols = append(cols, "@raw")
 	}
 	return cols
 }

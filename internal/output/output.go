@@ -375,6 +375,77 @@ func (p *Printer) PrintJSON(v any) error {
 	return enc.Encode(v)
 }
 
+// expandedRuleWidth is the total width of the "─ event N ─…" rule line
+// that separates blocks in PrintExpanded.
+const expandedRuleWidth = 40
+
+// expandedKeyOrder returns the row's keys with the given priority keys
+// first (in priority order, when present), then the rest alphabetically.
+func expandedKeyOrder(row map[string]any, priority []string) []string {
+	isPriority := make(map[string]bool, len(priority))
+	for _, p := range priority {
+		isPriority[p] = true
+	}
+	keys := make([]string, 0, len(row))
+	for _, p := range priority {
+		if _, ok := row[p]; ok {
+			keys = append(keys, p)
+		}
+	}
+	rest := make([]string, 0, len(row))
+	for k := range row {
+		if !isPriority[k] {
+			rest = append(rest, k)
+		}
+	}
+	sort.Strings(rest)
+	return append(keys, rest...)
+}
+
+// PrintExpanded renders each row as a vertical two-column block (psql \x
+// style): a "─ event N ─…" rule, then one "key  value" line per field.
+// Priority keys print first in the given order; remaining keys sort
+// alphabetically. Values are NEVER truncated — this is the detail view.
+// dimKeys wraps key names in ANSI dim when true. Table format only;
+// callers gate on the format. The --fields filter restricts keys and
+// "--fields ?" prints the field-name union instead of data.
+func (p *Printer) PrintExpanded(rows []map[string]any, priority []string, dimKeys bool) error {
+	if p.listFields {
+		return p.printFieldUnion(rows)
+	}
+	if len(rows) == 0 {
+		if p.notice != nil {
+			_, _ = fmt.Fprintln(p.notice, "No results.")
+		}
+		return nil
+	}
+	if len(p.fields) > 0 {
+		rows = filterRows(rows, p.fields)
+	}
+	for i, r := range rows {
+		header := fmt.Sprintf("─ event %d ", i+1)
+		if pad := expandedRuleWidth - len([]rune(header)); pad > 0 {
+			header += strings.Repeat("─", pad)
+		}
+		if _, err := fmt.Fprintln(p.w, header); err != nil {
+			return err
+		}
+		tw := tabwriter.NewWriter(p.w, 2, 4, 2, ' ', 0)
+		for _, k := range expandedKeyOrder(r, priority) {
+			name := k
+			if dimKeys {
+				// uniform per-key overhead keeps tabwriter alignment intact
+				name = "\x1b[2m" + k + "\x1b[0m"
+			}
+			_, _ = fmt.Fprintf(tw, "%s\t%s\n", name, cell(r, k))
+		}
+		if err := tw.Flush(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // tableCellCap bounds how wide a single table cell may render: raw event
 // JSON and similar blobs otherwise make the table unreadable. Applies to
 // the table format only — csv/json/jsonl always carry full values.

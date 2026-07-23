@@ -64,7 +64,7 @@ func runLocalSearch(app *App, in io.Reader, path, where string, limit int) error
 	if err := sc.Err(); err != nil {
 		return clierr.New("local_file_error", fmt.Sprintf("reading %s: %v", path, err))
 	}
-	return printEvents(app, events)
+	return printEvents(app, events, eventView{})
 }
 
 // parseLocalLine turns one input line into a flattened event. JSON

@@ -302,5 +302,5 @@ func runAskPlan(ctx context.Context, app *App, plan askPlan) error {
 	if len(plan.Select) > 0 {
 		events = resp.SelectedRows()
 	}
-	return printEvents(app, events)
+	return printEvents(app, events, eventView{})
 }

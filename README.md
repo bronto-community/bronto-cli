@@ -60,12 +60,30 @@ bronto tail "level = 'error'" -d <dataset> --window 5m  # follow new events live
 
 `-d` takes a dataset **name** from `datasets list` (UUIDs work too). A name that exists in several collections is qualified as `collection/name` — e.g. `-d prod/api-logs`. You can drop `-d` entirely once you set a default (`bronto config set default_dataset <name>`) — or if the account has only one dataset, which is auto-picked.
 
-At a terminal, `bronto search "status >= 500" --since 1h` renders a table:
+At a terminal, `bronto search "status >= 500" --since 1h` renders a table. The most informative parsed fields become columns (ranked by how often they carry a real value, then how much they vary); once three real columns exist the raw JSON blob is dropped entirely:
 
 ```
-@TIME                        @STATUS  @RAW                                       MESSAGE_KVS.STATUS
-2026-07-19 09:14:05.312 UTC  error    {"level":"error","status":502,"path":...}  502
-2026-07-19 09:13:58.007 UTC  error    {"level":"error","status":500,"path":...}  500
+@TIME                        @STATUS  MESSAGE_KVS.STATUS  MESSAGE_KVS.PATH  MESSAGE_KVS.DURATION_MS
+2026-07-19 09:14:05.312 UTC  error    502                 /api/checkout     1204
+2026-07-19 09:13:58.007 UTC  error    500                 /api/search       87
+```
+
+and a footer on stderr teaches the way to more:
+
+```
+2 results. 14 fields available — 'bronto fields -d <dataset>' lists them; '--select <field,...>' picks columns; '-x' expands a row.
+```
+
+`-x`/`--expand` is the "click on a row" equivalent — every field of every event, one per line, nothing truncated:
+
+```
+─ event 1 ──────────────────────────────
+@time                2026-07-19 09:14:05.312 UTC
+@status              error
+@raw                 {"level":"error","status":502,"path":"/api/checkout","duration_ms":1204}
+message_kvs.path     /api/checkout
+message_kvs.status   502
+metadata.sequence    4367602734065516544
 ```
 
 Piped, the same command emits JSONL — one full event per line, 64-bit ids preserved exactly:
@@ -80,6 +98,7 @@ Piped, the same command emits JSONL — one full event per line, 64-bit ids pres
 
 ```sh
 bronto search "status >= 500" --since 1h
+bronto search "status >= 500" --since 1h -n 5 -x     # expanded record view
 bronto search --select "count()" -g host --since 15m
 bronto tail "level = 'error'" --include timeout --exclude healthz
 bronto tail -g status --window 1m                    # live count(*) by status, redrawn in place

@@ -59,7 +59,7 @@ func newContextCmd() *cobra.Command {
 					break
 				}
 			}
-			return printEvents(app, events)
+			return printEvents(app, events, eventView{})
 		},
 	}
 	f := cmd.Flags()

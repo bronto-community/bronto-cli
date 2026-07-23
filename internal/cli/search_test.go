@@ -54,7 +54,9 @@ func TestSearchEventsJSONLWhenPiped(t *testing.T) {
 		t.Fatalf("body = %v", body)
 	}
 	sel, _ := body["select"].([]any)
-	if len(sel) != 2 || sel[0] != "@time" || sel[1] != "@raw" {
+	// "*" pulls the parsed KVs into events; "@raw" stays explicit because
+	// a bare "*" nulls it out server-side.
+	if len(sel) != 3 || sel[0] != "@time" || sel[1] != "@raw" || sel[2] != "*" {
 		t.Fatalf("default select = %v", sel)
 	}
 	from, _ := body["from"].([]any)
@@ -452,5 +454,181 @@ func TestSearchHistogramMachineRows(t *testing.T) {
 	var rows []map[string]any
 	if err := json.Unmarshal(out.Bytes(), &rows); err != nil || len(rows) != 1 || rows[0]["count"] != 3.0 {
 		t.Fatalf("rows = %q err=%v", out.String(), err)
+	}
+}
+
+func searchTTY(t *testing.T, tty bool) {
+	t.Helper()
+	old := stdoutIsTTY
+	stdoutIsTTY = func() bool { return tty }
+	t.Cleanup(func() { stdoutIsTTY = old })
+}
+
+const searchKVPayload = `{"events":[
+	{"@time":"t1","@status":"info","@raw":"r1","message_kvs":{"eventName":"page_view","path":"/a","session":"s1"}},
+	{"@time":"t2","@status":"info","@raw":"r2","message_kvs":{"eventName":"link_click","path":"/b","session":"s1"}}
+]}`
+
+func TestSearchTablePromotesFrequentFields(t *testing.T) {
+	searchTTY(t, true)
+	srv := searchServer(t, searchKVPayload, nil)
+	defer srv.Close()
+	root := NewRootCmd()
+	var out, errb bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&errb)
+	root.SetArgs([]string{"search", "-d", "11111111-1111-1111-1111-111111111111",
+		"--base-url", srv.URL, "--api-key", "k"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	header := strings.SplitN(out.String(), "\n", 2)[0]
+	for _, col := range []string{"@TIME", "@STATUS", "MESSAGE_KVS.EVENTNAME", "MESSAGE_KVS.PATH", "MESSAGE_KVS.SESSION"} {
+		if !strings.Contains(header, col) {
+			t.Fatalf("header missing %s: %q", col, header)
+		}
+	}
+	// 3 promoted keys reach the drop threshold: the blob column goes away.
+	if strings.Contains(header, "@RAW") {
+		t.Fatalf("@RAW should be dropped with >=3 promoted columns: %q", header)
+	}
+}
+
+func TestSearchTeachingFooter(t *testing.T) {
+	run := func(t *testing.T, tty bool, extra ...string) string {
+		t.Helper()
+		searchTTY(t, tty)
+		srv := searchServer(t, searchKVPayload, nil)
+		defer srv.Close()
+		root := NewRootCmd()
+		var out, errb bytes.Buffer
+		root.SetOut(&out)
+		root.SetErr(&errb)
+		// a UUID ref skips /logs name resolution; the footer echoes it as typed.
+		args := append([]string{"search", "-d", "11111111-1111-1111-1111-111111111111",
+			"--base-url", srv.URL, "--api-key", "k"}, extra...)
+		root.SetArgs(args)
+		if err := root.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		return errb.String()
+	}
+
+	t.Run("shown on tty table", func(t *testing.T) {
+		stderr := run(t, true)
+		want := "2 results. 6 fields available — 'bronto fields -d 11111111-1111-1111-1111-111111111111' lists them; '--select <field,...>' picks columns; '-x' expands a row."
+		if !strings.Contains(stderr, want) {
+			t.Fatalf("footer missing.\nwant: %s\ngot stderr: %q", want, stderr)
+		}
+	})
+	t.Run("suppressed when piped", func(t *testing.T) {
+		stderr := run(t, false)
+		if strings.Contains(stderr, "fields available") {
+			t.Fatalf("footer should not appear when piped: %q", stderr)
+		}
+	})
+	t.Run("suppressed with quiet", func(t *testing.T) {
+		stderr := run(t, true, "--quiet")
+		if strings.Contains(stderr, "fields available") {
+			t.Fatalf("footer should not appear with --quiet: %q", stderr)
+		}
+	})
+	t.Run("suppressed with select", func(t *testing.T) {
+		stderr := run(t, true, "--select", "eventName")
+		if strings.Contains(stderr, "fields available") {
+			t.Fatalf("footer should not appear with --select: %q", stderr)
+		}
+	})
+	t.Run("suppressed with machine format", func(t *testing.T) {
+		stderr := run(t, true, "-o", "json")
+		if strings.Contains(stderr, "fields available") {
+			t.Fatalf("footer should not appear with -o json: %q", stderr)
+		}
+	})
+	t.Run("suppressed with expand", func(t *testing.T) {
+		stderr := run(t, true, "-x")
+		if strings.Contains(stderr, "fields available") {
+			t.Fatalf("footer should not appear with -x: %q", stderr)
+		}
+	})
+	t.Run("suppressed on zero results", func(t *testing.T) {
+		searchTTY(t, true)
+		srv := searchServer(t, `{"events":[]}`, nil)
+		defer srv.Close()
+		root := NewRootCmd()
+		var out, errb bytes.Buffer
+		root.SetOut(&out)
+		root.SetErr(&errb)
+		root.SetArgs([]string{"search", "-d", "11111111-1111-1111-1111-111111111111",
+			"--base-url", srv.URL, "--api-key", "k"})
+		if err := root.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(errb.String(), "fields available") {
+			t.Fatalf("footer should not appear on empty results: %q", errb.String())
+		}
+		if !strings.Contains(errb.String(), "No results.") {
+			t.Fatalf("empty notice missing: %q", errb.String())
+		}
+	})
+}
+
+func TestSearchExpandRendersBlocks(t *testing.T) {
+	searchTTY(t, true)
+	long := strings.Repeat("z", 300)
+	srv := searchServer(t, `{"events":[{"@time":"t1","@raw":"`+long+`","message_kvs":{"path":"/a"},"metadata":{"sequence":42}}]}`, nil)
+	defer srv.Close()
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "-x", "-d", "11111111-1111-1111-1111-111111111111",
+		"--base-url", srv.URL, "--api-key", "k"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	if !strings.Contains(got, "─ event 1 ") {
+		t.Fatalf("missing block header:\n%s", got)
+	}
+	if !strings.Contains(got, long) {
+		t.Fatalf("expanded value truncated:\n%s", got)
+	}
+	// the detail view keeps the plumbing the table drops
+	if !strings.Contains(got, "metadata.sequence") {
+		t.Fatalf("metadata.* missing from detail view:\n%s", got)
+	}
+	if !strings.HasPrefix(got, "─ event 1 ") {
+		t.Fatalf("expected @time first after header:\n%s", got)
+	}
+}
+
+func TestSearchExpandRejectsMachineFormatsAndGroups(t *testing.T) {
+	for _, args := range [][]string{
+		{"search", "-x", "-o", "json"},
+		{"search", "-x", "-o", "jsonl"},
+		{"search", "-x", "-o", "csv"},
+		{"search", "-x", "-o", "raw"},
+		{"search", "-x", "--select", "count()", "-g", "host"},
+		{"search", "-x", "--explain-only"},
+	} {
+		requests := 0
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requests++
+		}))
+		root := NewRootCmd()
+		root.SetOut(io.Discard)
+		root.SetErr(io.Discard)
+		root.SetArgs(append(args, "-d", "11111111-1111-1111-1111-111111111111",
+			"--base-url", srv.URL, "--api-key", "k"))
+		err := root.Execute()
+		srv.Close()
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != "usage_invalid_flags" {
+			t.Fatalf("%v: want usage_invalid_flags, got %v", args, err)
+		}
+		if requests != 0 {
+			t.Fatalf("%v: no HTTP request should be made, got %d", args, requests)
+		}
 	}
 }

@@ -119,3 +119,128 @@ func TestGroupRowsBracketedString(t *testing.T) {
 		t.Fatalf("group = %v, want brackets stripped", rows[0]["group"])
 	}
 }
+
+func TestEventColumnsByFrequencyRanking(t *testing.T) {
+	rows := []map[string]any{
+		{"@time": "t", "@status": "info", "@raw": "r", "common": 1, "rare": 1},
+		{"@time": "t", "@status": "info", "@raw": "r", "common": 2},
+		{"@time": "t", "@status": "info", "@raw": "r", "common": 3, "other": 1},
+	}
+	got := EventColumnsByFrequency(rows, 8)
+	want := []string{"@time", "@status", "common", "other", "rare"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
+func TestEventColumnsByFrequencyTiesAlphabetical(t *testing.T) {
+	rows := []map[string]any{
+		{"@time": "t", "beta": 1, "alpha": 1},
+	}
+	got := EventColumnsByFrequency(rows, 8)
+	// only 2 discovered keys: @raw absent anyway, alpha before beta.
+	want := []string{"@time", "alpha", "beta"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
+func TestEventColumnsByFrequencyRawLastWhenFewKeys(t *testing.T) {
+	rows := []map[string]any{
+		{"@time": "t", "@raw": "r", "level": "info", "host": "a"},
+	}
+	got := EventColumnsByFrequency(rows, 8)
+	// 2 promoted keys < threshold: @raw retained, at the END.
+	want := []string{"@time", "host", "level", "@raw"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
+func TestEventColumnsByFrequencyDropsRawAtThreshold(t *testing.T) {
+	rows := []map[string]any{
+		{"@time": "t", "@raw": "r", "a": 1, "b": 1, "c": 1},
+	}
+	got := EventColumnsByFrequency(rows, 8)
+	want := []string{"@time", "a", "b", "c"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
+func TestEventColumnsByFrequencyCap(t *testing.T) {
+	rows := []map[string]any{
+		{"@time": "t", "@status": "s", "@raw": "r",
+			"a": 1, "b": 1, "c": 1, "d": 1, "e": 1, "f": 1, "g": 1},
+	}
+	got := EventColumnsByFrequency(rows, 8)
+	want := []string{"@time", "@status", "a", "b", "c", "d", "e", "f"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
+func TestEventColumnsByFrequencyTightCapKeepsRaw(t *testing.T) {
+	rows := []map[string]any{
+		{"@time": "t", "@status": "s", "@raw": "r", "a": 1, "b": 1, "c": 1},
+	}
+	// cap 5 leaves room for only 2 promoted keys (< threshold), so @raw
+	// stays and occupies the final slot.
+	got := EventColumnsByFrequency(rows, 5)
+	want := []string{"@time", "@status", "a", "b", "@raw"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
+func TestEventColumnsByFrequencyEmptyAndUncapped(t *testing.T) {
+	if got := EventColumnsByFrequency(nil, 8); len(got) != 0 {
+		t.Fatalf("empty rows: %v", got)
+	}
+	rows := []map[string]any{{"@raw": "r", "x": 1}}
+	got := EventColumnsByFrequency(rows, 0)
+	want := []string{"x", "@raw"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("uncapped got %v want %v", got, want)
+	}
+}
+
+func TestEventColumnsByFrequencyDistinctTiebreakAndNullDrop(t *testing.T) {
+	rows := []map[string]any{
+		{"@time": "t", "varied": "a", "constant": "x", "allnull": nil},
+		{"@time": "t", "varied": "b", "constant": "x", "allnull": "null"},
+	}
+	got := EventColumnsByFrequency(rows, 8)
+	// varied (2 distinct) beats constant (1 distinct) despite equal
+	// presence; allnull is never promoted.
+	want := []string{"@time", "varied", "constant"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
+func TestEventColumnsByFrequencySkipsTimestampDuplicates(t *testing.T) {
+	rows := []map[string]any{
+		{"@time": "t", "message_kvs.timestamp": "2026-01-01T00:00:00Z", "@timestamp": "x", "level": "info"},
+	}
+	got := EventColumnsByFrequency(rows, 8)
+	want := []string{"@time", "level"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
+func TestEventColumnsByFrequencyNullPaddingIgnored(t *testing.T) {
+	rows := []map[string]any{
+		{"@time": "t", "common": "a", "padded": nil},
+		{"@time": "t", "common": "b", "padded": nil},
+		{"@time": "t", "common": "c", "padded": "real"},
+		{"@time": "t", "common": "d", "rare": "x"},
+	}
+	got := EventColumnsByFrequency(rows, 8)
+	// common: 4 non-null; padded and rare: 1 each, tie → alphabetical.
+	want := []string{"@time", "common", "padded", "rare"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
