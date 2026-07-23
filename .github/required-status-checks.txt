@@ -1,0 +1,13 @@
+# Mirror of the branch-protection ruleset's REQUIRED status checks for main.
+# The cichecks tripwire (internal/cichecks) fails if any entry here has no
+# backing job in .github/workflows/ci.yml — so a renamed/removed required
+# job is caught in CI instead of silently wedging every PR (as generate-clean
+# -> repo-gates did after #63). Keep this file in sync with the ruleset when
+# you change either; see CONTRIBUTING.
+test (ubuntu-latest)
+test (macos-latest)
+lint
+cross-build
+repo-gates
+coverage
+pre-commit

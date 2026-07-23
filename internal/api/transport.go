@@ -11,8 +11,14 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
+// IdempotentHint marks a POST as safe to retry (search queries are
+// reads in POST clothing). The header is internal — stripped before the
+// request leaves the transport.
+const IdempotentHint = "X-Bronto-Cli-Idempotent"
+
 // Transport adds auth + User-Agent headers and retries idempotent requests
-// on 429/502/503/504, honoring Retry-After.
+// on 429/502/503/504, honoring Retry-After. GET/HEAD are always eligible;
+// POSTs opt in via IdempotentHint.
 type Transport struct {
 	APIKey     string
 	UserAgent  string
@@ -27,7 +33,8 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		base = http.DefaultTransport
 	}
 
-	idempotent := req.Method == http.MethodGet || req.Method == http.MethodHead
+	idempotent := req.Method == http.MethodGet || req.Method == http.MethodHead ||
+		req.Header.Get(IdempotentHint) == "true"
 	replayable := req.Body == nil || req.GetBody != nil
 
 	body := req.Body
@@ -36,6 +43,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	for attempt := 0; ; attempt++ {
 		attemptReq := req.Clone(req.Context())
 		attemptReq.Body = body
+		attemptReq.Header.Del(IdempotentHint)
 		attemptReq.Header.Set("X-BRONTO-API-KEY", t.APIKey)
 		attemptReq.Header.Set("User-Agent", t.UserAgent)
 
@@ -110,13 +118,36 @@ func computeRetryDelay(resp *http.Response, attempt int) time.Duration {
 
 func NewHTTPClient(apiKey, version string) *http.Client {
 	return &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout:       30 * time.Second,
+		CheckRedirect: refuseCrossHostRedirect,
 		Transport: &Transport{
 			APIKey:     apiKey,
 			UserAgent:  "bronto-cli/" + version,
 			MaxRetries: 2,
 		},
 	}
+}
+
+// refuseCrossHostRedirect stops the client before it follows a redirect to
+// a different host. The API key is attached per-hop inside
+// Transport.RoundTrip as the custom X-BRONTO-API-KEY header, which
+// net/http does NOT strip on cross-domain redirects (its stripping only
+// covers Authorization/Cookie/etc. set on the original request), so a
+// redirect to an attacker host would otherwise carry the key. Same-host
+// redirects (the only kind Bronto's API issues) still follow normally.
+// 2026-07-23 audit.
+func refuseCrossHostRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) == 0 {
+		return nil
+	}
+	if req.URL.Host != via[0].URL.Host {
+		return fmt.Errorf("refusing to follow cross-host redirect to %q (would leak the API key); "+
+			"if this endpoint is legitimate, set base_url to it directly", req.URL.Host)
+	}
+	if len(via) >= 10 {
+		return fmt.Errorf("stopped after 10 redirects")
+	}
+	return nil
 }
 
 // ErrorFromStatus maps a non-2xx API response to a typed error. Nil for 2xx.

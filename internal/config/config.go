@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	toml "github.com/pelletier/go-toml/v2"
@@ -45,16 +46,36 @@ type Config struct {
 var envKeys = map[string]string{
 	"api_key":     "BRONTO_API_KEY",
 	"base_url":    "BRONTO_BASE_URL",
+	"app_url":     "BRONTO_APP_URL",
+	"org_id":      "BRONTO_ORG_ID",
 	"profile":     "BRONTO_PROFILE",
 	"region":      "BRONTO_REGION",
 	"timeout":     "BRONTO_TIMEOUT",
 	"max_retries": "BRONTO_MAX_RETRIES",
 	"ingest_url":  "BRONTO_INGEST_URL",
+	"ask_url":     "BRONTO_ASK_URL",
+	"ask_model":   "BRONTO_ASK_MODEL",
+	"ask_api_key": "BRONTO_ASK_API_KEY",
 }
 
-// Keys settable from files (project and user profile sections). api_key is
-// deliberately absent: secrets never come from files.
-var fileKeys = []string{"profile", "region", "base_url", "output", "default_dataset", "timeout", "max_retries", "ingest_url"}
+// userFileKeys are settable from the user's own config file (under the
+// user config dir). api_key is deliberately absent: secrets never come
+// from files. ask_url/ask_model configure the LLM endpoint for
+// `bronto ask` (ask_api_key is env-only, see SetUserValue); app_url is the
+// web-UI base for `search --url/--open` deep links.
+var userFileKeys = []string{"profile", "region", "base_url", "app_url", "org_id", "output", "default_dataset", "timeout", "max_retries", "ingest_url", "ask_url", "ask_model"}
+
+// projectFileKeys are settable from a discovered .bronto.toml. It walks UP
+// from the working directory (loadProjectFile), so a project file can
+// belong to an untrusted repo you cd into — it must NOT be able to
+// redirect where the authenticated API key is sent. base_url and
+// ingest_url are therefore excluded here (they name the host directly);
+// region is included but validated (validateRegion) so it cannot smuggle
+// a host through the "https://api.%s.bronto.io" template. 2026-07-23
+// audit, HIGH. ask_url and app_url are likewise excluded: a project file
+// must not redirect where `bronto ask` sends the question, nor where
+// `search --open` points the browser.
+var projectFileKeys = []string{"profile", "region", "output", "default_dataset", "timeout", "max_retries"}
 
 type userFile struct {
 	DefaultProfile string                       `toml:"default_profile"`
@@ -94,7 +115,7 @@ func Load(opts LoadOptions) (*Config, error) {
 				fmt.Sprintf("refusing to read api_key from %s", projPath)).
 				WithHint("Move the key to the BRONTO_API_KEY environment variable or run 'bronto auth login'.")
 		}
-		for _, k := range fileKeys {
+		for _, k := range projectFileKeys {
 			set(k, proj[k], SourceProject)
 		}
 	}
@@ -112,7 +133,7 @@ func Load(opts LoadOptions) (*Config, error) {
 					"refusing to read api_key from the user config file").
 					WithHint("Use the BRONTO_API_KEY environment variable or 'bronto auth login' (keychain).")
 			}
-			for _, k := range fileKeys {
+			for _, k := range userFileKeys {
 				set(k, p[k], SourceUser)
 			}
 		}
@@ -121,7 +142,36 @@ func Load(opts LoadOptions) (*Config, error) {
 	}
 	// 5. defaults
 	set("region", "eu", SourceDefault)
+
+	// region is interpolated into "https://api.%s.bronto.io" (BaseURL) and
+	// "https://ingestion.%s.bronto.io" (ingest.URL). A value containing a
+	// slash, "@", or dot moves the host off bronto.io entirely (e.g.
+	// region="evil.com/" -> host api.evil.com), so a project file could use
+	// it as a base_url bypass. Constrain it to a plain slug wherever it
+	// came from. base_url/ingest_url are exempt: they are only settable
+	// from trusted sources (flags/env/user config) and are full URLs by
+	// design. 2026-07-23 audit, HIGH.
+	if v, ok := c.values["region"]; ok {
+		if err := validateRegion(v.Val); err != nil {
+			return nil, err
+		}
+	}
 	return c, nil
+}
+
+// regionPattern is a conservative slug: lowercase alphanumerics and
+// dashes, starting alphanumeric. It admits every real Bronto region
+// (eu, us, us-2, …) while excluding anything that could smuggle a host
+// (/, @, ., :, whitespace, uppercase).
+var regionPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+
+func validateRegion(r string) error {
+	if !regionPattern.MatchString(r) {
+		return clierr.New("config_invalid_region",
+			fmt.Sprintf("invalid region %q", r)).
+			WithHint("Region must be a slug like 'eu' or 'us' (lowercase letters, digits, dashes). Use base_url for a custom endpoint.")
+	}
+	return nil
 }
 
 func loadUserFile(dir string, getenv func(string) string) (*userFile, error) {

@@ -16,6 +16,10 @@ func SetUserValue(dir, profile, key, value string) error {
 		return clierr.New("config_secret_rejected", "api_key cannot be stored in the config file").
 			WithHint("Use the BRONTO_API_KEY environment variable or 'bronto auth login' (keychain).")
 	}
+	if key == "ask_api_key" {
+		return clierr.New("config_secret_rejected", "ask_api_key cannot be stored in the config file").
+			WithHint("Use the BRONTO_ASK_API_KEY environment variable.")
+	}
 	if profile == "" {
 		profile = "default"
 	}

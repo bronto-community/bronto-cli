@@ -122,7 +122,12 @@ jobs:
       contents: read
     concurrency:
       group: integration-${{ github.ref }}
-      cancel-in-progress: true
+      # Cancel superseded runs on PRs only. On main the group key is shared
+      # across pushes (integration-refs/heads/main), so cancel-in-progress
+      # would kill the in-flight post-merge run when a second merge lands —
+      # losing the integration signal for the first commit. Keep every main
+      # run to completion; dedupe only PR pushes.
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
@@ -159,7 +164,12 @@ jobs:
           BRONTO_IT_REGION: ${{ vars.BRONTO_IT_REGION || 'eu' }}
         run: |
           mkdir -p "$GOCOVERDIR"
-          go test -count=1 ./integration/
+          # -timeout 20m: the live export leg (TestExports_CreateWaitDownload)
+          # legitimately runs ~8m, close enough to go test's default 10m
+          # package alarm that a slow-but-healthy run was killed on PR #63.
+          # The CLI's own --wait cap (exportWaitTimeout, 15m) still bounds a
+          # genuinely stuck export below this.
+          go test -count=1 -timeout 20m ./integration/
 
       # Collected for later adoption only: the ratchet gate (the `coverage`
       # job above) stays unit-only for now. Merging this PR-run's covdata
@@ -189,7 +199,29 @@ jobs:
         with:
           version: v2.12.2
 
-  generate-clean:
+  # repo-gates replaces generate-clean, which could never fail: the repo
+  # has no go:generate directives, so `go generate && git diff` was a
+  # guaranteed no-op (2026-07-23 audit). check-spec verifies the vendored
+  # spec against api/vendored.sha256 (self-testing that the gate can go
+  # red); lint-workflows enforces the version-pin policy on CI surfaces.
+  repo-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - run: make check-spec
+      - run: make lint-workflows
+
+  # pre-commit runs the same hooks developers get locally (gitleaks,
+  # shellcheck, whitespace fixers), so the config can never silently rot
+  # again: the 2026-07-23 audit found it pinning a golangci-lint v1 binary
+  # against the v2 config for months with nothing in CI to notice. The
+  # golangci-lint hook itself is SKIPped here only because the `lint` job
+  # already runs the identical pinned version via the official action.
+  pre-commit:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
@@ -200,7 +232,12 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-      - run: make check-generate
+      - name: Run pre-commit on all files
+        env:
+          SKIP: golangci-lint
+        run: |
+          pipx install pre-commit==4.2.0
+          pre-commit run --all-files --show-diff-on-failure
 
   cross-build:
     runs-on: ubuntu-latest
