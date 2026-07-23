@@ -2,12 +2,12 @@
 
 [![CI](https://github.com/bronto-community/bronto-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/bronto-community/bronto-cli/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/bronto-community/bronto-cli)](https://github.com/bronto-community/bronto-cli/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/bronto-community/bronto-cli)](https://goreportcard.com/report/github.com/bronto-community/bronto-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/bronto-community/bronto-cli/badge)](https://scorecard.dev/viewer/?uri=github.com/bronto-community/bronto-cli)
 
 A community command-line client for the [Bronto](https://bronto.io) observability platform. One scriptable binary wraps Bronto's REST and ingestion APIs: search and tail logs, explore OpenTelemetry traces, send events, and manage every resource from datasets to monitors.
 
-Built for pipelines and agents: JSONL by default when piped, typed errors with machine-readable hints, stable exit codes, and `--dry-run` plans for every mutating call.
+Built for pipelines and agents: streaming commands emit JSONL when piped, typed errors with machine-readable hints, stable exit codes, and `--dry-run` plans for every mutating call.
 
 bronto-cli is an official open-source project from [Bronto](https://bronto.io), maintained as a **community artifact**: free to use, contributions welcome — but not covered by Bronto's product support. Questions, bugs, and feature requests are handled best-effort through [GitHub issues](https://github.com/bronto-community/bronto-cli/issues), not Bronto's support channels.
 
@@ -19,7 +19,7 @@ bronto-cli is an official open-source project from [Bronto](https://bronto.io), 
 brew install bronto-community/tap/bronto
 ```
 
-The tap isn't published yet — this will work once `homebrew-tap` exists and the release workflow's cask upload is flipped from `skip_upload` to `auto`. Until then, use one of the options below.
+The tap isn't published yet — this will work once the `homebrew-tap` repository exists; the release workflow already pushes the formula automatically. Until then, use one of the options below.
 
 ### curl install script
 
@@ -106,7 +106,7 @@ bronto monitors templates list
 bronto webhooks create -f name=alerts -f url=https://example.com/hook
 ```
 
-Every resource (`datasets`, `monitors` — incl. `monitors templates` and `monitors downtimes` — `dashboards`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, plus read-only `collections` and `log-views`) shares the same `list | get <id|name> | create | update <id|name> | delete <id|name> --yes` pattern (list-only where the API documents no other verbs). Everywhere an id is accepted, a unique **name** works too (users: email; datasets: `collection/name` qualifies duplicates) — ambiguous names error with the candidates; `create`/`update` take repeated `-f key=value` or `--input file.json`/`--input -`, and `delete` prompts for confirmation unless `--yes` is passed.
+Every resource (`datasets`, `monitors` — incl. `monitors templates` and `monitors downtimes` — `dashboards`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, plus read-only `collections` and `log-views`) shares the same `list | get <id|name> | create | update <id|name> | delete <id|name> --yes` pattern (list-only where the API documents no other verbs). Everywhere an id is accepted, a unique **name** works too (users: email; datasets: `collection/name` qualifies duplicates) — ambiguous names error with the candidates; `create`/`update` take repeated `-f key=value` or `--input file.json`/`--input -`, and `delete` prompts for confirmation unless `--yes` is passed. Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `exports`.
 
 **Pipe** — send data in:
 
@@ -129,12 +129,28 @@ bronto version
 
 Anything without a dedicated command is reachable via the escape hatch: `bronto api GET /monitors -f limit=10` or `bronto api POST /search --input query.json`.
 
+## Ask — natural language to query
+
+Point `bronto ask` at any OpenAI-compatible endpoint (OpenAI, a local Ollama, your gateway):
+
+```sh
+bronto config set ask_url https://api.openai.com/v1/chat/completions
+bronto config set ask_model gpt-4o-mini
+export BRONTO_ASK_API_KEY=sk-...
+
+bronto ask "5xx spikes in checkout since last night"
+```
+
+The generated `bronto search …` command and the reasoning behind each mapping are shown before anything runs (`--yes` skips the prompt; piped without `--yes` it prints the plan as JSON and executes nothing). Only the question and dataset/field *names* are sent to the endpoint — never event data, never your Bronto API key.
+
 ## Scripting & agents
 
-Output to a non-TTY (piped or redirected) defaults to **JSONL**, one JSON object per line — no flag needed. Force a format explicitly with `-o table|json|jsonl|raw|csv`.
+Piped to a non-TTY, the streaming commands (`search`, `tail`, `traces`) default to **JSONL**, one JSON object per line — no flag needed. Every other command (resource `list`/`get`, `usage`, `config list`, …) piped emits one pretty-printed **JSON** document (usually an array): parse it whole, or pass `-o jsonl` for line-delimited rows. Force any format explicitly with `-o table|json|jsonl|raw|csv`.
 
 ```sh
 bronto search "status >= 500" --since 1h --jq '.message' | wc -l
+bronto search "" -d api-logs --since 1h --patterns  # cluster the firehose into templates
+bronto query check "stauts >= 500" -d api-logs      # catches the typo before the server does
 bronto datasets list --fields log,log_id
 bronto datasets list --fields '?'          # list available field names instead of data
 ```
@@ -178,13 +194,13 @@ Environment variables:
 | `BRONTO_INGEST_URL` | override the ingestion endpoint (`bronto send`) |
 | `BRONTO_CONFIG_DIR` | override the user config directory (parent of `bronto/config.toml`) |
 
-Config keys (settable via `bronto config set`, project `.bronto.toml`, or profile files — flags and env always win):
+Config keys (settable via `bronto config set`, project `.bronto.toml`, or profile files — flags and env always win; `base_url`/`ingest_url` are not project-file settable, see below):
 
 | Key | Env | Purpose | Default |
 |---|---|---|---|
-| `region` | `BRONTO_REGION` | `eu` or `us` | `eu` |
+| `region` | `BRONTO_REGION` | `eu` or `us` (a slug: lowercase letters, digits, dashes) | `eu` |
 | `base_url` | `BRONTO_BASE_URL` | full API base URL override (staging/localhost) | derived from region |
-| `output` | — | default output format | table (TTY) / jsonl (piped) |
+| `output` | — | default output format | table (TTY); piped: jsonl (streaming cmds) / json (others) |
 | `default_dataset` | — | dataset name/UUID or `from_expr` used when `-d` is omitted | — |
 | `timeout` | `BRONTO_TIMEOUT` | HTTP timeout in seconds | 30 |
 | `max_retries` | `BRONTO_MAX_RETRIES` | retries for idempotent requests | 2 |
@@ -192,6 +208,8 @@ Config keys (settable via `bronto config set`, project `.bronto.toml`, or profil
 | `profile` | `BRONTO_PROFILE` | named profile | `default` |
 
 `api_key` is deliberately **not** file-settable — keys live in the keychain or `BRONTO_API_KEY` only.
+
+For the same reason, **`base_url` and `ingest_url` cannot be set from a project `.bronto.toml`** — that file is discovered by walking up from the working directory, so an untrusted repo could otherwise redirect where your API key is sent. Set them via `bronto config set` (user config), `BRONTO_BASE_URL`/`BRONTO_INGEST_URL`, or `--base-url`. A project file may still set `region`, but only as a validated slug (it can't name an arbitrary host).
 
 ## Troubleshooting
 
@@ -247,3 +265,6 @@ bronto-cli sends no telemetry, analytics, or usage data anywhere. The only netwo
 ## License
 
 MIT — see [LICENSE](./LICENSE).
+
+The Bronto name and logo are trademarks of Bronto, used with permission and
+**not** covered by the MIT license — see [TRADEMARK.md](./TRADEMARK.md).
