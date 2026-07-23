@@ -48,7 +48,9 @@ jobs:
           BRONTO_IT_REGION: ${{ vars.BRONTO_IT_REGION || 'eu' }}
         run: |
           mkdir -p "$GOCOVERDIR"
-          go test -count=1 ./integration/
+          # -timeout 20m: matches ci.yml — the live export leg runs ~8m,
+          # too close to go test's default 10m package alarm.
+          go test -count=1 -timeout 20m ./integration/
 
       # Keep artifacts on failure (and always, for consistency with ci.yml):
       # a failed nightly run is exactly the "API drift / dead key" signal

@@ -193,20 +193,30 @@ func exportID(obj map[string]any) string {
 // same select-on-context-Done-or-timer shape as tail.go's poll loop) until
 // status is COMPLETE (returns the final payload) or FAILED (returns a typed
 // export_failed error, exit code 1). Any other status (CREATED, IN_PROGRESS)
-// continues polling.
+// continues polling, but only until timeout elapses: an export stuck below
+// a terminal status — or reporting a status the CLI doesn't recognize as
+// terminal — must not poll forever (it hung CI on PR #63). On timeout it
+// returns the last payload and a typed export_wait_timeout error. A
+// non-positive timeout falls back to exportWaitTimeout so --wait-timeout=0
+// (and any zero-value caller) still gets the default cap.
 // Note: FAILED is not in the vendored spec's status enum (CREATED/IN_PROGRESS/COMPLETE)
 // but is handled defensively as a real-world edge case.
 func waitForExport(ctx context.Context, app *App, id string, timeout time.Duration) (map[string]any, error) {
-	_ = timeout // RED phase: cap not yet enforced — the loop is still unbounded.
+	if timeout <= 0 {
+		timeout = exportWaitTimeout
+	}
 	// Progress on stderr in human mode only: a silent multi-second poll
 	// reads as a hang. \r-rewritten so it collapses to one line.
 	progress := app.StdoutIsTTY && !app.Quiet
 	start := time.Now()
+	deadline := start.Add(timeout)
 	clearLine := func() {
 		if progress {
 			_, _ = fmt.Fprintf(app.Stderr, "\r\x1b[2K")
 		}
 	}
+	var lastObj map[string]any
+	var lastStatus string
 	for {
 		payload, err := doJSONRequest(ctx, app, http.MethodGet, "/exports/"+url.PathEscape(id), nil)
 		if err != nil {
@@ -215,6 +225,7 @@ func waitForExport(ctx context.Context, app *App, id string, timeout time.Durati
 		}
 		obj, _ := payload.(map[string]any)
 		status, _ := obj["status"].(string)
+		lastObj, lastStatus = obj, status
 		if progress {
 			_, _ = fmt.Fprintf(app.Stderr, "\r\x1b[2KWaiting for export %s… %s (%ds)",
 				id, status, int(time.Since(start).Seconds()))
@@ -231,13 +242,37 @@ func waitForExport(ctx context.Context, app *App, id string, timeout time.Durati
 			}
 			return obj, clierr.New("export_failed", msg)
 		}
-		// CREATED, IN_PROGRESS, or other statuses continue polling
+		// CREATED, IN_PROGRESS, or other statuses continue polling — but not
+		// past the deadline. Checked after the poll so at least one request
+		// always happens even with a tiny timeout.
+		if !time.Now().Before(deadline) {
+			clearLine()
+			return lastObj, exportWaitTimeoutErr(id, lastStatus, timeout)
+		}
+		// Don't sleep past the deadline: cap the wait to whatever time is left.
+		wait := exportPollInterval
+		if rem := time.Until(deadline); rem < wait {
+			wait = rem
+		}
 		select {
 		case <-ctx.Done():
+			clearLine()
 			return nil, ctx.Err()
-		case <-time.After(exportPollInterval):
+		case <-time.After(wait):
 		}
 	}
+}
+
+// exportWaitTimeoutErr builds the typed error returned when --wait gives up.
+func exportWaitTimeoutErr(id, lastStatus string, timeout time.Duration) *clierr.Error {
+	status := lastStatus
+	if status == "" {
+		status = "unknown"
+	}
+	return clierr.New("export_wait_timeout",
+		fmt.Sprintf("export %s did not finish within %s (last status: %s)", id, timeout, status)).
+		WithHint("The export may still complete server-side — check it later with 'bronto exports get <id>', " +
+			"or re-run with a larger --wait-timeout.")
 }
 
 // downloadExport GETs a completed export's (presigned) location URL and
