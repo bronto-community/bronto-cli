@@ -8,3 +8,6 @@ test (ubuntu-latest)
 test (macos-latest)
 lint
 cross-build
+repo-gates
+coverage
+pre-commit
