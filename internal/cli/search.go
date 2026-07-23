@@ -39,6 +39,7 @@ func newSearchCmd() *cobra.Command {
 		orderBy         string
 		oldestFirst     bool
 		explainOnly     bool
+		localPath       string
 	)
 	cmd := &cobra.Command{
 		Use:   "search [query]",
@@ -58,6 +59,11 @@ func newSearchCmd() *cobra.Command {
 			where := ""
 			if len(args) == 1 {
 				where = args[0]
+				if where == "-" && localPath == "-" {
+					return clierr.New("usage_invalid_flags",
+						"the query and --local cannot both read stdin").
+						WithHint("Pass the query inline, or read the data from a file.")
+				}
 				if where == "-" {
 					b, err := io.ReadAll(cmd.InOrStdin())
 					if err != nil {
@@ -65,6 +71,19 @@ func newSearchCmd() *cobra.Command {
 					}
 					where = strings.TrimSpace(string(b))
 				}
+			}
+			if localPath != "" {
+				if len(datasets) > 0 || fromExpr != "" || len(selects) > 0 || len(groups) > 0 ||
+					explainOnly || since != "" || from != "" || to != "" {
+					return clierr.New("usage_invalid_flags",
+						"--local evaluates the query offline: dataset, time-range, select, and group flags do not apply").
+						WithHint("Filter on your own fields in the query, e.g. bronto search --local dump.jsonl \"status >= 500\".")
+				}
+				if limit < 1 || limit > 10000 {
+					return clierr.New("usage_invalid_limit",
+						fmt.Sprintf("limit must be between 1 and 10000, got %d", limit))
+				}
+				return runLocalSearch(app, cmd.InOrStdin(), localPath, where, limit)
 			}
 			// --saved fills defaults BEFORE dataset resolution so its
 			// stored from-ids participate in scope selection.
@@ -214,6 +233,7 @@ func newSearchCmd() *cobra.Command {
 	f.StringVar(&orderBy, "order-by", "", "SQL-style order, e.g. 'duration_ms DESC'")
 	f.BoolVar(&oldestFirst, "oldest-first", false, "return oldest events first")
 	f.BoolVar(&explainOnly, "explain-only", false, "return only the query plan / cost estimate")
+	f.StringVar(&localPath, "local", "", "evaluate the query offline over a local NDJSON/text file ('-' = stdin), no server involved")
 	f.BoolVar(&showPatterns, "patterns", false, "cluster matching events into templates with counts (drain-style)")
 	return cmd
 }

@@ -153,6 +153,7 @@ Piped to a non-TTY, the streaming commands (`search`, `tail`, `traces`) default 
 bronto search "status >= 500" --since 1h --jq '.message' | wc -l
 bronto search "status >= 500" --since 6h --histogram   # when did it start, how big is it
 bronto search "" -d api-logs --since 1h --patterns  # cluster the firehose into templates
+kubectl logs deploy/api | bronto search --local - "level = 'error'"   # offline, no server
 bronto query check "stauts >= 500" -d api-logs      # catches the typo before the server does
 bronto search --saved oncall-500s --since 30m       # run a stored saved-search
 bronto search "status >= 500" --since 1h --open     # jump to this query in the web UI
