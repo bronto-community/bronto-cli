@@ -303,9 +303,10 @@ func marchMascots(ctx context.Context, app *App, st mascotStyle, count int) erro
 	// each herd member trails the one ahead by ~1.5 body widths
 	gap := fw*3/2 + 4
 	drawn := false
-	// brontos face right, so they walk LEFT→RIGHT (head first) — enter
-	// from the left edge, exit the right.
-	for x := -(fw + gap*count); x < width; x += marchStep {
+	// brontos face right, so they walk LEFT→RIGHT (head first). Start with
+	// the lead bronto just off the left edge so it appears immediately;
+	// trailing herd members begin further left and enter behind it.
+	for x := -fw; x < width+gap*(count-1); x += marchStep {
 		if ctx.Err() != nil {
 			break
 		}
@@ -314,7 +315,7 @@ func marchMascots(ctx context.Context, app *App, st mascotStyle, count int) erro
 		}
 		placements := make([][2]int, count)
 		for n := 0; n < count; n++ {
-			placements[n] = [2]int{x + n*gap, 0}
+			placements[n] = [2]int{x - n*gap, 0}
 		}
 		for _, line := range composite(mascotFrame, placements, width, h, st) {
 			_, _ = fmt.Fprintf(app.Stdout, "\x1b[2K%s\n", line) // clear line + draw

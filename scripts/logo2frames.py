@@ -27,7 +27,7 @@ SRC = os.path.join(ROOT, "assets", "logomark.png")
 OUT = os.path.join(ROOT, "internal", "cli", "mascot_frames.go")
 COLS, ROWS = 62, 22          # full grid — graze
 COLS_SM, ROWS_SM = 40, 15    # compact grid — rumble's cowsay bubble
-COLS_TINY, ROWS_TINY = 26, 8  # tiny grid — the herd "rain"
+COLS_TINY, ROWS_TINY = 26, 10  # tiny grid — the herd "rain" (proper aspect)
 
 
 def to_bmp(png, cols, rows):

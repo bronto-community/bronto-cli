@@ -53,12 +53,14 @@ var mascotFrameSmall = []string{
 
 // mascotFrameTiny is the tiny grid used by the herd "rain".
 var mascotFrameTiny = []string{
-	"                    oo",
+	"                    k",
 	"                  koyyook",
-	"                 koyykoo",
-	"            koooooyyyk",
-	"         oooyyyyyyyyok",
-	"      ooyyoyyoooyyook",
-	"   oooooookoyookoyook",
-	"           koko koko",
+	"                  oyyoook",
+	"                 kyyyk",
+	"            koyooyyyyk",
+	"         kooyyyyyyyyok",
+	"       ooyoyyyoyyyyok",
+	"     ooyyyooyoooyyook",
+	"  koooook  oyookoyook",
+	"",
 }
