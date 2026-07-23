@@ -82,6 +82,7 @@ Piped, the same command emits JSONL — one full event per line, 64-bit ids pres
 bronto search "status >= 500" --since 1h
 bronto search --select "count()" -g host --since 15m
 bronto tail "level = 'error'" --include timeout --exclude healthz
+bronto tail -g status --window 1m                    # live count(*) by status, redrawn in place
 bronto traces show <trace-id>
 bronto traces services --since 1h
 bronto fields -d <dataset> --since 1h
