@@ -98,7 +98,9 @@ func TestStaleResourceIDs_NonDefaultNameKey(t *testing.T) {
 // ever surfaces to say so.
 func TestStaleResourceIDs_LiveShapePlainID(t *testing.T) {
 	now := time.Unix(1_000_000_000, 0)
-	maxAge := time.Hour
+	// Deliberately not sweepMaxAge: the cutoff is a parameter, not a
+	// constant every caller must echo (also keeps unparam honest).
+	maxAge := 30 * time.Minute
 	old := now.Add(-2 * time.Hour).Unix()
 
 	for _, kind := range []string{"dashboards", "saved-searches"} {
