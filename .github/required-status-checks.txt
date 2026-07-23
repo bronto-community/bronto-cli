@@ -8,4 +8,3 @@ test (ubuntu-latest)
 test (macos-latest)
 lint
 cross-build
-generate-clean
