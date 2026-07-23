@@ -5,6 +5,9 @@ on:
     - cron: "23 3 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   # integration-nightly runs the same black-box suite as ci.yml's
   # `integration` job, unattended and on its own schedule: it doubles as an
