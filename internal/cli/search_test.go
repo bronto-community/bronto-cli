@@ -407,3 +407,50 @@ func TestSearchPatterns(t *testing.T) {
 		t.Fatalf("want usage_invalid_flags, got %v", err)
 	}
 }
+
+func TestSearchHistogramConflicts(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "x", "-d", "11111111-1111-1111-1111-111111111111",
+		"--histogram", "-g", "level", "--api-key", "k"})
+	err := root.Execute()
+	var ce *clierr.Error
+	if err == nil || !errors.As(err, &ce) || ce.Code != "usage_invalid_flags" {
+		t.Fatalf("want usage_invalid_flags, got %v", err)
+	}
+}
+
+func TestSearchHistogramMachineRows(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/search" {
+			t.Errorf("path %s", r.URL.Path)
+		}
+		var body map[string]any
+		b, _ := io.ReadAll(r.Body)
+		_ = json.Unmarshal(b, &body)
+		if sel, _ := body["select"].([]any); len(sel) != 1 || sel[0] != "count(*)" {
+			t.Errorf("select = %v", body["select"])
+		}
+		if body["num_of_slices"] != 8.0 {
+			t.Errorf("num_of_slices = %v", body["num_of_slices"])
+		}
+		_, _ = w.Write([]byte(`{"result":[{"@time":"Wed Jul 22 05:42:55 UTC 2026","@timestamp":"1784698975896","count(*)":"3.0"}]}`))
+	}))
+	defer srv.Close()
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "x", "-d", "11111111-1111-1111-1111-111111111111",
+		"--histogram", "--slices", "8", "--api-key", "k", "--base-url", srv.URL, "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(out.Bytes(), &rows); err != nil || len(rows) != 1 || rows[0]["count"] != 3.0 {
+		t.Fatalf("rows = %q err=%v", out.String(), err)
+	}
+}

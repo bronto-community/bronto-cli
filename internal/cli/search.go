@@ -24,6 +24,7 @@ import (
 
 func newSearchCmd() *cobra.Command {
 	var (
+		histogram       bool
 		saved           string
 		printURL        bool
 		openURL         bool
@@ -85,6 +86,10 @@ func newSearchCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if histogram && (len(selects) > 0 || len(groups) > 0 || explainOnly) {
+				return clierr.New("usage_invalid_flags",
+					"--histogram computes its own count aggregate and cannot combine with --select, --group-by, or --explain-only")
+			}
 			if showPatterns && (len(selects) > 0 || len(groups) > 0 || explainOnly) {
 				return clierr.New("usage_invalid_flags",
 					"--patterns clusters raw events and cannot combine with --select, --group-by, or --explain-only")
@@ -129,6 +134,10 @@ func newSearchCmd() *cobra.Command {
 				From: ids, FromExpr: expr, Time: spec, Where: where,
 				Select: effSelect, Groups: groups, Limit: limit, Slices: slices,
 				OrderBy: orderBy, ExplainOnly: explainOnly,
+			}
+			if histogram {
+				client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
+				return runHistogram(cmd.Context(), app, client, req, slices)
 			}
 			if oldestFirst {
 				mrf := false
@@ -199,7 +208,8 @@ func newSearchCmd() *cobra.Command {
 	f.StringVar(&to, "to", "", "absolute end (RFC3339), requires --from")
 	f.StringArrayVar(&selects, "select", nil, "column or aggregate to select (repeatable)")
 	f.StringArrayVarP(&groups, "group-by", "g", nil, "group-by key (repeatable)")
-	f.IntVar(&slices, "slices", 0, "timeseries buckets for aggregate queries")
+	f.IntVar(&slices, "slices", 0, "timeseries buckets for aggregate queries (also sets --histogram resolution)")
+	f.BoolVar(&histogram, "histogram", false, "print a time histogram of matching events instead of the events themselves")
 	f.IntVarP(&limit, "limit", "n", 100, "maximum events to return (1-10000)")
 	f.StringVar(&orderBy, "order-by", "", "SQL-style order, e.g. 'duration_ms DESC'")
 	f.BoolVar(&oldestFirst, "oldest-first", false, "return oldest events first")
