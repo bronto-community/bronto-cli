@@ -41,7 +41,7 @@ Agent-critical flags (global): `--dry-run` prints any mutating call as a plan do
 - Streaming commands (`search`, `tail`, `traces`) piped to a non-TTY default to JSONL, one JSON object per line — no flag needed. Every other command (resource `list`/`get`, `usage`, `config list`, …) piped emits a single pretty-printed JSON document (usually an array) — parse it whole, not line-by-line; pass `-o jsonl` if you want line-delimited rows.
 - Force a format with `-o json|jsonl|raw|csv|table`.
 - `--jq '<expr>'` runs a jq expression over json/jsonl output, one result per line. Deviation from the `jq` CLI: a value that errors or halts on the expression is silently **skipped**, not a fatal abort — every other row still prints.
-- `--fields a,b,c` narrows output to those columns/keys; `--fields ?` lists the field names available instead of the data. Only works with table/json/jsonl/csv; `-o raw` and custom TTY renderers (`traces show`, `traces shape`) reject `--fields` with a usage error pointing at a machine format.
+- `--fields a,b,c` narrows output to those columns/keys; `--fields ?` lists the field names available instead of the data. Works with json/jsonl/csv (and table for resource lists); `-o raw` and the custom TTY renderers (`traces show`, `traces shape`, and `tail`'s table view) reject `--fields` with a usage error pointing at a machine format — use `-o jsonl` there.
 - Errors go to stderr. In machine mode (non-TTY stderr) they're a stable JSON envelope: `{"error":{"code":"...","message":"...","retryable":true|false,"hint":"..."}}` (`hint` present only when there is remediation advice).
 - Numbers are lossless: 64-bit ids (e.g. `metadata.sequence`) survive json/jsonl/`--jq` byte-exact.
 - Exit codes:

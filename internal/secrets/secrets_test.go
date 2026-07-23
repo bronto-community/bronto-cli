@@ -208,3 +208,44 @@ func TestFileFallbackWhenKeyringUnavailable(t *testing.T) {
 		t.Fatalf("after delete: %v", err)
 	}
 }
+
+// TestFileStoreAtomicPreservesOriginalOnCommitFailure pins crash-safety of
+// the credentials rewrite: it must write a temp file and rename it into
+// place, so a failure at the commit step leaves the PREVIOUS file fully
+// intact rather than a truncated/partial one that drops every other
+// profile's key. renameFile is the injectable commit seam. 2026-07-23
+// audit. A regression to a direct in-place os.WriteFile fails the
+// "original preserved" assertion below.
+func TestFileStoreAtomicPreservesOriginalOnCommitFailure(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("BRONTO_CONFIG_DIR", dir)
+
+	if err := fileStore("alpha", "keyAlpha"); err != nil {
+		t.Fatal(err)
+	}
+
+	orig := renameFile
+	renameFile = func(_, _ string) error { return errors.New("simulated crash at commit") }
+	t.Cleanup(func() { renameFile = orig })
+
+	if err := fileStore("beta", "keyBeta"); err == nil {
+		t.Fatal("expected the commit failure to surface as an error")
+	}
+
+	// The pre-existing profile must survive untouched.
+	got, err := fileGet("alpha")
+	if err != nil || got != "keyAlpha" {
+		t.Fatalf("original credential lost after a failed write: got %q, err %v", got, err)
+	}
+	// The failed write must not have persisted the new profile.
+	if _, err := fileGet("beta"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("failed write leaked the new profile: %v", err)
+	}
+	// No leftover temp file beside the credentials file.
+	entries, _ := os.ReadDir(filepath.Join(dir, "bronto"))
+	for _, e := range entries {
+		if e.Name() != "credentials" {
+			t.Errorf("leftover temp artifact after failed write: %q", e.Name())
+		}
+	}
+}
