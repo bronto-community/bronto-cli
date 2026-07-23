@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/bronto-community/bronto-cli/internal/api"
+	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
@@ -53,30 +54,27 @@ func newAPICmd() *cobra.Command {
 					WithHint("Set BRONTO_API_KEY or pass --api-key.")
 			}
 
-			var body io.Reader
+			var bodyBytes []byte
 			hasBodyMethod := method == "POST" || method == "PUT" || method == "PATCH"
 			switch {
 			case input != "" && len(fields) > 0 && hasBodyMethod:
 				return clierr.New("usage_conflicting_flags", "--input and --field are mutually exclusive for body requests")
 			case input != "":
-				b, err := readBodyInput(cmd, input)
+				bodyBytes, err = readBodyInput(cmd, input)
 				if err != nil {
 					return err
 				}
-				body = bytes.NewReader(b)
 			case hasBodyMethod && len(fields) > 0:
 				obj, err := parseFieldArgs(fields)
 				if err != nil {
 					return err
 				}
-				b, err := json.Marshal(obj)
+				bodyBytes, err = json.Marshal(obj)
 				if err != nil {
 					return err
 				}
-				body = bytes.NewReader(b)
 			}
 
-			u := app.Config.BaseURL() + path
 			if !hasBodyMethod && len(fields) > 0 {
 				q := url.Values{}
 				for _, kv := range fields {
@@ -87,13 +85,30 @@ func newAPICmd() *cobra.Command {
 					q.Add(k, v)
 				}
 				sep := "?"
-				if strings.Contains(u, "?") {
+				if strings.Contains(path, "?") {
 					sep = "&"
 				}
-				u += sep + q.Encode()
+				path += sep + q.Encode()
 			}
 
-			req, err := http.NewRequestWithContext(cmd.Context(), method, u, body)
+			// The escape hatch honors --dry-run like every command built on
+			// doJSONRequest: mutating methods print the plan document and
+			// never touch the network. It's the command a user reaches for
+			// to preview an UNdocumented mutation, so skipping this here
+			// would execute exactly the calls --dry-run exists to preview.
+			if app.DryRun && method != http.MethodGet && method != http.MethodHead {
+				p, err := app.Printer(false)
+				if err != nil {
+					return err
+				}
+				return p.PrintJSON(dryRunPlan(method, path, bodyBytes))
+			}
+
+			var body io.Reader
+			if bodyBytes != nil {
+				body = bytes.NewReader(bodyBytes)
+			}
+			req, err := http.NewRequestWithContext(cmd.Context(), method, app.Config.BaseURL()+path, body)
 			if err != nil {
 				return err
 			}
@@ -117,7 +132,9 @@ func newAPICmd() *cobra.Command {
 				return nil
 			}
 			var doc any
-			if err := json.Unmarshal(respBody, &doc); err != nil {
+			// bronto.DecodeJSON (UseNumber), NOT json.Unmarshal: plain
+			// decoding rounds >2^53 ids (metadata.sequence) through float64.
+			if err := bronto.DecodeJSON(respBody, &doc); err != nil {
 				_, err := app.Stdout.Write(respBody) // non-JSON: pass through
 				return err
 			}
@@ -148,7 +165,9 @@ func parseFieldArgs(fields []string) (map[string]any, error) {
 			return nil, clierr.New("usage_invalid_field", fmt.Sprintf("--field %q is not key=value", kv))
 		}
 		var parsed any
-		if err := json.Unmarshal([]byte(v), &parsed); err == nil {
+		// UseNumber here too: `-f seq=4367602734065516544` must reach the
+		// wire byte-exact (json.Number re-marshals verbatim).
+		if err := bronto.DecodeJSON([]byte(v), &parsed); err == nil {
 			obj[k] = parsed
 		} else {
 			obj[k] = v

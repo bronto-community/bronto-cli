@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -10,11 +11,14 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/output"
+	"github.com/bronto-community/bronto-cli/internal/patterns"
+	"github.com/bronto-community/bronto-cli/internal/query"
 	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 func newSearchCmd() *cobra.Command {
 	var (
+		showPatterns    bool
 		datasets        []string
 		fromExpr        string
 		since, from, to string
@@ -56,6 +60,13 @@ func newSearchCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if showPatterns && (len(selects) > 0 || len(groups) > 0 || explainOnly) {
+				return clierr.New("usage_invalid_flags",
+					"--patterns clusters raw events and cannot combine with --select, --group-by, or --explain-only")
+			}
+			if showPatterns && !cmd.Flags().Changed("limit") {
+				limit = 2000 // clustering wants a real sample, not the default page
+			}
 			if limit < 1 || limit > 10000 {
 				return clierr.New("usage_invalid_limit",
 					fmt.Sprintf("limit must be between 1 and 10000, got %d", limit)).
@@ -84,7 +95,10 @@ func newSearchCmd() *cobra.Command {
 			client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
 			resp, err := client.Search(cmd.Context(), req)
 			if err != nil {
-				return err
+				return enrichQueryError(err, where)
+			}
+			if showPatterns {
+				return printPatterns(app, resp.EventRows())
 			}
 			if !app.Quiet && app.StdoutIsTTY {
 				if ms, ok := resp.Explain["Execution time (millis)"]; ok {
@@ -145,6 +159,7 @@ func newSearchCmd() *cobra.Command {
 	f.StringVar(&orderBy, "order-by", "", "SQL-style order, e.g. 'duration_ms DESC'")
 	f.BoolVar(&oldestFirst, "oldest-first", false, "return oldest events first")
 	f.BoolVar(&explainOnly, "explain-only", false, "return only the query plan / cost estimate")
+	f.BoolVar(&showPatterns, "patterns", false, "cluster matching events into templates with counts (drain-style)")
 	return cmd
 }
 
@@ -195,4 +210,59 @@ func eventTableColumns(rows []map[string]any) []string {
 		filtered = append(filtered, fr)
 	}
 	return bronto.EventColumns(filtered, 8)
+}
+
+// printPatterns clusters the fetched events' raw lines into templates.
+func printPatterns(app *App, events []map[string]any) error {
+	lines := make([]string, 0, len(events))
+	for _, ev := range events {
+		line := ""
+		if v, ok := ev["@raw"]; ok && v != nil {
+			line = fmt.Sprint(v)
+		}
+		if line == "" {
+			if v, ok := ev["message"]; ok && v != nil {
+				line = fmt.Sprint(v)
+			}
+		}
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+	clusters := patterns.Extract(lines)
+	rows := make([]map[string]any, 0, len(clusters))
+	for _, c := range clusters {
+		rows = append(rows, map[string]any{
+			"count":   c.Count,
+			"pattern": c.Template,
+			"example": c.Example,
+		})
+	}
+	p, err := app.Printer(false)
+	if err != nil {
+		return err
+	}
+	if !app.Quiet && len(rows) > 0 {
+		_, _ = fmt.Fprintf(app.Stderr, "%d pattern(s) from %d event(s)\n", len(rows), len(lines))
+	}
+	return p.PrintRows([]string{"count", "pattern"}, rows)
+}
+
+// enrichQueryError attaches a local parse diagnosis (caret included) to a
+// server-side 400 when our parser also rejects the query. Advisory only:
+// the local grammar is narrower than the server's, so parse failures
+// never block a request — they just explain a rejection after the fact.
+func enrichQueryError(err error, where string) error {
+	var ce *clierr.Error
+	if where == "" || !errors.As(err, &ce) || ce.Code != "api_error" {
+		return err
+	}
+	if _, perr := query.Parse(where); perr != nil {
+		var pe *query.ParseError
+		if errors.As(perr, &pe) {
+			return ce.WithHint("Local query check: " + pe.Msg + "\n  " +
+				strings.ReplaceAll(pe.Caret(where), "\n", "\n  "))
+		}
+	}
+	return err
 }

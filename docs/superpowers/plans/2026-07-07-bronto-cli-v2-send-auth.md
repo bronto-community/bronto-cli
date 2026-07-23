@@ -1133,4 +1133,3 @@ echo '{"message":"hi","level":"info"}' | ./bronto send -d test --api-key <key>
 ```
 
 Manual acceptance: send ships batches with gzip and prints a summary; structured stdin passes through; auth login round-trips a real key into the OS keychain and `bronto ping` works with no env vars set; `auth logout` removes it.
-
