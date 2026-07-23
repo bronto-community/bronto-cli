@@ -33,6 +33,13 @@ cosign verify-blob \
 sha256sum --check --ignore-missing checksums.txt
 ```
 
+Release archives and packages also carry signed [SLSA build provenance](https://slsa.dev/).
+Verify that an artifact was built by this repo's release workflow with:
+
+```sh
+gh attestation verify bronto_<version>_<os>_<arch>.tar.gz --repo bronto-community/bronto-cli
+```
+
 SPDX SBOMs for every archive are attached to each release; container images
 on ghcr.io carry provenance and SBOM attestations.
 
