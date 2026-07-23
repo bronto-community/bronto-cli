@@ -309,3 +309,50 @@ func TestErrorFromStatusMessageExtraction(t *testing.T) {
 		}
 	})
 }
+
+// TestIdempotentHintRetriesPOST pins the search-retry contract: a POST
+// carrying the hint retries on 429 (with the hint header stripped from
+// the wire); an unmarked POST does not retry.
+func TestIdempotentHintRetriesPOST(t *testing.T) {
+	calls := 0
+	sawHint := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.Header.Get(IdempotentHint) != "" {
+			sawHint = true
+		}
+		if calls == 1 {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	client := &http.Client{Transport: &Transport{APIKey: "k", UserAgent: "t", MaxRetries: 2, Sleep: func(time.Duration) {}}}
+	req, _ := http.NewRequest(http.MethodPost, srv.URL, strings.NewReader(`{"q":1}`))
+	req.Header.Set(IdempotentHint, "true")
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != 200 || calls != 2 {
+		t.Fatalf("status=%d calls=%d, want retried success", resp.StatusCode, calls)
+	}
+	if sawHint {
+		t.Fatal("internal hint header must not reach the wire")
+	}
+
+	// unmarked POST: no retry
+	calls = 0
+	req2, _ := http.NewRequest(http.MethodPost, srv.URL, strings.NewReader(`{}`))
+	resp2, err := client.Do(req2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp2.Body.Close()
+	if calls != 1 || resp2.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("unmarked POST must not retry: calls=%d status=%d", calls, resp2.StatusCode)
+	}
+}

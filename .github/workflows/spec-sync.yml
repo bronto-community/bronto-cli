@@ -21,6 +21,11 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Fetch upstream spec
@@ -47,9 +52,9 @@ jobs:
       - name: Build change digest (oasdiff)
         if: steps.compare.outputs.changed == 'true'
         env:
-          # setup-go@v7 pins GOTOOLCHAIN=local, which makes `go run
-          # oasdiff@latest` fail outright when oasdiff requires a newer Go
-          # than go.mod's (seen in #10: "requires go >= 1.26 (running go
+          # setup-go@v7 pins GOTOOLCHAIN=local, which makes `go run` of a
+          # newer oasdiff fail outright when it requires a newer Go than
+          # go.mod's (seen in #10: "requires go >= 1.26 (running go
           # 1.25.0; GOTOOLCHAIN=local)" and an empty digest). auto restores
           # the toolchain auto-switch for this step only.
           GOTOOLCHAIN: auto
@@ -58,9 +63,9 @@ jobs:
           # the report — it used to fill the issue with "go: downloading"
           # noise. Both commands are best-effort: spec-digest.sh degrades
           # gracefully on missing/invalid JSON.
-          go run github.com/oasdiff/oasdiff@latest diff api/openapi.yaml /tmp/upstream.yaml -f json \
+          go run github.com/oasdiff/oasdiff@v1.25.1 diff api/openapi.yaml /tmp/upstream.yaml -f json \
             > /tmp/oasdiff-diff.json 2> /tmp/oasdiff-stderr.log || true
-          go run github.com/oasdiff/oasdiff@latest breaking api/openapi.yaml /tmp/upstream.yaml -f json \
+          go run github.com/oasdiff/oasdiff@v1.25.1 breaking api/openapi.yaml /tmp/upstream.yaml -f json \
             > /tmp/oasdiff-breaking.json 2>> /tmp/oasdiff-stderr.log || true
           # CLI endpoint inventory: lets the digest classify spec changes
           # by impact on bronto commands (new-and-uncovered / removed-but-
@@ -110,7 +115,7 @@ jobs:
             printf 'To re-vendor:\n\n'
             printf -- '- [ ] Download the upstream spec over `api/openapi.yaml`\n'
             printf -- '- [ ] Re-apply the hand patches (`grep -n "bronto-cli vendor patch" git history / previous spec`)\n'
-            printf -- '- [ ] `make generate && go test ./...` (resource conformance test guards drift)\n'
+            printf -- '- [ ] `make spec-baseline && go test ./...` (records the new vendored digest; the resource conformance test guards drift)\n'
             printf -- '- [ ] Update `api/upstream.sha256` to `%s <date>`\n\n' "$UPSTREAM_SHA"
             cat /tmp/oasdiff.md
           } > /tmp/issue-body.md

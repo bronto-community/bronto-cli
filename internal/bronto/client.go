@@ -34,6 +34,11 @@ func (c *Client) Search(ctx context.Context, req SearchRequest) (*SearchResponse
 		return nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+	// Search is a read: mark it retry-safe so transient 429s (rate
+	// limits) and 5xx blips retry with backoff instead of killing a tail
+	// mid-stream. NewRequest with a bytes.Reader sets GetBody, so the
+	// transport can replay the payload.
+	httpReq.Header.Set(api.IdempotentHint, "true")
 	var out SearchResponse
 	if err := c.do(httpReq, &out); err != nil {
 		return nil, err

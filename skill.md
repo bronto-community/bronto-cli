@@ -38,7 +38,7 @@ Agent-critical flags (global): `--dry-run` prints any mutating call as a plan do
 
 ## Machine-output contract
 
-- Output to a non-TTY (piped/redirected) defaults to JSONL, one JSON object per line — no flag needed.
+- Streaming commands (`search`, `tail`, `traces`) piped to a non-TTY default to JSONL, one JSON object per line — no flag needed. Every other command (resource `list`/`get`, `usage`, `config list`, …) piped emits a single pretty-printed JSON document (usually an array) — parse it whole, not line-by-line; pass `-o jsonl` if you want line-delimited rows.
 - Force a format with `-o json|jsonl|raw|csv|table`.
 - `--jq '<expr>'` runs a jq expression over json/jsonl output, one result per line. Deviation from the `jq` CLI: a value that errors or halts on the expression is silently **skipped**, not a fatal abort — every other row still prints.
 - `--fields a,b,c` narrows output to those columns/keys; `--fields ?` lists the field names available instead of the data. Only works with table/json/jsonl/csv; `-o raw` and custom TTY renderers (`traces show`, `traces shape`) reject `--fields` with a usage error pointing at a machine format.
@@ -67,13 +67,19 @@ bronto <resource> update <id-or-name> -f key=value
 bronto <resource> delete <id-or-name> --yes              # --yes skips the confirmation prompt
 ```
 
+Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `exports`.
+
 A unique name resolves anywhere an id is accepted (users match by email; datasets support `collection/name`). Ambiguous names error with the candidate ids.
 
-Extras beyond the uniform pattern: `monitors events|mute`, `users deactivate|reactivate|resend-invite`, `groups members`.
+Extras beyond the uniform pattern: `monitors events|mute|check` (`check --input monitor.json` lints definitions — query syntax, window bounds, dataset existence — with non-zero exit for CI), `users deactivate|reactivate|resend-invite`, `groups members`.
 
 ## Utility commands
 
 `bronto ping` (reachability + latency), `bronto version` (`-o json` for machine parsing), `bronto config list` (resolved config with provenance), `bronto usage --since 7d` (ingestion/search volume).
+
+## Query validation
+
+`bronto query check "<expr>"` validates syntax client-side (caret-positioned errors) and, with `-d <dataset>`, warns on fields not seen recently (did-you-mean included); `--strict` makes unknown fields fatal for CI. Server 400s on searches automatically carry the same local diagnosis when applicable.
 
 ## Escape hatch
 
