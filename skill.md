@@ -26,7 +26,7 @@ bronto fields -d <dataset> --since 1h
 bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
 ```
 
-`search` runs a one-shot query. `tail` polls and follows new events. `traces` has subcommands (`list`, `show`, `services`, `operations`, `aggregate`, `shape`) over the `.traces` logset. `send` posts one event (`-m`) or streams NDJSON/text lines from stdin. `fields` discovers top-level keys in a dataset. `context` shows events around a specific anchor event.
+`search` runs a one-shot query (`--patterns` clusters matches into drain-style templates with counts — the fastest firehose summary; `--histogram` prints a time distribution of matches instead of events; `--saved <name>` runs a stored saved-search; `--url`/`--open` emit a web-UI deep link instead of executing — the link targets your active org, resolved from the API or the `org_id`/`BRONTO_ORG_ID` config). `tail` polls and follows new events (severity is auto-colored: errors red, warns yellow; `--include 'field~regex'` scopes a filter to one field; `--fields a,b` renders only those fields; with `--select`/`-g` it switches to aggregate mode — the same group-by re-run every `--interval` and redrawn in place at a TTY as a live dashboard with a TREND sparkline, one JSONL snapshot per tick when piped, `--select` defaulting to `count(*)`). `traces` has subcommands (`list`, `show`, `services`, `operations`, `aggregate`, `shape`) over the `.traces` logset. `send` posts one event (`-m`) or streams NDJSON/text lines from stdin. `fields` discovers top-level keys in a dataset. `context` shows events around a specific anchor event.
 
 `-d`/`--dataset` accepts a dataset **name** or UUID everywhere; a name duplicated across collections is qualified as `collection/name` (e.g. `-d prod/api-logs`). With one dataset in the account it is auto-picked; with several, the error lists them.
 
@@ -35,13 +35,20 @@ Agent-critical flags (global): `--dry-run` prints any mutating call as a plan do
 ## Offline mode
 
 `bronto search --local <file|-> "<query>"` evaluates the query client-side over local NDJSON or plain text (downloaded exports, `kubectl logs` dumps) — no server, no auth needed. JSON lines are queryable by their (dotted) keys; plain lines match via `@raw ~ 'regex'`. Composes with `-o`, `--fields`, `--jq`, and `-n`; dataset/time-range/select/group flags don't apply and are rejected.
+## Interactive REPL
+
+`bronto repl -d <dataset>` opens a psql-style prompt for iterative investigation (TTY only — piped invocations are refused with exit 2). Type a WHERE expression to run it; `\since <dur>` and `\d <dataset>` change window/dataset, `\more` pages, `\fields` lists keys, `\tail` follows live until Ctrl-C, `\q` quits. Line history persists across sessions in the config dir.
+
+## Ask (LLM-assisted)
+
+`bronto ask "<question>"` translates natural language into a search using a user-configured OpenAI-compatible endpoint (`bronto config set ask_url <chat-completions URL>`, optional `ask_model`, key via `BRONTO_ASK_API_KEY` env — never the config file). The generated command and its reasoning print BEFORE anything runs; a TTY confirms `[Y/n]`, `--yes` runs immediately, and machine formats without `--yes` emit the plan as JSON instead of executing. Only the question plus dataset/field names are sent to the endpoint — never event data, never the Bronto API key.
 
 ## Machine-output contract
 
-- Output to a non-TTY (piped/redirected) defaults to JSONL, one JSON object per line — no flag needed.
+- Streaming commands (`search`, `tail`, `traces`) piped to a non-TTY default to JSONL, one JSON object per line — no flag needed. Every other command (resource `list`/`get`, `usage`, `config list`, …) piped emits a single pretty-printed JSON document (usually an array) — parse it whole, not line-by-line; pass `-o jsonl` if you want line-delimited rows.
 - Force a format with `-o json|jsonl|raw|csv|table`.
 - `--jq '<expr>'` runs a jq expression over json/jsonl output, one result per line. Deviation from the `jq` CLI: a value that errors or halts on the expression is silently **skipped**, not a fatal abort — every other row still prints.
-- `--fields a,b,c` narrows output to those columns/keys; `--fields ?` lists the field names available instead of the data. Only works with table/json/jsonl/csv; `-o raw` and custom TTY renderers (`traces show`, `traces shape`) reject `--fields` with a usage error pointing at a machine format.
+- `--fields a,b,c` narrows output to those columns/keys; `--fields ?` lists the field names available instead of the data. Works with json/jsonl/csv, table for resource lists, and `tail`'s table view (klp-style projection). `-o raw` and the custom trace renderers (`traces show`, `traces shape`) reject `--fields`; `--fields ?` (name listing) needs a machine format like `-o jsonl` for the streaming views (`tail`, `traces`).
 - Errors go to stderr. In machine mode (non-TTY stderr) they're a stable JSON envelope: `{"error":{"code":"...","message":"...","retryable":true|false,"hint":"..."}}` (`hint` present only when there is remediation advice).
 - Numbers are lossless: 64-bit ids (e.g. `metadata.sequence`) survive json/jsonl/`--jq` byte-exact.
 - Exit codes:
@@ -67,7 +74,11 @@ bronto <resource> update <id-or-name> -f key=value
 bronto <resource> delete <id-or-name> --yes              # --yes skips the confirmation prompt
 ```
 
+Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `exports`.
+
 A unique name resolves anywhere an id is accepted (users match by email; datasets support `collection/name`). Ambiguous names error with the candidate ids.
+
+`api-keys list` masks key material in **every** format (including json/jsonl) by default so keys don't leak into pipelines or CI logs; pass `--reveal` for the full values.
 
 Extras beyond the uniform pattern: `monitors events|mute|check` (`check --input monitor.json` lints definitions — query syntax, window bounds, dataset existence — with non-zero exit for CI), `users deactivate|reactivate|resend-invite`, `groups members`.
 
@@ -90,7 +101,7 @@ bronto exports create --dataset <dataset> --since 1h --where "status=500" --wait
 bronto exports create --dataset <dataset> --since 1h --download out.json.gz
 ```
 
-`--wait` polls until the export is `COMPLETE`/`FAILED`; `--download <path>` implies `--wait` and saves the result.
+`--wait` polls until the export is `COMPLETE`/`FAILED`, giving up after `--wait-timeout` (default 15m) with a non-zero `export_wait_timeout` exit; `--download <path>` implies `--wait` and saves the result.
 
 ## Plugins
 

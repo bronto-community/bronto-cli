@@ -61,6 +61,12 @@ type resourceDesc struct {
 	// IDKey is the list-row field carrying the resource id when it is not
 	// plain "id" (e.g. groups' group_id, datasets' log_id).
 	IDKey string
+
+	// SecretKeys are list-row fields holding key material that must be
+	// masked in EVERY output format by default (json/jsonl are the piped/CI
+	// default, so verbatim keys land in build logs). When set, `list` gains
+	// a --reveal flag to opt back into full values.
+	SecretKeys []string
 }
 
 func (d resourceDesc) nameKeys() []string {
@@ -135,9 +141,11 @@ var resourceRegistry = []resourceDesc{
 	{Name: "parsers", Base: "/parsers", NoGet: true,
 		Columns: []string{"name", "description", "type", "enabled", "created", "id"}},
 	{Name: "api-keys", Base: "/api-keys", Singular: "API key", NoGet: true,
-		// api_key is masked by resourceListPolish — full key material was
-		// rendering into terminals/scrollback via the auto columns.
-		Columns: []string{"name", "api_key", "created", "id"}},
+		// Key material is masked in every format by default (SecretKeys);
+		// --reveal opts back in. Full keys were rendering into terminals,
+		// scrollback, and — via the json/jsonl piped default — build logs.
+		SecretKeys: []string{"api_key", "key"},
+		Columns:    []string{"name", "api_key", "created", "id"}},
 	{Name: "datasets", Base: "/logs", CreatePath: "/datasets", UpdateMethod: http.MethodPut,
 		// The raw /logs rows are unreadable as a table (duplicate name
 		// fields, a metadata blob with epoch floats); curate the human
@@ -414,7 +422,7 @@ func firstWord(use string) string {
 }
 
 func newResourceListCmd(desc resourceDesc) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "list",
 		Short:   fmt.Sprintf("List %s", desc.Name),
 		Example: fmt.Sprintf("  bronto %s list", desc.display()),
@@ -433,6 +441,13 @@ func newResourceListCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// Mask secret material in ALL formats (json/jsonl are the piped
+			// default) unless the user explicitly asked to reveal it.
+			if len(desc.SecretKeys) > 0 {
+				if reveal, _ := cmd.Flags().GetBool("reveal"); !reveal {
+					maskSecretRows(rows, desc.SecretKeys)
+				}
+			}
 			if format == output.FormatTable || format == output.FormatCSV {
 				rows = resourceListPolish(rows, format)
 				if desc.ListTransform != nil {
@@ -445,6 +460,24 @@ func newResourceListCmd(desc resourceDesc) *cobra.Command {
 			}
 			return p.PrintRows(columnsFor(desc, rows), rows)
 		},
+	}
+	if len(desc.SecretKeys) > 0 {
+		cmd.Flags().Bool("reveal", false, "show full secret values instead of masking them")
+	}
+	return cmd
+}
+
+// maskSecretRows masks the given secret-bearing keys in every row using the
+// rune-safe maskSecret (short values reveal nothing). Applied before
+// rendering in any format so key material never lands verbatim in json/
+// jsonl output — the piped/CI default, i.e. build logs.
+func maskSecretRows(rows []map[string]any, keys []string) {
+	for _, row := range rows {
+		for _, k := range keys {
+			if s, ok := row[k].(string); ok && s != "" {
+				row[k] = maskSecret(s)
+			}
+		}
 	}
 }
 
