@@ -92,7 +92,7 @@ bronto exports create --dataset <dataset> --since 1h --where "status=500" --wait
 bronto exports create --dataset <dataset> --since 1h --download out.json.gz
 ```
 
-`--wait` polls until the export is `COMPLETE`/`FAILED`; `--download <path>` implies `--wait` and saves the result.
+`--wait` polls until the export is `COMPLETE`/`FAILED`, giving up after `--wait-timeout` (default 15m) with a non-zero `export_wait_timeout` exit; `--download <path>` implies `--wait` and saves the result.
 
 ## Plugins
 
