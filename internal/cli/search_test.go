@@ -276,6 +276,91 @@ func TestSearchSavedRunsStoredQuery(t *testing.T) {
 	}
 }
 
+// TestSearchURLFlag pins --url: prints the web link, never runs the query.
+// TestSearchURLFlag pins the deep-link format against the real UI route
+// (verified 2026-07-23): /org/<id>/search with camelCase timeRange,
+// plural logIds, select=*,@raw, and list-view display defaults.
+func TestSearchURLFlag(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	t.Setenv("BRONTO_ORG_ID", "org-123") // skip the /organizations lookup for the shape assertions
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/search" {
+			t.Error("--url must not run the search")
+		}
+	}))
+	defer srv.Close()
+
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "status >= 500", "-d", "11111111-1111-1111-1111-111111111111",
+		"--since", "1h", "--url", "--api-key", "k", "--base-url", srv.URL})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	u := strings.TrimSpace(out.String())
+	if !strings.HasPrefix(u, "https://app.eu.bronto.io/org/org-123/search?") {
+		t.Fatalf("url = %q", u)
+	}
+	for _, want := range []string{
+		"where=status+%3E%3D+500",
+		"timeRange=Last+1+hour",
+		"logIds=11111111-1111-1111-1111-111111111111",
+		"select=%2A%2C%40raw", // *,@raw
+		"display=list",
+		"order=newest",
+	} {
+		if !strings.Contains(u, want) {
+			t.Fatalf("url missing %q: %q", want, u)
+		}
+	}
+
+	// app_url override wins (host swapped, /org/<id>/search path preserved)
+	t.Setenv("BRONTO_APP_URL", "https://staging.ui.example/")
+	root = NewRootCmd()
+	out.Reset()
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "x", "-d", "11111111-1111-1111-1111-111111111111",
+		"--since", "1h", "--url", "--api-key", "k", "--base-url", srv.URL})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(strings.TrimSpace(out.String()), "https://staging.ui.example/org/org-123/search?") {
+		t.Fatalf("app_url override ignored: %q", out.String())
+	}
+}
+
+// TestSearchURLResolvesActiveOrg pins the org-id fallback: with no
+// org_id configured, the link uses the active org from GET /organizations.
+func TestSearchURLResolvesActiveOrg(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/search":
+			t.Error("--url must not run the search")
+		case "/organizations":
+			_, _ = w.Write([]byte(`{"organisations":[{"id":"inactive-1","active":false},{"id":"active-9","active":true}]}`))
+		default:
+			t.Errorf("unexpected path %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "x", "-d", "11111111-1111-1111-1111-111111111111",
+		"--since", "1h", "--url", "--api-key", "k", "--base-url", srv.URL})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "/org/active-9/search?") {
+		t.Fatalf("should pick the active org: %q", out.String())
+	}
+}
+
 func TestSearchPatterns(t *testing.T) {
 	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

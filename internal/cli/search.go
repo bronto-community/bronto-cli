@@ -7,6 +7,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os/exec"
+	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -22,6 +25,8 @@ import (
 func newSearchCmd() *cobra.Command {
 	var (
 		saved           string
+		printURL        bool
+		openURL         bool
 		showPatterns    bool
 		datasets        []string
 		fromExpr        string
@@ -106,6 +111,20 @@ func newSearchCmd() *cobra.Command {
 			if len(effSelect) == 0 && len(groups) == 0 && !explainOnly {
 				effSelect = []string{"@time", "@raw"}
 			}
+			if printURL || openURL {
+				u, err := searchWebURL(cmd.Context(), app, ids, expr, where, spec)
+				if err != nil {
+					return err
+				}
+				if printURL {
+					_, err := fmt.Fprintln(app.Stdout, u)
+					return err
+				}
+				if !app.Quiet {
+					_, _ = fmt.Fprintf(app.Stderr, "Opening %s in your browser.\n", u)
+				}
+				return browserOpen(u)
+			}
 			req := bronto.SearchRequest{
 				From: ids, FromExpr: expr, Time: spec, Where: where,
 				Select: effSelect, Groups: groups, Limit: limit, Slices: slices,
@@ -171,6 +190,8 @@ func newSearchCmd() *cobra.Command {
 	}
 	f := cmd.Flags()
 	f.StringVar(&saved, "saved", "", "run a saved search by name or id (explicit query/dataset/time flags override its stored values)")
+	f.BoolVar(&printURL, "url", false, "print a web-UI link for this query instead of running it")
+	f.BoolVar(&openURL, "open", false, "open this query in the web UI instead of running it")
 	f.StringArrayVarP(&datasets, "dataset", "d", nil, "dataset name or UUID to search (repeatable)")
 	f.StringVar(&fromExpr, "from-expr", "", "dataset selector expression, e.g. \"log_id = '<uuid>'\"")
 	f.StringVar(&since, "since", "", "relative lookback: 30s, 15m, 1h, 2d, 1w, 1h30m")
@@ -270,6 +291,102 @@ func loadSavedSearch(ctx context.Context, app *App, ref string) (savedSearchDeta
 	}
 	tr, _ := sd["time_range"].(string)
 	return out, tr, nil
+}
+
+// searchWebURL renders the query + scope + timerange as a web-app deep
+// link that matches the live UI's own /org/<id>/search route (verified
+// against real links 2026-07-23). The app host derives from the region
+// (app.<region>.bronto.io) unless app_url / BRONTO_APP_URL overrides it;
+// the org id comes from org_id / BRONTO_ORG_ID, else the active org from
+// GET /organizations.
+func searchWebURL(ctx context.Context, app *App, ids []string, fromExpr, where string, spec timerange.Spec) (string, error) {
+	base := ""
+	if v, ok := app.Config.Get("app_url"); ok && v.Val != "" {
+		base = strings.TrimRight(v.Val, "/")
+	} else {
+		region := "eu"
+		if v, ok := app.Config.Get("region"); ok && v.Val != "" {
+			region = v.Val
+		}
+		base = "https://app." + region + ".bronto.io"
+	}
+	orgID, err := resolveOrgID(ctx, app)
+	if err != nil {
+		return "", err
+	}
+
+	// Param names/shape match the UI: camelCase timeRange, plural logIds,
+	// a default select and list-view display so the link lands like a
+	// fresh search. where is always present (the UI keeps it, even empty).
+	params := url.Values{}
+	params.Set("display", "list")
+	params.Set("groupsSort", "desc")
+	params.Set("groupsSortBy", "value")
+	params.Set("order", "newest")
+	params.Set("select", "*,@raw")
+	params.Set("where", where)
+	if len(ids) > 0 {
+		params.Set("logIds", strings.Join(ids, ","))
+	}
+	if fromExpr != "" {
+		// The UI addresses datasets by id; a from-expr selector has no URL
+		// form, so carry it in where-adjacent context isn't possible —
+		// surface it so the link isn't silently narrower than intended.
+		params.Set("fromExpr", fromExpr)
+	}
+	switch {
+	case spec.TimeRange != "":
+		params.Set("timeRange", spec.TimeRange)
+	case spec.FromTs > 0 || spec.ToTs > 0:
+		params.Set("fromTs", strconv.FormatInt(spec.FromTs, 10))
+		params.Set("toTs", strconv.FormatInt(spec.ToTs, 10))
+	}
+	return base + "/org/" + orgID + "/search?" + params.Encode(), nil
+}
+
+// resolveOrgID returns the org id for deep links: the org_id config
+// override if set, otherwise the active organization from
+// GET /organizations (cached for the process).
+func resolveOrgID(ctx context.Context, app *App) (string, error) {
+	if v, ok := app.Config.Get("org_id"); ok && v.Val != "" {
+		return v.Val, nil
+	}
+	payload, err := doJSONRequest(ctx, app, http.MethodGet, "/organizations", nil)
+	if err != nil {
+		return "", err
+	}
+	obj, _ := payload.(map[string]any)
+	orgs, _ := obj["organisations"].([]any) // note: British spelling on the wire
+	var first string
+	for _, o := range orgs {
+		m, _ := o.(map[string]any)
+		id, _ := m["id"].(string)
+		if id == "" {
+			continue
+		}
+		if first == "" {
+			first = id
+		}
+		if active, _ := m["active"].(bool); active {
+			return id, nil
+		}
+	}
+	if first != "" {
+		return first, nil
+	}
+	return "", clierr.New("org_not_found",
+		"could not determine the active organization for the deep link").
+		WithHint("Set it explicitly with 'bronto config set org_id <uuid>' (find it in the web-app URL).")
+}
+
+// browserOpen launches the platform browser opener. Seam for tests.
+var browserOpen = func(u string) error {
+	cmd := "xdg-open"
+	if runtime.GOOS == "darwin" {
+		cmd = "open"
+	}
+	c := exec.Command(cmd, u) // #nosec G204 -- fixed opener binary, URL built by us
+	return c.Start()
 }
 
 // printPatterns clusters the fetched events' raw lines into templates.
