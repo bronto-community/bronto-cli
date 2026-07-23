@@ -151,6 +151,7 @@ Piped to a non-TTY, the streaming commands (`search`, `tail`, `traces`) default 
 bronto search "status >= 500" --since 1h --jq '.message' | wc -l
 bronto search "" -d api-logs --since 1h --patterns  # cluster the firehose into templates
 bronto query check "stauts >= 500" -d api-logs      # catches the typo before the server does
+bronto tail "" --include 'gateway~stripe' --fields @time,level,message
 bronto datasets list --fields log,log_id
 bronto datasets list --fields '?'          # list available field names instead of data
 ```
