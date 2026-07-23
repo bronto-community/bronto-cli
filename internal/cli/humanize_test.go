@@ -156,14 +156,10 @@ func TestCollectionListRows(t *testing.T) {
 func TestResourceListPolish(t *testing.T) {
 	ms := float64(time.Now().Add(-2 * time.Hour).UnixMilli())
 	rows := resourceListPolish([]map[string]any{{
-		"api_key":    "575731cd-7468-426b-a80c-997523507b05",
 		"invited_at": ms,
 		"metadata":   map[string]any{"created_at": ms, "modified_at": ms},
 		"name":       "x",
 	}}, output.FormatTable)
-	if rows[0]["api_key"] != "575731cd…" {
-		t.Fatalf("api_key must be masked in the human view: %v", rows[0]["api_key"])
-	}
 	if rows[0]["invited_at"] != "2h ago" {
 		t.Fatalf("invited_at = %v, want humanized", rows[0]["invited_at"])
 	}
@@ -171,16 +167,32 @@ func TestResourceListPolish(t *testing.T) {
 		t.Fatalf("metadata provenance not derived: %v", rows[0])
 	}
 
-	// CSV: absolute timestamps, key still masked.
+	// CSV: absolute timestamps.
 	csvRows := resourceListPolish([]map[string]any{{
-		"api_key":  "575731cd-7468-426b-a80c-997523507b05",
 		"metadata": map[string]any{"created_at": float64(1751364000000)},
 	}}, output.FormatCSV)
 	if got, _ := csvRows[0]["created"].(string); !strings.HasSuffix(got, "Z") {
 		t.Fatalf("csv created = %v, want RFC3339", csvRows[0]["created"])
 	}
-	if csvRows[0]["api_key"] != "575731cd…" {
-		t.Fatalf("csv api_key must be masked too: %v", csvRows[0]["api_key"])
+}
+
+// TestMaskSecretRows pins the format-independent secret masking now applied
+// before rendering (moved out of resourceListPolish so it covers json/jsonl
+// too). Long values keep a short prefix; short ones reveal nothing.
+func TestMaskSecretRows(t *testing.T) {
+	rows := []map[string]any{
+		{"api_key": "575731cd-7468-426b-a80c-997523507b05", "name": "x"},
+		{"key": "short", "name": "y"}, // < 12 runes: reveals nothing
+	}
+	maskSecretRows(rows, []string{"api_key", "key"})
+	if rows[0]["api_key"] != "575731cd…" {
+		t.Fatalf("long key mask = %v, want 575731cd…", rows[0]["api_key"])
+	}
+	if rows[1]["key"] != "…" {
+		t.Fatalf("short key mask = %v, want …", rows[1]["key"])
+	}
+	if rows[0]["name"] != "x" {
+		t.Fatalf("non-secret field must be untouched: %v", rows[0]["name"])
 	}
 }
 
