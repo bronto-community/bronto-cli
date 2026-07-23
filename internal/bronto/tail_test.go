@@ -131,3 +131,26 @@ func TestSortEventsNumericTimestamps(t *testing.T) {
 		t.Fatalf("numeric @time mis-sorted: %v", evs)
 	}
 }
+
+func TestTailFilterFieldRules(t *testing.T) {
+	f := TailFilter{
+		IncludeFields: []FieldRule{{Field: "gateway", Re: regexp.MustCompile("stripe")}},
+		ExcludeFields: []FieldRule{{Field: "path", Re: regexp.MustCompile("health")}},
+	}
+	if !f.MatchEvent(map[string]any{"gateway": "stripe", "path": "/checkout"}, "raw") {
+		t.Fatal("matching include-field must pass")
+	}
+	if f.MatchEvent(map[string]any{"gateway": "adyen"}, "raw") {
+		t.Fatal("non-matching include-field must fail")
+	}
+	if f.MatchEvent(map[string]any{}, "raw") {
+		t.Fatal("absent include-field must fail")
+	}
+	if f.MatchEvent(map[string]any{"gateway": "stripe", "path": "/healthz"}, "raw") {
+		t.Fatal("matching exclude-field must fail")
+	}
+	got := f.Fields()
+	if len(got) != 2 || got[0] != "gateway" || got[1] != "path" {
+		t.Fatalf("Fields() = %v", got)
+	}
+}

@@ -2438,4 +2438,3 @@ BRONTO_API_KEY=<key> ./bronto traces shape -s <service> --sample 10
 ```
 
 Manual acceptance: services/operations render merged aggregate tables; `show` draws an indented waterfall with clamped bars and error markers; `shape` draws the merged waterfall with █/▒/· glyphs and k/N presence; all six emit clean structured rows when piped.
-

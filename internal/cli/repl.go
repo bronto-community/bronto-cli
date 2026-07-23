@@ -490,7 +490,7 @@ func (s *replSession) tail() error {
 		}
 		bronto.SortEvents(fresh)
 		for _, ev := range fresh {
-			_, _ = fmt.Fprintln(s.app.Stdout, renderTailLine(ev, fmt.Sprint(ev["@raw"]), nil, s.app.Color))
+			_, _ = fmt.Fprintln(s.app.Stdout, renderTailLine(ev, fmt.Sprint(ev["@raw"]), nil, s.app.Color, nil))
 		}
 		select {
 		case <-ctx.Done():

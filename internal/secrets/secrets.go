@@ -122,27 +122,55 @@ func readFileMap() (map[string]string, string, error) {
 	return m, path, nil
 }
 
+// renameFile is the commit step of the atomic credentials write, injectable
+// so tests can simulate a crash between writing the temp file and swapping
+// it into place.
+var renameFile = os.Rename
+
+// writeCredentials writes b to path atomically: a 0600 temp file in the
+// same directory, fsync-free, swapped in with a single rename. This means
+// the credentials file is only ever the complete old content or the
+// complete new content — a crash mid-write can't truncate it (dropping
+// every other profile's key), and the new bytes are never briefly readable
+// at looser permissions. 2026-07-23 audit.
+func writeCredentials(path string, b []byte) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(dir, ".credentials-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	// Best-effort cleanup: a no-op after a successful rename (the temp no
+	// longer exists), the safety net on any failure before/at the rename.
+	defer func() { _ = os.Remove(tmpName) }()
+	if err := tmp.Chmod(0o600); err != nil { // guarantee 0600 before the secret lands
+		_ = tmp.Close()
+		return err
+	}
+	if _, err := tmp.Write(b); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return renameFile(tmpName, path)
+}
+
 func fileStore(account, key string) error {
 	m, path, err := readFileMap()
 	if err != nil {
 		return err
 	}
 	m[account] = key
-	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
-		return err
-	}
 	b, err := toml.Marshal(m)
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(path, b, 0o600); err != nil {
-		return err
-	}
-	// os.WriteFile only applies the given mode when creating a new file; an
-	// existing file keeps its prior (possibly looser) permissions. Repair
-	// that here so the credentials file is never left world/group readable.
-	_ = os.Chmod(path, 0o600)
-	return nil
+	return writeCredentials(path, b)
 }
 
 func fileGet(account string) (string, error) {
@@ -170,9 +198,5 @@ func fileDelete(account string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(path, b, 0o600); err != nil {
-		return err
-	}
-	_ = os.Chmod(path, 0o600)
-	return nil
+	return writeCredentials(path, b)
 }

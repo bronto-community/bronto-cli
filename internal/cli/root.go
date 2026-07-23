@@ -58,10 +58,15 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newFieldsCmd())
 	cmd.AddCommand(newTailCmd())
 	cmd.AddCommand(newReplCmd())
+	cmd.AddCommand(newAskCmd())
 	cmd.AddCommand(newTracesCmd())
 	cmd.AddCommand(newSendCmd())
 	cmd.AddCommand(newUsageCmd())
+	cmd.AddCommand(newQueryCmd())
 	cmd.AddCommand(newPluginsCmd())
+	cmd.AddCommand(newGrazeCmd())
+	cmd.AddCommand(newHerdCmd())
+	cmd.AddCommand(newRumbleCmd())
 
 	topLevel := map[string]*cobra.Command{}
 	for _, d := range resourceRegistry {
@@ -71,7 +76,7 @@ func NewRootCmd() *cobra.Command {
 		var rc *cobra.Command
 		switch d.Name {
 		case "monitors":
-			rc = newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd())
+			rc = newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd(), newMonitorCheckCmd())
 		case "exports":
 			rc = newResourceCmd(d, newExportsCreateCmd())
 		case "users":

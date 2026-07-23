@@ -40,6 +40,7 @@ archives:
       {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
     files:
       - LICENSE
+      - TRADEMARK.md
       - README.md
       - skill.md
       - llms.txt
@@ -114,6 +115,8 @@ nfpms:
         dst: /usr/share/fish/vendor_completions.d/bronto.fish
       - src: LICENSE
         dst: /usr/share/doc/bronto/LICENSE
+      - src: TRADEMARK.md
+        dst: /usr/share/doc/bronto/TRADEMARK.md
 
 homebrew_casks:
   - name: bronto
@@ -128,12 +131,13 @@ homebrew_casks:
     repository:
       owner: bronto-community
       name: homebrew-tap
-    # Cross-repo pushes need a PAT (the default GITHUB_TOKEN cannot write to
-    # homebrew-tap). Flip to "auto" once the tap repo exists and a
-    # HOMEBREW_TAP_TOKEN secret is wired into release.yml.
-    skip_upload: true
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    # auto = publish on stable tags, skip on pre-releases. HOMEBREW_TAP_TOKEN
+    # is minted per-release from the Bronto Community Bot app in release.yml.
+    skip_upload: auto
     homepage: https://github.com/bronto-community/bronto-cli
-    description: Community CLI for the Bronto observability platform.
+    # No trailing period — brew style rejects it (tap CI runs brew style).
+    description: Community CLI for the Bronto observability platform
 
 release:
   github:

@@ -35,6 +35,11 @@ var ciResourceKinds = []string{"monitors", "dashboards", "saved-searches", "api-
 // monitors and api-keys respond with "id"; dashboards and saved-searches use
 // resource-specific id keys; datasets (`bronto datasets list`, which hits
 // GET /logs) respond with Log objects keyed by "log_id".
+//
+// The live API has been observed returning a plain "id" where the vendored
+// spec documents a per-kind key (see resources_crud_test.go's resourceID),
+// so staleResourceIDs treats these as the preferred key with "id" as the
+// fallback — the sweeper must find stale resources in either shape.
 var resourceIDKey = map[string]string{
 	"monitors":       "id",
 	"groups":         "id",
@@ -94,11 +99,16 @@ func isStaleCIResource(name string, now time.Time, maxAge time.Duration) bool {
 	return ok && age > maxAge
 }
 
-// staleResourceIDs returns the identifiers (looked up via idKey) of every
-// stale bronto-ci-* resource in rows, as decoded from a `bronto <kind> list
-// -o json` response. nameKey selects which field holds the bronto-ci-*
-// name to match against (see resourceNameKey/nameKeyFor: "name" for every
-// kind except datasets, which uses "log").
+// staleResourceIDs returns the identifiers of every stale bronto-ci-*
+// resource in rows, as decoded from a `bronto <kind> list -o json`
+// response. nameKey selects which field holds the bronto-ci-* name to
+// match against (see resourceNameKey/nameKeyFor: "name" for every kind
+// except datasets, which uses "log"). The id is looked up via idKey first
+// (the kind-specific key some kinds genuinely use, e.g. datasets' log_id),
+// falling back to plain "id" — the shape the live API actually returns for
+// dashboards and saved-searches. Without the fallback those kinds were
+// silently never swept: idKey missed, the row was skipped, and best-effort
+// semantics hid it forever (2026-07-23 audit).
 func staleResourceIDs(rows []map[string]any, idKey, nameKey string, now time.Time, maxAge time.Duration) []string {
 	var ids []string
 	for _, row := range rows {
@@ -106,7 +116,11 @@ func staleResourceIDs(rows []map[string]any, idKey, nameKey string, now time.Tim
 		if name == "" || !isStaleCIResource(name, now, maxAge) {
 			continue
 		}
-		if id, ok := row[idKey].(string); ok && id != "" {
+		id, _ := row[idKey].(string)
+		if id == "" {
+			id, _ = row["id"].(string)
+		}
+		if id != "" {
 			ids = append(ids, id)
 		}
 	}

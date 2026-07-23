@@ -107,3 +107,37 @@ func TestSinceOverflowErrors(t *testing.T) {
 		t.Fatal("compound overflow must error")
 	}
 }
+
+// TestSinceSilentDurationWrapErrors covers the window the ParseInt-based
+// guard above misses: values that fit in int64 but overflow time.Duration
+// (int64 nanoseconds, ~292y) once scaled/summed. Left unchecked these wrap
+// silently and produce a Spec with FromTs AFTER ToTs — a garbage range
+// sent straight to the API (2026-07-23 audit).
+func TestSinceSilentDurationWrapErrors(t *testing.T) {
+	// Compound (multi-token) values only: single-unit inputs take the
+	// "Last N <unit>" string path and never scale to nanoseconds, so they
+	// don't wrap. The compound path sums time.Durations and is where the
+	// overflow lives.
+	for _, in := range []string{
+		"300000000000h1m", // hour token scaled past MaxInt64 nanoseconds
+		"1m300000000000h", // same, order-independent
+		"9999999999w1d",   // week token overflows when scaled
+	} {
+		spec, err := Resolve(in, "", "", testNow)
+		if err == nil {
+			t.Errorf("Resolve(%q) = %+v, want an overflow error (silent wrap)", in, spec)
+		}
+	}
+}
+
+// TestValidCompoundRangeStaysOrdered pins the green side: a normal compound
+// still resolves to FromTs < ToTs.
+func TestValidCompoundRangeStaysOrdered(t *testing.T) {
+	spec, err := Resolve("1h30m", "", "", testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if spec.FromTs >= spec.ToTs {
+		t.Fatalf("FromTs >= ToTs: %+v", spec)
+	}
+}
