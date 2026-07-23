@@ -32,6 +32,10 @@ bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
 
 Agent-critical flags (global): `--dry-run` prints any mutating call as a plan document (`{"dry_run":true,"method":"POST","path":"/monitors","body":{…}}`) instead of executing — reads still run. `--debug` traces requests/responses on stderr (API key never printed). `--timeout <s>` and `--max-retries <n>` tune the HTTP client.
 
+## Interactive REPL
+
+`bronto repl -d <dataset>` opens a psql-style prompt for iterative investigation (TTY only — piped invocations are refused with exit 2). Type a WHERE expression to run it; `\since <dur>` and `\d <dataset>` change window/dataset, `\more` pages, `\fields` lists keys, `\tail` follows live until Ctrl-C, `\q` quits. Line history persists across sessions in the config dir.
+
 ## Ask (LLM-assisted)
 
 `bronto ask "<question>"` translates natural language into a search using a user-configured OpenAI-compatible endpoint (`bronto config set ask_url <chat-completions URL>`, optional `ask_model`, key via `BRONTO_ASK_API_KEY` env — never the config file). The generated command and its reasoning print BEFORE anything runs; a TTY confirms `[Y/n]`, `--yes` runs immediately, and machine formats without `--yes` emit the plan as JSON instead of executing. Only the question plus dataset/field names are sent to the endpoint — never event data, never the Bronto API key.

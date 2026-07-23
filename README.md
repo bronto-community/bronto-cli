@@ -86,6 +86,7 @@ bronto traces show <trace-id>
 bronto traces services --since 1h
 bronto fields -d <dataset> --since 1h
 bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
+bronto repl -d <dataset>                # interactive prompt: edit, rerun, narrow
 ```
 
 `traces` also has `list`, `operations`, `aggregate`, and `shape` subcommands over the `.traces` logset.
