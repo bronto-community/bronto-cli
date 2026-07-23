@@ -8,7 +8,8 @@ on:
 permissions:
   contents: write # create the GitHub Release + upload assets
   packages: write # push images to ghcr
-  id-token: write # cosign keyless signing (OIDC)
+  id-token: write # cosign keyless signing (OIDC) + provenance attestation
+  attestations: write # actions/attest-build-provenance stores signed SLSA provenance
 
 jobs:
   release:
@@ -83,6 +84,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ steps.tap-token.outputs.token }}
+
+      # Signed SLSA build provenance for every release archive/package.
+      # goreleaser's checksums.txt lists them all, so one attestation over
+      # the checksum file covers each artifact — the same
+      # verify-one-file-covers-all pattern as the cosign signature. Verify
+      # with: gh attestation verify <artifact> --repo bronto-community/bronto-cli
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-checksums: dist/checksums.txt
 
       - name: Stage docker build context
         # The image builds COPY these prebuilt binaries (goreleaser just
