@@ -179,11 +179,11 @@ Environment variables:
 | `BRONTO_INGEST_URL` | override the ingestion endpoint (`bronto send`) |
 | `BRONTO_CONFIG_DIR` | override the user config directory (parent of `bronto/config.toml`) |
 
-Config keys (settable via `bronto config set`, project `.bronto.toml`, or profile files — flags and env always win):
+Config keys (settable via `bronto config set`, project `.bronto.toml`, or profile files — flags and env always win; `base_url`/`ingest_url` are not project-file settable, see below):
 
 | Key | Env | Purpose | Default |
 |---|---|---|---|
-| `region` | `BRONTO_REGION` | `eu` or `us` | `eu` |
+| `region` | `BRONTO_REGION` | `eu` or `us` (a slug: lowercase letters, digits, dashes) | `eu` |
 | `base_url` | `BRONTO_BASE_URL` | full API base URL override (staging/localhost) | derived from region |
 | `output` | — | default output format | table (TTY); piped: jsonl (streaming cmds) / json (others) |
 | `default_dataset` | — | dataset name/UUID or `from_expr` used when `-d` is omitted | — |
@@ -193,6 +193,8 @@ Config keys (settable via `bronto config set`, project `.bronto.toml`, or profil
 | `profile` | `BRONTO_PROFILE` | named profile | `default` |
 
 `api_key` is deliberately **not** file-settable — keys live in the keychain or `BRONTO_API_KEY` only.
+
+For the same reason, **`base_url` and `ingest_url` cannot be set from a project `.bronto.toml`** — that file is discovered by walking up from the working directory, so an untrusted repo could otherwise redirect where your API key is sent. Set them via `bronto config set` (user config), `BRONTO_BASE_URL`/`BRONTO_INGEST_URL`, or `--base-url`. A project file may still set `region`, but only as a validated slug (it can't name an arbitrary host).
 
 ## Troubleshooting
 

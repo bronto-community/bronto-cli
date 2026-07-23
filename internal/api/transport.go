@@ -118,13 +118,36 @@ func computeRetryDelay(resp *http.Response, attempt int) time.Duration {
 
 func NewHTTPClient(apiKey, version string) *http.Client {
 	return &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout:       30 * time.Second,
+		CheckRedirect: refuseCrossHostRedirect,
 		Transport: &Transport{
 			APIKey:     apiKey,
 			UserAgent:  "bronto-cli/" + version,
 			MaxRetries: 2,
 		},
 	}
+}
+
+// refuseCrossHostRedirect stops the client before it follows a redirect to
+// a different host. The API key is attached per-hop inside
+// Transport.RoundTrip as the custom X-BRONTO-API-KEY header, which
+// net/http does NOT strip on cross-domain redirects (its stripping only
+// covers Authorization/Cookie/etc. set on the original request), so a
+// redirect to an attacker host would otherwise carry the key. Same-host
+// redirects (the only kind Bronto's API issues) still follow normally.
+// 2026-07-23 audit.
+func refuseCrossHostRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) == 0 {
+		return nil
+	}
+	if req.URL.Host != via[0].URL.Host {
+		return fmt.Errorf("refusing to follow cross-host redirect to %q (would leak the API key); "+
+			"if this endpoint is legitimate, set base_url to it directly", req.URL.Host)
+	}
+	if len(via) >= 10 {
+		return fmt.Errorf("stopped after 10 redirects")
+	}
+	return nil
 }
 
 // ErrorFromStatus maps a non-2xx API response to a typed error. Nil for 2xx.
