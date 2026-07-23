@@ -242,3 +242,23 @@ func TestTailRejectsNonStreamingFormats(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderTailLineLevelColor(t *testing.T) {
+	ev := map[string]any{"@time": "t1", "@status": "error", "@raw": "boom"}
+	line := renderTailLine(ev, "boom", nil, true)
+	if !strings.Contains(line, "\x1b[1;31mERROR\x1b[0m") {
+		t.Fatalf("error level must render red: %q", line)
+	}
+	if plain := renderTailLine(ev, "boom", nil, false); plain != "t1 error boom" {
+		t.Fatalf("plain line = %q", plain)
+	}
+}
+
+func TestLevelCellColor(t *testing.T) {
+	if levelCellColor("@status", "error") == "" || levelCellColor("level", "warn") == "" {
+		t.Fatal("severity columns must color")
+	}
+	if levelCellColor("name", "error") != "" {
+		t.Fatal("non-severity columns must not color")
+	}
+}
