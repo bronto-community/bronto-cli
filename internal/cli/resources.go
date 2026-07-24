@@ -134,6 +134,11 @@ var resourceRegistry = []resourceDesc{
 	{Name: "dashboards", Base: "/dashboards",
 		Columns:       []string{"name", "description", "widgets_count", "created", "id"},
 		ListTransform: dashboardListRows},
+	// updateWidget is PUT (204); get/delete are documented. A widget needs
+	// only `name`; metric_ids/widget_ids/aux go through -f as JSON literals
+	// or --input body.json (parseFieldArgs JSON-decodes -f values).
+	{Name: "widgets", Base: "/widgets", UpdateMethod: http.MethodPut,
+		Columns: []string{"name", "type", "description", "id"}},
 	{Name: "saved-searches", Base: "/saved-searches", Singular: "saved search",
 		Columns: []string{"name", "description", "created", "id"}},
 	// The vendored spec has no GET /parsers/{parser_id}: only patch and

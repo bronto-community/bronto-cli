@@ -66,7 +66,7 @@ Agent-critical flags (global): `--dry-run` prints any mutating call as a plan do
 
 ## Resource commands
 
-Resources (`datasets`, `monitors` — plus nested `monitors templates` and `monitors downtimes` — `dashboards`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, and read-only `collections` / `log-views`) share one pattern (list-only where the API documents no other verbs):
+Resources (`datasets`, `monitors` — plus nested `monitors templates` and `monitors downtimes` — `dashboards`, `widgets` (dashboard components; a widget needs only `name`, with `metric_ids`/`widget_ids`/`aux` passed as `-f` JSON or `--input body.json`), `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, and read-only `collections` / `log-views`) share one pattern (list-only where the API documents no other verbs):
 
 ```
 bronto <resource> list
