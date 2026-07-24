@@ -98,6 +98,7 @@ Piped, the same command emits JSONL — one full event per line, 64-bit ids pres
 
 ```sh
 bronto search "status >= 500" --since 1h
+bronto search -d <dataset> --eq model=claude-fable-5 --gt duration_ms=1000   # filter flags build the WHERE for you
 bronto search "status >= 500" --since 1h -n 5 -x     # expanded record view
 bronto search --select "count()" -g host --since 15m
 bronto tail "level = 'error'" --include timeout --exclude healthz
