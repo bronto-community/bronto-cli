@@ -4571,6 +4571,869 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /widgets:
+    get:
+      tags:
+        - widgets
+      summary: Retrieve all the widgets
+      operationId: listWidgets
+      responses:
+        '200':
+          description: A list of widgets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  widgets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Widget'
+        '403':
+          description: Forbidden - The user does not have the privileges to list widgets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - widgets
+      summary: Create a widget
+      operationId: createWidget
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WidgetRequest'
+        required: true
+      responses:
+        '201':
+          description: Widget created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Widget'
+        '400':
+          description: Bad Request - The body in the request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - The user does not have the privileges to create widgets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /widgets/{id}:
+    get:
+      tags:
+        - widgets
+      summary: Retrieve a widget
+      operationId: getWidget
+      parameters:
+        - name: id
+          in: path
+          description: Widget ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Widget successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Widget'
+        '403':
+          description: >-
+            Forbidden - The user does not have the privileges to retrieve
+            widgets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - widgets
+      summary: Update a widget
+      operationId: updateWidget
+      parameters:
+        - name: id
+          in: path
+          description: The unique identifier of the widget to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 5e4b1b3b-0b3b-4b3b-8b3b-0b3b4b3b0b3b
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WidgetRequest'
+        required: true
+      responses:
+        '204':
+          description: Widget successfully updated
+        '400':
+          description: Bad Request - The body in the request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - The user does not have the privileges to update widgets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - widgets
+      summary: Delete a widget
+      operationId: deleteWidget
+      parameters:
+        - name: id
+          in: path
+          description: The unique identifier of the widget to retrieve
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 5e4b1b3b-0b3b-4b3b-8b3b-0b3b4b3b0b3b
+      responses:
+        '204':
+          description: Widget deleted successfully
+        '403':
+          description: Forbidden - The user does not have the privileges to delete widgets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - Widget not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - widgets
+      summary: Partially update a widget by ID
+      operationId: patchWidget
+      parameters:
+        - name: id
+          in: path
+          description: The unique identifier of the Widget to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - required:
+                    - name
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: The new name of the widget
+                  example:
+                    name: Updated Widget Name
+                - required:
+                    - aux
+                  type: object
+                  properties:
+                    aux:
+                      maxItems: 10
+                      type: object
+                      description: Additional widget configuration
+                  example:
+                    aux:
+                      color_name: Purple
+                      mode: sql
+                - required:
+                    - layout
+                  type: object
+                  properties:
+                    layout:
+                      type: object
+                      description: The layout of the widget
+                  example:
+                    layout:
+                      widget_layouts:
+                        - id: 78739235-9aa7-4eca-b7f3-4cf6ee455b8f
+                          x: 1.25
+                          'y': 2
+                          w: 20
+                          h: 5
+        required: true
+      responses:
+        '204':
+          description: Widget successfully updated
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /widgets/{id}/widgets:
+    post:
+      tags:
+        - widgets
+      summary: Append widgets to a widget
+      operationId: appendWidgetWidgets
+      parameters:
+        - name: id
+          in: path
+          description: The unique identifier of the widget
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - widget_ids
+              type: object
+              properties:
+                widget_ids:
+                  minItems: 1
+                  type: array
+                  description: List of widget IDs to append to the widget
+                  items:
+                    type: string
+                    format: uuid
+              example:
+                widget_ids:
+                  - widget-id-1
+                  - widget-id-2
+        required: true
+      responses:
+        '204':
+          description: Widgets appended successfully
+        '400':
+          description: Bad Request - The body in the request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - The widget ID in the request is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /widgets/{id}/widgets/{widgetId}:
+    delete:
+      tags:
+        - widgets
+      summary: Remove a widget from a widget
+      operationId: removeWidgetWidget
+      parameters:
+        - name: id
+          in: path
+          description: The unique identifier of the widget
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: widgetId
+          in: path
+          description: The unique identifier of the child widget to remove
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Widget removed successfully
+        '404':
+          description: Not Found - The widget ID or widgetId in the request is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /dashboards:
+    get:
+      tags:
+        - dashboards
+      summary: Get all dashboards for an organisation
+      operationId: listDashboards
+      responses:
+        '200':
+          description: Successfully retrieved list of dashboards
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimitReset'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dashboards:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Dashboard'
+        '400':
+          description: Bad Request - The body in the request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - The user does not have the privileges to view dashboards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - dashboards
+      summary: Create a dashboard
+      operationId: createDashboard
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDashboardRequest'
+        required: true
+      responses:
+        '201':
+          description: Dashboard created successfully
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimitReset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '400':
+          description: Bad Request - The body in the request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: >-
+            Forbidden - The user does not have the privileges to create
+            dashboards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /dashboards/{dashboardId}:
+    get:
+      tags:
+        - dashboards
+      summary: Get a single Dashboard by ID
+      operationId: getDashboard
+      parameters:
+        - name: dashboardId
+          in: path
+          description: The unique identifier of the Dashboard to retrieve
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dashboard details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '404':
+          description: Not Found - The dashboardId in the request is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - dashboards
+      summary: Delete a dashboard by ID
+      operationId: deleteDashboard
+      parameters:
+        - name: dashboardId
+          in: path
+          description: The ID of the dashboard to delete
+          required: true
+          schema:
+            type: string
+          example: xyz
+      responses:
+        '204':
+          description: Successful response
+        '404':
+          description: Not Found - The dashboardId in the request is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - dashboards
+      summary: >-
+        Partially update a dashboard by ID, allowing either a name change or
+        modification of widget IDs (append or remove)
+      operationId: updateDashboard
+      parameters:
+        - name: dashboardId
+          in: path
+          description: The unique identifier of the Dashboard to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - required:
+                    - name
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: The new name of the dashboard
+                  example:
+                    name: Updated Dashboard Name
+                - required:
+                    - layout
+                  type: object
+                  properties:
+                    layout:
+                      type: object
+                      description: The layout of the dashboard
+                  example:
+                    layout:
+                      widget_layouts:
+                        - id: 78739235-9aa7-4eca-b7f3-4cf6ee455b8f
+                          x: 1.25
+                          'y': 2
+                          w: 20
+                          h: 5
+        required: true
+      responses:
+        '200':
+          description: Dashboard updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '404':
+          description: Not Found - The dashboardId in the request is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /dashboards/{dashboardId}/detach-from-template:
+    post:
+      tags:
+        - dashboards
+      summary: Detach a dashboard from a template
+      operationId: detachDashboardFromTemplate
+      parameters:
+        - name: dashboardId
+          in: path
+          description: >-
+            The unique identifier of the Dashboard to detach. The Dashboard must
+            be linked to a template
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dashboard updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '404':
+          description: Not Found - The dashboardId in the request is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /dashboards/{dashboardId}/widgets:
+    post:
+      tags:
+        - dashboards
+      summary: Append widgets to a dashboard
+      operationId: appendDashboardWidgets
+      parameters:
+        - name: dashboardId
+          in: path
+          description: The unique identifier of the Dashboard
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - widget_ids
+              type: object
+              properties:
+                widget_ids:
+                  minItems: 1
+                  type: array
+                  description: List of widget IDs to append to the dashboard
+                  items:
+                    type: string
+                    format: uuid
+              example:
+                widget_ids:
+                  - widget-id-1
+                  - widget-id-2
+        required: true
+      responses:
+        '204':
+          description: Widgets appended successfully
+        '400':
+          description: Bad Request - The body in the request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - The dashboardId in the request is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /dashboards/{dashboardId}/widgets/{widgetId}:
+    delete:
+      tags:
+        - dashboards
+      summary: Remove a widget from a dashboard
+      operationId: removeDashboardWidget
+      parameters:
+        - name: dashboardId
+          in: path
+          description: The unique identifier of the Dashboard
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: widgetId
+          in: path
+          description: The unique identifier of the widget to remove
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Widget removed successfully
+        '404':
+          description: Not Found - The dashboardId or widgetId in the request is not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /usage:
     get:
       tags:
@@ -9086,6 +9949,32 @@ components:
             datasets. Must be used together with `from_ts`. This parameter is
             incompatible with `time_range`.
           example: 1709251200000
+        match_type:
+          type: string
+          description: >-
+            Key matching strategy for dataset resolution: - EXACT: The key must
+            match exactly (case-sensitive). - IEXACT: The key must match exactly
+            (case-insensitive). - SUBSTRING: The key must partially match
+            (case-sensitive). - ISUBSTRING: The key must partially match
+            (case-insensitive).
+          example: EXACT
+          enum:
+            - EXACT
+            - IEXACT
+            - SUBSTRING
+            - ISUBSTRING
+        expand_type:
+          type: string
+          description: >-
+            Strategy to expand the requested keys for resolution: - DISABLED: No
+            expansion is performed; match only the requested keys. - SYNONYM:
+            Match the requested keys in addition to a number of synonyms and
+            variations of each key. When using this option, the `match_type`
+            parameter may only be specified as `EXACT` or `IEXACT`.
+          example: SYNONYM
+          enum:
+            - DISABLED
+            - SYNONYM
       oneOf:
         - required:
             - time_range
