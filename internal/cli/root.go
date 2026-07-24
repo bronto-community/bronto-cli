@@ -79,6 +79,11 @@ func NewRootCmd() *cobra.Command {
 			rc = newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd(), newMonitorCheckCmd())
 		case "exports":
 			rc = newResourceCmd(d, newExportsCreateCmd())
+		case "dashboards":
+			rc = newResourceCmd(d, newDetachFromTemplateCmd(),
+				newAttachWidgetsCmd("dashboards"), newRemoveWidgetCmd("dashboards"))
+		case "widgets":
+			rc = newResourceCmd(d, newAttachWidgetsCmd("widgets"), newRemoveWidgetCmd("widgets"))
 		case "users":
 			rc = newResourceCmd(d,
 				newUserActionCmd("deactivate", "Deactivate a user"),

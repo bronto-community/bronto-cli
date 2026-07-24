@@ -78,6 +78,8 @@ bronto <resource> delete <id-or-name> --yes              # --yes skips the confi
 
 Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `exports`.
 
+Composition actions beyond CRUD: `monitors events <id>` / `monitors mute <id> [--until|--unmute]`; `dashboards attach-widgets <dashboard> --widget-ids <id,…>` / `dashboards remove-widget <dashboard> <widget-id>` / `dashboards detach-from-template <dashboard>` (returns the updated dashboard); `widgets attach-widgets <widget> --widget-ids <id,…>` / `widgets remove-widget <widget> <widget-id>`. The parent takes an id or a unique name; `--widget-ids` takes widget ids (comma-separated or repeated). All honor `--dry-run`.
+
 A unique name resolves anywhere an id is accepted (users match by email; datasets support `collection/name`). Ambiguous names error with the candidate ids.
 
 `api-keys list` masks key material in **every** format (including json/jsonl) by default so keys don't leak into pipelines or CI logs; pass `--reveal` for the full values.
