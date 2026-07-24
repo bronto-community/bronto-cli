@@ -41,6 +41,9 @@ func newSearchCmd() *cobra.Command {
 		explainOnly     bool
 		expand          bool
 		localPath       string
+		filters         []filterClause
+		exactFields     bool
+		showQuery       bool
 	)
 	cmd := &cobra.Command{
 		Use:   "search [query]",
@@ -49,6 +52,7 @@ func newSearchCmd() *cobra.Command {
 			"Pass '-' as the query to read it from stdin.",
 		Example: "  bronto search \"status >= 500\" --since 1h\n" +
 			"  bronto search \"level = 'error'\" -d <dataset-uuid> --limit 50\n" +
+			"  bronto search -d <dataset> --eq model=claude-fable-5 --gt duration_ms=1000\n" +
 			"  bronto search --select \"count()\" -g host --since 15m\n" +
 			"  bronto search --explain-only --since 1d",
 		Args: cobra.MaximumNArgs(1),
@@ -90,6 +94,11 @@ func newSearchCmd() *cobra.Command {
 				}
 			}
 			if localPath != "" {
+				if len(filters) > 0 {
+					return clierr.New("usage_invalid_flags",
+						"structured filter flags (--eq/--gt/…) build a server query and don't apply to --local").
+						WithHint("Write the condition in the offline query, e.g. bronto search --local dump.jsonl \"status >= 500\".")
+				}
 				if len(datasets) > 0 || fromExpr != "" || len(selects) > 0 || len(groups) > 0 ||
 					explainOnly || since != "" || from != "" || to != "" {
 					return clierr.New("usage_invalid_flags",
@@ -147,6 +156,33 @@ func newSearchCmd() *cobra.Command {
 			}
 			if spec.IsZero() {
 				spec.TimeRange = "Last 15 minutes"
+			}
+			if len(filters) > 0 {
+				// Resolve friendly field names against the single resolved
+				// dataset when there is one; otherwise names are used verbatim.
+				var logID string
+				if len(ids) == 1 {
+					logID = ids[0]
+				}
+				idxRange := spec.TimeRange
+				if idxRange == "" { // absolute from/to: field index still needs a relative range
+					idxRange = "Last 1 hour"
+				}
+				compiled, note, ferr := compileFilters(cmd.Context(), app, filters, exactFields, logID, idxRange)
+				if ferr != nil {
+					return ferr
+				}
+				if note != "" && !app.Quiet && app.StdoutIsTTY {
+					_, _ = fmt.Fprintln(app.Stderr, "Note: "+note)
+				}
+				where = andWhere(where, compiled)
+				if !app.Quiet && app.StdoutIsTTY && !showQuery {
+					_, _ = fmt.Fprintln(app.Stderr, "filter: "+where)
+				}
+			}
+			if showQuery {
+				_, err := fmt.Fprintln(app.Stdout, where)
+				return err
 			}
 			effSelect := selects
 			if len(effSelect) == 0 && len(groups) == 0 && !explainOnly {
@@ -265,6 +301,9 @@ func newSearchCmd() *cobra.Command {
 	f.BoolVarP(&expand, "expand", "x", false, "expanded record view: every field of every event, one per line (table output only)")
 	f.BoolVar(&showPatterns, "patterns", false, "cluster matching events into templates with counts (drain-style)")
 	f.StringVar(&localPath, "local", "", "evaluate the query offline over a local NDJSON/text file ('-' = stdin), no server involved")
+	registerFilterFlags(f, &filters)
+	f.BoolVar(&exactFields, "exact", false, "with the filter flags, use field names verbatim (no fuzzy $-/case resolution)")
+	f.BoolVar(&showQuery, "show-query", false, "print the compiled WHERE (positional query ANDed with filter flags) and exit")
 	return cmd
 }
 
