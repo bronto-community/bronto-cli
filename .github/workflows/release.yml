@@ -5,15 +5,20 @@ on:
     tags:
       - "v*"
 
+# Least privilege at the top level; the release job below grants itself
+# exactly the write scopes it needs. Scorecard's Token-Permissions check
+# flags workflow-level write permissions as over-broad.
 permissions:
-  contents: write # create the GitHub Release + upload assets
-  packages: write # push images to ghcr
-  id-token: write # cosign keyless signing (OIDC) + provenance attestation
-  attestations: write # actions/attest-build-provenance stores signed SLSA provenance
+  contents: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub Release + upload assets
+      packages: write # push images to ghcr
+      id-token: write # cosign keyless signing (OIDC) + provenance attestation
+      attestations: write # actions/attest-build-provenance stores signed SLSA provenance
     # Gate the most credential-dense job in the repo (release token, the
     # cross-repo HOMEBREW_TAP_TOKEN, and OIDC signing) behind a protected
     # environment. Create a `release` environment with required reviewers in
