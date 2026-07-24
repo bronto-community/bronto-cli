@@ -105,6 +105,7 @@ bronto tail -g status --window 1m                    # live count(*) by status, 
 bronto traces show <trace-id>
 bronto traces services --since 1h
 bronto fields -d <dataset> --since 1h
+bronto fields -d <dataset> model             # fields named like "model", with sample values
 bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
 bronto repl -d <dataset>                # interactive prompt: edit, rerun, narrow
 ```
