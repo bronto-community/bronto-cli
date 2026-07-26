@@ -41,7 +41,7 @@ type replTerm interface {
 
 // termFactory builds the interactive terminal; a package var so tests can
 // substitute a scripted reader.
-var newReplTerm = func(app *App) (replTerm, func(), error) {
+var newReplTerm = func() (replTerm, func(), error) {
 	fd := int(os.Stdin.Fd())
 	t := term.NewTerminal(struct {
 		io.Reader
@@ -57,7 +57,6 @@ var newReplTerm = func(app *App) (replTerm, func(), error) {
 	}
 	rt := &rawTerm{t: t, raw: raw}
 	cleanup := func() { saveReplHistory(t, os.Getenv) }
-	_ = app
 	return rt, cleanup, nil
 }
 
@@ -193,7 +192,7 @@ func newReplCmd() *cobra.Command {
 				since: spec.TimeRange,
 				limit: replFetchLimit,
 			}
-			t, cleanup, err := newReplTerm(app)
+			t, cleanup, err := newReplTerm()
 			if err != nil {
 				return err
 			}

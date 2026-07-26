@@ -72,9 +72,6 @@ type SearchResponse struct {
 	Groups       []map[string]any `json:"groups"`
 	GroupsSeries []map[string]any `json:"groups_series"`
 	Totals       map[string]any   `json:"totals"`
-	Pagination   struct {
-		NextPageURL string `json:"next_page_url"`
-	} `json:"pagination"`
 }
 
 // EventRows returns FULL event objects (@raw, message_kvs, metadata…):
@@ -150,8 +147,6 @@ func flattenInto(out map[string]any, prefix string, m map[string]any) {
 // expanded views, in this order.
 var PriorityEventKeys = []string{"@time", "@status", "@raw"}
 
-var priorityColumns = PriorityEventKeys
-
 func EventColumns(rows []map[string]any, max int) []string {
 	seen := map[string]bool{}
 	var discovered []string
@@ -169,14 +164,14 @@ func EventColumns(rows []map[string]any, max int) []string {
 		}
 	}
 	var cols []string
-	for _, p := range priorityColumns {
+	for _, p := range PriorityEventKeys {
 		if seen[p] {
 			cols = append(cols, p)
 		}
 	}
 	for _, k := range discovered {
 		isPriority := false
-		for _, p := range priorityColumns {
+		for _, p := range PriorityEventKeys {
 			if k == p {
 				isPriority = true
 			}
