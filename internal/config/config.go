@@ -88,14 +88,7 @@ func Load(opts LoadOptions) (*Config, error) {
 		opts.Getenv = os.Getenv
 	}
 	c := &Config{values: map[string]Value{}}
-	set := func(key, val string, src Source) {
-		if val == "" {
-			return
-		}
-		if _, exists := c.values[key]; !exists {
-			c.values[key] = Value{Val: val, Source: src}
-		}
-	}
+	set := c.setIfAbsent
 
 	// 1. flags
 	for k, v := range opts.Flags {
@@ -257,14 +250,18 @@ func (c *Config) BaseURL() string {
 	return fmt.Sprintf("https://api.%s.bronto.io", c.values["region"].Val)
 }
 
-// Inject adds a resolved value from an out-of-band source (keychain)
-// without disturbing precedence: no-op when the key is already set.
-func (c *Config) Inject(key, val string, src Source) {
+// setIfAbsent records key=val from src only if key is unset and val is
+// non-empty — the "first writer wins, skip empties" precedence rule at the
+// heart of Load's resolution pipeline.
+func (c *Config) setIfAbsent(key, val string, src Source) {
 	if val == "" {
 		return
 	}
-	if _, exists := c.values[key]; exists {
-		return
+	if _, exists := c.values[key]; !exists {
+		c.values[key] = Value{Val: val, Source: src}
 	}
-	c.values[key] = Value{Val: val, Source: src}
 }
+
+// Inject adds a resolved value from an out-of-band source (keychain)
+// without disturbing precedence: no-op when the key is already set.
+func (c *Config) Inject(key, val string, src Source) { c.setIfAbsent(key, val, src) }
