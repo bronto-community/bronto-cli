@@ -344,11 +344,10 @@ func (s *replSession) showFields() error {
 	if len(s.ids) == 1 {
 		params.Set("log_id", s.ids[0])
 	}
-	var payload map[string]any
-	if err := s.client.GetJSON(ctx, "/top-keys", params, &payload); err != nil {
+	rows, err := topKeyRows(ctx, s.app, params)
+	if err != nil {
 		return err
 	}
-	rows := normalizeTopKeys(payload)
 	if len(rows) == 0 {
 		_, _ = fmt.Fprintln(s.app.Stdout, "No fields discovered in this window.")
 		return nil

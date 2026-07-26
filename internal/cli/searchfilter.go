@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -11,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/query"
 )
@@ -114,21 +112,12 @@ func compileFilters(ctx context.Context, app *App, clauses []filterClause, exact
 // fetchFieldNames returns the exact field names present in a dataset over the
 // given relative time range, via the /top-keys index.
 func fetchFieldNames(ctx context.Context, app *App, logID, timeRange string) ([]string, error) {
-	params := url.Values{"time_range": []string{timeRange}, "log_id": []string{logID}}
-	var payload map[string]any
-	client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
-	if err := client.GetJSON(ctx, "/top-keys", params, &payload); err != nil {
+	names, err := topKeyNames(ctx, app, logID, timeRange)
+	if err != nil {
 		return nil, err
 	}
-	rows := normalizeTopKeys(payload)
-	if len(rows) == 0 {
+	if len(names) == 0 {
 		return nil, fmt.Errorf("no fields found in the last window")
-	}
-	names := make([]string, 0, len(rows))
-	for _, r := range rows {
-		if k, ok := r["key"].(string); ok {
-			names = append(names, k)
-		}
 	}
 	return names, nil
 }

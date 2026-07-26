@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"net/url"
 	"sort"
 	"strconv"
@@ -56,12 +57,10 @@ func newFieldsCmd() *cobra.Command {
 			if limit > 0 {
 				params.Set("limit", strconv.Itoa(limit))
 			}
-			var payload map[string]any
-			client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
-			if err := client.GetJSON(cmd.Context(), "/top-keys", params, &payload); err != nil {
+			rows, err := topKeyRows(cmd.Context(), app, params)
+			if err != nil {
 				return err
 			}
-			rows := normalizeTopKeys(payload)
 			if len(args) > 0 {
 				rows = filterKeysByName(rows, args[0])
 			}
@@ -99,6 +98,35 @@ func newFieldsCmd() *cobra.Command {
 	cmd.ValidArgsFunction = completeFields
 	_ = cmd.RegisterFlagCompletionFunc("dataset", completeDatasets)
 	return cmd
+}
+
+// topKeyRows is the single call site for the /top-keys field-discovery
+// endpoint: GET with the given params, normalized into rows. Callers build
+// their own params (log_id, time_range, limit) and shape the rows.
+func topKeyRows(ctx context.Context, app *App, params url.Values) ([]map[string]any, error) {
+	var payload map[string]any
+	client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
+	if err := client.GetJSON(ctx, "/top-keys", params, &payload); err != nil {
+		return nil, err
+	}
+	return normalizeTopKeys(payload), nil
+}
+
+// topKeyNames lists recently-seen field names for one dataset (logID) over
+// timeRange — the common "what fields exist" query behind query check,
+// search-filter resolution, completion, and ask grounding.
+func topKeyNames(ctx context.Context, app *App, logID, timeRange string) ([]string, error) {
+	rows, err := topKeyRows(ctx, app, url.Values{"time_range": {timeRange}, "log_id": {logID}})
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(rows))
+	for _, r := range rows {
+		if k, ok := r["key"].(string); ok && k != "" {
+			names = append(names, k)
+		}
+	}
+	return names, nil
 }
 
 func normalizeTopKeys(payload map[string]any) []map[string]any {

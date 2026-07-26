@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -163,19 +162,12 @@ func askGrounding(ctx context.Context, app *App, dataset string) string {
 	if err != nil {
 		return sb.String()
 	}
-	var payload map[string]any
-	client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
-	params := url.Values{"time_range": {"Last 1 hour"}, "log_id": {logID}}
-	if err := client.GetJSON(ctx, "/top-keys", params, &payload); err != nil {
+	keys, err := topKeyNames(ctx, app, logID, "Last 1 hour")
+	if err != nil {
 		return sb.String()
 	}
-	rows := normalizeTopKeys(payload)
-	keys := make([]string, 0, len(rows))
-	for i, r := range rows {
-		if i >= 40 {
-			break
-		}
-		keys = append(keys, fmt.Sprint(r["key"]))
+	if len(keys) > 40 {
+		keys = keys[:40]
 	}
 	if len(keys) > 0 {
 		sb.WriteString("Fields in " + ref + ": " + strings.Join(keys, ", ") + "\n")
