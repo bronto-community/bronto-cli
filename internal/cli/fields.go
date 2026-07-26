@@ -34,17 +34,9 @@ func newFieldsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			spec, err := timerange.Resolve(since, "", "", nil)
+			spec, err := resolveRelativeSince(since, "Last 1 hour", "fields", "/top-keys")
 			if err != nil {
 				return err
-			}
-			if spec.IsZero() {
-				spec.TimeRange = "Last 1 hour"
-			}
-			if spec.TimeRange == "" { // compound --since resolved to absolute bounds
-				return clierr.New("usage_invalid_since",
-					"fields supports only single-unit --since values (e.g. 90m, 2h)").
-					WithHint("The /top-keys endpoint accepts relative ranges only.")
 			}
 			params := url.Values{"time_range": []string{spec.TimeRange}}
 			if dataset != "" {
@@ -100,6 +92,26 @@ func newFieldsCmd() *cobra.Command {
 	return cmd
 }
 
+// resolveRelativeSince parses --since into a single-unit relative range for
+// endpoints that accept only relative ranges (fields' /top-keys, usage's
+// /usage): it applies defaultRange when --since is empty and rejects a
+// compound --since (which resolves to absolute bounds).
+func resolveRelativeSince(since, defaultRange, cmdName, endpoint string) (timerange.Spec, error) {
+	spec, err := timerange.Resolve(since, "", "", nil)
+	if err != nil {
+		return timerange.Spec{}, err
+	}
+	if spec.IsZero() {
+		spec.TimeRange = defaultRange
+	}
+	if spec.TimeRange == "" { // compound --since resolved to absolute bounds
+		return timerange.Spec{}, clierr.New("usage_invalid_since",
+			cmdName+" supports only single-unit --since values (e.g. 90m, 2h)").
+			WithHint("The " + endpoint + " endpoint accepts relative ranges only.")
+	}
+	return spec, nil
+}
+
 // topKeyRows is the single call site for the /top-keys field-discovery
 // endpoint: GET with the given params, normalized into rows. Callers build
 // their own params (log_id, time_range, limit) and shape the rows.
@@ -132,15 +144,7 @@ func topKeyNames(ctx context.Context, app *App, logID, timeRange string) ([]stri
 func normalizeTopKeys(payload map[string]any) []map[string]any {
 	for _, field := range []string{"top_keys", "keys", "data"} {
 		if list, ok := payload[field].([]any); ok {
-			rows := make([]map[string]any, 0, len(list))
-			for _, item := range list {
-				if m, ok := item.(map[string]any); ok {
-					rows = append(rows, m)
-				} else {
-					rows = append(rows, map[string]any{"value": item})
-				}
-			}
-			return rows
+			return toRows(list)
 		}
 	}
 

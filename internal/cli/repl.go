@@ -480,15 +480,7 @@ func (s *replSession) tail() error {
 			}
 			return err
 		}
-		batch := resp.SelectedRows()
-		fresh := batch[:0:0]
-		for _, ev := range batch {
-			if dedup.Admit(dedup.Key(ev)) {
-				fresh = append(fresh, ev)
-			}
-		}
-		bronto.SortEvents(fresh)
-		for _, ev := range fresh {
+		for _, ev := range dedupSorted(resp, dedup) {
 			_, _ = fmt.Fprintln(s.app.Stdout, renderTailLine(ev, fmt.Sprint(ev["@raw"]), nil, s.app.Color, nil))
 		}
 		select {

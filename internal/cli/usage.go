@@ -10,9 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/bronto-community/bronto-cli/internal/bronto"
-	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/output"
-	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
 // newUsageCmd implements "bronto usage": GET /usage with a time_range query
@@ -34,17 +32,9 @@ func newUsageCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			spec, err := timerange.Resolve(since, "", "", nil)
+			spec, err := resolveRelativeSince(since, "Last 7 days", "usage", "/usage")
 			if err != nil {
 				return err
-			}
-			if spec.IsZero() {
-				spec.TimeRange = "Last 7 days"
-			}
-			if spec.TimeRange == "" { // compound --since resolved to absolute bounds
-				return clierr.New("usage_invalid_since",
-					"usage supports only single-unit --since values (e.g. 90m, 2h, 7d)").
-					WithHint("The /usage endpoint accepts relative ranges only.")
 			}
 			params := url.Values{"time_range": []string{spec.TimeRange}}
 			var payload any

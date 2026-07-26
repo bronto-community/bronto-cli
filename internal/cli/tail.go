@@ -133,15 +133,7 @@ func newTailCmd() *cobra.Command {
 					}
 					return err
 				}
-				batch := resp.SelectedRows()
-				fresh := batch[:0:0]
-				for _, ev := range batch {
-					if dedup.Admit(dedup.Key(ev)) {
-						fresh = append(fresh, ev)
-					}
-				}
-				bronto.SortEvents(fresh)
-				for _, ev := range fresh {
+				for _, ev := range dedupSorted(resp, dedup) {
 					raw := fmt.Sprint(ev["@raw"])
 					if !filter.MatchEvent(ev, raw) {
 						continue
@@ -331,4 +323,19 @@ func dedupStrings(in []string) []string {
 		out = append(out, s)
 	}
 	return out
+}
+
+// dedupSorted returns the response's selected rows with cross-poll
+// duplicates dropped (via dedup) and the survivors sorted by @time —
+// the shared core of the tail and repl poll loops.
+func dedupSorted(resp *bronto.SearchResponse, dedup *bronto.Dedup) []map[string]any {
+	batch := resp.SelectedRows()
+	fresh := batch[:0:0]
+	for _, ev := range batch {
+		if dedup.Admit(dedup.Key(ev)) {
+			fresh = append(fresh, ev)
+		}
+	}
+	bronto.SortEvents(fresh)
+	return fresh
 }
