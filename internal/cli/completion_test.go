@@ -276,6 +276,77 @@ func TestCompleteDatasetsLargeAccountCollectionsFirst(t *testing.T) {
 	}
 }
 
+func TestCompleteDatasetsGetUsesDatasetCompleter(t *testing.T) {
+	// `datasets get <tab>` must complete real datasets (rows key name/id as
+	// log/log_id), not the generic name/id path which finds nothing.
+	h := func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/logs" {
+			t.Errorf("path = %s", r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"logs":[
+			{"log":"api","collection":"prod","log_id":"11111111-1111-1111-1111-111111111111"},
+			{"log":"web","collection":"prod","log_id":"22222222-2222-2222-2222-222222222222"}]}`))
+	}
+	cands, dir := runComplete(t, h, "datasets", "get", "")
+	if dir != ":4" {
+		t.Fatalf("directive = %q", dir)
+	}
+	if len(cands) != 2 || !strings.HasPrefix(cands[0], "api\t") {
+		t.Fatalf("datasets-get cands = %v", cands)
+	}
+}
+
+func TestCompleteResourceIDFallback(t *testing.T) {
+	// limits have no unique name; NameKeys=category. Rows complete as
+	// category<TAB>id, and a row with neither falls back to the bare id.
+	h := func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`[
+			{"category":"INGESTION","id":"aaaa1111-0000-0000-0000-000000000001"},
+			{"id":"aaaa1111-0000-0000-0000-000000000002"}]`))
+	}
+	cands, dir := runComplete(t, h, "limits", "get", "")
+	if dir != ":4" {
+		t.Fatalf("directive = %q", dir)
+	}
+	joined := strings.Join(cands, " ")
+	if !strings.Contains(joined, "INGESTION\taaaa1111-0000-0000-0000-000000000001") {
+		t.Fatalf("no category completion: %v", cands)
+	}
+	if !strings.Contains(joined, "aaaa1111-0000-0000-0000-000000000002") {
+		t.Fatalf("no id fallback: %v", cands)
+	}
+}
+
+func TestCompleteFieldsPositionalFallsBackToHints(t *testing.T) {
+	// `bronto fields <tab>` with no -d must hint flags (not go silent).
+	cands, dir := runComplete(t, noAPI(t), "fields", "")
+	if dir != ":36" { // NoFileComp|KeepOrder (flag hints)
+		t.Fatalf("directive = %q", dir)
+	}
+	if len(cands) == 0 || !strings.HasPrefix(cands[0], "--dataset\t") {
+		t.Fatalf("fields hints = %v", cands)
+	}
+}
+
+func TestCompleteAPIMethodThenPath(t *testing.T) {
+	// `bronto api <tab>` → HTTP methods (GET first); `api GET <tab>` → paths.
+	methods, dir := runComplete(t, noAPI(t), "api", "")
+	if dir != ":36" { // NoFileComp|KeepOrder
+		t.Fatalf("method directive = %q", dir)
+	}
+	if len(methods) == 0 || methods[0] != "GET" {
+		t.Fatalf("methods = %v", methods)
+	}
+	paths, dir := runComplete(t, noAPI(t), "api", "GET", "")
+	if dir != ":4" {
+		t.Fatalf("path directive = %q", dir)
+	}
+	joined := strings.Join(paths, " ")
+	if !strings.Contains(joined, "/monitors") || !strings.Contains(joined, "/logs") {
+		t.Fatalf("path hints = %v", paths)
+	}
+}
+
 func TestCompleteFilterFieldFlag(t *testing.T) {
 	// --eq value completes to "<field>=" with NoSpace|NoFileComp (6).
 	h := func(w http.ResponseWriter, r *http.Request) {

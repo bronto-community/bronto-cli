@@ -171,15 +171,22 @@ func listResourceNames(cmd *cobra.Command, desc resourceDesc) []string {
 	var out []string
 	for _, row := range rows {
 		id := desc.rowID(row)
+		name := ""
 		for _, key := range desc.nameKeys() {
 			if v, _ := row[key].(string); v != "" {
-				if id != "" {
-					out = append(out, v+"\t"+id)
-				} else {
-					out = append(out, v)
-				}
+				name = v
 				break
 			}
+		}
+		switch {
+		case name != "" && id != "":
+			out = append(out, name+"\t"+id)
+		case name != "":
+			out = append(out, name)
+		case id != "":
+			// No name field (e.g. limits): the opaque id still completes,
+			// which beats a silent file-completion fallback.
+			out = append(out, id)
 		}
 	}
 	sort.Strings(out)
@@ -188,11 +195,16 @@ func listResourceNames(cmd *cobra.Command, desc resourceDesc) []string {
 
 // completeResourceRef is a ValidArgsFunction completing the first positional
 // (a resource ref) with the resource's names; later positionals get no
-// candidates (still suppressing files).
+// candidates (still suppressing files). datasets is special-cased to the
+// dataset completer because its rows key name/id as log/log_id (mirroring
+// resolveResourceRef's own datasets special case).
 func completeResourceRef(desc resourceDesc) compFunc {
-	return func(cmd *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		if len(args) > 0 {
 			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		if desc.Name == "datasets" {
+			return completeDatasets(cmd, args, toComplete)
 		}
 		return listResourceNames(cmd, desc), cobra.ShellCompDirectiveNoFileComp
 	}
@@ -274,6 +286,49 @@ func fieldNamesForCmd(cmd *cobra.Command) []string {
 // completeFields completes a field name (--select, -g, --fields).
 func completeFields(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 	return fieldNamesForCmd(cmd), cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeFieldsOrHints is the `fields` positional completer: the dataset's
+// field names when a -d is on the line, otherwise the command's flag hints
+// (so `bronto fields <tab>` surfaces --dataset/--since rather than nothing).
+func completeFieldsOrHints(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if names := fieldNamesForCmd(cmd); len(names) > 0 {
+		return names, cobra.ShellCompDirectiveNoFileComp
+	}
+	return flagHints(cmd)
+}
+
+// apiMethods are the HTTP methods `bronto api` accepts, in a sensible order.
+var apiMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"}
+
+// completeAPIArgs completes `bronto api <METHOD> <path>`: the method for the
+// first positional, then known collection paths for the second.
+func completeAPIArgs(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
+	switch len(args) {
+	case 0:
+		return apiMethods, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveKeepOrder
+	case 1:
+		return apiPathHints(), cobra.ShellCompDirectiveNoFileComp
+	default:
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
+// apiPathHints returns the management-API collection paths the CLI knows about
+// (from the resource registry) as starting points for `bronto api <method> <tab>`.
+func apiPathHints() []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, d := range resourceRegistry {
+		for _, p := range []string{d.Base, d.createPath()} {
+			if p != "" && !seen[p] {
+				seen[p] = true
+				out = append(out, p)
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 // completeFilterField completes a structured filter flag value with
