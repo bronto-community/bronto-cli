@@ -131,7 +131,6 @@ func newAskCmd() *cobra.Command {
 	f.StringVarP(&dataset, "dataset", "d", "", "target dataset (overrides the model's pick, grounds field discovery)")
 	f.BoolVar(&yes, "yes", false, "run the generated query without confirmation")
 	cmd.ValidArgsFunction = defaultArgComplete // positional is free text; hint flags instead
-	_ = cmd.RegisterFlagCompletionFunc("dataset", completeDatasets)
 	return cmd
 }
 

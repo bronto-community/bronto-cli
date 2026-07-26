@@ -171,9 +171,6 @@ func newTailCmd() *cobra.Command {
 	f.StringArrayVarP(&aggGroups, "group-by", "g", nil, "group-by key for live aggregates (repeatable; switches to aggregate mode)")
 	f.IntVar(&dedupSize, "dedup-size", 20000, "events remembered for duplicate suppression across polls; very high-volume streams may need more")
 	cmd.ValidArgsFunction = defaultArgComplete // positional is a WHERE expr; hint flags instead
-	_ = cmd.RegisterFlagCompletionFunc("dataset", completeDatasets)
-	_ = cmd.RegisterFlagCompletionFunc("select", completeFields)
-	_ = cmd.RegisterFlagCompletionFunc("group-by", completeFields)
 	return cmd
 }
 

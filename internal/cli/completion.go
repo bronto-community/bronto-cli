@@ -408,23 +408,35 @@ func defaultArgComplete(cmd *cobra.Command, _ []string, toComplete string) ([]st
 	return nil, cobra.ShellCompDirectiveNoFileComp
 }
 
-// treeFlagCompleters maps a flag name to a value completer applied to every
-// command that carries that flag (regardless of which command defines it), so
-// e.g. --since completes durations on search, tail, fields, traces, repl,
-// exports alike. Dataset/select/group-by/saved and the filter flags are
-// wired per-command at their definition site; persistent flags
-// (output/region/profile/fields) are registered once on root.
+// completeDirection completes context's --direction.
+func completeDirection(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	return []string{"both", "before", "after"}, cobra.ShellCompDirectiveNoFileComp
+}
+
+// treeFlagCompleters maps a flag name to a value completer applied to EVERY
+// command that carries that flag, wherever it is defined — so e.g. --dataset
+// completes datasets on search/tail/fields/context/send/ask/query/repl/exports
+// alike, and --since completes durations everywhere. This is the single source
+// for flag-value completion (the TestIntendedFlagsHaveCompletion tripwire
+// keeps it honest); persistent flags (output/region/profile/fields) are
+// registered once on root, and the structured filter flags are handled by name
+// in applyCompletions.
 func treeFlagCompleters() map[string]compFunc {
 	return map[string]compFunc{
+		"dataset":    completeDatasets,
+		"select":     completeFields,
+		"group-by":   completeFields,
+		"saved":      completeKindFlag("saved-searches"),
 		"since":      completeSince,
 		"window":     completeSince,
 		"collection": completeCollections,
+		"direction":  completeDirection,
 	}
 }
 
-// applyCompletions walks the command tree once (from root) to fill the gaps
-// left by the per-command wiring:
-//   - value completers for tree-wide flags (treeFlagCompleters),
+// applyCompletions walks the command tree once (from root), wiring:
+//   - value completers for every known flag (treeFlagCompleters + the
+//     structured filter flags) on whichever command owns it,
 //   - a default ValidArgsFunction on every runnable leaf that doesn't already
 //     define its own positional completion — offering the command's flags
 //     (flag hints) on an empty token instead of cobra's file fallback.
@@ -440,6 +452,11 @@ func applyCompletions(cmd *cobra.Command) {
 				_ = c.RegisterFlagCompletionFunc(f.Name, fn)
 			}
 		})
+		for _, name := range filterFlagNames {
+			if c.LocalFlags().Lookup(name) != nil {
+				_ = c.RegisterFlagCompletionFunc(name, completeFilterField)
+			}
+		}
 		if c.Runnable() && !c.HasSubCommands() && c.ValidArgsFunction == nil {
 			c.ValidArgsFunction = defaultArgComplete
 		}

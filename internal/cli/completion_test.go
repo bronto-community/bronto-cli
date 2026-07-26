@@ -7,7 +7,71 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
+
+// cobraBuiltin reports whether a command is one cobra adds itself (help,
+// completion, the hidden __complete pair) — not part of bronto's surface and
+// not swept by applyCompletions.
+func cobraBuiltin(name string) bool {
+	switch name {
+	case "help", "completion", "__complete", "__completeNoDesc":
+		return true
+	}
+	return false
+}
+
+// walkCommands visits every command in the tree except cobra builtins.
+func walkCommands(root *cobra.Command, fn func(*cobra.Command)) {
+	var walk func(c *cobra.Command)
+	walk = func(c *cobra.Command) {
+		if cobraBuiltin(c.Name()) {
+			return
+		}
+		fn(c)
+		for _, sub := range c.Commands() {
+			walk(sub)
+		}
+	}
+	walk(root)
+}
+
+// TestEveryLeafHasArgCompletion is the tripwire behind the applyCompletions
+// sweep: every runnable leaf command must set a ValidArgsFunction, so a
+// positional never silently falls back to cobra's file completion. A new
+// command that forgets one fails here instead of showing files in the wild.
+func TestEveryLeafHasArgCompletion(t *testing.T) {
+	walkCommands(NewRootCmd(), func(c *cobra.Command) {
+		if c.Runnable() && !c.HasSubCommands() && c.ValidArgsFunction == nil {
+			t.Errorf("%q is a runnable leaf with no ValidArgsFunction — it will fall back to file completion", c.CommandPath())
+		}
+	})
+}
+
+// TestIntendedFlagsHaveCompletion pins that every flag we mean to complete
+// actually has a completion func registered (on the command that owns it), so
+// a renamed flag or a missed registration is caught in CI.
+func TestIntendedFlagsHaveCompletion(t *testing.T) {
+	shouldComplete := map[string]bool{
+		"dataset": true, "select": true, "group-by": true, "saved": true,
+		"since": true, "window": true, "collection": true,
+		"output": true, "region": true, "profile": true, "fields": true,
+		"direction": true,
+		"eq":        true, "ne": true, "gt": true, "ge": true, "lt": true, "le": true, "match": true, "nmatch": true,
+	}
+	walkCommands(NewRootCmd(), func(c *cobra.Command) {
+		c.LocalFlags().VisitAll(func(f *pflag.Flag) {
+			if !shouldComplete[f.Name] {
+				return
+			}
+			if _, ok := c.GetFlagCompletionFunc(f.Name); !ok {
+				t.Errorf("%s: --%s should have a completion func but none is registered", c.CommandPath(), f.Name)
+			}
+		})
+	})
+}
 
 // runComplete drives cobra's hidden __complete command against a stub server.
 // The last element of line is the token being completed. The stub connection
