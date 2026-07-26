@@ -1,0 +1,5 @@
+4 span(s) across 2 service(s), total 0.1µs
+cart/POST /add    ████████████████████ 0.1µs
+  cart/HGET       ·██████············· 0.0µs
+  cart/HMSET      ·········████████··· 0.0µs ERROR
+web/stray         ██·················· 0.0µs

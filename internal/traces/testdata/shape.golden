@@ -1,0 +1,4 @@
+2 trace(s), 5 span(s) · axis 0 → 0.1µs
+legend: █ avg position · ▒ min/max spread · · before/after
+cart/POST /add   ██████████████████▒▒     0.1µs         —       2
+  cart/HGET      ·▒▒▒▒█████▒▒▒▒▒·····     0.0µs     0.0µs       2 1
