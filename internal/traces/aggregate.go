@@ -128,16 +128,23 @@ func (a *Aggregator) Operations(ctx context.Context, service string, errorsOnly 
 // threeWayRows runs count/avg/max over the same grouping, unions the keys
 // (count is the ranking ground truth; missing entries default to 0), and
 // returns rows sorted by span count descending.
+// countAvgMax fetches the count, avg, and max span-duration aggregations
+// for one grouping — the shared head of threeWayRows and Attributes.
+func (a *Aggregator) countAvgMax(ctx context.Context, groups []string, where string, limit int) (counts, avgs, maxes map[string]aggEntry, err error) {
+	if counts, err = a.groupAggregate(ctx, aggCount, groups, where, limit); err != nil {
+		return nil, nil, nil, err
+	}
+	if avgs, err = a.groupAggregate(ctx, aggAvg, groups, where, limit); err != nil {
+		return nil, nil, nil, err
+	}
+	if maxes, err = a.groupAggregate(ctx, aggMax, groups, where, limit); err != nil {
+		return nil, nil, nil, err
+	}
+	return counts, avgs, maxes, nil
+}
+
 func (a *Aggregator) threeWayRows(ctx context.Context, groups []string, where string, limit int, keyCols func([]string) map[string]any) ([]map[string]any, error) {
-	counts, err := a.groupAggregate(ctx, aggCount, groups, where, limit)
-	if err != nil {
-		return nil, err
-	}
-	avgs, err := a.groupAggregate(ctx, aggAvg, groups, where, limit)
-	if err != nil {
-		return nil, err
-	}
-	maxes, err := a.groupAggregate(ctx, aggMax, groups, where, limit)
+	counts, avgs, maxes, err := a.countAvgMax(ctx, groups, where, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -205,15 +212,7 @@ func (a *Aggregator) Attributes(ctx context.Context, opts AttrOptions) ([]map[st
 	if fetchLimit < 200 {
 		fetchLimit = 200
 	}
-	counts, err := a.groupAggregate(ctx, aggCount, groupKeys, where, fetchLimit)
-	if err != nil {
-		return nil, nil, 0, err
-	}
-	avgs, err := a.groupAggregate(ctx, aggAvg, groupKeys, where, fetchLimit)
-	if err != nil {
-		return nil, nil, 0, err
-	}
-	maxes, err := a.groupAggregate(ctx, aggMax, groupKeys, where, fetchLimit)
+	counts, avgs, maxes, err := a.countAvgMax(ctx, groupKeys, where, fetchLimit)
 	if err != nil {
 		return nil, nil, 0, err
 	}

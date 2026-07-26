@@ -160,17 +160,28 @@ func writeCredentials(path string, b []byte) error {
 	return renameFile(tmpName, path)
 }
 
-func fileStore(account, key string) error {
+// mutateFileMap loads the fallback credentials map, applies fn, and writes
+// it back atomically. fn returning an error aborts without writing.
+func mutateFileMap(fn func(m map[string]string) error) error {
 	m, path, err := readFileMap()
 	if err != nil {
 		return err
 	}
-	m[account] = key
+	if err := fn(m); err != nil {
+		return err
+	}
 	b, err := toml.Marshal(m)
 	if err != nil {
 		return err
 	}
 	return writeCredentials(path, b)
+}
+
+func fileStore(account, key string) error {
+	return mutateFileMap(func(m map[string]string) error {
+		m[account] = key
+		return nil
+	})
 }
 
 func fileGet(account string) (string, error) {
@@ -186,17 +197,11 @@ func fileGet(account string) (string, error) {
 }
 
 func fileDelete(account string) error {
-	m, path, err := readFileMap()
-	if err != nil {
-		return err
-	}
-	if _, ok := m[account]; !ok {
-		return ErrNotFound
-	}
-	delete(m, account)
-	b, err := toml.Marshal(m)
-	if err != nil {
-		return err
-	}
-	return writeCredentials(path, b)
+	return mutateFileMap(func(m map[string]string) error {
+		if _, ok := m[account]; !ok {
+			return ErrNotFound
+		}
+		delete(m, account)
+		return nil
+	})
 }

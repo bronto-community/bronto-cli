@@ -368,13 +368,19 @@ func printEvents(app *App, events []map[string]any, view eventView) error {
 	return p.PrintRows(bronto.EventColumns(rows, 0), rows)
 }
 
+// isPlumbingKey reports whether k is a bulky plumbing field (links,
+// metadata.*) the default event table never promotes.
+func isPlumbingKey(k string) bool {
+	return k == "links" || strings.HasPrefix(k, "metadata.")
+}
+
 // teachableFieldCount is the union of flattened event keys, excluding the
 // plumbing (links, metadata.*) the table never promotes.
 func teachableFieldCount(rows []map[string]any) int {
 	seen := map[string]struct{}{}
 	for _, r := range rows {
 		for k := range r {
-			if k == "links" || strings.HasPrefix(k, "metadata.") {
+			if isPlumbingKey(k) {
 				continue
 			}
 			seen[k] = struct{}{}
@@ -400,7 +406,7 @@ func eventTableColumns(rows []map[string]any) []string {
 	for _, r := range rows {
 		fr := make(map[string]any, len(r))
 		for k, v := range r {
-			if k == "links" || strings.HasPrefix(k, "metadata.") {
+			if isPlumbingKey(k) {
 				continue
 			}
 			fr[k] = v

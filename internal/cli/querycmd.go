@@ -4,12 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/query"
 )
@@ -106,18 +104,5 @@ func datasetFieldNames(ctx context.Context, app *App, dataset string) ([]string,
 	if err != nil {
 		return nil, err
 	}
-	params := url.Values{"time_range": []string{"Last 1 day"}, "log_id": []string{logID}}
-	var payload map[string]any
-	client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
-	if err := client.GetJSON(ctx, "/top-keys", params, &payload); err != nil {
-		return nil, err
-	}
-	rows := normalizeTopKeys(payload)
-	names := make([]string, 0, len(rows))
-	for _, r := range rows {
-		if k, _ := r["key"].(string); k != "" {
-			names = append(names, k)
-		}
-	}
-	return names, nil
+	return topKeyNames(ctx, app, logID, "Last 1 day")
 }

@@ -1,12 +1,12 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/bronto-community/bronto-cli/internal/coerce"
 	"github.com/bronto-community/bronto-cli/internal/output"
 )
 
@@ -59,11 +59,7 @@ func datasetListRows(rows []map[string]any, format output.Format) []map[string]a
 	for _, row := range rows {
 		meta, _ := row["metadata"].(map[string]any)
 		if hb, ok := numericValue(meta["last_heartbeat_at"]); ok && hb > 0 {
-			if format == output.FormatCSV {
-				row["last_activity"] = time.UnixMilli(int64(hb)).UTC().Format(time.RFC3339)
-			} else {
-				row["last_activity"] = timeAgo(hb, now)
-			}
+			row["last_activity"] = humanStamp(hb, format, now)
 		}
 	}
 	return rows
@@ -71,20 +67,16 @@ func datasetListRows(rows []map[string]any, format output.Format) []map[string]a
 
 // numericValue coerces decoded JSON numbers — json.Number after
 // bronto.DecodeJSON, float64 from plain unmarshals in tests — to float64.
-func numericValue(v any) (float64, bool) {
-	switch t := v.(type) {
-	case float64:
-		return t, true
-	case json.Number:
-		if f, err := t.Float64(); err == nil {
-			return f, true
-		}
-	case int64:
-		return float64(t), true
-	case int:
-		return float64(t), true
+func numericValue(v any) (float64, bool) { return coerce.Number(v) }
+
+// humanStamp renders an epoch-milliseconds timestamp for a list cell:
+// absolute RFC3339 in csv (a machine-consumed format), relative age
+// ("6h ago") everywhere else.
+func humanStamp(ms float64, format output.Format, now time.Time) string {
+	if format == output.FormatCSV {
+		return time.UnixMilli(int64(ms)).UTC().Format(time.RFC3339)
 	}
-	return 0, false
+	return timeAgo(ms, now)
 }
 
 // collectionListRows expands /collections rows — maps of collection name
@@ -136,12 +128,6 @@ func collectionListRows(rows []map[string]any, _ output.Format) []map[string]any
 // json/jsonl stay verbatim: this is presentation, not data.
 func resourceListPolish(rows []map[string]any, format output.Format) []map[string]any {
 	now := time.Now()
-	stamp := func(ms float64) string {
-		if format == output.FormatCSV {
-			return time.UnixMilli(int64(ms)).UTC().Format(time.RFC3339)
-		}
-		return timeAgo(ms, now)
-	}
 	for _, row := range rows {
 		for k, v := range row {
 			// Secret masking is applied earlier (maskSecretRows) for ALL
@@ -149,16 +135,16 @@ func resourceListPolish(rows []map[string]any, format output.Format) []map[strin
 			// here.
 			if strings.HasSuffix(k, "_at") {
 				if ms, ok := numericValue(v); ok && ms > 1e11 {
-					row[k] = stamp(ms)
+					row[k] = humanStamp(ms, format, now)
 				}
 			}
 		}
 		if meta, ok := row["metadata"].(map[string]any); ok {
 			if ms, ok := numericValue(meta["created_at"]); ok && ms > 1e11 {
-				row["created"] = stamp(ms)
+				row["created"] = humanStamp(ms, format, now)
 			}
 			if ms, ok := numericValue(meta["modified_at"]); ok && ms > 1e11 {
-				row["modified"] = stamp(ms)
+				row["modified"] = humanStamp(ms, format, now)
 			}
 		}
 	}
@@ -181,11 +167,7 @@ func userListRows(rows []map[string]any, format output.Format) []map[string]any 
 			}
 		}
 		if latest > 0 {
-			if format == output.FormatCSV {
-				row["last_login"] = time.Unix(int64(latest), 0).UTC().Format(time.RFC3339)
-			} else {
-				row["last_login"] = timeAgo(latest*1000, now)
-			}
+			row["last_login"] = humanStamp(latest*1000, format, now) // last_logins is epoch SECONDS
 		}
 	}
 	return rows

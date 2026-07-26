@@ -343,11 +343,10 @@ func (s *replSession) showFields() error {
 	if len(s.ids) == 1 {
 		params.Set("log_id", s.ids[0])
 	}
-	var payload map[string]any
-	if err := s.client.GetJSON(ctx, "/top-keys", params, &payload); err != nil {
+	rows, err := topKeyRows(ctx, s.app, params)
+	if err != nil {
 		return err
 	}
-	rows := normalizeTopKeys(payload)
 	if len(rows) == 0 {
 		_, _ = fmt.Fprintln(s.app.Stdout, "No fields discovered in this window.")
 		return nil
@@ -480,15 +479,7 @@ func (s *replSession) tail() error {
 			}
 			return err
 		}
-		batch := resp.SelectedRows()
-		fresh := batch[:0:0]
-		for _, ev := range batch {
-			if dedup.Admit(dedup.Key(ev)) {
-				fresh = append(fresh, ev)
-			}
-		}
-		bronto.SortEvents(fresh)
-		for _, ev := range fresh {
+		for _, ev := range dedupSorted(resp, dedup) {
 			_, _ = fmt.Fprintln(s.app.Stdout, renderTailLine(ev, fmt.Sprint(ev["@raw"]), nil, s.app.Color, nil))
 		}
 		select {
