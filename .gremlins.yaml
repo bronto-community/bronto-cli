@@ -1,0 +1,13 @@
+# Mutation-testing configuration (gremlins). ADVISORY, not a gate:
+# thresholds are 0 so a run never fails on score. It complements the
+# line-coverage ratchet — coverage proves code ran; the mutation score
+# estimates whether a WRONG result would be caught. Run: make mutation.
+unleash:
+  # One worker keeps runs deterministic: under parallel load, slow mutants
+  # get misclassified as flaky "timeouts" rather than killed/lived.
+  workers: 1
+  # A mutated loop bound can spin forever; a generous timeout lets the real
+  # test kill it instead of registering a noisy timeout.
+  timeout-coefficient: 4
+  threshold-efficacy: 0
+  threshold-mcover: 0

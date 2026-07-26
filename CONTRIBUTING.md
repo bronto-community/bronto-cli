@@ -43,6 +43,8 @@ Write the failing test first. Every package in `internal/` has a corresponding `
 
 Run `make lint` (config in `.golangci.yml`) before opening a PR — CI enforces it.
 
+Coverage is ratcheted (`make coverage`, gate against `.github/coverage-baseline.txt`), but coverage only proves code *ran*, not that a wrong result would be *caught*. `make mutation` runs [gremlins](https://github.com/go-gremlins/gremlins) mutation testing over the core-logic packages: it injects small bugs (flip a `<`, negate a condition, change `+` to `-`) and reports how many your tests *kill*. A surviving mutant means a line is covered but under-asserted — tighten the assertion (a golden/exact-value check, not just "no error"). This is **advisory**, surfaced in the nightly run summary; it is deliberately not a gate (its timeout behaviour is too flaky, and mutation scores of ~65–85% are normal). Config lives in `.gremlins.yaml`; fuzz-bearing packages (`timerange`, `query`) and the large `cli` command layer are skipped for speed.
+
 ## Conventional commits
 
 Commit subjects follow [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`, etc., e.g. `feat: config resolution with precedence, source tracking, profiles`. The release changelog (`.goreleaser.yaml`) groups `feat:`/`fix:` commits into their own sections and excludes `docs:`/`test:`/`chore:` entirely, so an inaccurate prefix will misfile (or hide) your change in release notes.
