@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	toml "github.com/pelletier/go-toml/v2"
@@ -210,6 +211,25 @@ func HasProfile(dir, name string) (bool, error) {
 	}
 	_, ok := uf.Profiles[name]
 	return ok, nil
+}
+
+// ListProfiles returns the names of every [profiles.<name>] section in the
+// user config file (sorted), for shell completion of --profile. dir
+// semantics match HasProfile.
+func ListProfiles(dir string) ([]string, error) {
+	uf, err := loadUserFile(dir, os.Getenv)
+	if err != nil {
+		return nil, err
+	}
+	if uf == nil {
+		return nil, nil
+	}
+	names := make([]string, 0, len(uf.Profiles))
+	for name := range uf.Profiles {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names, nil
 }
 
 func (c *Config) Get(key string) (Value, bool) {

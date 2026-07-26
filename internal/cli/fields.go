@@ -95,6 +95,9 @@ func newFieldsCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset name or UUID (omit for all datasets)")
 	cmd.Flags().StringVar(&since, "since", "1h", "relative lookback (single unit: 30s, 15m, 1h, 2d)")
 	cmd.Flags().IntVarP(&limit, "limit", "n", 0, "maximum keys to return")
+	// The positional name-filter completes to the dataset's own field names.
+	cmd.ValidArgsFunction = completeFields
+	_ = cmd.RegisterFlagCompletionFunc("dataset", completeDatasets)
 	return cmd
 }
 

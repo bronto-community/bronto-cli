@@ -47,6 +47,10 @@ Two image variants are published on every release: the default (`scratch` + CA c
 
 Prebuilt archives (tar.gz for macOS/Linux, zip for Windows) plus `.deb`/`.rpm` packages and shell completions are attached to every [GitHub release](https://github.com/bronto-community/bronto-cli/releases).
 
+### Shell completion
+
+`bronto completion <bash|zsh|fish|powershell>` prints a completion script (e.g. `source <(bronto completion zsh)`, or install it where your shell loads completions). Completion is **context-aware**: `-d/--dataset` completes your real datasets, `bronto <resource> get/update/delete <tab>` completes live resource names (with the id as the description), `--select`/`-g`/`--fields`/`--eq…` complete the dataset's field names, `--saved` completes saved searches, and `-o`/`--region` complete their allowed values. API-backed completions have a short timeout and fall back silently, so a slow or offline API never hangs your shell.
+
 ## Quickstart
 
 ```sh

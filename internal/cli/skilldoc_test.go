@@ -59,6 +59,7 @@ func TestSkillDocCommandsAreReal(t *testing.T) {
 	root := NewRootCmd()
 	root.InitDefaultHelpFlag()
 	root.InitDefaultVersionFlag()
+	root.InitDefaultCompletionCmd() // cobra registers this lazily in ExecuteC
 
 	_, thisFile, _, ok := runtime.Caller(0)
 	if !ok {

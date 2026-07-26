@@ -304,6 +304,14 @@ func newSearchCmd() *cobra.Command {
 	registerFilterFlags(f, &filters)
 	f.BoolVar(&exactFields, "exact", false, "with the filter flags, use field names verbatim (no fuzzy $-/case resolution)")
 	f.BoolVar(&showQuery, "show-query", false, "print the compiled WHERE (positional query ANDed with filter flags) and exit")
+	// The positional is a WHERE expression, not a file — suppress the file
+	// fallback. Flag values complete to real datasets, fields, and searches.
+	cmd.ValidArgsFunction = noFileComplete
+	_ = cmd.RegisterFlagCompletionFunc("dataset", completeDatasets)
+	_ = cmd.RegisterFlagCompletionFunc("select", completeFields)
+	_ = cmd.RegisterFlagCompletionFunc("group-by", completeFields)
+	_ = cmd.RegisterFlagCompletionFunc("saved", completeKindFlag("saved-searches"))
+	registerFilterFlagCompletion(cmd)
 	return cmd
 }
 
