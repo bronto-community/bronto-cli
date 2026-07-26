@@ -550,8 +550,8 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <id>",
 		Short: fmt.Sprintf("Update a %s", desc.singular()),
-		Example: "  bronto " + desc.Name + " update <id> -f name=x\n" +
-			"  bronto " + desc.Name + " update <id> --input body.json",
+		Example: "  bronto " + desc.display() + " update <id> -f name=x\n" +
+			"  bronto " + desc.display() + " update <id> --input body.json",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeResourceRef(desc),
 		RunE: func(cmd *cobra.Command, args []string) error {

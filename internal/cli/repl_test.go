@@ -68,7 +68,7 @@ func runRepl(t *testing.T, srv *httptest.Server, lines []string) (string, string
 	t.Helper()
 	replTTY(t)
 	oldTerm := newReplTerm
-	newReplTerm = func(*App) (replTerm, func(), error) {
+	newReplTerm = func() (replTerm, func(), error) {
 		return &scriptedTerm{lines: lines}, func() {}, nil
 	}
 	t.Cleanup(func() { newReplTerm = oldTerm })
