@@ -206,6 +206,12 @@ func HasProfile(dir, name string) (bool, error) {
 	return ok, nil
 }
 
+// SettableKeys returns the config keys accepted by `bronto config set`
+// (a copy of userFileKeys), for shell completion of the key argument.
+func SettableKeys() []string {
+	return append([]string(nil), userFileKeys...)
+}
+
 // ListProfiles returns the names of every [profiles.<name>] section in the
 // user config file (sorted), for shell completion of --profile. dir
 // semantics match HasProfile.

@@ -49,9 +49,10 @@ func newConfigCmd() *cobra.Command {
 	}
 
 	get := &cobra.Command{
-		Use:   "get <key>",
-		Short: "Print a single resolved config value",
-		Args:  cobra.ExactArgs(1),
+		Use:               "get <key>",
+		Short:             "Print a single resolved config value",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeConfigKeys,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
@@ -71,9 +72,10 @@ func newConfigCmd() *cobra.Command {
 	}
 
 	set := &cobra.Command{
-		Use:   "set <key> <value>",
-		Short: "Persist a config value in the user config file",
-		Args:  cobra.ExactArgs(2),
+		Use:               "set <key> <value>",
+		Short:             "Persist a config value in the user config file",
+		Args:              cobra.ExactArgs(2),
+		ValidArgsFunction: completeConfigKeys,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {

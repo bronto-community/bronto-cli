@@ -49,7 +49,14 @@ Prebuilt archives (tar.gz for macOS/Linux, zip for Windows) plus `.deb`/`.rpm` p
 
 ### Shell completion
 
-`bronto completion <bash|zsh|fish|powershell>` prints a completion script (e.g. `source <(bronto completion zsh)`, or install it where your shell loads completions). Completion is **context-aware**: `-d/--dataset` completes your real datasets, `bronto <resource> get/update/delete <tab>` completes live resource names (with the id as the description), `--select`/`-g`/`--fields`/`--eq…` complete the dataset's field names, `--saved` completes saved searches, and `-o`/`--region` complete their allowed values. API-backed completions have a short timeout and fall back silently, so a slow or offline API never hangs your shell.
+`bronto completion <bash|zsh|fish|powershell>` prints a completion script (e.g. `source <(bronto completion zsh)`, or install it where your shell loads completions). Completion is **context-aware**:
+
+- **`<command> <tab>`** offers that command's flags, most-useful first — and if you haven't set a default dataset, `--dataset` is starred at the top.
+- **`-d/--dataset`** completes your real datasets; on large accounts it drills down by collection first (`web/<tab>` → that collection's datasets).
+- **`<resource> get/update/delete <tab>`** completes live resource names (id shown as the description); **`--select`/`-g`/`--fields`/`--eq…`** complete the dataset's field names; **`--saved`** completes saved searches.
+- **`--since`/`--window`** suggest common windows, **`config get/set`** completes config keys, and **`-o`/`--region`/`--profile`** complete their allowed values.
+
+API-backed completions have a short timeout and fall back silently, so a slow or offline API never hangs your shell. File paths are still completed where one is expected (`--input`, `--local`).
 
 ## Quickstart
 

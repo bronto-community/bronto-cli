@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -99,10 +100,19 @@ func TestCompleteResourceNames(t *testing.T) {
 }
 
 func TestCompleteSearchPositionalSuppressesFiles(t *testing.T) {
-	// The query positional must NOT fall back to file completion.
+	// The query positional must NOT fall back to file completion. It now
+	// offers flag hints too (KeepOrder), so assert the NoFileComp bit is set
+	// rather than an exact directive (see TestFlagHintsOnEmptyPositional).
 	_, dir := runComplete(t, noAPI(t), "search", "")
-	if dir != ":4" { // NoFileComp
-		t.Fatalf("directive = %q (want NoFileComp)", dir)
+	if !strings.HasPrefix(dir, ":") {
+		t.Fatalf("no directive: %q", dir)
+	}
+	var n int
+	if _, err := fmt.Sscanf(dir, ":%d", &n); err != nil {
+		t.Fatalf("bad directive %q: %v", dir, err)
+	}
+	if n&4 == 0 { // ShellCompDirectiveNoFileComp
+		t.Fatalf("NoFileComp not set in directive %q", dir)
 	}
 }
 
@@ -112,6 +122,93 @@ func TestCompleteInputFlagKeepsFileCompletion(t *testing.T) {
 	_, dir := runComplete(t, noAPI(t), "monitors", "create", "--input", "")
 	if dir == ":4" {
 		t.Fatalf("--input should keep file completion, got NoFileComp")
+	}
+}
+
+func TestFlagHintsOnEmptyPositional(t *testing.T) {
+	// "bronto search <tab>" hints the command's flags, most-useful first,
+	// with --dataset starred (no default_dataset configured) and no files.
+	cands, dir := runComplete(t, noAPI(t), "search", "")
+	if dir != ":36" { // NoFileComp|KeepOrder
+		t.Fatalf("directive = %q", dir)
+	}
+	if len(cands) == 0 || !strings.HasPrefix(cands[0], "--dataset\t") {
+		t.Fatalf("first hint = %v", cands)
+	}
+	if !strings.Contains(cands[0], "★") || !strings.Contains(cands[0], "no default dataset") {
+		t.Fatalf("dataset hint not starred: %q", cands[0])
+	}
+	// help must not appear as a hint
+	for _, c := range cands {
+		if strings.HasPrefix(c, "--help") {
+			t.Fatalf("--help leaked into hints: %v", cands)
+		}
+	}
+}
+
+func TestCompleteSince(t *testing.T) {
+	cands, dir := runComplete(t, noAPI(t), "search", "--since", "")
+	if dir != ":36" { // NoFileComp|KeepOrder
+		t.Fatalf("directive = %q", dir)
+	}
+	if len(cands) == 0 || !strings.HasPrefix(cands[0], "15m\t") {
+		t.Fatalf("since cands = %v", cands)
+	}
+}
+
+func TestCompleteConfigKeys(t *testing.T) {
+	cands, _ := runComplete(t, noAPI(t), "config", "get", "")
+	joined := strings.Join(cands, " ")
+	for _, k := range []string{"region", "output", "default_dataset", "ask_url"} {
+		if !strings.Contains(joined, k) {
+			t.Errorf("missing config key %q in %v", k, cands)
+		}
+	}
+}
+
+func TestCompleteDatasetsSmallAccountFlat(t *testing.T) {
+	h := func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"logs":[
+			{"log":"api","collection":"prod","log_id":"11111111-1111-1111-1111-111111111111"},
+			{"log":"web","collection":"prod","log_id":"22222222-2222-2222-2222-222222222222"}]}`))
+	}
+	cands, _ := runComplete(t, h, "search", "-d", "")
+	// small account: flat names, not "collection/"
+	if len(cands) != 2 || !strings.HasPrefix(cands[0], "api\t") {
+		t.Fatalf("flat cands = %v", cands)
+	}
+}
+
+func TestCompleteDatasetsLargeAccountCollectionsFirst(t *testing.T) {
+	// > threshold datasets across two collections -> collections first.
+	h := func(w http.ResponseWriter, _ *http.Request) {
+		var b strings.Builder
+		b.WriteString(`{"logs":[`)
+		for i := 0; i < datasetCompletionThreshold+5; i++ {
+			if i > 0 {
+				b.WriteByte(',')
+			}
+			coll := "alpha"
+			if i%2 == 0 {
+				coll = "beta"
+			}
+			fmt.Fprintf(&b, `{"log":"ds%d","collection":"%s","log_id":"1111%04d-1111-1111-1111-111111111111"}`, i, coll, i)
+		}
+		b.WriteString(`]}`)
+		_, _ = w.Write([]byte(b.String()))
+	}
+	// no slash: collections, NoSpace so the next tab drills in
+	cands, dir := runComplete(t, h, "search", "-d", "")
+	if dir != ":6" { // NoFileComp|NoSpace
+		t.Fatalf("directive = %q", dir)
+	}
+	if len(cands) != 2 || cands[0] != "alpha/\tcollection" || cands[1] != "beta/\tcollection" {
+		t.Fatalf("collection cands = %v", cands)
+	}
+	// with a collection prefix: that collection's datasets, qualified
+	sub, _ := runComplete(t, h, "search", "-d", "alpha/")
+	if len(sub) == 0 || !strings.HasPrefix(sub[0], "alpha/ds") {
+		t.Fatalf("drill-in cands = %v", sub)
 	}
 }
 
