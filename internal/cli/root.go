@@ -110,6 +110,7 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	wrapArgsValidators(cmd)
+	applyCompletions(cmd)
 
 	return cmd
 }
