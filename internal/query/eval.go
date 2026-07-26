@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"strconv"
+
+	"github.com/bronto-community/bronto-cli/internal/coerce"
 )
 
 // Matcher evaluates a parsed query against events client-side. Regexes
@@ -133,20 +134,4 @@ func valueString(v any) string {
 	return fmt.Sprint(v)
 }
 
-func valueNumber(v any) (float64, bool) {
-	switch t := v.(type) {
-	case float64:
-		return t, true
-	case int:
-		return float64(t), true
-	case int64:
-		return float64(t), true
-	case json.Number:
-		f, err := t.Float64()
-		return f, err == nil
-	case string:
-		f, err := strconv.ParseFloat(t, 64)
-		return f, err == nil
-	}
-	return 0, false
-}
+func valueNumber(v any) (float64, bool) { return coerce.NumberOrParse(v) }

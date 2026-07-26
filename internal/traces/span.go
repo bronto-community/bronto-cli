@@ -7,8 +7,9 @@ package traces
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
+
+	"github.com/bronto-community/bronto-cli/internal/coerce"
 )
 
 const FromExpr = "logset = '.traces'"
@@ -90,48 +91,20 @@ func str(row map[string]any, key string) string {
 // toInt64 tolerantly coerces API numbers that may arrive as float64,
 // int, or numeric strings. Unparseable values become 0 (v1 semantics).
 func toInt64(v any) int64 {
-	switch n := v.(type) {
-	case float64:
-		return int64(n)
-	case json.Number:
+	// json.Number carries full int64 precision (span ids, epoch nanos);
+	// take that path before coerce reduces through float64.
+	if n, ok := v.(json.Number); ok {
 		if i, err := n.Int64(); err == nil {
 			return i
 		}
-		if f, err := n.Float64(); err == nil {
-			return int64(f)
-		}
-		return 0
-	case int64:
-		return n
-	case int:
-		return int64(n)
-	case string:
-		if f, err := strconv.ParseFloat(n, 64); err == nil {
-			return int64(f)
-		}
 	}
-	return 0
+	f, _ := coerce.NumberOrParse(v)
+	return int64(f)
 }
 
 // toFloat tolerantly coerces API numbers that may arrive as float64,
 // int64, int, or numeric strings. Unparseable values become 0 (v1 semantics).
 func toFloat(v any) float64 {
-	switch n := v.(type) {
-	case float64:
-		return n
-	case json.Number:
-		if f, err := n.Float64(); err == nil {
-			return f
-		}
-		return 0
-	case int64:
-		return float64(n)
-	case int:
-		return float64(n)
-	case string:
-		if f, err := strconv.ParseFloat(n, 64); err == nil {
-			return f
-		}
-	}
-	return 0
+	f, _ := coerce.NumberOrParse(v)
+	return f
 }

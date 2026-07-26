@@ -1,10 +1,11 @@
 package bronto
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
+
+	"github.com/bronto-community/bronto-cli/internal/coerce"
 )
 
 // FieldRule scopes a regexp to one event field ("gateway~stripe").
@@ -128,18 +129,4 @@ func SortEvents(evs []map[string]any) {
 	})
 }
 
-func numeric(v any) (float64, bool) {
-	switch n := v.(type) {
-	case float64:
-		return n, true
-	case json.Number:
-		if f, err := n.Float64(); err == nil {
-			return f, true
-		}
-	case int64:
-		return float64(n), true
-	case int:
-		return float64(n), true
-	}
-	return 0, false
-}
+func numeric(v any) (float64, bool) { return coerce.Number(v) }

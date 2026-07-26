@@ -1,12 +1,12 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/bronto-community/bronto-cli/internal/coerce"
 	"github.com/bronto-community/bronto-cli/internal/output"
 )
 
@@ -71,21 +71,7 @@ func datasetListRows(rows []map[string]any, format output.Format) []map[string]a
 
 // numericValue coerces decoded JSON numbers — json.Number after
 // bronto.DecodeJSON, float64 from plain unmarshals in tests — to float64.
-func numericValue(v any) (float64, bool) {
-	switch t := v.(type) {
-	case float64:
-		return t, true
-	case json.Number:
-		if f, err := t.Float64(); err == nil {
-			return f, true
-		}
-	case int64:
-		return float64(t), true
-	case int:
-		return float64(t), true
-	}
-	return 0, false
-}
+func numericValue(v any) (float64, bool) { return coerce.Number(v) }
 
 // collectionListRows expands /collections rows — maps of collection name
 // to dataset arrays — into one row per collection with a dataset count
