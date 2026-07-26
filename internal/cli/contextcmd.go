@@ -71,5 +71,9 @@ func newContextCmd() *cobra.Command {
 	_ = cmd.MarkFlagRequired("sequence")
 	_ = cmd.MarkFlagRequired("dataset")
 	_ = cmd.MarkFlagRequired("timestamp")
+	_ = cmd.RegisterFlagCompletionFunc("dataset", completeDatasets)
+	_ = cmd.RegisterFlagCompletionFunc("direction", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return []string{"both", "before", "after"}, cobra.ShellCompDirectiveNoFileComp
+	})
 	return cmd
 }

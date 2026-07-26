@@ -483,10 +483,11 @@ func maskSecretRows(rows []map[string]any, keys []string) {
 
 func newResourceGetCmd(desc resourceDesc) *cobra.Command {
 	return &cobra.Command{
-		Use:     "get <id>",
-		Short:   fmt.Sprintf("Get a %s by ID", desc.singular()),
-		Example: fmt.Sprintf("  bronto %s get <id>", desc.display()),
-		Args:    cobra.ExactArgs(1),
+		Use:               "get <id>",
+		Short:             fmt.Sprintf("Get a %s by ID", desc.singular()),
+		Example:           fmt.Sprintf("  bronto %s get <id>", desc.display()),
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeResourceRef(desc),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
@@ -551,7 +552,8 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 		Short: fmt.Sprintf("Update a %s", desc.singular()),
 		Example: "  bronto " + desc.Name + " update <id> -f name=x\n" +
 			"  bronto " + desc.Name + " update <id> --input body.json",
-		Args: cobra.ExactArgs(1),
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeResourceRef(desc),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			body, err := resourceRequestBody(cmd, input, fields)
 			if err != nil {
@@ -584,10 +586,11 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 	var yes bool
 	cmd := &cobra.Command{
-		Use:     "delete <id>",
-		Short:   fmt.Sprintf("Delete a %s", desc.singular()),
-		Example: fmt.Sprintf("  bronto %s delete <id> --yes", desc.display()),
-		Args:    cobra.ExactArgs(1),
+		Use:               "delete <id>",
+		Short:             fmt.Sprintf("Delete a %s", desc.singular()),
+		Example:           fmt.Sprintf("  bronto %s delete <id> --yes", desc.display()),
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeResourceRef(desc),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
@@ -629,10 +632,11 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 
 func newMonitorEventsCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:     "events <id>",
-		Short:   "List recent events for a monitor",
-		Example: "  bronto monitors events <id>",
-		Args:    cobra.ExactArgs(1),
+		Use:               "events <id>",
+		Short:             "List recent events for a monitor",
+		Example:           "  bronto monitors events <id>",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeKindRef("monitors"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
@@ -665,7 +669,8 @@ func newMonitorMuteCmd() *cobra.Command {
 		Example: "  bronto monitors mute <id>\n" +
 			"  bronto monitors mute <id> --until 1710958395538\n" +
 			"  bronto monitors mute <id> --unmute",
-		Args: cobra.ExactArgs(1),
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeKindRef("monitors"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
@@ -710,10 +715,11 @@ func newMonitorMuteCmd() *cobra.Command {
 // reactivate, resend-invite): POST /users/{id}/<action> with no body.
 func newUserActionCmd(action, short string) *cobra.Command {
 	return &cobra.Command{
-		Use:     action + " <id>",
-		Short:   short,
-		Example: "  bronto users " + action + " <id>",
-		Args:    cobra.ExactArgs(1),
+		Use:               action + " <id>",
+		Short:             short,
+		Example:           "  bronto users " + action + " <id>",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeKindRef("users"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
@@ -741,10 +747,11 @@ func newUserActionCmd(action, short string) *cobra.Command {
 // newGroupMembersCmd lists a group's members (GET /groups/{id}/members).
 func newGroupMembersCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:     "members <id>",
-		Short:   "List the members of a group",
-		Example: "  bronto groups members <id>",
-		Args:    cobra.ExactArgs(1),
+		Use:               "members <id>",
+		Short:             "List the members of a group",
+		Example:           "  bronto groups members <id>",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeKindRef("groups"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {

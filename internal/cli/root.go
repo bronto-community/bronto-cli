@@ -47,6 +47,12 @@ func NewRootCmd() *cobra.Command {
 	pf.Int("max-retries", 2, "retries for idempotent requests on 429/5xx (config: max_retries, env: BRONTO_MAX_RETRIES)")
 	pf.Bool("debug", false, "trace API requests/responses on stderr (API key redacted)")
 	pf.Bool("dry-run", false, "print mutating API calls instead of executing them (reads still run)")
+	// Completion for the global (persistent) flags — one registration covers
+	// every subcommand. --fields needs a -d on the line; it no-ops otherwise.
+	_ = cmd.RegisterFlagCompletionFunc("output", completeOutputFormat)
+	_ = cmd.RegisterFlagCompletionFunc("region", completeRegion)
+	_ = cmd.RegisterFlagCompletionFunc("profile", completeProfiles)
+	_ = cmd.RegisterFlagCompletionFunc("fields", completeFields)
 	cmd.AddCommand(newVersionCmd())
 	cmd.AddCommand(newConfigCmd())
 	cmd.AddCommand(newAuthCmd())

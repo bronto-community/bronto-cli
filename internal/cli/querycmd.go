@@ -94,6 +94,8 @@ func newQueryCheckCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset (name or UUID) to check field names against")
 	cmd.Flags().BoolVar(&strict, "strict", false, "treat unknown fields as errors (for CI)")
+	cmd.ValidArgsFunction = noFileComplete // positional is a query expression
+	_ = cmd.RegisterFlagCompletionFunc("dataset", completeDatasets)
 	return cmd
 }
 

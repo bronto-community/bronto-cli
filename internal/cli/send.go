@@ -115,6 +115,7 @@ func newSendCmd() *cobra.Command {
 	f.DurationVar(&flushInterval, "flush-interval", time.Second, "flush a partial batch at least this often (min 100ms)")
 	f.BoolVar(&noGzip, "no-gzip", false, "disable gzip compression of the request body")
 	_ = cmd.MarkFlagRequired("dataset")
+	_ = cmd.RegisterFlagCompletionFunc("dataset", completeDatasets)
 	return cmd
 }
 

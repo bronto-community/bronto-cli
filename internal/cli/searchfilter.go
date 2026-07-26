@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
 	"github.com/bronto-community/bronto-cli/internal/bronto"
@@ -63,6 +64,19 @@ func registerFilterFlags(f *pflag.FlagSet, dst *[]filterClause) {
 	}
 	for _, s := range specs {
 		f.Var(&filterFlag{op: s.op, dst: dst}, s.name, s.desc)
+	}
+}
+
+// filterFlagNames are the structured filter flags, shared by
+// registerFilterFlags and registerFilterFlagCompletion.
+var filterFlagNames = []string{"eq", "ne", "gt", "ge", "lt", "le", "match", "nmatch"}
+
+// registerFilterFlagCompletion completes each --eq/--gt/… value with the
+// dataset's field names suffixed by "=" (e.g. "$model="), so a user can
+// tab-complete the field half of the flag.
+func registerFilterFlagCompletion(cmd *cobra.Command) {
+	for _, name := range filterFlagNames {
+		_ = cmd.RegisterFlagCompletionFunc(name, completeFilterField)
 	}
 }
 
