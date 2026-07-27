@@ -1,4 +1,4 @@
-.PHONY: build test lint check-spec spec-baseline lint-workflows check-actions release-dry snapshot coverage coverage-baseline it vuln
+.PHONY: build test lint check-spec spec-baseline lint-workflows check-actions release-dry snapshot coverage coverage-baseline it vuln mutation
 
 build:
 	CGO_ENABLED=0 go build -o bronto ./cmd/bronto
@@ -91,3 +91,10 @@ snapshot:
 # vuln scans all packages against the Go vulnerability database.
 vuln:
 	go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+
+# mutation runs advisory mutation testing (gremlins) over the core-logic
+# packages — an estimate of whether tests would CATCH a bug, not just run
+# the code. Not a gate; complements the coverage ratchet. See scripts/
+# mutation.sh and .gremlins.yaml.
+mutation:
+	scripts/mutation.sh
