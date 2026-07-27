@@ -19,7 +19,9 @@ bronto-cli is an official open-source project from [Bronto](https://bronto.io), 
 brew install bronto-community/tap/bronto
 ```
 
-The tap isn't published yet — this will work once the `homebrew-tap` repository exists; the release workflow already pushes the formula automatically. Until then, use one of the options below.
+The tap isn't published yet — this will work once the `homebrew-tap` repository exists; the release workflow already pushes the cask automatically. Until then, use one of the options below.
+
+On first install from a third-party tap, Homebrew 6.0+ asks you to trust the tap once (`bronto-community/homebrew-tap`) before it runs — that prompt is expected, not an error. The cask clears macOS's Gatekeeper quarantine on install, so the binary runs without the "cannot verify developer" dialog.
 
 ### curl install script
 
