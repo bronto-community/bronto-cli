@@ -347,6 +347,92 @@ func TestCompleteAPIMethodThenPath(t *testing.T) {
 	}
 }
 
+func TestCompleteHiddenEasterEggs(t *testing.T) {
+	// `bronto g<tab>` must surface the hidden `graze` egg (cobra omits hidden
+	// subcommands), alongside the real `groups`; non-matching eggs stay hidden.
+	cands, _ := runComplete(t, noAPI(t), "g")
+	joined := strings.Join(cands, " ")
+	if !strings.Contains(joined, "graze") {
+		t.Fatalf("graze not suggested for 'g': %v", cands)
+	}
+	if strings.Contains(joined, "herd") || strings.Contains(joined, "rumble") {
+		t.Fatalf("non-g egg leaked for prefix 'g': %v", cands)
+	}
+}
+
+func TestCompleteFilterFieldValues(t *testing.T) {
+	// `--eq $model=<tab>` completes the field's sample values.
+	h := func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/logs":
+			_, _ = w.Write([]byte(`{"logs":[{"log":"app","collection":"prod","log_id":"11111111-1111-1111-1111-111111111111"}]}`))
+		case "/top-keys":
+			_, _ = w.Write([]byte(`{"log-a":{"$model":{"type":"STRING","field_type":"ATTRIBUTE",
+				"values":{"claude-fable-5":{"rank":-1},"claude-opus-4-8":{"rank":-1},"":{"rank":-1}}}}}`))
+		default:
+			t.Errorf("path = %s", r.URL.Path)
+		}
+	}
+	cands, dir := runComplete(t, h, "search", "-d", "app", "--eq", "$model=")
+	if dir != ":4" { // NoFileComp, no NoSpace (a chosen value completes the clause)
+		t.Fatalf("directive = %q", dir)
+	}
+	joined := strings.Join(cands, " ")
+	if !strings.Contains(joined, "$model=claude-fable-5") || !strings.Contains(joined, "$model=claude-opus-4-8") {
+		t.Fatalf("value cands = %v", cands)
+	}
+	// the empty-string sample must not become a bare "$model=" candidate
+	for _, c := range cands {
+		if c == "$model=" {
+			t.Fatalf("empty value leaked as a candidate: %v", cands)
+		}
+	}
+}
+
+func TestCompleteComparisonFilterOffersNoValues(t *testing.T) {
+	// --gt/--lt/etc. must NOT complete values (a numeric field floods the
+	// shell with arbitrary numbers); the field stage still works.
+	valuesServed := false
+	h := func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/logs":
+			_, _ = w.Write([]byte(`{"logs":[{"log":"app","collection":"prod","log_id":"11111111-1111-1111-1111-111111111111"}]}`))
+		case "/top-keys":
+			valuesServed = true
+			_, _ = w.Write([]byte(`{"log-a":{"$duration_ms":{"type":"STRING","field_type":"ATTRIBUTE","values":{"1":{"rank":-1},"2":{"rank":-1}}}}}`))
+		}
+	}
+	// value stage: no candidates
+	cands, dir := runComplete(t, h, "search", "-d", "app", "--gt", "$duration_ms=")
+	if dir != ":4" || len(cands) != 0 {
+		t.Fatalf("--gt value stage = %v %q (want none)", cands, dir)
+	}
+	if valuesServed {
+		t.Fatalf("--gt must not even fetch /top-keys for values")
+	}
+	// field stage: still offers field=
+	fields, _ := runComplete(t, h, "search", "-d", "app", "--gt", "")
+	if len(fields) == 0 || !strings.HasPrefix(fields[0], "$duration_ms=") {
+		t.Fatalf("--gt field stage = %v", fields)
+	}
+}
+
+func TestCompleteFilterFieldValuesTolerantOfDollar(t *testing.T) {
+	// "model=" (no $) resolves to the "$model" key.
+	h := func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/logs":
+			_, _ = w.Write([]byte(`{"logs":[{"log":"app","collection":"prod","log_id":"11111111-1111-1111-1111-111111111111"}]}`))
+		case "/top-keys":
+			_, _ = w.Write([]byte(`{"log-a":{"$model":{"type":"STRING","field_type":"ATTRIBUTE","values":{"x":{"rank":-1}}}}}`))
+		}
+	}
+	cands, _ := runComplete(t, h, "search", "-d", "app", "--eq", "model=")
+	if len(cands) != 1 || cands[0] != "model=x" {
+		t.Fatalf("tolerant cands = %v", cands)
+	}
+}
+
 func TestCompleteFilterFieldFlag(t *testing.T) {
 	// --eq value completes to "<field>=" with NoSpace|NoFileComp (6).
 	h := func(w http.ResponseWriter, r *http.Request) {

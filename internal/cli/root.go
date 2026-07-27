@@ -111,6 +111,9 @@ func NewRootCmd() *cobra.Command {
 
 	wrapArgsValidators(cmd)
 	applyCompletions(cmd)
+	// Root keeps subcommand-name completion (it's a group), plus a completer
+	// that surfaces the hidden easter eggs so `bronto g<tab>` finds `graze`.
+	cmd.ValidArgsFunction = completeHiddenCommands
 
 	return cmd
 }

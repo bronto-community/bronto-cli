@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -11,9 +12,34 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/config"
 	"github.com/bronto-community/bronto-cli/internal/output"
 )
+
+// maxCompletionValues caps how many sample values a filter-flag value
+// completion offers, so a high-cardinality field doesn't flood the shell.
+const maxCompletionValues = 20
+
+// completeHiddenCommands surfaces the hidden easter-egg commands (graze/herd/
+// rumble) in root completion — cobra omits hidden subcommands, so without this
+// `bronto g<tab>` would never suggest `graze`. Set as root.ValidArgsFunction;
+// cobra merges the result with the visible subcommand names.
+func completeHiddenCommands(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	var out []string
+	for _, c := range cmd.Commands() {
+		if c.Hidden && !cobraHiddenBuiltin(c.Name()) && strings.HasPrefix(c.Name(), toComplete) {
+			out = append(out, c.Name()+"\t"+c.Short)
+		}
+	}
+	return out, cobra.ShellCompDirectiveNoFileComp
+}
+
+// cobraHiddenBuiltin reports whether a hidden command is one cobra manages
+// itself (the __complete pair), which must not be surfaced as a suggestion.
+func cobraHiddenBuiltin(name string) bool {
+	return name == "__complete" || name == "__completeNoDesc"
+}
 
 // Shell completion. bronto registers ValidArgsFunction on positionals and
 // RegisterFlagCompletionFunc on flag values so tab-completion offers real
@@ -331,15 +357,91 @@ func apiPathHints() []string {
 	return out
 }
 
-// completeFilterField completes a structured filter flag value with
-// "field=" (--eq/--gt/…). NoSpace keeps the cursor on the value after the =.
-func completeFilterField(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+// filterFieldStage completes the field half of a filter flag: "$model=", with
+// NoSpace so the cursor stays put for the value.
+func filterFieldStage(cmd *cobra.Command) ([]string, cobra.ShellCompDirective) {
 	names := fieldNamesForCmd(cmd)
 	out := make([]string, 0, len(names))
 	for _, n := range names {
 		out = append(out, n+"=")
 	}
 	return out, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+}
+
+// completeFilterField completes a comparison/regex filter flag (--gt/--lt/
+// --match/…): the field name, then nothing — the value is a threshold or
+// pattern the user types, not one of a set. Offering the field's observed
+// values here would be noise (a numeric field returns a flood of arbitrary
+// numbers; you want to type "1000", not pick "13").
+func completeFilterField(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if strings.ContainsRune(toComplete, '=') {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	return filterFieldStage(cmd)
+}
+
+// completeFilterFieldWithValues completes an equality filter flag (--eq/--ne):
+// the field name, then a sample of that field's observed values from the same
+// /top-keys data `bronto fields` shows (capped, $-/case tolerant). Equality is
+// the one operator where "which known value?" is the actual question.
+func completeFilterFieldWithValues(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if eq := strings.IndexByte(toComplete, '='); eq >= 0 {
+		field := toComplete[:eq]
+		values := fieldValuesForCmd(cmd, field)
+		out := make([]string, 0, len(values))
+		for _, v := range values {
+			out = append(out, field+"="+v)
+		}
+		// No NoSpace: once a value is chosen the clause is complete.
+		return out, cobra.ShellCompDirectiveNoFileComp
+	}
+	return filterFieldStage(cmd)
+}
+
+// fieldValuesForCmd returns a capped, sorted sample of the values observed for
+// one field in the dataset named by -d, via /top-keys (the same endpoint
+// `bronto fields` uses). Field matching is tolerant of the $-prefix and case,
+// so "model=" resolves to the "$model" key. Empty when no -d is set, the field
+// isn't found, or it carries no value sample.
+func fieldValuesForCmd(cmd *cobra.Command, field string) []string {
+	dsRef := datasetFlagValue(cmd)
+	if dsRef == "" || field == "" {
+		return nil
+	}
+	app, ctx, cancel, ok := completionApp(cmd)
+	if !ok {
+		return nil
+	}
+	defer cancel()
+	logID, err := resolveDatasetRef(ctx, app, dsRef)
+	if err != nil {
+		return nil
+	}
+	params := url.Values{"time_range": {"Last 1 hour"}, "log_id": {logID}}
+	var payload map[string]any
+	client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
+	if err := client.GetJSON(ctx, "/top-keys", params, &payload); err != nil {
+		return nil
+	}
+	target := normalizeFieldName(field)
+	for _, r := range normalizeTopKeys(payload) {
+		k, _ := r["key"].(string)
+		if normalizeFieldName(k) != target {
+			continue
+		}
+		vals, _ := r["values"].([]string)
+		out := make([]string, 0, len(vals))
+		for _, v := range vals {
+			if v != "" { // an empty-string sample isn't a useful completion
+				out = append(out, v)
+			}
+		}
+		if len(out) > maxCompletionValues {
+			out = out[:maxCompletionValues]
+		}
+		return out
+	}
+	return nil
 }
 
 // completeSince suggests common relative lookback windows for --since/--window.
@@ -508,9 +610,17 @@ func applyCompletions(cmd *cobra.Command) {
 			}
 		})
 		for _, name := range filterFlagNames {
-			if c.LocalFlags().Lookup(name) != nil {
-				_ = c.RegisterFlagCompletionFunc(name, completeFilterField)
+			if c.LocalFlags().Lookup(name) == nil {
+				continue
 			}
+			// Equality operators complete observed values; comparison/regex
+			// operators complete only the field (the value is a threshold or
+			// pattern the user types).
+			fn := completeFilterField
+			if name == "eq" || name == "ne" {
+				fn = completeFilterFieldWithValues
+			}
+			_ = c.RegisterFlagCompletionFunc(name, fn)
 		}
 		if c.Runnable() && !c.HasSubCommands() && c.ValidArgsFunction == nil {
 			c.ValidArgsFunction = defaultArgComplete
