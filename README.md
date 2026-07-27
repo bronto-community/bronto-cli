@@ -54,7 +54,7 @@ Prebuilt archives (tar.gz for macOS/Linux, zip for Windows) plus `.deb`/`.rpm` p
 - **`<command> <tab>`** offers that command's flags, most-useful first — and if you haven't set a default dataset, `--dataset` is starred at the top.
 - **`-d/--dataset`** completes your real datasets; on large accounts it drills down by collection first (`web/<tab>` → that collection's datasets).
 - **`<resource> get/update/delete <tab>`** completes live resource names (id shown as the description); **`--select`/`-g`/`--fields`** complete the dataset's field names; **`--saved`** completes saved searches.
-- **The filter flags complete both halves**: `--eq <tab>` offers `$field=`, then `--eq $model=<tab>` offers a sample of that field's observed values (`$model=claude-fable-5`) — same for `--gt`/`--lt`/`--ne`/… `bronto api <tab>` completes the HTTP method, then the path.
+- **The filter flags complete both halves**: `--eq <tab>` offers `$field=`, then `--eq $model=<tab>` offers a sample of that field's observed values (`$model=claude-fable-5`). Value completion is equality-only (`--eq`/`--ne`) — comparison flags (`--gt`/`--lt`/…) complete the field then leave the threshold to you. `bronto api <tab>` completes the HTTP method, then the path.
 - **`--since`/`--window`** suggest common windows, **`config get/set`** completes config keys, and **`-o`/`--region`/`--profile`** complete their allowed values.
 
 API-backed completions have a short timeout and fall back silently, so a slow or offline API never hangs your shell. File paths are still completed where one is expected (`--input`, `--local`).

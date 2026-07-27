@@ -389,6 +389,34 @@ func TestCompleteFilterFieldValues(t *testing.T) {
 	}
 }
 
+func TestCompleteComparisonFilterOffersNoValues(t *testing.T) {
+	// --gt/--lt/etc. must NOT complete values (a numeric field floods the
+	// shell with arbitrary numbers); the field stage still works.
+	valuesServed := false
+	h := func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/logs":
+			_, _ = w.Write([]byte(`{"logs":[{"log":"app","collection":"prod","log_id":"11111111-1111-1111-1111-111111111111"}]}`))
+		case "/top-keys":
+			valuesServed = true
+			_, _ = w.Write([]byte(`{"log-a":{"$duration_ms":{"type":"STRING","field_type":"ATTRIBUTE","values":{"1":{"rank":-1},"2":{"rank":-1}}}}}`))
+		}
+	}
+	// value stage: no candidates
+	cands, dir := runComplete(t, h, "search", "-d", "app", "--gt", "$duration_ms=")
+	if dir != ":4" || len(cands) != 0 {
+		t.Fatalf("--gt value stage = %v %q (want none)", cands, dir)
+	}
+	if valuesServed {
+		t.Fatalf("--gt must not even fetch /top-keys for values")
+	}
+	// field stage: still offers field=
+	fields, _ := runComplete(t, h, "search", "-d", "app", "--gt", "")
+	if len(fields) == 0 || !strings.HasPrefix(fields[0], "$duration_ms=") {
+		t.Fatalf("--gt field stage = %v", fields)
+	}
+}
+
 func TestCompleteFilterFieldValuesTolerantOfDollar(t *testing.T) {
 	// "model=" (no $) resolves to the "$model" key.
 	h := func(w http.ResponseWriter, r *http.Request) {

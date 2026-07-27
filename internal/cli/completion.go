@@ -357,13 +357,34 @@ func apiPathHints() []string {
 	return out
 }
 
-// completeFilterField completes a structured filter flag (--eq/--gt/…) in two
-// stages: before the "=" it offers the dataset's field names ("$model=", with
-// NoSpace so the cursor stays on the value); after the "=" it offers a sample
-// of that field's observed values ("$model=claude-fable-5"), from the same
-// /top-keys data `bronto fields` shows, capped so a high-cardinality field
-// doesn't flood the shell.
+// filterFieldStage completes the field half of a filter flag: "$model=", with
+// NoSpace so the cursor stays put for the value.
+func filterFieldStage(cmd *cobra.Command) ([]string, cobra.ShellCompDirective) {
+	names := fieldNamesForCmd(cmd)
+	out := make([]string, 0, len(names))
+	for _, n := range names {
+		out = append(out, n+"=")
+	}
+	return out, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+}
+
+// completeFilterField completes a comparison/regex filter flag (--gt/--lt/
+// --match/…): the field name, then nothing — the value is a threshold or
+// pattern the user types, not one of a set. Offering the field's observed
+// values here would be noise (a numeric field returns a flood of arbitrary
+// numbers; you want to type "1000", not pick "13").
 func completeFilterField(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if strings.ContainsRune(toComplete, '=') {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	return filterFieldStage(cmd)
+}
+
+// completeFilterFieldWithValues completes an equality filter flag (--eq/--ne):
+// the field name, then a sample of that field's observed values from the same
+// /top-keys data `bronto fields` shows (capped, $-/case tolerant). Equality is
+// the one operator where "which known value?" is the actual question.
+func completeFilterFieldWithValues(cmd *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if eq := strings.IndexByte(toComplete, '='); eq >= 0 {
 		field := toComplete[:eq]
 		values := fieldValuesForCmd(cmd, field)
@@ -371,15 +392,10 @@ func completeFilterField(cmd *cobra.Command, _ []string, toComplete string) ([]s
 		for _, v := range values {
 			out = append(out, field+"="+v)
 		}
-		// No NoSpace here: once a value is chosen the clause is complete.
+		// No NoSpace: once a value is chosen the clause is complete.
 		return out, cobra.ShellCompDirectiveNoFileComp
 	}
-	names := fieldNamesForCmd(cmd)
-	out := make([]string, 0, len(names))
-	for _, n := range names {
-		out = append(out, n+"=")
-	}
-	return out, cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace
+	return filterFieldStage(cmd)
 }
 
 // fieldValuesForCmd returns a capped, sorted sample of the values observed for
@@ -594,9 +610,17 @@ func applyCompletions(cmd *cobra.Command) {
 			}
 		})
 		for _, name := range filterFlagNames {
-			if c.LocalFlags().Lookup(name) != nil {
-				_ = c.RegisterFlagCompletionFunc(name, completeFilterField)
+			if c.LocalFlags().Lookup(name) == nil {
+				continue
 			}
+			// Equality operators complete observed values; comparison/regex
+			// operators complete only the field (the value is a threshold or
+			// pattern the user types).
+			fn := completeFilterField
+			if name == "eq" || name == "ne" {
+				fn = completeFilterFieldWithValues
+			}
+			_ = c.RegisterFlagCompletionFunc(name, fn)
 		}
 		if c.Runnable() && !c.HasSubCommands() && c.ValidArgsFunction == nil {
 			c.ValidArgsFunction = defaultArgComplete
