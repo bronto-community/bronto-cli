@@ -166,7 +166,10 @@ var resourceRegistry = []resourceDesc{
 		Columns:       []string{"log_type", "components_count"},
 		ListTransform: logViewListRows},
 	{Name: "limits", Base: "/limits", Singular: "limit",
-		Columns: []string{"category", "description", "value", "unit", "created", "id"}},
+		// Limits have no "name"; they're identified by category (also used by
+		// resolveResourceRef and shell completion).
+		NameKeys: []string{"category"},
+		Columns:  []string{"category", "description", "value", "unit", "created", "id"}},
 	{Name: "encryption-keys", Base: "/encryption-keys", Singular: "encryption key"},
 	// No per-ID GET documented for these three; update is full-body PUT.
 	{Name: "forward-configs", Base: "/forward-configs", Singular: "forward config",

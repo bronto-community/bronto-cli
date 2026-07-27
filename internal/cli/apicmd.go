@@ -34,7 +34,8 @@ func newAPICmd() *cobra.Command {
 			"  bronto api GET /monitors -f limit=10\n" +
 			"  bronto api POST /search --input query.json\n" +
 			"  echo '{\"time_range\":\"Last 15 minutes\"}' | bronto api POST /search --input -",
-		Args: cobra.ExactArgs(2),
+		Args:              cobra.ExactArgs(2),
+		ValidArgsFunction: completeAPIArgs, // <METHOD> then known collection paths
 		RunE: func(cmd *cobra.Command, args []string) error {
 			method := strings.ToUpper(args[0])
 			path := args[1]
