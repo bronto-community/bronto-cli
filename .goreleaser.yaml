@@ -138,6 +138,18 @@ homebrew_casks:
     homepage: https://github.com/bronto-community/bronto-cli
     # No trailing period — brew style rejects it (tap CI runs brew style).
     description: Community CLI for the Bronto observability platform
+    # Strip the macOS Gatekeeper quarantine attribute on install. Homebrew
+    # 5.0 deprecated the --no-quarantine flag and casks now quarantine
+    # artifacts by default; the binary isn't Developer-ID notarized, so
+    # without this a `brew install --cask` on macOS hits the "cannot verify"
+    # dialog. The OS.mac? guard is required: xattr/quarantine are macOS-only
+    # and running the hook unconditionally breaks `brew install` on Linux.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", staged_path]
+          end
 
 release:
   github:
