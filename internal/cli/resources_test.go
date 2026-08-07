@@ -463,6 +463,9 @@ func TestExpansionResourcesRouteCorrectly(t *testing.T) {
 		{[]string{"webhooks", "create", "-f", "name=x", "-f", "url=https://example.com/h"}, http.MethodPost, "/integrations/webhooks"},
 		{[]string{"slack", "list"}, http.MethodGet, "/integrations/slack"},
 		{[]string{"log-views", "list"}, http.MethodGet, "/logs/views"},
+		{[]string{"widgets", "list"}, http.MethodGet, "/widgets"},
+		{[]string{"widgets", "create", "-f", "name=x"}, http.MethodPost, "/widgets"},
+		{[]string{"widgets", "update", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000e1", "-f", "name=x"}, http.MethodPut, "/widgets/aaaaaaaa-aaaa-aaaa-aaaa-0000000000e1"},
 	}
 	for _, c := range cases {
 		if _, _, err := runResource(t, record, "", c.args...); err != nil {
