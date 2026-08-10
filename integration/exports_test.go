@@ -24,9 +24,9 @@ import (
 // rather than a hard assertion).
 func TestExports_CreateWaitDownload(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, marker := seededData(t)
+	_, marker := seededData(t)
 	r := NewRunner(t, key)
-	logID := logIDForDataset(t, r, dataset)
+	logID := seededLogID(t)
 
 	downloadPath := filepath.Join(t.TempDir(), "export.out")
 	res, err := r.Run(t.Context(), "",

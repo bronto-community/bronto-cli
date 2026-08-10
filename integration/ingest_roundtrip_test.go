@@ -3,7 +3,7 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	"strings"
 	"testing"
 )
 
@@ -17,59 +17,41 @@ func TestIngestRoundtrip_SeedCoversMgmtKeySend(t *testing.T) {
 	if dataset == "" || marker == "" {
 		t.Fatal("seededData returned an empty dataset/marker after a successful seed")
 	}
+	if seededLogID(t) == "" {
+		t.Fatal("seededData resolved no log_id for the seeded dataset after a successful seed")
+	}
 }
 
 // TestIngestRoundtrip_IngestionKeySend live-verifies that an ingestion-only
 // key can send data through the same path a management key can. The
 // auth-negative suite already proves an ingestion key CANNOT read (403
-// auth_insufficient_role); this proves it CAN write: a distinctly-marked
-// event is sent directly into the shared seeded dataset with the ingestion
-// key, then polled for with the management key (ingestion keys can't
-// search).
+// auth_insufficient_role); this proves it CAN write: the seed fixture sends
+// a distinctly-marked event into the shared dataset with the ingestion key
+// (sendProbes) and waits for it alongside the seed batch, and this test
+// reads it back with the management key (ingestion keys can't search).
 func TestIngestRoundtrip_IngestionKeySend(t *testing.T) {
 	skipIfNoCreds(t)
-	ingestKey := os.Getenv("BRONTO_IT_INGEST_KEY")
-	if ingestKey == "" {
+	probes := seededProbes(t)
+	if probes.ingestSkipped {
 		t.Skip("BRONTO_IT_INGEST_KEY not set; skipping ingestion-key roundtrip test")
 	}
-	dataset, _ := seededData(t)
-
-	marker2 := newMarker()
-	line := jsonLine(map[string]any{
-		"message":   "bronto-ci ingestion-key roundtrip",
-		"ci_marker": marker2,
-		"level":     "info",
-	})
-
-	ingestR := NewRunner(t, ingestKey)
-	res, err := ingestR.Run(t.Context(), line, "send", "-d", dataset)
-	if err != nil {
-		t.Fatalf("running send with the ingestion key: %v", err)
-	}
-	if res.ExitCode != 0 {
-		t.Fatalf("send with the ingestion key exited %d\nstdout: %s\nstderr: %s", res.ExitCode, res.Stdout, res.Stderr)
+	if probes.ingestErr != nil {
+		t.Fatalf("ingestion-key probe send: %v", probes.ingestErr)
 	}
 
-	mgmtR := NewRunner(t, mgmtKey())
-	logID := logIDForDataset(t, mgmtR, dataset)
-	PollUntil(t, seedPollBudget(), seedPollInterval, func() (bool, error) {
-		sres, serr := mgmtR.Run(t.Context(), "", searchArgs(logID, fmt.Sprintf("ci_marker = '%s'", marker2), "-o", "json", "-n", "1")...)
-		if serr != nil {
-			return false, serr
-		}
-		if sres.ExitCode != 0 {
-			return false, fmt.Errorf("search exited %d\nstdout: %s\nstderr: %s", sres.ExitCode, sres.Stdout, sres.Stderr)
-		}
-		var rows []map[string]any
-		if err := json.Unmarshal([]byte(sres.Stdout), &rows); err != nil {
-			return false, fmt.Errorf("parsing search -o json: %w\nstdout: %s", err, sres.Stdout)
-		}
-		if len(rows) == 0 {
-			return false, fmt.Errorf("no rows yet for the ingestion-key-sent marker %s\nlast stdout: %s\nlast stderr: %s",
-				marker2, sres.Stdout, sres.Stderr)
-		}
-		return true, nil
-	})
+	// The fixture sent this event with the ingestion key and its readiness
+	// poll already waited for it to become searchable, so ONE search settles
+	// it here — no second poll loop against the same eventual consistency.
+	// Reading it back needs the management key: ingestion keys can't search
+	// (TestAuthNegative_IngestionKeyOnReadEndpoint pins that).
+	_, marker := seededData(t)
+	r := NewRunner(t, mgmtKey())
+	res := mustExitZero(t, r,
+		searchArgs(seededLogID(t), fmt.Sprintf("ci_marker = '%s'", marker), "-o", "json", "-n", "100")...)
+	if !strings.Contains(res.Stdout, probes.ingestToken) {
+		t.Fatalf("search over the seeded marker does not surface the ingestion-key probe %s, "+
+			"though the seed fixture saw it become searchable\nstdout: %s", probes.ingestToken, res.Stdout)
+	}
 }
 
 // TestIngestRoundtrip_OneShotMessage covers the `send -m/--message` one-shot
@@ -77,37 +59,20 @@ func TestIngestRoundtrip_IngestionKeySend(t *testing.T) {
 // and the ingestion-key test above exercise.
 func TestIngestRoundtrip_OneShotMessage(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, _ := seededData(t)
+	probes := seededProbes(t)
+	if probes.oneShotErr != nil {
+		t.Fatalf("one-shot probe send: %v", probes.oneShotErr)
+	}
+
+	// Sent by the fixture (sendProbes) and already waited for by its
+	// readiness poll, so this is a single search rather than a poll loop.
 	r := NewRunner(t, key)
-
-	marker3 := newMarker()
-	msg := "bronto-ci one-shot " + marker3
-	res, err := r.Run(t.Context(), "", "send", "-d", dataset, "-m", msg)
-	if err != nil {
-		t.Fatalf("running send -m: %v", err)
+	rows := mustRunJSONArray(t, r,
+		searchArgs(seededLogID(t), fmt.Sprintf("message = '%s'", probes.oneShotMessage), "-o", "json", "-n", "1")...)
+	if len(rows) == 0 {
+		t.Fatalf("no rows for the one-shot message %q, though the seed fixture saw it become searchable",
+			probes.oneShotMessage)
 	}
-	if res.ExitCode != 0 {
-		t.Fatalf("send -m exited %d\nstdout: %s\nstderr: %s", res.ExitCode, res.Stdout, res.Stderr)
-	}
-
-	logID := logIDForDataset(t, r, dataset)
-	PollUntil(t, seedPollBudget(), seedPollInterval, func() (bool, error) {
-		sres, serr := r.Run(t.Context(), "", searchArgs(logID, fmt.Sprintf("message = '%s'", msg), "-o", "json", "-n", "1")...)
-		if serr != nil {
-			return false, serr
-		}
-		if sres.ExitCode != 0 {
-			return false, fmt.Errorf("search exited %d\nstdout: %s\nstderr: %s", sres.ExitCode, sres.Stdout, sres.Stderr)
-		}
-		var rows []map[string]any
-		if err := json.Unmarshal([]byte(sres.Stdout), &rows); err != nil {
-			return false, fmt.Errorf("parsing search -o json: %w\nstdout: %s", err, sres.Stdout)
-		}
-		if len(rows) == 0 {
-			return false, fmt.Errorf("no rows yet for the one-shot message\nlast stdout: %s\nlast stderr: %s", sres.Stdout, sres.Stderr)
-		}
-		return true, nil
-	})
 }
 
 // TestIngestRoundtrip_StructuredFieldsPassthrough asserts that extra fields
@@ -117,9 +82,9 @@ func TestIngestRoundtrip_OneShotMessage(t *testing.T) {
 // coerce arbitrary structured fields.
 func TestIngestRoundtrip_StructuredFieldsPassthrough(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, marker := seededData(t)
+	_, marker := seededData(t)
 	r := NewRunner(t, key)
-	logID := logIDForDataset(t, r, dataset)
+	logID := seededLogID(t)
 
 	res, err := r.Run(t.Context(), "",
 		searchArgs(logID, fmt.Sprintf("ci_marker = '%s'", marker),

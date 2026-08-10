@@ -54,7 +54,7 @@ var resourceIDKey = map[string]string{
 // response uses for the human-assigned name staleResourceIDs matches the
 // bronto-ci-* pattern against. Every kind but datasets uses a plain "name";
 // datasets (Log objects) use "log" (api/openapi.yaml's Log schema, verified
-// against seed_test.go's logIDForDataset, which resolves the same field).
+// against seed_test.go's pollSeedVisible, which resolves the same field).
 var resourceNameKey = map[string]string{
 	"datasets": "log",
 }

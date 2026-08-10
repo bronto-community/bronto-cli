@@ -22,9 +22,8 @@ import (
 // before.
 func TestTail_SIGINTCleanExit(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, _ := seededData(t)
 	r := NewRunner(t, key)
-	logID := logIDForDataset(t, r, dataset)
+	logID := seededLogID(t)
 
 	cmd, stdout, stderr := r.Start(t, "tail", "-d", logID, "--window", "5m", "--interval", "2s")
 

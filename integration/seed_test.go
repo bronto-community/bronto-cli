@@ -28,7 +28,11 @@ import (
 // cost at all; TestMain would seed unconditionally for every credentialed
 // run whether or not anything needed it.
 const (
-	seedPollInterval       = 5 * time.Second
+	// seedPollInterval is the FIRST readiness-poll delay; every later delay
+	// backs off toward pollMaxInterval (see backoffInterval in harness.go).
+	// Ingest-to-search latency is tens of seconds, so a fixed short cadence
+	// spent most of its requests on ticks that could not yet succeed.
+	seedPollInterval       = 2 * time.Second
 	seedPollTimeout        = 3 * time.Minute
 	seedPollTimeoutNightly = 10 * time.Minute
 )
@@ -46,8 +50,34 @@ func seedPollBudget() time.Duration {
 
 type seedState struct {
 	dataset string
+	logID   string
 	marker  string
 	err     error
+
+	probes probeState
+}
+
+// probeState carries the two one-off events the fixture sends alongside the
+// seed batch for the ingest-roundtrip tests (see doSeed): the `send -m`
+// one-shot and, when BRONTO_IT_INGEST_KEY is set, an event sent with the
+// ingestion-scoped key.
+//
+// They ride along with the seed batch so the fixture's single readiness poll
+// covers their visibility too — previously each test sent its own event and
+// then ran its own 3-minute poll loop, paying Bronto's ingest-to-search
+// latency (and its request cost) three times over for one shared wait.
+//
+// Each probe carries its OWN send error rather than failing the fixture:
+// a broken ingestion key must fail TestIngestRoundtrip_IngestionKeySend, not
+// every data-dependent test in the suite.
+type probeState struct {
+	oneShotMessage string
+	oneShotToken   string
+	oneShotErr     error
+
+	ingestToken   string
+	ingestErr     error
+	ingestSkipped bool
 }
 
 var (
@@ -57,14 +87,41 @@ var (
 
 // seededData seeds ~20 structured NDJSON events (once per test binary, lazily
 // on first call) into a run-scoped dataset with a unique ci_marker field,
-// blocks until they're visible to search, and returns (dataset name, marker)
-// to every caller thereafter.
+// blocks until they — and the ride-along probes (see probeState) — are
+// visible to search, and returns (dataset name, marker) to every caller
+// thereafter. Companions: seededLogID for the dataset's log_id, seededProbes
+// for the probe events.
 //
 // Skips t cleanly when BRONTO_IT_MGMT_KEY is unset (via skipIfNoCreds).
 // Fails t hard — no retries, no flaky markers — if seeding itself fails or
 // the readiness poll times out; per the plan, that failure carries the last
 // search response for one-click triage (see pollSeedVisible below).
 func seededData(t *testing.T) (dataset, marker string) {
+	t.Helper()
+	s := seeded(t)
+	return s.dataset, s.marker
+}
+
+// seededLogID returns the seeded dataset's log_id (the UUID form -d wants for
+// search/fields/context/tail/exports), resolved once by the fixture's own
+// readiness poll and cached. Callers used to each re-derive it with a full
+// `datasets list`, which cost one management-plane request per test for a
+// value the fixture already had in hand.
+func seededLogID(t *testing.T) string {
+	t.Helper()
+	return seeded(t).logID
+}
+
+// seededProbes returns the ride-along probe events' state (see probeState),
+// triggering the fixture if it hasn't run yet.
+func seededProbes(t *testing.T) probeState {
+	t.Helper()
+	return seeded(t).probes
+}
+
+// seeded runs the fixture once and hands back its state, failing t if
+// seeding itself failed.
+func seeded(t *testing.T) seedState {
 	t.Helper()
 	key := skipIfNoCreds(t)
 	seedOnce.Do(func() {
@@ -73,7 +130,7 @@ func seededData(t *testing.T) (dataset, marker string) {
 	if seedStateVal.err != nil {
 		t.Fatalf("seed fixture: %v", seedStateVal.err)
 	}
-	return seedStateVal.dataset, seedStateVal.marker
+	return seedStateVal
 }
 
 // doSeed sends the seed batch and waits for it to become searchable. It
@@ -109,29 +166,99 @@ func doSeed(key string) seedState {
 			res.ExitCode, res.Stdout, res.Stderr)}
 	}
 
-	if err := pollSeedVisible(ctx, r, dataset, marker, seedPollBudget(), seedPollInterval); err != nil {
+	probes := sendProbes(ctx, r, dir, dataset, marker)
+
+	logID, err := pollSeedVisible(ctx, r, dataset, marker, probes, seedPollBudget(), seedPollInterval)
+	if err != nil {
 		return seedState{err: err}
 	}
-	return seedState{dataset: dataset, marker: marker}
+	return seedState{dataset: dataset, logID: logID, marker: marker, probes: probes}
 }
 
-// pollSeedVisible blocks until the seeded marker is visible to search, or
-// timeout elapses. It has two things to wait for in sequence, both subject
-// to eventual consistency: the dataset itself appearing in `datasets list`
-// (ingestion auto-creates the log/dataset on first event, but the
-// management-plane listing may lag slightly behind), and then the marker
-// itself appearing in `search`. Both are re-checked on every tick so the
-// function makes progress on whichever is still pending.
+// sendProbes fires the two ride-along events the ingest-roundtrip tests
+// assert on, into the same dataset as the seed batch and BEFORE the
+// readiness poll, so one poll covers all of it (see probeState).
 //
-// On timeout, the returned error carries the LAST command's stdout/stderr
-// (one-click triage per the plan) — no auto-retry beyond this single
-// bounded window, no flaky test markers.
-func pollSeedVisible(ctx context.Context, r *Runner, datasetName, marker string, timeout, interval time.Duration) error {
+// Neither failure is fatal here: the error is recorded on probeState and
+// pollSeedVisible then stops waiting for that probe, so a probe-specific
+// problem (a dead ingestion key, say) fails only the test that owns it.
+func sendProbes(ctx context.Context, r *Runner, configDir, dataset, marker string) probeState {
+	p := probeState{ingestSkipped: ingestProbeUnavailable()}
+
+	p.oneShotToken = newMarker()
+	p.oneShotMessage = "bronto-ci one-shot " + p.oneShotToken
+	switch res, err := r.Run(ctx, "", "send", "-d", dataset, "-m", p.oneShotMessage); {
+	case err != nil:
+		p.oneShotErr = fmt.Errorf("running send -m: %w", err)
+	case res.ExitCode != 0:
+		p.oneShotErr = fmt.Errorf("send -m exited %d\nstdout: %s\nstderr: %s",
+			res.ExitCode, res.Stdout, res.Stderr)
+	}
+
+	if p.ingestSkipped {
+		return p
+	}
+	// Same ci_marker as the seed batch so the readiness poll finds this event
+	// with the same search; the probe token is what identifies it.
+	p.ingestToken = newMarker()
+	line := jsonLine(map[string]any{
+		"message":   "bronto-ci ingestion-key roundtrip",
+		"ci_marker": marker,
+		"probe":     p.ingestToken,
+		"level":     "info",
+	})
+	ingestR := newSweepRunner(binPath, os.Getenv("BRONTO_IT_INGEST_KEY"), configDir)
+	switch res, err := ingestR.Run(ctx, line, "send", "-d", dataset); {
+	case err != nil:
+		p.ingestErr = fmt.Errorf("running send with the ingestion key: %w", err)
+	case res.ExitCode != 0:
+		p.ingestErr = fmt.Errorf("send with the ingestion key exited %d\nstdout: %s\nstderr: %s",
+			res.ExitCode, res.Stdout, res.Stderr)
+	}
+	return p
+}
+
+// ingestProbeUnavailable reports whether the ingestion-key probe has to be skipped
+// because BRONTO_IT_INGEST_KEY isn't set (the management key is deliberately
+// NOT a substitute: the point of that probe is exercising an
+// ingestion-scoped key).
+func ingestProbeUnavailable() bool { return os.Getenv("BRONTO_IT_INGEST_KEY") == "" }
+
+// pollSeedVisible blocks until everything the fixture sent is visible to
+// search, or timeout elapses, and returns the dataset's resolved log_id.
+// It has two things to wait for in sequence, both subject to eventual
+// consistency: the dataset itself appearing in `datasets list` (ingestion
+// auto-creates the log/dataset on first event, but the management-plane
+// listing may lag slightly behind), and then the seeded events appearing in
+// `search`. Both are re-checked on every tick so the function makes progress
+// on whichever is still pending.
+//
+// "Everything" means the seed batch plus whichever probes sendProbes managed
+// to send — matched in ONE search per tick (`ci_marker = <marker> OR message
+// = <one-shot>`, which spans all three) rather than a poll loop per event.
+// Matching is substring-on-stdout, deliberately: the probe tokens are unique
+// random hex, and this stays correct whether the API returns fields at the
+// top level or nested under message_kvs (see TestQuery_FieldsCommandListsMarkerKey,
+// which accepts both spellings).
+//
+// Delays back off from interval toward pollMaxInterval: ingest-to-search
+// latency runs to tens of seconds, so a fixed short cadence spent most of
+// its requests re-asking a question that could not yet be answered.
+//
+// On timeout, the returned error names what was still missing and carries
+// the LAST command's stdout/stderr (one-click triage per the plan) — no
+// auto-retry beyond this single bounded window, no flaky test markers.
+func pollSeedVisible(ctx context.Context, r *Runner, datasetName, marker string, probes probeState,
+	timeout, interval time.Duration) (string, error) {
 	deadline := time.Now().Add(timeout)
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+
+	where := fmt.Sprintf("ci_marker = '%s'", marker)
+	if probes.oneShotErr == nil {
+		where += fmt.Sprintf(" OR message = '%s'", probes.oneShotMessage)
+	}
 
 	var logID, lastStdout, lastStderr, lastStep string
+	var missing []string
 	for {
 		if logID == "" {
 			if res, err := r.Run(ctx, "", "datasets", "list", "-o", "json"); err == nil {
@@ -152,49 +279,51 @@ func pollSeedVisible(ctx context.Context, r *Runner, datasetName, marker string,
 			}
 		}
 		if logID != "" {
-			res, err := r.Run(ctx, "", "search",
-				fmt.Sprintf("ci_marker = '%s'", marker), "-d", logID, "--since", "1h", "-o", "json", "-n", "1")
+			res, err := r.Run(ctx, "", "search", where,
+				"-d", logID, "--since", "1h", "-o", "json", "-n", "100")
 			if err == nil {
 				lastStdout, lastStderr, lastStep = res.Stdout, res.Stderr, "search"
 				if res.ExitCode == 0 {
-					var rows []map[string]any
-					if json.Unmarshal([]byte(res.Stdout), &rows) == nil && len(rows) > 0 {
-						return nil
+					if missing = missingProbes(res.Stdout, marker, probes); len(missing) == 0 {
+						return logID, nil
 					}
 				}
 			}
 		}
 		if time.Now().After(deadline) {
-			return fmt.Errorf(
-				"seed data for dataset %q (marker %s) not visible to search after %s (last step: %s)\n"+
-					"last stdout: %s\nlast stderr: %s",
-				datasetName, marker, timeout, lastStep, lastStdout, lastStderr)
+			pending := "the dataset itself (not yet in `datasets list`)"
+			if logID != "" {
+				pending = strings.Join(missing, ", ")
+			}
+			return "", fmt.Errorf(
+				"seed data for dataset %q (marker %s) not visible to search after %s\n"+
+					"still missing: %s (last step: %s)\nlast stdout: %s\nlast stderr: %s",
+				datasetName, marker, timeout, pending, lastStep, lastStdout, lastStderr)
 		}
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("seed poll canceled: %w", ctx.Err())
-		case <-ticker.C:
+			return "", fmt.Errorf("seed poll canceled: %w", ctx.Err())
+		case <-time.After(interval):
 		}
+		interval = backoffInterval(interval)
 	}
 }
 
-// logIDForDataset resolves the log_id (UUID) of a dataset by its name (the
-// "log" field in `datasets list -o json`), for use with commands whose
-// --dataset/-d flags take an actual UUID rather than a name (search,
-// fields, context, exports create --dataset). Reused by query_test.go,
-// ingest_roundtrip_test.go, and exports_test.go against the seeded dataset.
-func logIDForDataset(t *testing.T, r *Runner, name string) string {
-	t.Helper()
-	rows := mustRunJSONArray(t, r, "datasets", "list", "-o", "json")
-	for _, row := range rows {
-		if n, _ := row["log"].(string); n == name {
-			if id, _ := row["log_id"].(string); id != "" {
-				return id
-			}
-		}
+// missingProbes names which of the fixture's events are not yet present in
+// a search response body, in the order they were sent. An empty result means
+// everything the fixture successfully sent is searchable.
+func missingProbes(stdout, marker string, probes probeState) []string {
+	var missing []string
+	if !strings.Contains(stdout, marker) {
+		missing = append(missing, "the seed batch")
 	}
-	t.Fatalf("dataset %q not found in `datasets list` (it should already exist: data was seeded into it)", name)
-	return ""
+	if probes.oneShotErr == nil && !strings.Contains(stdout, probes.oneShotToken) {
+		missing = append(missing, "the `send -m` one-shot probe")
+	}
+	if !probes.ingestSkipped && probes.ingestErr == nil && !strings.Contains(stdout, probes.ingestToken) {
+		missing = append(missing, "the ingestion-key probe")
+	}
+	return missing
 }
 
 // --- seed batch construction -------------------------------------------------
@@ -273,7 +402,7 @@ func randHex(n int) string {
 // --- shared search-arg builders ----------------------------------------------
 //
 // searchArgs/searchMarkerArgs build `search` argv slices against an already-
-// resolved dataset log_id (see logIDForDataset) — never a from_expr guess
+// resolved dataset log_id (see seededLogID) — never a from_expr guess
 // over the dataset's name: the query-syntax reference documents from_expr
 // selecting datasets by tag ("tag.env = 'prod'"), not by name, so resolving
 // the real log_id via `datasets list` and passing -d is the certain path.

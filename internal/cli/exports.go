@@ -16,9 +16,36 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
 
-// exportPollInterval is the --wait poll cadence against GET /exports/{id}.
-// Package-level so tests can shrink it instead of waiting on a real clock.
-var exportPollInterval = 3 * time.Second
+// exportPollInterval is the FIRST --wait poll delay against GET /exports/{id};
+// every later delay backs off (see nextExportPollInterval). Package-level so
+// tests can shrink it instead of waiting on a real clock.
+var exportPollInterval = 2 * time.Second
+
+// exportPollMaxInterval caps the --wait backoff. Package-level so tests can
+// shrink it alongside exportPollInterval.
+var exportPollMaxInterval = 30 * time.Second
+
+// exportPollBackoff is the growth factor applied to the poll delay after
+// every non-terminal status.
+const exportPollBackoff = 1.5
+
+// nextExportPollInterval returns the delay to use after a poll that came
+// back non-terminal: cur grown by exportPollBackoff, clamped to
+// exportPollMaxInterval (which also clamps a cur already above the cap).
+//
+// Why back off at all: a fixed 3s cadence made a long export cost one
+// request every 3 seconds for its whole lifetime — integration CI's export
+// leg runs ~8 minutes, so ~160 requests against the test account from this
+// loop alone, more than the rest of the suite combined. Backing off to a
+// 30s ceiling brings that to ~20 while still resolving a short export
+// within a couple of seconds.
+func nextExportPollInterval(cur time.Duration) time.Duration {
+	next := time.Duration(float64(cur) * exportPollBackoff)
+	if next > exportPollMaxInterval {
+		return exportPollMaxInterval
+	}
+	return next
+}
 
 // exportWaitTimeout caps how long --wait polls before giving up, so an
 // export stuck below a terminal status can't hang the CLI (or CI)
@@ -120,7 +147,7 @@ func newExportsCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&since, "since", "", "relative lookback, e.g. 1h (convenience flag)")
 	cmd.Flags().StringVar(&from, "from", "", "absolute start time, RFC3339 (convenience flag)")
 	cmd.Flags().StringVar(&to, "to", "", "absolute end time, RFC3339 (convenience flag)")
-	cmd.Flags().BoolVar(&wait, "wait", false, "poll GET /exports/{id} every 3s until COMPLETE or FAILED")
+	cmd.Flags().BoolVar(&wait, "wait", false, "poll GET /exports/{id} until COMPLETE or FAILED (backing off 2s→30s)")
 	cmd.Flags().DurationVar(&waitTimeout, "wait-timeout", exportWaitTimeout,
 		"give up waiting after this long (e.g. 5m, 30m); 0 uses the default")
 	cmd.Flags().StringVar(&download, "download", "",
@@ -189,8 +216,10 @@ func exportID(obj map[string]any) string {
 	return ""
 }
 
-// waitForExport polls GET /exports/{id} every exportPollInterval (ctx-aware,
-// same select-on-context-Done-or-timer shape as tail.go's poll loop) until
+// waitForExport polls GET /exports/{id} on a backing-off cadence — first
+// after exportPollInterval, then growing per nextExportPollInterval up to
+// exportPollMaxInterval (ctx-aware, same select-on-context-Done-or-timer
+// shape as tail.go's poll loop) until
 // status is COMPLETE (returns the final payload) or FAILED (returns a typed
 // export_failed error, exit code 1). Any other status (CREATED, IN_PROGRESS)
 // continues polling, but only until timeout elapses: an export stuck below
@@ -217,6 +246,7 @@ func waitForExport(ctx context.Context, app *App, id string, timeout time.Durati
 	}
 	var lastObj map[string]any
 	var lastStatus string
+	interval := exportPollInterval
 	for {
 		payload, err := doJSONRequest(ctx, app, http.MethodGet, "/exports/"+url.PathEscape(id), nil)
 		if err != nil {
@@ -250,15 +280,35 @@ func waitForExport(ctx context.Context, app *App, id string, timeout time.Durati
 			return lastObj, exportWaitTimeoutErr(id, lastStatus, timeout)
 		}
 		// Don't sleep past the deadline: cap the wait to whatever time is left.
-		wait := exportPollInterval
+		wait := interval
 		if rem := time.Until(deadline); rem < wait {
 			wait = rem
 		}
-		select {
-		case <-ctx.Done():
-			clearLine()
-			return nil, ctx.Err()
-		case <-time.After(wait):
+		interval = nextExportPollInterval(interval)
+		// Sleep in ≤1s steps while the progress line is up, redrawing it as
+		// the elapsed counter advances: the backoff can put 30s between two
+		// requests, and a line frozen that long reads as exactly the hang
+		// this progress output exists to rule out. Local redraw only — the
+		// API is still polled once per backoff step.
+		until := time.Now().Add(wait)
+		for {
+			step := time.Until(until)
+			if step <= 0 {
+				break
+			}
+			if progress && step > time.Second {
+				step = time.Second
+			}
+			select {
+			case <-ctx.Done():
+				clearLine()
+				return nil, ctx.Err()
+			case <-time.After(step):
+			}
+			if progress {
+				_, _ = fmt.Fprintf(app.Stderr, "\r\x1b[2KWaiting for export %s… %s (%ds)",
+					id, status, int(time.Since(start).Seconds()))
+			}
 		}
 	}
 }

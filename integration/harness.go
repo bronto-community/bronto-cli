@@ -253,16 +253,42 @@ func resourceName(suffix string) string {
 	return "bronto-ci-" + strconv.FormatInt(time.Now().Unix(), 10) + "-" + runID() + "-" + suffix
 }
 
-// PollUntil calls check every interval until it returns (true, nil) or
-// timeout elapses, in which case it fails t (fail-hard, no retries/flaky
-// markers — per the plan, a timeout means something is actually wrong).
-// Context-aware: also stops early if t's own context (t.Context()) is done.
+const (
+	// pollMaxInterval is the ceiling every backing-off poll in this package
+	// climbs to (PollUntil, pollSeedVisible).
+	pollMaxInterval = 20 * time.Second
+	// pollBackoff is the growth factor applied after each unsuccessful check.
+	pollBackoff = 1.5
+)
+
+// backoffInterval returns the delay to use after an unsuccessful poll: cur
+// grown by pollBackoff, clamped to pollMaxInterval (which also clamps a cur
+// already above the ceiling).
+//
+// Every live poll here waits on Bronto's ingest-to-search eventual
+// consistency, which lands tens of seconds out. A fixed short cadence
+// therefore spent most of its requests asking a question that could not yet
+// be answered — real load on the test account for no signal. Backing off
+// keeps the fast early checks (a quick propagation still returns quickly)
+// while a slow one costs a handful of requests instead of dozens.
+func backoffInterval(cur time.Duration) time.Duration {
+	next := time.Duration(float64(cur) * pollBackoff)
+	if next > pollMaxInterval {
+		return pollMaxInterval
+	}
+	return next
+}
+
+// PollUntil calls check until it returns (true, nil) or timeout elapses, in
+// which case it fails t (fail-hard, no retries/flaky markers — per the plan,
+// a timeout means something is actually wrong). interval is the FIRST delay
+// between checks; later delays back off toward pollMaxInterval (see
+// backoffInterval). Context-aware: also stops early if t's own context
+// (t.Context()) is done.
 func PollUntil(t *testing.T, timeout, interval time.Duration, check func() (bool, error)) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(t.Context(), timeout)
 	defer cancel()
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
 	var lastErr error
 	for {
 		ok, err := check()
@@ -278,8 +304,9 @@ func PollUntil(t *testing.T, timeout, interval time.Duration, check func() (bool
 			}
 			t.Fatalf("PollUntil: timed out after %s waiting for condition", timeout)
 			return
-		case <-ticker.C:
+		case <-time.After(interval):
 		}
+		interval = backoffInterval(interval)
 	}
 }
 

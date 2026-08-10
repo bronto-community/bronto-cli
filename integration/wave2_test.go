@@ -54,9 +54,8 @@ func TestParsersListTolerant(t *testing.T) {
 // TestFieldsLimit asserts -n caps the number of keys returned.
 func TestFieldsLimit(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, _ := seededData(t)
 	r := NewRunner(t, key)
-	logID := logIDForDataset(t, r, dataset)
+	logID := seededLogID(t)
 
 	res := mustExitZero(t, r, "fields", "-d", logID, "--since", "1h", "-n", "3", "-o", "json")
 	var rows []map[string]any
@@ -74,9 +73,9 @@ func TestFieldsLimit(t *testing.T) {
 // tested, never its data path).
 func TestTailNoFollowSeeded(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, marker := seededData(t)
+	_, marker := seededData(t)
 	r := NewRunner(t, key)
-	logID := logIDForDataset(t, r, dataset)
+	logID := seededLogID(t)
 
 	res, err := r.Run(t.Context(), "",
 		"tail", fmt.Sprintf("ci_marker = '%s'", marker),
