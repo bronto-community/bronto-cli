@@ -45,6 +45,28 @@ Run `make lint` (config in `.golangci.yml`) before opening a PR — CI enforces 
 
 Coverage is ratcheted (`make coverage`, gate against `.github/coverage-baseline.txt`), but coverage only proves code *ran*, not that a wrong result would be *caught*. `make mutation` runs [gremlins](https://github.com/go-gremlins/gremlins) mutation testing over the core-logic packages: it injects small bugs (flip a `<`, negate a condition, change `+` to `-`) and reports how many your tests *kill*. A surviving mutant means a line is covered but under-asserted — tighten the assertion (a golden/exact-value check, not just "no error"). This is **advisory**, surfaced in the nightly run summary; it is deliberately not a gate (its timeout behaviour is too flaky, and mutation scores of ~65–85% are normal). Config lives in `.gremlins.yaml`; fuzz-bearing packages (`timerange`, `query`) and the large `cli` command layer are skipped for speed.
 
+## The live integration suite
+
+`integration/` black-box tests the built binary against a **real** Bronto account (`make it`; CI's `integration` job on every PR, plus the nightly run). Nothing else in the repo needs credentials — without them every live test `t.Skip()`s visibly and the hermetic checks still run.
+
+Two API keys drive it, with deliberately different scopes:
+
+| Secret | Roles it needs | Why |
+| --- | --- | --- |
+| `BRONTO_IT_MGMT_KEY` | `AdminApi` + `SearchApi` + `IngestionApi` | resource CRUD, every search/fields/tail/export, **and** the shared seed fixture's own NDJSON send |
+| `BRONTO_IT_INGEST_KEY` | `IngestionApi` **only** | proves an ingestion-scoped key can write but not read |
+
+`BRONTO_IT_INGEST_KEY`'s narrowness is load-bearing, not incidental: `TestAuthNegative_IngestionKeyOnReadEndpoint` asserts that `datasets list` with it exits 3 (`auth_insufficient_role`), so granting it `SearchApi` turns a passing suite red. Both keys must belong to the region in the `BRONTO_IT_REGION` repo variable (default `eu`). Bronto shows a key's full value once at creation; `roles` goes in as an array, e.g. `{"name": "bronto-ci-ingest", "roles": ["IngestionApi"]}`.
+
+```sh
+BRONTO_IT_MGMT_KEY=... BRONTO_IT_INGEST_KEY=... make it
+```
+
+**Be frugal with the shared account.** The suite is tuned to roughly 90–110 API requests per full run, and new tests are expected to hold that line:
+
+- Reuse the seed fixture (`seededData` / `seededLogID` / `seededProbes` in `seed_test.go`) instead of seeding and waiting on your own data. One batch is seeded per test binary, its `log_id` is resolved once, and one readiness poll covers the batch plus the ride-along probe events.
+- Poll through `PollUntil` (`harness.go`) so your wait inherits the shared backoff (first delay, then ×1.5 up to a 20s ceiling). Fixed short cadences against Bronto's ingest-to-search eventual consistency spend most of their requests asking a question that cannot yet be answered — an earlier flat-5s version of these polls, plus a flat-3s `exports --wait`, was most of a ~300-request run.
+
 ## Conventional commits
 
 Commit subjects follow [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`, etc., e.g. `feat: config resolution with precedence, source tracking, profiles`. The release changelog (`.goreleaser.yaml`) groups `feat:`/`fix:` commits into their own sections and excludes `docs:`/`test:`/`chore:` entirely, so an inaccurate prefix will misfile (or hide) your change in release notes.

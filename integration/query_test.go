@@ -14,9 +14,9 @@ import (
 // and every row carries the marker.
 func TestQuery_SearchWhereMarkerJSON(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, marker := seededData(t)
+	_, marker := seededData(t)
 	r := NewRunner(t, key)
-	logID := logIDForDataset(t, r, dataset)
+	logID := seededLogID(t)
 
 	res, err := r.Run(t.Context(), "", searchMarkerArgs(logID, marker, "-o", "json", "-n", "50")...)
 	if err != nil {
@@ -44,9 +44,9 @@ func TestQuery_SearchWhereMarkerJSON(t *testing.T) {
 // exactly the requested keys.
 func TestQuery_FieldsFlagFiltersColumns(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, marker := seededData(t)
+	_, marker := seededData(t)
 	r := NewRunner(t, key)
-	logID := logIDForDataset(t, r, dataset)
+	logID := seededLogID(t)
 
 	// searchMarkerArgs passes --select, so rows are the PROJECTION with
 	// bare keys (SelectedRows) — --fields names them directly.
@@ -111,9 +111,9 @@ func TestQuery_DatasetByName(t *testing.T) {
 // TestQuery_JQExpression asserts --jq applies to json output.
 func TestQuery_JQExpression(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, marker := seededData(t)
+	_, marker := seededData(t)
 	r := NewRunner(t, key)
-	logID := logIDForDataset(t, r, dataset)
+	logID := seededLogID(t)
 
 	// searchMarkerArgs passes --select: projected rows carry bare keys.
 	jqExpr := `.ci_marker`
@@ -132,9 +132,9 @@ func TestQuery_JQExpression(t *testing.T) {
 // TestQuery_JSONLLineParses asserts -o jsonl emits one JSON object per line.
 func TestQuery_JSONLLineParses(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, marker := seededData(t)
+	_, marker := seededData(t)
 	r := NewRunner(t, key)
-	logID := logIDForDataset(t, r, dataset)
+	logID := seededLogID(t)
 
 	res, err := r.Run(t.Context(), "", searchMarkerArgs(logID, marker, "-o", "jsonl", "-n", "50")...)
 	if err != nil {
@@ -163,9 +163,8 @@ func TestQuery_JSONLLineParses(t *testing.T) {
 // with the same budget the seed itself uses instead of asserting once.
 func TestQuery_FieldsCommandListsMarkerKey(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, _ := seededData(t)
 	r := NewRunner(t, key)
-	logID := logIDForDataset(t, r, dataset)
+	logID := seededLogID(t)
 
 	PollUntil(t, seedPollBudget(), seedPollInterval, func() (bool, error) {
 		res, err := r.Run(t.Context(), "", "fields", "-d", logID, "--since", "1h", "-o", "json")
@@ -202,9 +201,9 @@ func TestQuery_FieldsCommandListsMarkerKey(t *testing.T) {
 // output-format guess.
 func TestQuery_ContextAroundSeededEvent(t *testing.T) {
 	key := skipIfNoCreds(t)
-	dataset, marker := seededData(t)
+	_, marker := seededData(t)
 	r := NewRunner(t, key)
-	logID := logIDForDataset(t, r, dataset)
+	logID := seededLogID(t)
 
 	res, err := r.Run(t.Context(), "",
 		searchArgs(logID, fmt.Sprintf("ci_marker = '%s'", marker),

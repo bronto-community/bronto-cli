@@ -15,13 +15,15 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
-// withFastExportPoll shrinks exportPollInterval for the duration of a test
-// so --wait tests don't sit on a real 3s clock.
+// withFastExportPoll shrinks both ends of the --wait backoff (first delay
+// and ceiling) for the duration of a test, so --wait tests don't sit on a
+// real clock — shrinking the first delay alone would still let the backoff
+// climb toward the 30s ceiling across a multi-poll test.
 func withFastExportPoll(t *testing.T) {
 	t.Helper()
-	old := exportPollInterval
-	exportPollInterval = time.Millisecond
-	t.Cleanup(func() { exportPollInterval = old })
+	oldInterval, oldMax := exportPollInterval, exportPollMaxInterval
+	exportPollInterval, exportPollMaxInterval = time.Millisecond, 2*time.Millisecond
+	t.Cleanup(func() { exportPollInterval, exportPollMaxInterval = oldInterval, oldMax })
 }
 
 func TestExportsCreateConvenienceFlagsBodyShape(t *testing.T) {

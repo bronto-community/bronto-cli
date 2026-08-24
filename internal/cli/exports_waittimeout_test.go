@@ -14,10 +14,12 @@ import (
 // so timeout tests neither sit on a real clock nor hang the suite.
 func withFastExportWait(t *testing.T, cap time.Duration) {
 	t.Helper()
-	oldInterval, oldCap := exportPollInterval, exportWaitTimeout
-	exportPollInterval = time.Millisecond
+	oldInterval, oldMax, oldCap := exportPollInterval, exportPollMaxInterval, exportWaitTimeout
+	exportPollInterval, exportPollMaxInterval = time.Millisecond, 2*time.Millisecond
 	exportWaitTimeout = cap
-	t.Cleanup(func() { exportPollInterval, exportWaitTimeout = oldInterval, oldCap })
+	t.Cleanup(func() {
+		exportPollInterval, exportPollMaxInterval, exportWaitTimeout = oldInterval, oldMax, oldCap
+	})
 }
 
 // runWithHardDeadline runs fn and fails the test if it does not return
@@ -78,9 +80,9 @@ func TestExportsCreateWaitTimesOutWhenNeverTerminal(t *testing.T) {
 // wired through: a caller can bound the wait explicitly, independent of
 // the package default.
 func TestExportsCreateWaitTimeoutFlagOverrides(t *testing.T) {
-	oldInterval := exportPollInterval
-	exportPollInterval = time.Millisecond
-	t.Cleanup(func() { exportPollInterval = oldInterval })
+	oldInterval, oldMax := exportPollInterval, exportPollMaxInterval
+	exportPollInterval, exportPollMaxInterval = time.Millisecond, 2*time.Millisecond
+	t.Cleanup(func() { exportPollInterval, exportPollMaxInterval = oldInterval, oldMax })
 
 	runWithHardDeadline(t, 10*time.Second, func() {
 		_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
