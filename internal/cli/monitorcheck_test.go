@@ -28,6 +28,21 @@ func TestLintMonitor(t *testing.T) {
 		t.Fatalf("good monitor flagged: %v", probs)
 	}
 
+	// OUTSIDE is valid, but only paired with an ANOMALY_DETECTION monitor.
+	anomaly := map[string]any{}
+	for k, v := range good {
+		anomaly[k] = v
+	}
+	anomaly["comparison_operator"] = "OUTSIDE"
+	if probs := lintMonitor(anomaly, known, true); len(probs) != 1 ||
+		!strings.Contains(probs[0], "requires monitor_type") {
+		t.Errorf("OUTSIDE without ANOMALY_DETECTION: got %v", probs)
+	}
+	anomaly["monitor_type"] = "ANOMALY_DETECTION"
+	if probs := lintMonitor(anomaly, known, true); len(probs) != 0 {
+		t.Errorf("OUTSIDE anomaly monitor flagged: %v", probs)
+	}
+
 	bad := map[string]any{
 		"comparison_operator": "NOPE",
 		"window":              "Last 2 minutes",

@@ -2541,6 +2541,45 @@ paths:
         - datasets
       summary: Retrieve a list of datasets
       operationId: listDatasets
+      parameters:
+        - name: from
+          in: query
+          description: >
+            The ids of the datasets to filter the list by. At most one of `from`
+            or `from_expr` may be
+
+            provided. Both parameters are optional; if neither is provided, all
+            datasets are returned.
+
+            If none of the requested ids match an existing dataset, a 200
+            response with an empty
+
+            `datasets` array is returned.
+          required: false
+          schema:
+            minItems: 1
+            uniqueItems: true
+            type: array
+            items:
+              type: string
+          example:
+            - 550e8400-e29b-41d4-a716-446655440000
+            - 297bb888-83b1-44e0-8ab6-47879f1275a2
+        - name: from_expr
+          in: query
+          description: >
+            Expression used to select the set of datasets to return. The
+            expression defines the criteria for which datasets are included and
+            is applied across all available datasets to produce the result set.
+            Supports logical operators (AND, OR), comparison operators (=, !=),
+            and quoted string literals. At most one of `from` or `from_expr` may
+            be provided. Both parameters are optional; if neither is provided,
+            all datasets are returned. If the expression matches no datasets, a
+            200 response with an empty `datasets` array is returned.
+          required: false
+          schema:
+            type: string
+          example: collection = 'my-collection' OR environment != 'production'
       responses:
         '200':
           description: A list of datasets
@@ -5542,8 +5581,8 @@ paths:
                 id: f0e1d2c3-b4a5-6789-0abc-def123456789#ingestion-org_usage
                 name: ingestion_org_usage
                 filter: >-
-                  event_type='log_usage' AND collection_name!='.usage' AND
-                  collection_name!='.audit-trail'
+                  event_type='dataset_usage' AND dataset_type!='metric' AND
+                  collection_name!='.usage' AND collection_name!='.audit-trail'
                 stat: SUM
                 key: bytes_total
                 group_keys: []
@@ -9154,6 +9193,8 @@ components:
           description: Overall value as result of the statistical function applied
           format: double
           example: 50325.25
+        histogram:
+          $ref: '#/components/schemas/Histogram'
         quantiles:
           type: object
           description: >
@@ -9590,10 +9631,6 @@ components:
             request.
           example: 100
     TimeSlice:
-      required:
-        - '@timestamp'
-        - count
-        - value
       type: object
       properties:
         '@timestamp':
@@ -9645,6 +9682,19 @@ components:
             p99: 1331
             p999: 1331
             max: 1331
+        histogram:
+          $ref: '#/components/schemas/Histogram'
+      oneOf:
+        - required:
+            - '@timestamp'
+            - count
+            - value
+          type: object
+        - required:
+            - '@timestamp'
+            - count
+            - histogram
+          type: object
     SearchInProgressLinks:
       type: array
       items:
@@ -9995,11 +10045,28 @@ components:
                 type: string
                 description: ID to the resolved dataset
                 example: 12a883ea-9858-4480-822a-ac2462095e39
+              matched_keys:
+                type: array
+                description: List of keys that were matched against the dataset
+                example:
+                  - log
+                  - log_id
+                items:
+                  type: string
               type:
                 type: string
                 description: Type of the resolved dataset
                 enum:
                   - LOG
+        keys:
+          type: array
+          items:
+            type: string
+            description: >-
+              List of keys used to resolve datasets; the keys specified in the
+              client request, plus any additional keys added by the server if
+              key expansion was enabled
+            example: '[log_id, log_uuid, logId, log]'
     UpdateDatasetRequest:
       required:
         - collection
@@ -10286,10 +10353,10 @@ components:
         - comparison_operator
         - id
         - metadata
+        - monitor_type
         - name
         - status
         - threshold
-        - type
         - window
       type: object
       properties:
@@ -10312,7 +10379,10 @@ components:
           type: string
           description: >-
             the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL,
-            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL, OUTSIDE). OUTSIDE is
+            two-sided and is only allowed for ANOMALY_DETECTION monitors, which
+            are the only type whose compared value is a signed deviation from a
+            baseline.
           example: ABOVE
           enum:
             - BELOW
@@ -10321,14 +10391,25 @@ components:
             - ABOVE_OR_EQUAL
             - EQUAL
             - NOT_EQUAL
+            - OUTSIDE
         threshold:
           type: number
-          description: the threshold value of the monitor
+          description: >-
+            the threshold the monitor compares against. For PATTERN, USAGE and
+            CHANGE_DETECTION monitors this is a metric value. For
+            ANOMALY_DETECTION monitors it is instead a count of baseline spread
+            units (scaled median absolute deviations, comparable to standard
+            deviations), so it must be greater than 0; a threshold of 3 means
+            "more than 3 spread units away from the baseline centre".
           format: double
           example: 1000
         warning_threshold:
           type: number
-          description: the warning threshold value
+          description: >-
+            the warning threshold value, in the same units as threshold. For
+            ANOMALY_DETECTION monitors it must be greater than 0 and less than
+            threshold whatever the comparison operator, because the comparison
+            is on the magnitude of the deviation.
           format: double
           example: 900
         window:
@@ -10429,13 +10510,26 @@ components:
           maxItems: 10
           type: object
           description: Additional monitor configuration
-        type:
+        monitor_type:
           type: string
+          description: >
+            What the monitor compares its metric against. PATTERN and USAGE
+            compare it to a fixed
+
+            threshold, CHANGE_DETECTION to the same metric at an earlier time
+            (see compare_to and
+
+            change_type), and ANOMALY_DETECTION to a trailing baseline of the
+            same series (see
+
+            evaluation_window and anomaly_algorithm).
+          example: PATTERN
           default: PATTERN
           enum:
             - PATTERN
             - USAGE
             - CHANGE_DETECTION
+            - ANOMALY_DETECTION
         compare_to:
           type: string
           description: >
@@ -10454,6 +10548,35 @@ components:
           enum:
             - DIFFERENCE
             - PERCENTAGE
+        evaluation_window:
+          type: string
+          description: >
+            For anomaly detection monitors only, where it is required. The
+            trailing period used to build the
+
+            baseline the candidate window is compared against, expressed as "<n>
+            <units>". It must cover at
+
+            least 10 and at most 1000 monitor windows and be at most 30 days:
+            fewer than 10 windows leaves the
+
+            baseline permanently degenerate, so the monitor reports healthy and
+            never fires.
+          example: '''24 hours'', ''7 days'''
+        anomaly_algorithm:
+          type: string
+          description: >
+            For anomaly detection monitors only. How the baseline centre and
+            spread are estimated. MEDIAN_MAD
+
+            uses the median as the centre and the median absolute deviation,
+            scaled by 1.4826 so it reads like
+
+            a standard deviation, as the spread.
+          example: MEDIAN_MAD
+          default: MEDIAN_MAD
+          enum:
+            - MEDIAN_MAD
         ai_report_enabled:
           type: boolean
           description: >-
@@ -10658,7 +10781,10 @@ components:
           type: string
           description: >-
             the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL,
-            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL, OUTSIDE). OUTSIDE is
+            two-sided and is only allowed for ANOMALY_DETECTION monitors, which
+            are the only type whose compared value is a signed deviation from a
+            baseline.
           example: ABOVE
           enum:
             - BELOW
@@ -10667,13 +10793,24 @@ components:
             - ABOVE_OR_EQUAL
             - EQUAL
             - NOT_EQUAL
+            - OUTSIDE
         threshold:
           type: number
-          description: the threshold value of the monitor
+          description: >-
+            the threshold the monitor compares against. For PATTERN, USAGE and
+            CHANGE_DETECTION monitors this is a metric value. For
+            ANOMALY_DETECTION monitors it is instead a count of baseline spread
+            units (scaled median absolute deviations, comparable to standard
+            deviations), so it must be greater than 0; a threshold of 3 means
+            "more than 3 spread units away from the baseline centre".
           example: 1000
         warning_threshold:
           type: number
-          description: the warning threshold value
+          description: >-
+            the warning threshold value, in the same units as threshold. For
+            ANOMALY_DETECTION monitors it must be greater than 0 and less than
+            threshold whatever the comparison operator, because the comparison
+            is on the magnitude of the deviation.
           example: 1000
         window:
           type: string
@@ -10729,13 +10866,26 @@ components:
             timestamp mutes until then. Omit (or 0) to create unmuted.
           format: int64
           example: -1
-        type:
+        monitor_type:
           type: string
+          description: >
+            What the monitor compares its metric against. PATTERN and USAGE
+            compare it to a fixed
+
+            threshold, CHANGE_DETECTION to the same metric at an earlier time
+            (see compare_to and
+
+            change_type), and ANOMALY_DETECTION to a trailing baseline of the
+            same series (see
+
+            evaluation_window and anomaly_algorithm).
+          example: PATTERN
           default: PATTERN
           enum:
             - PATTERN
             - USAGE
             - CHANGE_DETECTION
+            - ANOMALY_DETECTION
         compare_to:
           type: string
           description: >
@@ -10754,6 +10904,35 @@ components:
           enum:
             - DIFFERENCE
             - PERCENTAGE
+        evaluation_window:
+          type: string
+          description: >
+            For anomaly detection monitors only, where it is required. The
+            trailing period used to build the
+
+            baseline the candidate window is compared against, expressed as "<n>
+            <units>". It must cover at
+
+            least 10 and at most 1000 monitor windows and be at most 30 days:
+            fewer than 10 windows leaves the
+
+            baseline permanently degenerate, so the monitor reports healthy and
+            never fires.
+          example: '''24 hours'', ''7 days'''
+        anomaly_algorithm:
+          type: string
+          description: >
+            For anomaly detection monitors only. How the baseline centre and
+            spread are estimated. MEDIAN_MAD
+
+            uses the median as the centre and the median absolute deviation,
+            scaled by 1.4826 so it reads like
+
+            a standard deviation, as the spread.
+          example: MEDIAN_MAD
+          default: MEDIAN_MAD
+          enum:
+            - MEDIAN_MAD
         ai_report_enabled:
           type: boolean
           description: >-
@@ -10784,9 +10963,9 @@ components:
         - comparison_operator
         - id
         - metadata
+        - monitor_type
         - name
         - threshold
-        - type
         - window
       type: object
       properties:
@@ -10809,7 +10988,10 @@ components:
           type: string
           description: >-
             the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL,
-            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL, OUTSIDE). OUTSIDE is
+            two-sided and is only allowed for ANOMALY_DETECTION monitors, which
+            are the only type whose compared value is a signed deviation from a
+            baseline.
           example: ABOVE
           enum:
             - BELOW
@@ -10818,13 +11000,24 @@ components:
             - ABOVE_OR_EQUAL
             - EQUAL
             - NOT_EQUAL
+            - OUTSIDE
         threshold:
           type: string
-          description: the threshold value of the monitor
+          description: >-
+            the threshold the monitor compares against. For PATTERN, USAGE and
+            CHANGE_DETECTION monitors this is a metric value. For
+            ANOMALY_DETECTION monitors it is instead a count of baseline spread
+            units (scaled median absolute deviations, comparable to standard
+            deviations), so it must be greater than 0; a threshold of 3 means
+            "more than 3 spread units away from the baseline centre".
           example: '1000'
         warning_threshold:
           type: string
-          description: the warning threshold value
+          description: >-
+            the warning threshold value, in the same units as threshold. For
+            ANOMALY_DETECTION monitors it must be greater than 0 and less than
+            threshold whatever the comparison operator, because the comparison
+            is on the magnitude of the deviation.
           example: '900'
         actions:
           type: string
@@ -10866,13 +11059,26 @@ components:
           maxItems: 10
           type: object
           description: Additional monitor configuration
-        type:
+        monitor_type:
           type: string
+          description: >
+            What the monitor compares its metric against. PATTERN and USAGE
+            compare it to a fixed
+
+            threshold, CHANGE_DETECTION to the same metric at an earlier time
+            (see compare_to and
+
+            change_type), and ANOMALY_DETECTION to a trailing baseline of the
+            same series (see
+
+            evaluation_window and anomaly_algorithm).
+          example: PATTERN
           default: PATTERN
           enum:
             - PATTERN
             - USAGE
             - CHANGE_DETECTION
+            - ANOMALY_DETECTION
         compare_to:
           type: string
           description: >
@@ -10891,6 +11097,35 @@ components:
           enum:
             - DIFFERENCE
             - PERCENTAGE
+        evaluation_window:
+          type: string
+          description: >
+            For anomaly detection monitors only, where it is required. The
+            trailing period used to build the
+
+            baseline the candidate window is compared against, expressed as "<n>
+            <units>". It must cover at
+
+            least 10 and at most 1000 monitor windows and be at most 30 days:
+            fewer than 10 windows leaves the
+
+            baseline permanently degenerate, so the monitor reports healthy and
+            never fires.
+          example: '''24 hours'', ''7 days'''
+        anomaly_algorithm:
+          type: string
+          description: >
+            For anomaly detection monitors only. How the baseline centre and
+            spread are estimated. MEDIAN_MAD
+
+            uses the median as the centre and the median absolute deviation,
+            scaled by 1.4826 so it reads like
+
+            a standard deviation, as the spread.
+          example: MEDIAN_MAD
+          default: MEDIAN_MAD
+          enum:
+            - MEDIAN_MAD
         metric_id:
           type: object
           properties:
@@ -10937,7 +11172,10 @@ components:
           type: string
           description: >-
             the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL,
-            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL, OUTSIDE). OUTSIDE is
+            two-sided and is only allowed for ANOMALY_DETECTION monitors, which
+            are the only type whose compared value is a signed deviation from a
+            baseline.
           example: ABOVE
           enum:
             - BELOW
@@ -10946,13 +11184,24 @@ components:
             - ABOVE_OR_EQUAL
             - EQUAL
             - NOT_EQUAL
+            - OUTSIDE
         threshold:
           type: string
-          description: the threshold value of the monitor
+          description: >-
+            the threshold the monitor compares against. For PATTERN, USAGE and
+            CHANGE_DETECTION monitors this is a metric value. For
+            ANOMALY_DETECTION monitors it is instead a count of baseline spread
+            units (scaled median absolute deviations, comparable to standard
+            deviations), so it must be greater than 0; a threshold of 3 means
+            "more than 3 spread units away from the baseline centre".
           example: '1000'
         warning_threshold:
           type: string
-          description: the warning threshold value
+          description: >-
+            the warning threshold value, in the same units as threshold. For
+            ANOMALY_DETECTION monitors it must be greater than 0 and less than
+            threshold whatever the comparison operator, because the comparison
+            is on the magnitude of the deviation.
           example: '1000'
         window:
           type: string
@@ -10994,13 +11243,26 @@ components:
           maxItems: 10
           type: object
           description: Additional monitor configuration
-        type:
+        monitor_type:
           type: string
+          description: >
+            What the monitor compares its metric against. PATTERN and USAGE
+            compare it to a fixed
+
+            threshold, CHANGE_DETECTION to the same metric at an earlier time
+            (see compare_to and
+
+            change_type), and ANOMALY_DETECTION to a trailing baseline of the
+            same series (see
+
+            evaluation_window and anomaly_algorithm).
+          example: PATTERN
           default: PATTERN
           enum:
             - PATTERN
             - USAGE
             - CHANGE_DETECTION
+            - ANOMALY_DETECTION
         compare_to:
           type: string
           description: >
@@ -11019,6 +11281,35 @@ components:
           enum:
             - DIFFERENCE
             - PERCENTAGE
+        evaluation_window:
+          type: string
+          description: >
+            For anomaly detection monitors only, where it is required. The
+            trailing period used to build the
+
+            baseline the candidate window is compared against, expressed as "<n>
+            <units>". It must cover at
+
+            least 10 and at most 1000 monitor windows and be at most 30 days:
+            fewer than 10 windows leaves the
+
+            baseline permanently degenerate, so the monitor reports healthy and
+            never fires.
+          example: '''24 hours'', ''7 days'''
+        anomaly_algorithm:
+          type: string
+          description: >
+            For anomaly detection monitors only. How the baseline centre and
+            spread are estimated. MEDIAN_MAD
+
+            uses the median as the centre and the median absolute deviation,
+            scaled by 1.4826 so it reads like
+
+            a standard deviation, as the spread.
+          example: MEDIAN_MAD
+          default: MEDIAN_MAD
+          enum:
+            - MEDIAN_MAD
         this_template_tags:
           $ref: '#/components/schemas/Tags'
         parameters:
@@ -11372,7 +11663,10 @@ components:
           type: string
           description: >-
             the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL,
-            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL, OUTSIDE). OUTSIDE is
+            two-sided and is only allowed for ANOMALY_DETECTION monitors, which
+            are the only type whose compared value is a signed deviation from a
+            baseline.
           example: ABOVE
           enum:
             - BELOW
@@ -11381,13 +11675,24 @@ components:
             - ABOVE_OR_EQUAL
             - EQUAL
             - NOT_EQUAL
+            - OUTSIDE
         threshold:
           type: number
-          description: the threshold value of the monitor
+          description: >-
+            the threshold the monitor compares against. For PATTERN, USAGE and
+            CHANGE_DETECTION monitors this is a metric value. For
+            ANOMALY_DETECTION monitors it is instead a count of baseline spread
+            units (scaled median absolute deviations, comparable to standard
+            deviations), so it must be greater than 0; a threshold of 3 means
+            "more than 3 spread units away from the baseline centre".
           example: 1000
         warning_threshold:
           type: number
-          description: the warning threshold value
+          description: >-
+            the warning threshold value, in the same units as threshold. For
+            ANOMALY_DETECTION monitors it must be greater than 0 and less than
+            threshold whatever the comparison operator, because the comparison
+            is on the magnitude of the deviation.
           example: 900
         window:
           type: string
@@ -11427,11 +11732,24 @@ components:
           example: host:web1,region:eu
         monitor_type:
           type: string
+          description: >
+            What the monitor compares its metric against. PATTERN and USAGE
+            compare it to a fixed
+
+            threshold, CHANGE_DETECTION to the same metric at an earlier time
+            (see compare_to and
+
+            change_type), and ANOMALY_DETECTION to a trailing baseline of the
+            same series (see
+
+            evaluation_window and anomaly_algorithm).
+          example: PATTERN
           default: PATTERN
           enum:
             - PATTERN
             - USAGE
             - CHANGE_DETECTION
+            - ANOMALY_DETECTION
         compare_to:
           type: string
           description: >
@@ -11450,6 +11768,35 @@ components:
           enum:
             - DIFFERENCE
             - PERCENTAGE
+        evaluation_window:
+          type: string
+          description: >
+            For anomaly detection monitors only, where it is required. The
+            trailing period used to build the
+
+            baseline the candidate window is compared against, expressed as "<n>
+            <units>". It must cover at
+
+            least 10 and at most 1000 monitor windows and be at most 30 days:
+            fewer than 10 windows leaves the
+
+            baseline permanently degenerate, so the monitor reports healthy and
+            never fires.
+          example: '''24 hours'', ''7 days'''
+        anomaly_algorithm:
+          type: string
+          description: >
+            For anomaly detection monitors only. How the baseline centre and
+            spread are estimated. MEDIAN_MAD
+
+            uses the median as the centre and the median absolute deviation,
+            scaled by 1.4826 so it reads like
+
+            a standard deviation, as the spread.
+          example: MEDIAN_MAD
+          default: MEDIAN_MAD
+          enum:
+            - MEDIAN_MAD
         formulas:
           type: array
           description: List of formulas to use for monitor
@@ -11487,7 +11834,10 @@ components:
           type: string
           description: >-
             the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL,
-            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL, OUTSIDE). OUTSIDE is
+            two-sided and is only allowed for ANOMALY_DETECTION monitors, which
+            are the only type whose compared value is a signed deviation from a
+            baseline.
           example: ABOVE
           enum:
             - BELOW
@@ -11496,13 +11846,24 @@ components:
             - ABOVE_OR_EQUAL
             - EQUAL
             - NOT_EQUAL
+            - OUTSIDE
         threshold:
           type: number
-          description: the threshold value of the monitor
+          description: >-
+            the threshold the monitor compares against. For PATTERN, USAGE and
+            CHANGE_DETECTION monitors this is a metric value. For
+            ANOMALY_DETECTION monitors it is instead a count of baseline spread
+            units (scaled median absolute deviations, comparable to standard
+            deviations), so it must be greater than 0; a threshold of 3 means
+            "more than 3 spread units away from the baseline centre".
           example: 1000
         warning_threshold:
           type: number
-          description: the warning threshold value
+          description: >-
+            the warning threshold value, in the same units as threshold. For
+            ANOMALY_DETECTION monitors it must be greater than 0 and less than
+            threshold whatever the comparison operator, because the comparison
+            is on the magnitude of the deviation.
           example: 1000
         window:
           type: string
@@ -11549,13 +11910,26 @@ components:
           maxItems: 10
           type: object
           description: Additional monitor configuration
-        type:
+        monitor_type:
           type: string
+          description: >
+            What the monitor compares its metric against. PATTERN and USAGE
+            compare it to a fixed
+
+            threshold, CHANGE_DETECTION to the same metric at an earlier time
+            (see compare_to and
+
+            change_type), and ANOMALY_DETECTION to a trailing baseline of the
+            same series (see
+
+            evaluation_window and anomaly_algorithm).
+          example: PATTERN
           default: PATTERN
           enum:
             - PATTERN
             - USAGE
             - CHANGE_DETECTION
+            - ANOMALY_DETECTION
         compare_to:
           type: string
           description: >
@@ -11574,6 +11948,35 @@ components:
           enum:
             - DIFFERENCE
             - PERCENTAGE
+        evaluation_window:
+          type: string
+          description: >
+            For anomaly detection monitors only, where it is required. The
+            trailing period used to build the
+
+            baseline the candidate window is compared against, expressed as "<n>
+            <units>". It must cover at
+
+            least 10 and at most 1000 monitor windows and be at most 30 days:
+            fewer than 10 windows leaves the
+
+            baseline permanently degenerate, so the monitor reports healthy and
+            never fires.
+          example: '''24 hours'', ''7 days'''
+        anomaly_algorithm:
+          type: string
+          description: >
+            For anomaly detection monitors only. How the baseline centre and
+            spread are estimated. MEDIAN_MAD
+
+            uses the median as the centre and the median absolute deviation,
+            scaled by 1.4826 so it reads like
+
+            a standard deviation, as the spread.
+          example: MEDIAN_MAD
+          default: MEDIAN_MAD
+          enum:
+            - MEDIAN_MAD
         ai_report_enabled:
           type: boolean
           description: >-
@@ -11621,7 +12024,10 @@ components:
           type: string
           description: >-
             the comparison operator of the monitor (ABOVE, ABOVE_OR_EQUAL,
-            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL)
+            BELOW, BELOW_OR_EQUAL, EQUAL, NOT_EQUAL, OUTSIDE). OUTSIDE is
+            two-sided and is only allowed for ANOMALY_DETECTION monitors, which
+            are the only type whose compared value is a signed deviation from a
+            baseline.
           example: ABOVE
           enum:
             - BELOW
@@ -11630,13 +12036,24 @@ components:
             - ABOVE_OR_EQUAL
             - EQUAL
             - NOT_EQUAL
+            - OUTSIDE
         threshold:
           type: number
-          description: the threshold value of the monitor
+          description: >-
+            the threshold the monitor compares against. For PATTERN, USAGE and
+            CHANGE_DETECTION monitors this is a metric value. For
+            ANOMALY_DETECTION monitors it is instead a count of baseline spread
+            units (scaled median absolute deviations, comparable to standard
+            deviations), so it must be greater than 0; a threshold of 3 means
+            "more than 3 spread units away from the baseline centre".
           example: 1000
         warning_threshold:
           type: number
-          description: the warning threshold value
+          description: >-
+            the warning threshold value, in the same units as threshold. For
+            ANOMALY_DETECTION monitors it must be greater than 0 and less than
+            threshold whatever the comparison operator, because the comparison
+            is on the magnitude of the deviation.
           example: 1000
         window:
           type: string
@@ -11666,13 +12083,26 @@ components:
           maxItems: 10
           type: object
           description: Additional monitor configuration
-        type:
+        monitor_type:
           type: string
+          description: >
+            What the monitor compares its metric against. PATTERN and USAGE
+            compare it to a fixed
+
+            threshold, CHANGE_DETECTION to the same metric at an earlier time
+            (see compare_to and
+
+            change_type), and ANOMALY_DETECTION to a trailing baseline of the
+            same series (see
+
+            evaluation_window and anomaly_algorithm).
+          example: PATTERN
           default: PATTERN
           enum:
             - PATTERN
             - USAGE
             - CHANGE_DETECTION
+            - ANOMALY_DETECTION
         compare_to:
           type: string
           description: >
@@ -11691,6 +12121,35 @@ components:
           enum:
             - DIFFERENCE
             - PERCENTAGE
+        evaluation_window:
+          type: string
+          description: >
+            For anomaly detection monitors only, where it is required. The
+            trailing period used to build the
+
+            baseline the candidate window is compared against, expressed as "<n>
+            <units>". It must cover at
+
+            least 10 and at most 1000 monitor windows and be at most 30 days:
+            fewer than 10 windows leaves the
+
+            baseline permanently degenerate, so the monitor reports healthy and
+            never fires.
+          example: '''24 hours'', ''7 days'''
+        anomaly_algorithm:
+          type: string
+          description: >
+            For anomaly detection monitors only. How the baseline centre and
+            spread are estimated. MEDIAN_MAD
+
+            uses the median as the centre and the median absolute deviation,
+            scaled by 1.4826 so it reads like
+
+            a standard deviation, as the spread.
+          example: MEDIAN_MAD
+          default: MEDIAN_MAD
+          enum:
+            - MEDIAN_MAD
         this_template_tags:
           $ref: '#/components/schemas/TagValues'
         parameters:
@@ -12815,7 +13274,7 @@ components:
           example: Usage
         filter:
           type: string
-          example: event_type='log_usage'
+          example: event_type='dataset_usage' AND dataset_type='log'
         stat:
           type: string
           example: SUM
@@ -12838,7 +13297,7 @@ components:
           example: Usage
         filter:
           type: string
-          example: event_type='log_usage'
+          example: event_type='dataset_usage' AND dataset_type='log'
         key:
           type: string
           example: bytes_total
@@ -13022,6 +13481,36 @@ components:
           type: string
           description: Name of the Slack workspace
           example: brontotest
+    ConnectVercelIntegrationRequest:
+      required:
+        - access_code
+      type: object
+      properties:
+        access_code:
+          minLength: 1
+          type: string
+          description: The access code provided by Vercel when connecting the account
+          example: ABCD68uJgdh7YZSQ0hnEJGWomzP
+        configuration_id:
+          type: string
+          description: The configuration ID of the Vercel integration
+          example: icfg_C0DE
+        team_id:
+          type: string
+          description: The team ID of the Vercel integration
+          example: team_1234567890
+    CreateVercelDrainsRequest:
+      type: object
+      properties:
+        installation_id:
+          minLength: 1
+          type: string
+          description: The configuration ID of the Vercel integration
+          example: icfg_C0DE
+        team_id:
+          type: string
+          description: The team ID of the Vercel integration
+          example: team_1234567890
     WebhookIntegrationResource:
       required:
         - id
@@ -14882,6 +15371,7 @@ components:
       required:
         - metric_id
         - metric_name
+        - type
       type: object
       properties:
         metric_id:
@@ -14921,7 +15411,9 @@ components:
             - HISTOGRAM
         aggregation_temporality:
           type: string
-          description: the type of aggregation of the metric as ingested.
+          description: >-
+            the type of aggregation of the metric as ingested. Applies only to
+            SUM and HISTOGRAM metrics
           example: DELTA
           enum:
             - DELTA
@@ -14935,6 +15427,13 @@ components:
             - min
             - max
             - count
+        metadata:
+          type: object
+          properties:
+            last_heartbeat_at:
+              type: integer
+              description: Timestamp of the last heartbeat in milliseconds since epoch.
+              format: int64
       description: |
         Metadata for a metric sent to Bronto
     TopKeysPerLogOrMetric:
@@ -14999,9 +15498,6 @@ components:
             - function: count
               value: 58351920
           items:
-            required:
-              - function
-              - value
             type: object
             properties:
               function:
@@ -15010,6 +15506,17 @@ components:
               value:
                 type: number
                 description: the computed value
+              histogram:
+                $ref: '#/components/schemas/Histogram'
+            oneOf:
+              - required:
+                  - function
+                  - value
+                type: object
+              - required:
+                  - function
+                  - histogram
+                type: object
         is_exact:
           type: boolean
           description: true if the series result is exact, false if it is an approximation
@@ -15280,7 +15787,7 @@ components:
       additionalProperties:
         type: string
         description: The value of the tag
-      description: A map of key value pairs associated with this log
+      description: A map of key value pairs associated with the resource
       example:
         region: eu
         environment: production
@@ -15330,6 +15837,51 @@ components:
           type: boolean
           description: Whether the shared datasets setting should be enabled on the org.
       additionalProperties: false
+    Histogram:
+      required:
+        - buckets
+      type: object
+      properties:
+        min:
+          type: number
+          description: The minimum value recorded, if available
+          format: double
+          example: 0
+        max:
+          type: number
+          description: The maximum value recorded, if available
+          format: double
+          example: 10
+        buckets:
+          type: array
+          description: List of the histogram buckets
+          items:
+            required:
+              - high_bound
+              - low_bound
+              - name
+              - value
+            type: object
+            properties:
+              name:
+                type: string
+                description: The name of the bucket
+                example: lower than 10
+              low_bound:
+                type: number
+                description: The lower bound of the bucket
+                format: double
+                example: 0
+              high_bound:
+                type: number
+                description: The upper bound of the bucket
+                format: double
+                example: 10
+              value:
+                type: number
+                description: The number of events within the bucket
+                format: int64
+      description: Representation of an histogram
     MetricDelta:
       type: object
       properties:
@@ -16236,6 +16788,8 @@ components:
             Currently space cannot be in the name if the query has to be
             referenced in a formula
         select:
+          maxItems: 1
+          minItems: 1
           type: array
           description: >
             The `select` parameter specifies the metric field to retrieve from
@@ -16252,8 +16806,6 @@ components:
           example:
             - response_time_ms
           items:
-            maxItems: 1
-            minItems: 1
             type: string
         from:
           type: array
@@ -16284,6 +16836,8 @@ components:
             The filter can combine multiple terms using AND, OR, NOT.
           example: ip='10.0.0.1'
         groups:
+          maxItems: 5
+          minItems: 0
           type: array
           description: >
             The groups parameter specifies a key to use to arrange the results
@@ -16294,8 +16848,6 @@ components:
 
             for each group.
           items:
-            maxItems: 5
-            minItems: 0
             type: string
             example: '[user, ip]'
         aggregation:
@@ -16305,6 +16857,8 @@ components:
           description: the aggregation to apply to the selected metric field
           items:
             $ref: '#/components/schemas/Aggregation'
+        unit_config:
+          $ref: '#/components/schemas/QueryUnitConfig'
       oneOf:
         - required:
             - from
@@ -16452,6 +17006,105 @@ components:
         - sum
         - min
         - max
+    QueryUnitConfig:
+      description: >
+        Optional configuration describing the unit of the query's raw value and,
+        where applicable, the unit it should be converted to for display. When
+        omitted, the value is treated as a plain number. Currently used for UI
+        display only.
+      oneOf:
+        - required:
+            - input
+            - type
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - data_size
+            input:
+              type: string
+              description: The unit of the raw input value.
+              enum:
+                - bytes
+                - kilobytes
+                - megabytes
+                - gigabytes
+                - terabytes
+                - petabytes
+                - exabytes
+                - zettabytes
+                - yottabytes
+            output:
+              type: string
+              description: >
+                The unit to convert the value to for display. Use `auto` to
+                automatically pick a unit based on the value's magnitude. Uses
+                1000 for the conversion factor.
+              enum:
+                - auto
+                - bytes
+                - kilobytes
+                - megabytes
+                - gigabytes
+                - terabytes
+                - petabytes
+                - exabytes
+                - zettabytes
+                - yottabytes
+        - required:
+            - input
+            - type
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - time
+            input:
+              type: string
+              description: The unit of the raw input value.
+              enum:
+                - nanoseconds
+                - microseconds
+                - milliseconds
+                - seconds
+                - minutes
+                - hours
+                - days
+            output:
+              type: string
+              description: >
+                The unit to convert the value to for display. Use `auto` to
+                automatically pick a unit based on the value's magnitude.
+              enum:
+                - auto
+                - nanoseconds
+                - microseconds
+                - milliseconds
+                - seconds
+                - minutes
+                - hours
+                - days
+        - required:
+            - input
+            - type
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - percentage
+            input:
+              type: string
+              description: >
+                The unit of the raw input value. `fraction` represents values
+                between 0 and 1, `percent` represents values already scaled
+                between 0 and 100. The output is always displayed as a
+                percentage.
+              enum:
+                - fraction
+                - percent
     TimeFunction:
       type: string
       description: Aggregation applied over time buckets.
@@ -16465,10 +17118,14 @@ components:
         - mean
         - count
         - median
+        - p25
+        - p50
         - p75
         - p90
         - p95
         - p99
+        - p999
+        - histogram
     EntityId:
       required:
         - id
