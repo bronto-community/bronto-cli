@@ -20,6 +20,10 @@ import (
 var monitorComparisonOps = map[string]bool{
 	"BELOW": true, "BELOW_OR_EQUAL": true, "ABOVE": true,
 	"ABOVE_OR_EQUAL": true, "EQUAL": true, "NOT_EQUAL": true,
+	// OUTSIDE is two-sided and compares the magnitude of a deviation from
+	// a baseline, so the spec allows it only on ANOMALY_DETECTION
+	// monitors — lintMonitor enforces that pairing.
+	"OUTSIDE": true,
 }
 
 var monitorWindowRe = regexp.MustCompile(`^Last (\d+) (minutes?|hours?|days?)$`)
@@ -127,11 +131,17 @@ func lintMonitor(body map[string]any, knownDatasets map[string]bool, datasetsChe
 	}
 	need("name")
 	if need("comparison_operator") {
-		if op, _ := body["comparison_operator"].(string); !monitorComparisonOps[op] {
-			probs = append(probs, fmt.Sprintf("comparison_operator %q not one of BELOW/BELOW_OR_EQUAL/ABOVE/ABOVE_OR_EQUAL/EQUAL/NOT_EQUAL", op))
+		op, _ := body["comparison_operator"].(string)
+		switch {
+		case !monitorComparisonOps[op]:
+			probs = append(probs, fmt.Sprintf("comparison_operator %q not one of BELOW/BELOW_OR_EQUAL/ABOVE/ABOVE_OR_EQUAL/EQUAL/NOT_EQUAL/OUTSIDE", op))
+		case op == "OUTSIDE" && body["monitor_type"] != "ANOMALY_DETECTION":
+			probs = append(probs, `comparison_operator "OUTSIDE" requires monitor_type "ANOMALY_DETECTION"`)
 		}
 	}
-	need("threshold")
+	if need("threshold") && body["monitor_type"] == "ANOMALY_DETECTION" {
+		probs = append(probs, lintAnomalyThresholds(body)...)
+	}
 	if need("window") {
 		probs = append(probs, lintMonitorWindow(body["window"])...)
 	}
@@ -140,6 +150,32 @@ func lintMonitor(body map[string]any, knownDatasets map[string]bool, datasetsChe
 	}
 	if need("queries") {
 		probs = append(probs, lintMonitorQueries(body["queries"], knownDatasets, datasetsChecked)...)
+	}
+	return probs
+}
+
+// lintAnomalyThresholds checks the two constraints that only bind on
+// ANOMALY_DETECTION monitors, where the thresholds are counts of baseline
+// spread units rather than metric values: the comparison is on the
+// magnitude of the deviation, so both must be positive and the warning
+// must trip first — whatever the comparison operator.
+func lintAnomalyThresholds(body map[string]any) []string {
+	var probs []string
+	threshold, ok := body["threshold"].(float64)
+	if !ok {
+		return []string{"threshold must be a number for an ANOMALY_DETECTION monitor"}
+	}
+	if threshold <= 0 {
+		probs = append(probs, fmt.Sprintf("threshold %g must be greater than 0 (ANOMALY_DETECTION thresholds count baseline spread units)", threshold))
+	}
+	warning, ok := body["warning_threshold"].(float64)
+	if !ok {
+		return probs // optional; a non-numeric value is the API's to reject
+	}
+	if warning <= 0 {
+		probs = append(probs, fmt.Sprintf("warning_threshold %g must be greater than 0", warning))
+	} else if warning >= threshold {
+		probs = append(probs, fmt.Sprintf("warning_threshold %g must be less than threshold %g", warning, threshold))
 	}
 	return probs
 }

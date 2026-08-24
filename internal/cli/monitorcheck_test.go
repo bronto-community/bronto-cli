@@ -28,6 +28,71 @@ func TestLintMonitor(t *testing.T) {
 		t.Fatalf("good monitor flagged: %v", probs)
 	}
 
+	// OUTSIDE is valid, but only paired with an ANOMALY_DETECTION monitor.
+	anomaly := map[string]any{}
+	for k, v := range good {
+		anomaly[k] = v
+	}
+	anomaly["comparison_operator"] = "OUTSIDE"
+	if probs := lintMonitor(anomaly, known, true); len(probs) != 1 ||
+		!strings.Contains(probs[0], "requires monitor_type") {
+		t.Errorf("OUTSIDE without ANOMALY_DETECTION: got %v", probs)
+	}
+	anomaly["monitor_type"] = "ANOMALY_DETECTION"
+	if probs := lintMonitor(anomaly, known, true); len(probs) != 0 {
+		t.Errorf("OUTSIDE anomaly monitor flagged: %v", probs)
+	}
+
+	// Anomaly thresholds count baseline spread units: both positive, and
+	// the warning has to trip before the alert.
+	for _, tc := range []struct {
+		name      string
+		threshold any
+		warning   any
+		want      string
+	}{
+		{"zero threshold", 0.0, nil, "must be greater than 0"},
+		{"negative threshold", -3.0, nil, "must be greater than 0"},
+		{"non-numeric threshold", "3", nil, "must be a number"},
+		{"negative warning", 3.0, -1.0, "warning_threshold -1 must be greater than 0"},
+		{"warning above threshold", 3.0, 4.0, "warning_threshold 4 must be less than threshold 3"},
+		{"warning equal to threshold", 3.0, 3.0, "must be less than threshold"},
+	} {
+		m := map[string]any{}
+		for k, v := range anomaly {
+			m[k] = v
+		}
+		m["threshold"] = tc.threshold
+		if tc.warning != nil {
+			m["warning_threshold"] = tc.warning
+		}
+		probs := lintMonitor(m, known, true)
+		if !strings.Contains(strings.Join(probs, "\n"), tc.want) {
+			t.Errorf("%s: problems missing %q: %v", tc.name, tc.want, probs)
+		}
+	}
+
+	// A well-formed anomaly monitor with a warning threshold stays clean.
+	okAnomaly := map[string]any{}
+	for k, v := range anomaly {
+		okAnomaly[k] = v
+	}
+	okAnomaly["threshold"], okAnomaly["warning_threshold"] = 3.0, 2.0
+	if probs := lintMonitor(okAnomaly, known, true); len(probs) != 0 {
+		t.Errorf("valid anomaly monitor flagged: %v", probs)
+	}
+
+	// The constraints bind only on ANOMALY_DETECTION: a PATTERN monitor
+	// may legitimately alert on a metric crossing zero or going negative.
+	pattern := map[string]any{}
+	for k, v := range good {
+		pattern[k] = v
+	}
+	pattern["threshold"] = -5.0
+	if probs := lintMonitor(pattern, known, true); len(probs) != 0 {
+		t.Errorf("negative threshold flagged on a PATTERN monitor: %v", probs)
+	}
+
 	bad := map[string]any{
 		"comparison_operator": "NOPE",
 		"window":              "Last 2 minutes",
