@@ -67,6 +67,12 @@ BRONTO_IT_MGMT_KEY=... BRONTO_IT_INGEST_KEY=... make it
 - Reuse the seed fixture (`seededData` / `seededLogID` / `seededProbes` in `seed_test.go`) instead of seeding and waiting on your own data. One batch is seeded per test binary, its `log_id` is resolved once, and one readiness poll covers the batch plus the ride-along probe events.
 - Poll through `PollUntil` (`harness.go`) so your wait inherits the shared backoff (first delay, then ×1.5 up to a 20s ceiling). Fixed short cadences against Bronto's ingest-to-search eventual consistency spend most of their requests asking a question that cannot yet be answered — an earlier flat-5s version of these polls, plus a flat-3s `exports --wait`, was most of a ~300-request run.
 
+## Deferred work gets a fix or an issue — never a sentence
+
+When you notice something out of scope while working, it goes one of two ways: **fix it now**, or **open an issue**. Never a third way — a "not done" note in a PR description, a "we should probably…" line in a review comment, a `TODO` with no ticket. Those read as diligence and behave as forgetting: PR bodies are unsearchable in practice, and nobody re-reads a merged one.
+
+The choice is usually easy. If the fix is small and lands in code the PR already touches, do it — filing and later re-loading context costs more than the diff. Otherwise `gh issue create` it, link the issue from the PR, and move on. A one-line issue that turns out not to matter is cheap to close; work that was only ever mentioned in prose is not recoverable.
+
 ## Conventional commits
 
 Commit subjects follow [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`, etc., e.g. `feat: config resolution with precedence, source tracking, profiles`. The release changelog (`.goreleaser.yaml`) groups `feat:`/`fix:` commits into their own sections and excludes `docs:`/`test:`/`chore:` entirely, so an inaccurate prefix will misfile (or hide) your change in release notes.
