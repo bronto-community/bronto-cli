@@ -144,12 +144,14 @@ homebrew_casks:
     # without this a `brew install --cask` on macOS hits the "cannot verify"
     # dialog. The OS.mac? guard is required: xattr/quarantine are macOS-only
     # and running the hook unconditionally breaks `brew install` on Linux.
+    #
+    # Written as a modifier `if` because the tap runs `brew style`, whose
+    # Style/IfUnlessModifier cop rejects a multi-line `if` around a single
+    # statement. At 98 characters it stays under the 118-char cask limit.
     hooks:
       post:
         install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", staged_path]
-          end
+          system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", staged_path] if OS.mac?
 
 release:
   github:
