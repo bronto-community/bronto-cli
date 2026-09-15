@@ -64,16 +64,17 @@ var specCreatePathExceptions = map[string]bool{}
 var specIDBaseExceptions = map[string]bool{}
 
 // specLiveButUndocumented lists base paths the published upstream spec
-// stopped documenting (2026-07-17 re-vendor removed 35 paths) but that the
-// live API still serves. dashboards and saved-searches are live-verified on
-// every PR by integration TestResourcesCRUD; parsers is untested live but
-// was working when last documented. Re-check at every re-vendor: if an
-// entry here starts 404ing live, drop the CLI command instead of keeping
-// the exception.
+// stopped documenting but that the live API still serves. dashboards and
+// saved-searches are live-verified on every PR by integration
+// TestResourcesCRUD, usage by TestUsageLive, and parsers by
+// TestParsersListTolerant. Re-check at every re-vendor: if an entry here
+// starts 404ing live, drop the CLI command instead of keeping the
+// exception.
 var specLiveButUndocumented = map[string]bool{
 	"/dashboards":     true,
 	"/saved-searches": true,
 	"/parsers":        true,
+	"/usage":          true,
 }
 
 // normalizeParams rewrites every {param} segment to a bare {} so patterns

@@ -5473,502 +5473,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /usage:
-    get:
-      tags:
-        - usage
-      summary: Retrieve usage metrics over time
-      description: >
-        Retrieves usage statistics for your organization over a specified time
-        period. Usage metrics include data ingestion volumes, search query
-        counts, and export activities. The results can be broken down into time
-        slices and optionally compared against previous periods for trend
-        analysis.
-      operationId: getUsage
-      parameters:
-        - name: time_range
-          in: query
-          description: The period to calculate the usage for.
-          required: false
-          schema:
-            type: string
-          example: Last 2 days
-        - name: num_of_slices
-          in: query
-          description: >
-            The num_of_slices parameter defines how the time range is divided
-            into intervals.  It is optional, and if not provided, a default
-            value is applied. The default number of slices is 1 minute
-            granularity for up to 12 hours time range  and 20 minutes
-            granularity for longer than 12 hours time range up to 720 slices. -
-            default for 20 minutes time window: 20 slices - default for 12 hour
-            time window: 720 slices - default for 1 day time window: 72 slices
-            (1 slice per 20 minutes) - default for 10 days time window: 720
-            slices (1 slice per 20 minutes) - default for 30 days time window:
-            720 slices (max number of slices allowed)
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: usage_type
-          in: query
-          description: The type of usage to query.
-          schema:
-            type: string
-            enum:
-              - ingestion
-              - search
-              - export
-        - name: delta
-          in: query
-          description: >
-            Enables calculation of the difference between the current and
-            previous time range values.  When set to true, the response includes
-            a delta object with the computed difference and its relative change.
-            Defaults to false.
-          required: false
-          schema:
-            type: boolean
-          example: true
-        - name: delta_time_range
-          in: query
-          description: >
-            The time period for which to query data for delta comparison. Either
-            `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be
-            provided if `delta` is enabled. If `delta_time_range` is provided,
-            it will take precedence
-          required: false
-          schema:
-            type: string
-          example: Previous month
-        - name: delta_from_ts
-          in: query
-          description: >
-            The starting unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: delta_to_ts
-          in: query
-          description: >
-            The ending unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1711390455601
-      responses:
-        '200':
-          description: Successfully retrieved usage metrics
-          headers:
-            RateLimit-Limit:
-              $ref: '#/components/headers/RateLimitLimit'
-            RateLimit-Remaining:
-              $ref: '#/components/headers/RateLimitRemaining'
-            RateLimit-Reset:
-              $ref: '#/components/headers/RateLimitReset'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MetricItem'
-              example:
-                id: f0e1d2c3-b4a5-6789-0abc-def123456789#ingestion-org_usage
-                name: ingestion_org_usage
-                filter: >-
-                  event_type='dataset_usage' AND dataset_type!='metric' AND
-                  collection_name!='.usage' AND collection_name!='.audit-trail'
-                stat: SUM
-                key: bytes_total
-                group_keys: []
-                logs:
-                  - ''
-                from_tags: []
-                aux: {}
-                total_count: 3790
-                total_value: 12961699
-                is_exact: true
-                series:
-                  - '@time': Sun Mar 01 00:00:00 UTC 2026
-                    '@timestamp': '1772323200000'
-                    count: '546'
-                    value: '1274155.0'
-                    quantiles: {}
-                  - '@time': Mon Mar 02 03:14:15 UTC 2026
-                    '@timestamp': '1772421255737'
-                    count: '679'
-                    value: '2688361.0'
-                    quantiles: {}
-                groups_series: []
-                delta:
-                  start_time: 0
-                  end_time: 0
-                  total_count: 0
-                  total_value: 0
-                  delta_value: 0
-                  delta_factor: 0
-        '400':
-          description: Bad Request - The time range or other parameters are invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: >-
-            Forbidden - The user does not have the privileges to view usage
-            metrics
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Too Many Request - Fair usage limits exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal Server Error - An error occurred on the server side.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /usage/organizations/logs:
-    get:
-      tags:
-        - usage
-      summary: Get the usage over a period of time for a log id.
-      operationId: getUsageByLogId
-      parameters:
-        - name: time_range
-          in: query
-          description: >
-            The relative time range for which to calculate usage data. Time
-            range supported is from minutes to years. For an exact range, use
-            `from_ts` and `to_ts` instead.
-          schema:
-            type: string
-          examples:
-            mins:
-              value: Last 10 minutes
-            day:
-              value: Last 2 days
-            week:
-              value: Last 3 weeks
-        - name: from_ts
-          in: query
-          description: >-
-            The starting time (unix time in milliseconds) for which to calculate
-            usage data. Must be used together with `to_ts`. This parameter is
-            not to be used when using `time_range`.
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: to_ts
-          in: query
-          description: >-
-            The ending time (unix time in milliseconds) for which to calculate
-            usage data. Must be used together with `from_ts`. This parameter is
-            incompatible with `time_range`.
-          schema:
-            type: integer
-          example: 1711390455601
-        - name: usage_type
-          in: query
-          description: The type of usage to query.
-          schema:
-            type: string
-            enum:
-              - ingestion
-              - search
-              - export
-        - name: limit
-          in: query
-          description: |
-            Returns the top N logs based on the usage.
-          required: false
-          schema:
-            maximum: 500
-            minimum: 1
-            type: integer
-            default: 50
-          example: 10
-        - name: num_of_slices
-          in: query
-          description: >
-            The num_of_slices parameter defines how the time range is divided
-            into intervals.  It is optional, and if not provided, a default
-            value is applied. The maximum number of slices is 1 minute
-            granularity for up to 12 hours time range  and 20 minutes
-            granularity for longer than 12 hours time range. - default for 20
-            minutes time window: 20 slices - default for 12 hour time window: 12
-            slices (1 slice per hour) - default for 1 day time window: 24 slices
-            (1 slice per hour) - default for 30 days time window: 30 slices (1
-            slice per day) - default for 1 year time window: 12 slices (1 slice
-            per month)
-          required: false
-          schema:
-            maximum: 1440
-            minimum: 1
-            type: integer
-          example: 10
-        - name: delta
-          in: query
-          description: >
-            Enables calculation of the difference between the current and
-            previous time range values.  When set to true, the response includes
-            a delta object with the computed difference and its relative change.
-            Defaults to false.
-          required: false
-          schema:
-            type: boolean
-          example: true
-        - name: delta_time_range
-          in: query
-          description: >
-            The time period for which to query data for delta comparison. Either
-            `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be
-            provided if `delta` is enabled. If `delta_time_range` is provided,
-            it will take precedence
-          required: false
-          schema:
-            type: string
-          example: '''Previous month'', ''Previous quarter'', ''This day last week'''
-        - name: delta_from_ts
-          in: query
-          description: >
-            The starting unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: delta_to_ts
-          in: query
-          description: >
-            The ending unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1711390455601
-      responses:
-        '200':
-          description: Successful response
-          headers:
-            RateLimit-Limit:
-              $ref: '#/components/headers/RateLimitLimit'
-            RateLimit-Remaining:
-              $ref: '#/components/headers/RateLimitRemaining'
-            RateLimit-Reset:
-              $ref: '#/components/headers/RateLimitReset'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsageByLogId'
-        '400':
-          description: Bad Request - The time range in the request is invalid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Too Many Request - Fair usage limits exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal Server Error - An error occurred on the server side.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /usage/users:
-    get:
-      tags:
-        - usage
-      summary: Get the usage over a period of time for a user per log id.
-      operationId: getUsageByUserPerLogId
-      parameters:
-        - name: time_range
-          in: query
-          description: >
-            The relative time range for which to calculate usage data. Time
-            range supported is from minutes to years. For an exact range, use
-            `from_ts` and `to_ts` instead.
-          schema:
-            type: string
-          examples:
-            mins:
-              value: Last 10 minutes
-            day:
-              value: Last 2 days
-            week:
-              value: Last 3 weeks
-        - name: from_ts
-          in: query
-          description: >-
-            The starting time (unix time in milliseconds) for which to calculate
-            usage data. Must be used together with `to_ts`. This parameter is
-            not to be used when using `time_range`.
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: to_ts
-          in: query
-          description: >-
-            The ending time (unix time in milliseconds) for which to calculate
-            usage data. Must be used together with `from_ts`. This parameter is
-            incompatible with `time_range`.
-          schema:
-            type: integer
-          example: 1711390455601
-        - name: usage_type
-          in: query
-          description: The type of usage to query.
-          schema:
-            type: string
-            default: search
-            enum:
-              - search
-        - name: limit
-          in: query
-          description: >
-            Returns the top N logs based on the usage. If not provided, the
-            default limit is 50. The maximum limit is 100.
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: num_of_slices
-          in: query
-          description: >
-            The num_of_slices parameter defines how the time range is divided
-            into intervals.  It is optional, and if not provided, a default
-            value is applied. The default number of slices is 1 minute
-            granularity for up to 12 hours time range  and 20 minutes
-            granularity for longer than 12 hours time range up to 720 slices. -
-            default for 20 minutes time window: 20 slices - default for 12 hour
-            time window: 720 slices - default for 1 day time window: 72 slices
-            (1 slice per 20 minutes) - default for 10 days time window: 720
-            slices (1 slice per 20 minutes) - default for 30 days time window:
-            720 slices (max number of slices allowed)
-          required: false
-          schema:
-            type: integer
-        - name: metric
-          in: query
-          description: The usage metric to query
-          schema:
-            type: string
-            default: data
-            enum:
-              - volume
-              - latency
-        - name: delta
-          in: query
-          description: >
-            Enables calculation of the difference between the current and
-            previous time range values.  When set to true, the response includes
-            a delta object with the computed difference and its relative change.
-            Defaults to false.
-          required: false
-          schema:
-            type: boolean
-          example: true
-        - name: delta_time_range
-          in: query
-          description: >
-            The time period for which to query data for delta comparison. Either
-            `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be
-            provided if `delta` is enabled. If `delta_time_range` is provided,
-            it will take precedence
-          required: false
-          schema:
-            type: string
-          example: '''Previous month'', ''Previous quarter'', ''This day last week'''
-        - name: delta_from_ts
-          in: query
-          description: >
-            The starting unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: delta_to_ts
-          in: query
-          description: >
-            The ending unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1711390455601
-      responses:
-        '200':
-          description: Successful response
-          headers:
-            RateLimit-Limit:
-              $ref: '#/components/headers/RateLimitLimit'
-            RateLimit-Remaining:
-              $ref: '#/components/headers/RateLimitRemaining'
-            RateLimit-Reset:
-              $ref: '#/components/headers/RateLimitReset'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsageByLogId'
-        '400':
-          description: Bad Request - The time range in the request is invalid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Too Many Request - Fair usage limits exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal Server Error - An error occurred on the server side.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /integrations/slack:
     get:
       tags:
@@ -7357,302 +6861,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /parsers/metrics/usage:
-    get:
-      tags:
-        - parsers
-      summary: Get the parsers usage metrics over a period of time for a log id.
-      operationId: getParsersUsageMetricsByLogId
-      parameters:
-        - name: time_range
-          in: query
-          description: >
-            The relative time range for which to calculate parser metrics. Time
-            range supported is from minutes to years. For an exact range, use
-            `from_ts` and `to_ts` instead.
-          schema:
-            type: string
-          examples:
-            mins:
-              value: Last 10 minutes
-            day:
-              value: Last 2 days
-            week:
-              value: Last 3 weeks
-        - name: from_ts
-          in: query
-          description: >-
-            The starting time (unix time in milliseconds) for which to calculate
-            parser metrics. Must be used together with `to_ts`. This parameter
-            is not to be used when using `time_range`.
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: to_ts
-          in: query
-          description: >-
-            The ending time (unix time in milliseconds) for which to calculate
-            parser metrics. Must be used together with `from_ts`. This parameter
-            is incompatible with `time_range`.
-          schema:
-            type: integer
-          example: 1711390455601
-        - name: limit
-          in: query
-          description: >
-            Returns the top N logs based on the usage. If not provided, the
-            default limit is 50. The maximum limit is 100.
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: num_of_slices
-          in: query
-          description: >
-            The num_of_slices parameter defines how the time range is divided
-            into intervals.  It is optional, and if not provided, a default
-            value is applied. The default number of slices is 1 minute
-            granularity for up to 12 hours time range  and 20 minutes
-            granularity for longer than 12 hours time range up to 720 slices. -
-            default for 20 minutes time window: 20 slices - default for 12 hour
-            time window: 720 slices - default for 1 day time window: 72 slices
-            (1 slice per 20 minutes) - default for 10 days time window: 720
-            slices (1 slice per 20 minutes) - default for 30 days time window:
-            720 slices (max number of slices allowed)
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: delta
-          in: query
-          description: >
-            Enables calculation of the difference between the current and
-            previous time range values.  When set to true, the response includes
-            a delta object with the computed difference and its relative change.
-            Defaults to false.
-          required: false
-          schema:
-            type: boolean
-          example: true
-        - name: delta_time_range
-          in: query
-          description: >
-            The time period for which to query data for delta comparison. Either
-            `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be
-            provided if `delta` is enabled. If `delta_time_range` is provided,
-            it will take precedence
-          required: false
-          schema:
-            type: string
-          example: '''Previous month'', ''Previous quarter'', ''This day last week'''
-        - name: delta_from_ts
-          in: query
-          description: >
-            The starting unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: delta_to_ts
-          in: query
-          description: >
-            The ending unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1711390455601
-      responses:
-        '200':
-          description: Successful response
-          headers:
-            RateLimit-Limit:
-              $ref: '#/components/headers/RateLimitLimit'
-            RateLimit-Remaining:
-              $ref: '#/components/headers/RateLimitRemaining'
-            RateLimit-Reset:
-              $ref: '#/components/headers/RateLimitReset'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ParsersUsageMetricsByLogId'
-        '400':
-          description: Bad Request - The time range in the request is invalid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Too Many Request - Fair usage limits exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal Server Error - An error occurred on the server side.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /parsers/metrics/ratio:
-    get:
-      tags:
-        - parsers
-      summary: Get the parsers usage metrics over a period of time for a log id.
-      operationId: getParsersUsageRatioByLogId
-      parameters:
-        - name: time_range
-          in: query
-          description: >
-            The relative time range for which to calculate parser metrics. Time
-            range supported is from minutes to years. For an exact range, use
-            `from_ts` and `to_ts` instead.
-          schema:
-            type: string
-          examples:
-            mins:
-              value: Last 10 minutes
-            day:
-              value: Last 2 days
-            week:
-              value: Last 3 weeks
-        - name: from_ts
-          in: query
-          description: >-
-            The starting time (unix time in milliseconds) for which to calculate
-            parser metrics. Must be used together with `to_ts`. This parameter
-            is not to be used when using `time_range`.
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: to_ts
-          in: query
-          description: >-
-            The ending time (unix time in milliseconds) for which to calculate
-            parser metrics. Must be used together with `from_ts`. This parameter
-            is incompatible with `time_range`.
-          schema:
-            type: integer
-          example: 1711390455601
-        - name: limit
-          in: query
-          description: >
-            Returns the top N logs based on the usage. If not provided, the
-            default limit is 50. The maximum limit is 100.
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: num_of_slices
-          in: query
-          description: >
-            The num_of_slices parameter defines how the time range is divided
-            into intervals.  It is optional, and if not provided, a default
-            value is applied. The default number of slices is 1 minute
-            granularity for up to 12 hours time range  and 20 minutes
-            granularity for longer than 12 hours time range up to 720 slices. -
-            default for 20 minutes time window: 20 slices - default for 12 hour
-            time window: 720 slices - default for 1 day time window: 72 slices
-            (1 slice per 20 minutes) - default for 10 days time window: 720
-            slices (1 slice per 20 minutes) - default for 30 days time window:
-            720 slices (max number of slices allowed)
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: delta
-          in: query
-          description: >
-            Enables calculation of the difference between the current and
-            previous time range values.  When set to true, the response includes
-            a delta object with the computed difference and its relative change.
-            Defaults to false.
-          required: false
-          schema:
-            type: boolean
-          example: true
-        - name: delta_time_range
-          in: query
-          description: >
-            The time period for which to query data for delta comparison. Either
-            `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be
-            provided if `delta` is enabled. If `delta_time_range` is provided,
-            it will take precedence
-          required: false
-          schema:
-            type: string
-          example: '''Previous month'', ''Previous quarter'', ''This day last week'''
-        - name: delta_from_ts
-          in: query
-          description: >
-            The starting unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: delta_to_ts
-          in: query
-          description: >
-            The ending unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1711390455601
-      responses:
-        '200':
-          description: Successful response
-          headers:
-            RateLimit-Limit:
-              $ref: '#/components/headers/RateLimitLimit'
-            RateLimit-Remaining:
-              $ref: '#/components/headers/RateLimitRemaining'
-            RateLimit-Reset:
-              $ref: '#/components/headers/RateLimitReset'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ParsersUsageMetricsByLogId'
-        '400':
-          description: Bad Request - The time range in the request is invalid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Too Many Request - Fair usage limits exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal Server Error - An error occurred on the server side.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /explain-error:
     get:
       tags:
@@ -8156,6 +7364,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /metrics:
+    get:
+      tags:
+        - metrics
+      summary: Retrieve all metrics
+      operationId: listMetrics
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /metrics/{metric_id}:
+    get:
+      tags:
+        - metrics
+      summary: Retrieve a metric
+      operationId: getMetric
+      parameters:
+        - name: metric_id
+          in: path
+          description: The unique identifier of the metric
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /metrics/{metric_id}/top-keys:
+    get:
+      tags:
+        - metrics
+      summary: Retrieve top keys for a metric
+      operationId: getMetricTopKeys
+      parameters:
+        - name: metric_id
+          in: path
+          description: The unique identifier of the metric
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse
   /timeseries/{metric_definition_id}:
     get:
       tags:
