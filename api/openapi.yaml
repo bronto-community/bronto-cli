@@ -89,6 +89,12 @@ tags:
     description: >
       Top-Keys is a REST API resource that allows you to easily retrieve the top
       keys for a specific log.
+  - name: significant-keys
+    description: >
+      Significant-Keys is a REST API resource for the stored, model-ranked keys
+      of a log: which fields are
+
+      worth charting, how, and how that has changed between scans.
   - name: usage
     description: >
       Usage is a REST API resource that allows you to easily track your Bronto
@@ -2666,6 +2672,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /datasets/resolve:
+    post:
+      tags:
+        - datasets
+        - keys
+        - resolve
+      summary: Resolve data sets
+      description: Resolve datasets based on criteria such as keys and "from" expressions
+      operationId: resolveDatasets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveDatasetsRequest'
+        required: true
+      responses:
+        '200':
+          description: Successfully resolved datasets
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimitReset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveDatasetsResponse'
+        '400':
+          description: Bad Request - The body in the request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: >-
+            Forbidden - The user does not have the privileges to access dataset
+            resolution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /datasets/{datasetId}/parser:
     get:
       tags:
@@ -4495,6 +4562,335 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /roles:
+    get:
+      tags:
+        - roles
+      summary: Retrieve a list of roles
+      description: >
+        Retrieves a list of all roles in the organization along with their
+        assigned permissions. A role groups together a set of permissions from
+        the available permissions (see `/permissions`) and can be assigned to
+        users and API keys to control access. Each role includes its full list
+        of permissions, allowing you to understand exactly what actions a user
+        or API key with that role can perform.
+      operationId: listRoles
+      responses:
+        '200':
+          description: A list of roles along with their permissions
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimitReset'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+              example:
+                roles:
+                  - role_id: Admin
+                    display_name: Administrator Role
+                    description: >-
+                      The Administrator Role grants individuals full access and
+                      control over the application.
+                    role_type: USER
+                    is_system_role: true
+                    permissions:
+                      - group_name: ApiKey
+                        group_display_name: API Key Management
+                        name: api_keys_read
+                        display_name: Read API Keys
+                        description: List all API Keys in your organization.
+                        type: read
+                        restricted: false
+                        sensitive: true
+                      - group_name: Dashboard
+                        group_display_name: Dashboards
+                        name: dashboards_read
+                        display_name: View dashboards
+                        description: List and view all dashboards
+                        type: read
+                        restricted: false
+                        sensitive: false
+                  - role_id: ReadOnly
+                    display_name: ReadOnly Role
+                    description: >-
+                      The read-only role grants read access to non-sensitive
+                      areas of the application.
+                    role_type: USER
+                    is_system_role: true
+                    permissions:
+                      - group_name: Dashboard
+                        group_display_name: Dashboards
+                        name: dashboards_read
+                        display_name: View dashboards
+                        description: List and view all dashboards
+                        type: read
+                        restricted: false
+                        sensitive: false
+                      - group_name: Log
+                        group_display_name: Log Management
+                        name: logs_read
+                        display_name: Read Log Data
+                        description: Read log data.
+                        type: read
+                        restricted: false
+                        sensitive: false
+        '400':
+          description: Bad Request - The body in the request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - The user does not have the privileges to view roles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - roles
+      summary: Create a new role
+      description: >
+        Creates a new role with specified permissions in the organization. Roles
+        define sets of permissions that can be assigned to users to control
+        their access to various system features and resources. The role must
+        have a unique identifier and include at least one permission.
+      operationId: createRole
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+        required: true
+      responses:
+        '201':
+          description: Role created successfully
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimitReset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          description: Bad Request - The body in the request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - The user does not have the privileges to create roles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict - A role with the same identifier already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /roles/{role_id}:
+    get:
+      tags:
+        - roles
+      summary: Retrieve a specific role
+      description: >
+        Retrieves a specific role by its ID, including the full list of
+        permissions assigned to it. Permissions define what actions users or API
+        keys with this role can perform. See `/permissions` for the complete
+        list of available permissions, and `/roles` to list all roles.
+      operationId: getRole
+      parameters:
+        - name: role_id
+          in: path
+          description: The unique identifier of the role to retrieve
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role details retrieved successfully
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimitReset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+              example:
+                role_id: Admin
+                display_name: Administrator Role
+                description: >-
+                  The Administrator Role grants individuals full access and
+                  control over the application.
+                role_type: USER
+                is_system_role: true
+                permissions:
+                  - group_name: ApiKey
+                    group_display_name: API Key Management
+                    name: api_keys_read
+                    display_name: Read API Keys
+                    description: List all API Keys in your organization.
+                    type: read
+                    restricted: false
+                    sensitive: true
+                  - group_name: Dashboard
+                    group_display_name: Dashboards
+                    name: dashboards_read
+                    display_name: View dashboards
+                    description: List and view all dashboards
+                    type: read
+                    restricted: false
+                    sensitive: false
+        '400':
+          description: Bad Request - The body in the request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - The user does not have the privileges to view this role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - The role was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Request - Fair usage limits exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - roles
+      summary: Update an existing role
+      description: Updates a role's properties and assigned permissions.
+      operationId: updateRole
+      parameters:
+        - name: role_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+        required: true
+      responses:
+        '200':
+          description: Role updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          description: Invalid request data.
+        '404':
+          description: Role not found.
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - roles
+      summary: Delete a role
+      description: Deletes a role by its ID.
+      operationId: deleteRole
+      parameters:
+        - name: role_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Role deleted successfully
+        '404':
+          description: Role not found.
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /top-keys:
     get:
       tags:
@@ -5451,502 +5847,6 @@ paths:
           description: Widget removed successfully
         '404':
           description: Not Found - The dashboardId or widgetId in the request is not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Too Many Request - Fair usage limits exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal Server Error - An error occurred on the server side.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /usage:
-    get:
-      tags:
-        - usage
-      summary: Retrieve usage metrics over time
-      description: >
-        Retrieves usage statistics for your organization over a specified time
-        period. Usage metrics include data ingestion volumes, search query
-        counts, and export activities. The results can be broken down into time
-        slices and optionally compared against previous periods for trend
-        analysis.
-      operationId: getUsage
-      parameters:
-        - name: time_range
-          in: query
-          description: The period to calculate the usage for.
-          required: false
-          schema:
-            type: string
-          example: Last 2 days
-        - name: num_of_slices
-          in: query
-          description: >
-            The num_of_slices parameter defines how the time range is divided
-            into intervals.  It is optional, and if not provided, a default
-            value is applied. The default number of slices is 1 minute
-            granularity for up to 12 hours time range  and 20 minutes
-            granularity for longer than 12 hours time range up to 720 slices. -
-            default for 20 minutes time window: 20 slices - default for 12 hour
-            time window: 720 slices - default for 1 day time window: 72 slices
-            (1 slice per 20 minutes) - default for 10 days time window: 720
-            slices (1 slice per 20 minutes) - default for 30 days time window:
-            720 slices (max number of slices allowed)
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: usage_type
-          in: query
-          description: The type of usage to query.
-          schema:
-            type: string
-            enum:
-              - ingestion
-              - search
-              - export
-        - name: delta
-          in: query
-          description: >
-            Enables calculation of the difference between the current and
-            previous time range values.  When set to true, the response includes
-            a delta object with the computed difference and its relative change.
-            Defaults to false.
-          required: false
-          schema:
-            type: boolean
-          example: true
-        - name: delta_time_range
-          in: query
-          description: >
-            The time period for which to query data for delta comparison. Either
-            `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be
-            provided if `delta` is enabled. If `delta_time_range` is provided,
-            it will take precedence
-          required: false
-          schema:
-            type: string
-          example: Previous month
-        - name: delta_from_ts
-          in: query
-          description: >
-            The starting unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: delta_to_ts
-          in: query
-          description: >
-            The ending unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1711390455601
-      responses:
-        '200':
-          description: Successfully retrieved usage metrics
-          headers:
-            RateLimit-Limit:
-              $ref: '#/components/headers/RateLimitLimit'
-            RateLimit-Remaining:
-              $ref: '#/components/headers/RateLimitRemaining'
-            RateLimit-Reset:
-              $ref: '#/components/headers/RateLimitReset'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MetricItem'
-              example:
-                id: f0e1d2c3-b4a5-6789-0abc-def123456789#ingestion-org_usage
-                name: ingestion_org_usage
-                filter: >-
-                  event_type='dataset_usage' AND dataset_type!='metric' AND
-                  collection_name!='.usage' AND collection_name!='.audit-trail'
-                stat: SUM
-                key: bytes_total
-                group_keys: []
-                logs:
-                  - ''
-                from_tags: []
-                aux: {}
-                total_count: 3790
-                total_value: 12961699
-                is_exact: true
-                series:
-                  - '@time': Sun Mar 01 00:00:00 UTC 2026
-                    '@timestamp': '1772323200000'
-                    count: '546'
-                    value: '1274155.0'
-                    quantiles: {}
-                  - '@time': Mon Mar 02 03:14:15 UTC 2026
-                    '@timestamp': '1772421255737'
-                    count: '679'
-                    value: '2688361.0'
-                    quantiles: {}
-                groups_series: []
-                delta:
-                  start_time: 0
-                  end_time: 0
-                  total_count: 0
-                  total_value: 0
-                  delta_value: 0
-                  delta_factor: 0
-        '400':
-          description: Bad Request - The time range or other parameters are invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: >-
-            Forbidden - The user does not have the privileges to view usage
-            metrics
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Too Many Request - Fair usage limits exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal Server Error - An error occurred on the server side.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /usage/organizations/logs:
-    get:
-      tags:
-        - usage
-      summary: Get the usage over a period of time for a log id.
-      operationId: getUsageByLogId
-      parameters:
-        - name: time_range
-          in: query
-          description: >
-            The relative time range for which to calculate usage data. Time
-            range supported is from minutes to years. For an exact range, use
-            `from_ts` and `to_ts` instead.
-          schema:
-            type: string
-          examples:
-            mins:
-              value: Last 10 minutes
-            day:
-              value: Last 2 days
-            week:
-              value: Last 3 weeks
-        - name: from_ts
-          in: query
-          description: >-
-            The starting time (unix time in milliseconds) for which to calculate
-            usage data. Must be used together with `to_ts`. This parameter is
-            not to be used when using `time_range`.
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: to_ts
-          in: query
-          description: >-
-            The ending time (unix time in milliseconds) for which to calculate
-            usage data. Must be used together with `from_ts`. This parameter is
-            incompatible with `time_range`.
-          schema:
-            type: integer
-          example: 1711390455601
-        - name: usage_type
-          in: query
-          description: The type of usage to query.
-          schema:
-            type: string
-            enum:
-              - ingestion
-              - search
-              - export
-        - name: limit
-          in: query
-          description: |
-            Returns the top N logs based on the usage.
-          required: false
-          schema:
-            maximum: 500
-            minimum: 1
-            type: integer
-            default: 50
-          example: 10
-        - name: num_of_slices
-          in: query
-          description: >
-            The num_of_slices parameter defines how the time range is divided
-            into intervals.  It is optional, and if not provided, a default
-            value is applied. The maximum number of slices is 1 minute
-            granularity for up to 12 hours time range  and 20 minutes
-            granularity for longer than 12 hours time range. - default for 20
-            minutes time window: 20 slices - default for 12 hour time window: 12
-            slices (1 slice per hour) - default for 1 day time window: 24 slices
-            (1 slice per hour) - default for 30 days time window: 30 slices (1
-            slice per day) - default for 1 year time window: 12 slices (1 slice
-            per month)
-          required: false
-          schema:
-            maximum: 1440
-            minimum: 1
-            type: integer
-          example: 10
-        - name: delta
-          in: query
-          description: >
-            Enables calculation of the difference between the current and
-            previous time range values.  When set to true, the response includes
-            a delta object with the computed difference and its relative change.
-            Defaults to false.
-          required: false
-          schema:
-            type: boolean
-          example: true
-        - name: delta_time_range
-          in: query
-          description: >
-            The time period for which to query data for delta comparison. Either
-            `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be
-            provided if `delta` is enabled. If `delta_time_range` is provided,
-            it will take precedence
-          required: false
-          schema:
-            type: string
-          example: '''Previous month'', ''Previous quarter'', ''This day last week'''
-        - name: delta_from_ts
-          in: query
-          description: >
-            The starting unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: delta_to_ts
-          in: query
-          description: >
-            The ending unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1711390455601
-      responses:
-        '200':
-          description: Successful response
-          headers:
-            RateLimit-Limit:
-              $ref: '#/components/headers/RateLimitLimit'
-            RateLimit-Remaining:
-              $ref: '#/components/headers/RateLimitRemaining'
-            RateLimit-Reset:
-              $ref: '#/components/headers/RateLimitReset'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsageByLogId'
-        '400':
-          description: Bad Request - The time range in the request is invalid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Too Many Request - Fair usage limits exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal Server Error - An error occurred on the server side.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /usage/users:
-    get:
-      tags:
-        - usage
-      summary: Get the usage over a period of time for a user per log id.
-      operationId: getUsageByUserPerLogId
-      parameters:
-        - name: time_range
-          in: query
-          description: >
-            The relative time range for which to calculate usage data. Time
-            range supported is from minutes to years. For an exact range, use
-            `from_ts` and `to_ts` instead.
-          schema:
-            type: string
-          examples:
-            mins:
-              value: Last 10 minutes
-            day:
-              value: Last 2 days
-            week:
-              value: Last 3 weeks
-        - name: from_ts
-          in: query
-          description: >-
-            The starting time (unix time in milliseconds) for which to calculate
-            usage data. Must be used together with `to_ts`. This parameter is
-            not to be used when using `time_range`.
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: to_ts
-          in: query
-          description: >-
-            The ending time (unix time in milliseconds) for which to calculate
-            usage data. Must be used together with `from_ts`. This parameter is
-            incompatible with `time_range`.
-          schema:
-            type: integer
-          example: 1711390455601
-        - name: usage_type
-          in: query
-          description: The type of usage to query.
-          schema:
-            type: string
-            default: search
-            enum:
-              - search
-        - name: limit
-          in: query
-          description: >
-            Returns the top N logs based on the usage. If not provided, the
-            default limit is 50. The maximum limit is 100.
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: num_of_slices
-          in: query
-          description: >
-            The num_of_slices parameter defines how the time range is divided
-            into intervals.  It is optional, and if not provided, a default
-            value is applied. The default number of slices is 1 minute
-            granularity for up to 12 hours time range  and 20 minutes
-            granularity for longer than 12 hours time range up to 720 slices. -
-            default for 20 minutes time window: 20 slices - default for 12 hour
-            time window: 720 slices - default for 1 day time window: 72 slices
-            (1 slice per 20 minutes) - default for 10 days time window: 720
-            slices (1 slice per 20 minutes) - default for 30 days time window:
-            720 slices (max number of slices allowed)
-          required: false
-          schema:
-            type: integer
-        - name: metric
-          in: query
-          description: The usage metric to query
-          schema:
-            type: string
-            default: data
-            enum:
-              - volume
-              - latency
-        - name: delta
-          in: query
-          description: >
-            Enables calculation of the difference between the current and
-            previous time range values.  When set to true, the response includes
-            a delta object with the computed difference and its relative change.
-            Defaults to false.
-          required: false
-          schema:
-            type: boolean
-          example: true
-        - name: delta_time_range
-          in: query
-          description: >
-            The time period for which to query data for delta comparison. Either
-            `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be
-            provided if `delta` is enabled. If `delta_time_range` is provided,
-            it will take precedence
-          required: false
-          schema:
-            type: string
-          example: '''Previous month'', ''Previous quarter'', ''This day last week'''
-        - name: delta_from_ts
-          in: query
-          description: >
-            The starting unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: delta_to_ts
-          in: query
-          description: >
-            The ending unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1711390455601
-      responses:
-        '200':
-          description: Successful response
-          headers:
-            RateLimit-Limit:
-              $ref: '#/components/headers/RateLimitLimit'
-            RateLimit-Remaining:
-              $ref: '#/components/headers/RateLimitRemaining'
-            RateLimit-Reset:
-              $ref: '#/components/headers/RateLimitReset'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsageByLogId'
-        '400':
-          description: Bad Request - The time range in the request is invalid.
           content:
             application/json:
               schema:
@@ -7357,302 +7257,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /parsers/metrics/usage:
-    get:
-      tags:
-        - parsers
-      summary: Get the parsers usage metrics over a period of time for a log id.
-      operationId: getParsersUsageMetricsByLogId
-      parameters:
-        - name: time_range
-          in: query
-          description: >
-            The relative time range for which to calculate parser metrics. Time
-            range supported is from minutes to years. For an exact range, use
-            `from_ts` and `to_ts` instead.
-          schema:
-            type: string
-          examples:
-            mins:
-              value: Last 10 minutes
-            day:
-              value: Last 2 days
-            week:
-              value: Last 3 weeks
-        - name: from_ts
-          in: query
-          description: >-
-            The starting time (unix time in milliseconds) for which to calculate
-            parser metrics. Must be used together with `to_ts`. This parameter
-            is not to be used when using `time_range`.
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: to_ts
-          in: query
-          description: >-
-            The ending time (unix time in milliseconds) for which to calculate
-            parser metrics. Must be used together with `from_ts`. This parameter
-            is incompatible with `time_range`.
-          schema:
-            type: integer
-          example: 1711390455601
-        - name: limit
-          in: query
-          description: >
-            Returns the top N logs based on the usage. If not provided, the
-            default limit is 50. The maximum limit is 100.
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: num_of_slices
-          in: query
-          description: >
-            The num_of_slices parameter defines how the time range is divided
-            into intervals.  It is optional, and if not provided, a default
-            value is applied. The default number of slices is 1 minute
-            granularity for up to 12 hours time range  and 20 minutes
-            granularity for longer than 12 hours time range up to 720 slices. -
-            default for 20 minutes time window: 20 slices - default for 12 hour
-            time window: 720 slices - default for 1 day time window: 72 slices
-            (1 slice per 20 minutes) - default for 10 days time window: 720
-            slices (1 slice per 20 minutes) - default for 30 days time window:
-            720 slices (max number of slices allowed)
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: delta
-          in: query
-          description: >
-            Enables calculation of the difference between the current and
-            previous time range values.  When set to true, the response includes
-            a delta object with the computed difference and its relative change.
-            Defaults to false.
-          required: false
-          schema:
-            type: boolean
-          example: true
-        - name: delta_time_range
-          in: query
-          description: >
-            The time period for which to query data for delta comparison. Either
-            `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be
-            provided if `delta` is enabled. If `delta_time_range` is provided,
-            it will take precedence
-          required: false
-          schema:
-            type: string
-          example: '''Previous month'', ''Previous quarter'', ''This day last week'''
-        - name: delta_from_ts
-          in: query
-          description: >
-            The starting unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: delta_to_ts
-          in: query
-          description: >
-            The ending unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1711390455601
-      responses:
-        '200':
-          description: Successful response
-          headers:
-            RateLimit-Limit:
-              $ref: '#/components/headers/RateLimitLimit'
-            RateLimit-Remaining:
-              $ref: '#/components/headers/RateLimitRemaining'
-            RateLimit-Reset:
-              $ref: '#/components/headers/RateLimitReset'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ParsersUsageMetricsByLogId'
-        '400':
-          description: Bad Request - The time range in the request is invalid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Too Many Request - Fair usage limits exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal Server Error - An error occurred on the server side.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /parsers/metrics/ratio:
-    get:
-      tags:
-        - parsers
-      summary: Get the parsers usage metrics over a period of time for a log id.
-      operationId: getParsersUsageRatioByLogId
-      parameters:
-        - name: time_range
-          in: query
-          description: >
-            The relative time range for which to calculate parser metrics. Time
-            range supported is from minutes to years. For an exact range, use
-            `from_ts` and `to_ts` instead.
-          schema:
-            type: string
-          examples:
-            mins:
-              value: Last 10 minutes
-            day:
-              value: Last 2 days
-            week:
-              value: Last 3 weeks
-        - name: from_ts
-          in: query
-          description: >-
-            The starting time (unix time in milliseconds) for which to calculate
-            parser metrics. Must be used together with `to_ts`. This parameter
-            is not to be used when using `time_range`.
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: to_ts
-          in: query
-          description: >-
-            The ending time (unix time in milliseconds) for which to calculate
-            parser metrics. Must be used together with `from_ts`. This parameter
-            is incompatible with `time_range`.
-          schema:
-            type: integer
-          example: 1711390455601
-        - name: limit
-          in: query
-          description: >
-            Returns the top N logs based on the usage. If not provided, the
-            default limit is 50. The maximum limit is 100.
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: num_of_slices
-          in: query
-          description: >
-            The num_of_slices parameter defines how the time range is divided
-            into intervals.  It is optional, and if not provided, a default
-            value is applied. The default number of slices is 1 minute
-            granularity for up to 12 hours time range  and 20 minutes
-            granularity for longer than 12 hours time range up to 720 slices. -
-            default for 20 minutes time window: 20 slices - default for 12 hour
-            time window: 720 slices - default for 1 day time window: 72 slices
-            (1 slice per 20 minutes) - default for 10 days time window: 720
-            slices (1 slice per 20 minutes) - default for 30 days time window:
-            720 slices (max number of slices allowed)
-          required: false
-          schema:
-            type: integer
-          example: 10
-        - name: delta
-          in: query
-          description: >
-            Enables calculation of the difference between the current and
-            previous time range values.  When set to true, the response includes
-            a delta object with the computed difference and its relative change.
-            Defaults to false.
-          required: false
-          schema:
-            type: boolean
-          example: true
-        - name: delta_time_range
-          in: query
-          description: >
-            The time period for which to query data for delta comparison. Either
-            `delta_time_range` or both `delta_from_ts` and `delta_to_ts` can be
-            provided if `delta` is enabled. If `delta_time_range` is provided,
-            it will take precedence
-          required: false
-          schema:
-            type: string
-          example: '''Previous month'', ''Previous quarter'', ''This day last week'''
-        - name: delta_from_ts
-          in: query
-          description: >
-            The starting unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1709251200000
-        - name: delta_to_ts
-          in: query
-          description: >
-            The ending unix time in milliseconds for which to query data for
-            delta comparison. Either `delta_time_range` or both `delta_from_ts`
-            and `delta_to_ts` can be provided if `delta` is enabled. If
-            `delta_time_range` is provided, it will take precedence.
-          required: false
-          schema:
-            type: integer
-          example: 1711390455601
-      responses:
-        '200':
-          description: Successful response
-          headers:
-            RateLimit-Limit:
-              $ref: '#/components/headers/RateLimitLimit'
-            RateLimit-Remaining:
-              $ref: '#/components/headers/RateLimitRemaining'
-            RateLimit-Reset:
-              $ref: '#/components/headers/RateLimitReset'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ParsersUsageMetricsByLogId'
-        '400':
-          description: Bad Request - The time range in the request is invalid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Too Many Request - Fair usage limits exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal Server Error - An error occurred on the server side.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        default:
-          description: Unexpected Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
   /explain-error:
     get:
       tags:
@@ -8146,6 +7750,154 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Internal Server Error - An error occurred on the server side.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /metrics:
+    get:
+      tags:
+        - metrics
+      summary: Retrieve the list of metrics metadata sent to Bronto
+      operationId: listMetrics
+      responses:
+        '200':
+          description: list of metrics with metadata
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimitReset'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metrics:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MetricMeta'
+        '404':
+          description: Not Found - The metric definition is not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /metrics/{metric_id}:
+    get:
+      tags:
+        - metrics
+      summary: Retrieve the metadata of a metric ingested by
+      operationId: getMetricMeta
+      parameters:
+        - name: metric_id
+          in: path
+          description: The ID of the metric to retrieve
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 41521f35-1b06-41f0-9cdc-9a938b5739d1
+      responses:
+        '200':
+          description: Metric definition retrieved successfully
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimitReset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricMeta'
+        '404':
+          description: Not Found - The metric definition is not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /metrics/{metric_id}/top-keys:
+    get:
+      tags:
+        - metrics
+      summary: Retrieve the list of keys received for a given metric
+      operationId: getTopKeysForMetric
+      parameters:
+        - name: metric_id
+          in: path
+          description: The ID of the metric to fetch the keys for
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 41521f35-1b06-41f0-9cdc-9a938b5739d1
+        - name: time_range
+          in: query
+          description: |
+            The relative time range for which to retrieve the keys.
+          schema:
+            type: string
+          example: last 20 minutes
+        - name: from_ts
+          in: query
+          description: >-
+            The starting time (unix time in milliseconds) for which retrieve the
+            keys. Must be used together with `to_ts`. This parameter is
+            incompatible with `time_range`.
+          schema:
+            type: integer
+          example: 1709251200000
+        - name: to_ts
+          in: query
+          description: >-
+            The ending time (unix time in milliseconds) for which to  retrieve
+            the keys. Must be used together with `from_ts`. This parameter is
+            incompatible with `time_range`.
+          schema:
+            type: integer
+          example: 1711390455601
+      responses:
+        '200':
+          description: Metric keys retrieved successfully
+          headers:
+            RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+            RateLimit-Reset:
+              $ref: '#/components/headers/RateLimitReset'
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/TopKeysPerLogOrMetric'
+        '404':
+          description: >-
+            Not Found - The metric keys were not found, review the metric id or
+            the time range
           content:
             application/json:
               schema:
@@ -9960,23 +9712,16 @@ components:
     ResolveDatasetsRequest:
       type: object
       properties:
-        keys:
-          maxItems: 10
-          minItems: 1
-          type: array
+        where:
+          type: string
           description: >-
-            Keys to resolve to datasets. At least one of "keys" or "from_expr"
-            must be provided.
-          example:
-            - user_name
-            - user_id
-            - user
-          items:
-            type: string
+            Filter expression used to resolve datasets. At least one of "where"
+            or "from_expr" must be provided.
+          example: SELECT * WHERE auth_success = 'false' GROUP BY user_id
         from_expr:
           type: string
           description: >-
-            Expression used to filter datasets. At least one of "keys" or
+            Expression used to filter datasets. At least one of "where" or
             "from_expr" must be provided.
           example: environment = 'production'
         time_range:
@@ -10045,14 +9790,6 @@ components:
                 type: string
                 description: ID to the resolved dataset
                 example: 12a883ea-9858-4480-822a-ac2462095e39
-              matched_keys:
-                type: array
-                description: List of keys that were matched against the dataset
-                example:
-                  - log
-                  - log_id
-                items:
-                  type: string
               type:
                 type: string
                 description: Type of the resolved dataset
@@ -10624,15 +10361,43 @@ components:
         layout:
           type: object
           properties:
-            metric_ids:
+            widget_layouts:
               type: array
-              description: List of associated LBMs.
-              example:
-                - x
-                - 'y'
+              description: The position and size of each widget on the dashboard.
               items:
-                type: string
-          description: Optional layout metadata for the dashboard.
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: >-
+                      The unique identifier of the widget this layout entry
+                      positions.
+                    format: uuid
+                    example: 78739235-9aa7-4eca-b7f3-4cf6ee455b8f
+                  x:
+                    type: number
+                    description: The x coordinate
+                    example: 1.25
+                  'y':
+                    type: number
+                    description: The y coordinate
+                    example: 2
+                  w:
+                    type: number
+                    description: The width
+                    example: 20
+                  h:
+                    type: number
+                    description: The height
+                    example: 5
+          description: The position and size of each widget on the dashboard.
+          example:
+            widget_layouts:
+              - id: 78739235-9aa7-4eca-b7f3-4cf6ee455b8f
+                x: 1.25
+                'y': 2
+                w: 20
+                h: 5
         tags:
           $ref: '#/components/schemas/Tags'
         template:
@@ -11808,6 +11573,229 @@ components:
           description: List of queries to use for monitor
           items:
             $ref: '#/components/schemas/QueryDefinition'
+        aux:
+          maxItems: 10
+          type: object
+          description: Additional monitor configuration
+    PreviewMonitorRequest:
+      required:
+        - comparison_operator
+        - evaluation_window
+        - from_ts
+        - queries
+        - threshold
+        - to_ts
+        - window
+      type: object
+      properties:
+        monitor_type:
+          type: string
+          description: >
+            Only ANOMALY_DETECTION monitors can be previewed. The other monitor
+            types compare against a
+
+            fixed threshold or against an earlier window, neither of which needs
+            a baseline to be built
+
+            before the result means anything.
+          example: ANOMALY_DETECTION
+          default: ANOMALY_DETECTION
+          enum:
+            - ANOMALY_DETECTION
+        comparison_operator:
+          type: string
+          description: >
+            Which side of the baseline is treated as anomalous. OUTSIDE is
+            two-sided. The other operators
+
+            accepted when creating a monitor do not apply to anomaly detection,
+            whose compared value is a
+
+            signed deviation from a baseline rather than a metric value.
+          example: ABOVE
+          enum:
+            - ABOVE
+            - BELOW
+            - OUTSIDE
+        threshold:
+          minimum: 0
+          exclusiveMinimum: true
+          type: number
+          description: >
+            The alert threshold, as a count of baseline spread units (scaled
+            median absolute deviations,
+
+            comparable to standard deviations). A threshold of 3 means "more
+            than 3 spread units away from
+
+            the baseline centre".
+          example: 3
+        warning_threshold:
+          minimum: 0
+          exclusiveMinimum: true
+          type: number
+          description: >
+            The warning threshold, in the same units as threshold. It must be
+            less than threshold whatever
+
+            the comparison operator, because the comparison is on the magnitude
+            of the deviation.
+          example: 2
+        window:
+          type: string
+          description: >
+            The time window the monitor evaluates, and so the width of each
+            window in the preview; minimum
+
+            two minutes, maximum 30 days.
+          example: '''Last 20 minutes'', ''Last 2 hours'', ''Last 1 days'''
+        evaluation_window:
+          type: string
+          description: >
+            The trailing period used to build the baseline each window is
+            compared against, expressed as
+
+            "<n> <units>". It must cover at least 10 and at most 1000 monitor
+            windows and be at most 30
+
+            days: fewer than 10 windows leaves the baseline permanently
+            degenerate, so the monitor reports
+
+            healthy and never fires.
+          example: '''24 hours'', ''7 days'''
+        anomaly_algorithm:
+          type: string
+          description: >
+            How the baseline centre and spread are estimated. MEDIAN_MAD uses
+            the median as the centre and
+
+            the median absolute deviation, scaled by 1.4826 so it reads like a
+            standard deviation, as the
+
+            spread.
+          example: MEDIAN_MAD
+          default: MEDIAN_MAD
+          enum:
+            - MEDIAN_MAD
+        no_data_status:
+          type: string
+          description: >
+            The status reported for a window in which no events matched.
+            Determines the status of windows
+
+            returned with a skip_reason of NO_EVENTS.
+          example: OK
+          default: OK
+          enum:
+            - OK
+            - NO_DATA
+            - ALERT
+            - WARN
+        formulas:
+          maxItems: 1
+          minItems: 0
+          type: array
+          description: >
+            The single formula that combines the queries into the monitored
+            value. Required when more than
+
+            one query is given, and it must reference every one of them by name.
+            Omit it when there is
+
+            exactly one query.
+          items:
+            $ref: '#/components/schemas/Formula'
+        queries:
+          maxItems: 6
+          minItems: 1
+          type: array
+          description: >
+            The queries producing the monitored value. Either exactly one query
+            and no formula, or several
+
+            queries together with the single formula that combines them.
+
+
+            A monitor resolves to one value per window however many queries
+            produce it, which is why the
+
+            response varies over groups alone and carries no per-query
+            dimension.
+          items:
+            $ref: '#/components/schemas/QueryDefinition'
+        from_ts:
+          type: integer
+          description: >
+            Start of the range to preview (unix time in milliseconds). The
+            server fetches further back
+
+            than this to seed the baseline of the first window; that lead-in is
+            not returned.
+          format: int64
+          example: 1757586400000
+        to_ts:
+          type: integer
+          description: >
+            End of the range to preview (unix time in milliseconds), clamped to
+            the present. The trailing
+
+            partial window is neither evaluated nor returned, because a partial
+            aggregate compared against
+
+            full-window baselines reads as an anomaly.
+
+
+            The range must cover at most 1000 windows and at most 14 days,
+            whichever binds first.
+
+
+            Only an absolute range is accepted. A natural range such as "Last 24
+            hours" would move the
+
+            window grid on every request, so a refresh could not be
+            distinguished from a change to the
+
+            monitor.
+          format: int64
+          example: 1757600000000
+      description: >
+        An unsaved anomaly detection monitor, evaluated over a fixed time range
+        so that its behaviour can
+
+        be charted before it is created. Nothing is persisted and no
+        notifications are sent, so the fields
+
+        a monitor needs only in order to exist or to notify - name, description,
+        actions, mute_until - are
+
+        ignored if supplied, letting a monitor that is being edited be posted
+        here unchanged.
+    AnomalyMonitorPreview:
+      required:
+        - groups
+        - window_ms
+      type: object
+      properties:
+        window_ms:
+          type: integer
+          description: >
+            The length of one monitor window in milliseconds, and so the spacing
+            of the returned windows.
+          format: int64
+          example: 900000
+        groups:
+          maxItems: 10
+          type: array
+          description: >
+            One entry per evaluated group, each with its own baseline. Max 10
+            groups. A query with no group by produces
+
+            exactly one entry.
+          items:
+            $ref: '#/components/schemas/AnomalyPreviewSeries'
+      description: >
+        A previewed anomaly detection monitor, evaluated window by window over
+        the requested range.
     UpdateMonitorRequest:
       required:
         - actions
@@ -12744,13 +12732,18 @@ components:
           type: string
           description: The type of the Widget.
           enum:
-            - line
-            - bar
             - area
-            - score
+            - bar
+            - donut
+            - events-list
+            - geomap
+            - group
+            - line
             - pie
-            - treemap
+            - score
+            - table
             - top-list
+            - treemap
         metric_ids:
           type: array
           description: the metric IDs associated with the widget
@@ -12809,6 +12802,7 @@ components:
     WidgetRequest:
       required:
         - name
+        - type
       type: object
       properties:
         name:
@@ -12873,13 +12867,18 @@ components:
           type: string
           description: The type of the Widget.
           enum:
-            - line
-            - bar
             - area
-            - score
+            - bar
+            - donut
+            - events-list
+            - geomap
+            - group
+            - line
             - pie
-            - treemap
+            - score
+            - table
             - top-list
+            - treemap
         metrics:
           type: array
           items:
@@ -13097,17 +13096,18 @@ components:
           type: object
           properties:
             metric_ids:
-              type: object
-              description: List of associated lbms
+              type: array
+              description: IDs of the metrics associated with the dashboard.
               example:
                 - x
                 - 'y'
-                - x
+              items:
+                type: string
+          description: Optional layout metadata for the dashboard.
           example:
             metric_ids:
               - x
               - 'y'
-              - x
       example:
         name: name
     DashboardTemplate:
@@ -13147,19 +13147,43 @@ components:
         layout:
           type: object
           properties:
-            metric_ids:
-              type: object
-              description: List of associated LBMs
-              example:
-                - x
-                - 'y'
-                - x
-          description: Optional layout metadata for dashboard positioning.
+            widget_layouts:
+              type: array
+              description: The position and size of each widget on the dashboard.
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: >-
+                      The unique identifier of the widget this layout entry
+                      positions.
+                    format: uuid
+                    example: 78739235-9aa7-4eca-b7f3-4cf6ee455b8f
+                  x:
+                    type: number
+                    description: The x coordinate
+                    example: 1.25
+                  'y':
+                    type: number
+                    description: The y coordinate
+                    example: 2
+                  w:
+                    type: number
+                    description: The width
+                    example: 20
+                  h:
+                    type: number
+                    description: The height
+                    example: 5
+          description: The position and size of each widget on the dashboard.
           example:
-            metric_ids:
-              - x
-              - 'y'
-              - x
+            widget_layouts:
+              - id: 78739235-9aa7-4eca-b7f3-4cf6ee455b8f
+                x: 1.25
+                'y': 2
+                w: 20
+                h: 5
         this_template_tags:
           $ref: '#/components/schemas/Tags'
         tags:
@@ -13200,10 +13224,12 @@ components:
               time_range:
                 input: time_range
         layout:
-          metric_ids:
-            - response_time_metric
-            - error_rate_metric
-            - throughput_metric
+          widget_layouts:
+            - id: 98765432-abcd-4321-8765-432187654321
+              x: 0
+              'y': 0
+              w: 12
+              h: 6
         tags:
           - name: monitoring
           - name: performance
@@ -13257,16 +13283,646 @@ components:
         layout:
           type: object
           properties:
-            metric_ids:
+            widget_layouts:
               type: array
-              description: List of associated LBMs.
-              example:
-                - x
-                - 'y'
+              description: The position and size of each widget on the dashboard.
               items:
-                type: string
-          description: Optional layout metadata for the dashboard.
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: >-
+                      The unique identifier of the widget this layout entry
+                      positions.
+                    format: uuid
+                    example: 78739235-9aa7-4eca-b7f3-4cf6ee455b8f
+                  x:
+                    type: number
+                    description: The x coordinate
+                    example: 1.25
+                  'y':
+                    type: number
+                    description: The y coordinate
+                    example: 2
+                  w:
+                    type: number
+                    description: The width
+                    example: 20
+                  h:
+                    type: number
+                    description: The height
+                    example: 5
+          description: The position and size of each widget on the dashboard.
+          example:
+            widget_layouts:
+              - id: 78739235-9aa7-4eca-b7f3-4cf6ee455b8f
+                x: 1.25
+                'y': 2
+                w: 20
+                h: 5
+    UsageByDatasetType:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            from_ts:
+              type: integer
+              description: Start of the time range (epoch milliseconds).
+              example: 1787702400000
+            to_ts:
+              type: integer
+              description: End of the time range (epoch milliseconds).
+              example: 1787788800000
+            count:
+              type: integer
+              description: Total number of events.
+              example: 32161
+            size:
+              type: integer
+              description: Total size of events in bytes.
+              example: 78732161
+            logs:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItem'
+              description: Usage information specific to logs.
+            metrics:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItem'
+              description: Usage information specific to metrics.
+            traces:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItem'
+              description: Usage information specific to traces.
+          description: Summary of total usage for the time range.
+        timeseries:
+          type: array
+          description: Usage for the time range broken down by time slice.
+          items:
+            type: object
+            properties:
+              from_ts:
+                type: integer
+                description: Start of the time slice (epoch milliseconds).
+                example: 1787702400000
+              to_ts:
+                type: integer
+                description: End of the time slice (epoch milliseconds).
+                example: 1787706000000
+              count:
+                type: integer
+                description: Total number of events for this time slice.
+                example: 32161
+              size:
+                type: integer
+                description: Total size of events in bytes for this time slice.
+                example: 78732161
+              logs:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItem'
+              metrics:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItem'
+              traces:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItem'
     UsageByLogId:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            from_ts:
+              type: integer
+              description: Start of the time range (epoch milliseconds).
+              example: 1787702400000
+            to_ts:
+              type: integer
+              description: End of the time range (epoch milliseconds).
+              example: 1787788800000
+            count:
+              type: integer
+              description: Total number of events.
+              example: 32161
+            size:
+              type: integer
+              description: Total size of events in bytes.
+              example: 78732161
+            logs:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItem'
+              description: Usage information per log ID for the time range.
+          description: Summary of total usage for the time range.
+        timeseries:
+          type: array
+          description: Usage for the time range broken down by time slice.
+          items:
+            type: object
+            properties:
+              from_ts:
+                type: integer
+                description: Start of the time slice (epoch milliseconds).
+                example: 1787702400000
+              to_ts:
+                type: integer
+                description: End of the time slice (epoch milliseconds).
+                example: 1787706000000
+              count:
+                type: integer
+                description: Total number of events for this time slice.
+                example: 32161
+              size:
+                type: integer
+                description: Total size of events in bytes for this time slice.
+                example: 78732161
+              logs:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItem'
+    UsageByLogIdByParserId:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            from_ts:
+              type: integer
+              description: Start of the time range (epoch milliseconds).
+              example: 1787702400000
+            to_ts:
+              type: integer
+              description: End of the time range (epoch milliseconds).
+              example: 1787788800000
+            logs:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: Total number of events for this log.
+                    example: 32161
+                  parsers:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        count:
+                          type: integer
+                          description: Total number of events for this log and parser.
+                          example: 32161
+                        ratio:
+                          type: number
+                          description: Ratio of total events for this log and parser.
+                          format: double
+                          example: 0.5
+          description: Summary of total usage for the time range.
+        timeseries:
+          type: array
+          description: Usage for the time range broken down by time slice.
+          items:
+            type: object
+            properties:
+              from_ts:
+                type: integer
+                description: Start of the time slice (epoch milliseconds).
+                example: 1787702400000
+              to_ts:
+                type: integer
+                description: End of the time slice (epoch milliseconds).
+                example: 1787706000000
+              logs:
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    count:
+                      type: integer
+                      description: Total number of events for this log for this time slice.
+                      example: 32161
+                    parsers:
+                      type: object
+                      additionalProperties:
+                        type: object
+                        properties:
+                          count:
+                            type: integer
+                            description: >-
+                              Total number of events for this log and parser for
+                              this time slice.
+                            example: 32161
+                          ratio:
+                            type: number
+                            description: >-
+                              Ratio of total events for this log and parser for
+                              this time slice.
+                            format: double
+                            example: 0.5
+    UsageByLogIdByUserId:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            from_ts:
+              type: integer
+              description: Start of the time range (epoch milliseconds).
+              example: 1787702400000
+            to_ts:
+              type: integer
+              description: End of the time range (epoch milliseconds).
+              example: 1787788800000
+            count:
+              type: integer
+              description: Total number of events.
+              example: 32161
+            size:
+              type: integer
+              description: Total size of events in bytes.
+              example: 78732161
+            logs:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItemByUserId'
+              description: Usage information per log ID for the time range.
+          description: Summary of total usage for the time range.
+        timeseries:
+          type: array
+          description: Usage for the time range broken down by time slice.
+          items:
+            type: object
+            properties:
+              from_ts:
+                type: integer
+                description: Start of the time slice (epoch milliseconds).
+                example: 1787702400000
+              to_ts:
+                type: integer
+                description: End of the time slice (epoch milliseconds).
+                example: 1787706000000
+              count:
+                type: integer
+                description: Total number of events for this time slice.
+                example: 32161
+              size:
+                type: integer
+                description: Total size of events in bytes for this time slice.
+                example: 78732161
+              logs:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItemByUserId'
+    UsageByMetricId:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            from_ts:
+              type: integer
+              description: Start of the time range (epoch milliseconds).
+              example: 1787702400000
+            to_ts:
+              type: integer
+              description: End of the time range (epoch milliseconds).
+              example: 1787788800000
+            count:
+              type: integer
+              description: Total number of events.
+              example: 32161
+            size:
+              type: integer
+              description: Total size of events in bytes.
+              example: 78732161
+            metrics:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItem'
+              description: Usage information per metric ID for the time range.
+          description: Summary of total usage for the time range.
+        timeseries:
+          type: array
+          description: Usage for the time range broken down by time slice.
+          items:
+            type: object
+            properties:
+              from_ts:
+                type: integer
+                description: Start of the time slice (epoch milliseconds).
+                example: 1787702400000
+              to_ts:
+                type: integer
+                description: End of the time slice (epoch milliseconds).
+                example: 1787706000000
+              count:
+                type: integer
+                description: Total number of events for this time slice.
+                example: 32161
+              size:
+                type: integer
+                description: Total size of events in bytes for this time slice.
+                example: 78732161
+              metrics:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItem'
+    UsageByMetricIdByUserId:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            from_ts:
+              type: integer
+              description: Start of the time range (epoch milliseconds).
+              example: 1787702400000
+            to_ts:
+              type: integer
+              description: End of the time range (epoch milliseconds).
+              example: 1787788800000
+            count:
+              type: integer
+              description: Total number of events.
+              example: 32161
+            size:
+              type: integer
+              description: Total size of events in bytes.
+              example: 78732161
+            metrics:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItemByUserId'
+              description: Usage information per metric ID for the time range.
+          description: Summary of total usage for the time range.
+        timeseries:
+          type: array
+          description: Usage for the time range broken down by time slice.
+          items:
+            type: object
+            properties:
+              from_ts:
+                type: integer
+                description: Start of the time slice (epoch milliseconds).
+                example: 1787702400000
+              to_ts:
+                type: integer
+                description: End of the time slice (epoch milliseconds).
+                example: 1787706000000
+              count:
+                type: integer
+                description: Total number of events for this time slice.
+                example: 32161
+              size:
+                type: integer
+                description: Total size of events in bytes for this time slice.
+                example: 78732161
+              metrics:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItemByUserId'
+    UsageByTraceId:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            from_ts:
+              type: integer
+              description: Start of the time range (epoch milliseconds).
+              example: 1787702400000
+            to_ts:
+              type: integer
+              description: End of the time range (epoch milliseconds).
+              example: 1787788800000
+            count:
+              type: integer
+              description: Total number of events.
+              example: 32161
+            size:
+              type: integer
+              description: Total size of events in bytes.
+              example: 78732161
+            traces:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItem'
+              description: Usage information per trace ID for the time range.
+          description: Summary of total usage for the time range.
+        timeseries:
+          type: array
+          description: Usage for the time range broken down by time slice.
+          items:
+            type: object
+            properties:
+              from_ts:
+                type: integer
+                description: Start of the time slice (epoch milliseconds).
+                example: 1787702400000
+              to_ts:
+                type: integer
+                description: End of the time slice (epoch milliseconds).
+                example: 1787706000000
+              count:
+                type: integer
+                description: Total number of events for this time slice.
+                example: 32161
+              size:
+                type: integer
+                description: Total size of events in bytes for this time slice.
+                example: 78732161
+              traces:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItem'
+    UsageByTraceIdByUserId:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            from_ts:
+              type: integer
+              description: Start of the time range (epoch milliseconds).
+              example: 1787702400000
+            to_ts:
+              type: integer
+              description: End of the time range (epoch milliseconds).
+              example: 1787788800000
+            count:
+              type: integer
+              description: Total number of events.
+              example: 32161
+            size:
+              type: integer
+              description: Total size of events in bytes.
+              example: 78732161
+            traces:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItemByUserId'
+              description: Usage information per trace ID for the time range.
+          description: Summary of total usage for the time range.
+        timeseries:
+          type: array
+          description: Usage for the time range broken down by time slice.
+          items:
+            type: object
+            properties:
+              from_ts:
+                type: integer
+                description: Start of the time slice (epoch milliseconds).
+                example: 1787702400000
+              to_ts:
+                type: integer
+                description: End of the time slice (epoch milliseconds).
+                example: 1787706000000
+              count:
+                type: integer
+                description: Total number of events for this time slice.
+                example: 32161
+              size:
+                type: integer
+                description: Total size of events in bytes for this time slice.
+                example: 78732161
+              traces:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItemByUserId'
+    UsageByDatasetTypeByUserId:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            from_ts:
+              type: integer
+              description: Start of the time range (epoch milliseconds).
+              example: 1787702400000
+            to_ts:
+              type: integer
+              description: End of the time range (epoch milliseconds).
+              example: 1787788800000
+            count:
+              type: integer
+              description: Total number of events.
+              example: 32161
+            size:
+              type: integer
+              description: Total size of events in bytes.
+              example: 78732161
+            logs:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItemByUserId'
+              description: Usage information specific to logs.
+            metrics:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItemByUserId'
+              description: Usage information specific to metrics.
+            traces:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItemByUserId'
+              description: Usage information specific to traces.
+          description: Summary of total usage for the time range.
+        timeseries:
+          type: array
+          description: Usage for the time range broken down by time slice.
+          items:
+            type: object
+            properties:
+              from_ts:
+                type: integer
+                description: Start of the time slice (epoch milliseconds).
+                example: 1787702400000
+              to_ts:
+                type: integer
+                description: End of the time slice (epoch milliseconds).
+                example: 1787706000000
+              count:
+                type: integer
+                description: Total number of events for this time slice.
+                example: 32161
+              size:
+                type: integer
+                description: Total size of events in bytes for this time slice.
+                example: 78732161
+              logs:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItemByUserId'
+              metrics:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItemByUserId'
+              traces:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItemByUserId'
+    UsageByParserIdByLogId:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            from_ts:
+              type: integer
+              description: Start of the time range (epoch milliseconds).
+              example: 1787702400000
+            to_ts:
+              type: integer
+              description: End of the time range (epoch milliseconds).
+              example: 1787788800000
+            count:
+              type: integer
+              description: Total number of events.
+              example: 32161
+            size:
+              type: integer
+              description: Total size of events in bytes.
+              example: 78732161
+            parsers:
+              type: object
+              additionalProperties:
+                $ref: '#/components/schemas/UsageItemByLogId'
+              description: Usage information per parser ID for the time range.
+          description: Summary of total usage for the time range.
+        timeseries:
+          type: array
+          description: Usage for the time range broken down by time slice.
+          items:
+            type: object
+            properties:
+              from_ts:
+                type: integer
+                description: Start of the time slice (epoch milliseconds).
+                example: 1787702400000
+              to_ts:
+                type: integer
+                description: End of the time slice (epoch milliseconds).
+                example: 1787706000000
+              count:
+                type: integer
+                description: Total number of events for this time slice.
+                example: 32161
+              size:
+                type: integer
+                description: Total size of events in bytes for this time slice.
+                example: 78732161
+              parsers:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/UsageItemByLogId'
+                description: Usage information per parser ID for the time range.
+    LegacyUsageByLogId:
       type: object
       properties:
         name:
@@ -13386,12 +14042,14 @@ components:
         channels:
           minItems: 1
           type: array
-          description: List of channels to which to send alerts
+          description: Channels to send alerts to, and each channel's own settings
           example:
-            - production-alerts
-            - usage-alerts
+            - name: production-alerts
+              include_graph_image: true
+            - name: usage-alerts
+              include_graph_image: false
           items:
-            type: string
+            $ref: '#/components/schemas/SlackChannel'
         workspace_id:
           maxLength: 36
           minLength: 36
@@ -13417,12 +14075,19 @@ components:
         channels:
           minItems: 1
           type: array
-          description: List of channels to which to send alerts
+          description: Channels to send alerts to, and each channel's own settings.
           example:
             - production-alerts
-            - usage-alerts
+            - name: usage-alerts
+              include_graph_image: false
           items:
-            type: string
+            oneOf:
+              - type: string
+                description: >-
+                  Deprecated shorthand for a channel with default settings
+                  (graph image included). Use the object form instead.
+                deprecated: true
+              - $ref: '#/components/schemas/SlackChannel'
         workspace_id:
           maxLength: 36
           minLength: 36
@@ -13448,12 +14113,19 @@ components:
         channels:
           minItems: 1
           type: array
-          description: List of channels to which to send alerts
+          description: Channels to send alerts to, and each channel's own settings.
           example:
             - production-alerts
-            - usage-alerts
+            - name: usage-alerts
+              include_graph_image: false
           items:
-            type: string
+            oneOf:
+              - type: string
+                description: >-
+                  Deprecated shorthand for a channel with default settings
+                  (graph image included). Use the object form instead.
+                deprecated: true
+              - $ref: '#/components/schemas/SlackChannel'
         workspace_id:
           maxLength: 36
           minLength: 36
@@ -14400,6 +15072,11 @@ components:
           type: string
           description: The type of the contract
           example: Upfront Commit
+        billing_program:
+          type: string
+          description: Optional billing program classification; empty when not specified
+          example: PROMOTIONAL
+          default: ''
         contract_status:
           type: string
           enum:
@@ -15248,6 +15925,273 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MonitorSuggestion'
+    Slo:
+      required:
+        - id
+        - indicator
+        - metadata
+        - name
+        - objective
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for the SLO.
+          format: uuid
+        name:
+          maxLength: 255
+          minLength: 1
+          type: string
+          description: The name of the SLO.
+          example: checkout-availability-99.9
+        description:
+          maxLength: 4000
+          type: string
+          description: Extra contextual information about the SLO.
+          example: Checkout availability on the production load balancer.
+        team:
+          maxLength: 255
+          type: string
+          description: The team that owns this SLO.
+          example: checkout
+        service:
+          maxLength: 255
+          type: string
+          description: The service this SLO measures.
+          example: checkout-api
+        indicator:
+          $ref: '#/components/schemas/SloIndicator'
+        objective:
+          $ref: '#/components/schemas/SloObjective'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+      description: >-
+        A Service Level Objective. Embeds its indicator (the measurement) and
+        its objective (target and window).
+    CreateSloRequest:
+      required:
+        - indicator
+        - name
+        - objective
+      type: object
+      properties:
+        name:
+          maxLength: 255
+          minLength: 1
+          type: string
+          description: The name of the SLO.
+          example: checkout-availability-99.9
+        description:
+          maxLength: 4000
+          type: string
+          description: Extra contextual information about the SLO.
+          example: Checkout availability on the production load balancer.
+        team:
+          maxLength: 255
+          type: string
+          description: The team that owns this SLO.
+          example: checkout
+        service:
+          maxLength: 255
+          type: string
+          description: The service this SLO measures.
+          example: checkout-api
+        indicator:
+          $ref: '#/components/schemas/SloIndicator'
+        objective:
+          $ref: '#/components/schemas/SloObjective'
+      description: Request body to create an SLO.
+    DiscoverSlosRequest:
+      required:
+        - services
+      type: object
+      properties:
+        time_range:
+          type: string
+          description: The relative time range to scan for candidate endpoints.
+          example: Last 28 days
+          default: Last 28 days
+        services:
+          minItems: 1
+          type: array
+          description: Services to scan for candidates.
+          example:
+            - checkout
+          items:
+            type: string
+      additionalProperties: false
+      description: >-
+        Request to discover candidate SLOs by scanning trace entry spans for
+        high-traffic endpoints.
+    DiscoverSlosResponse:
+      required:
+        - candidates
+        - computed_at
+      type: object
+      properties:
+        computed_at:
+          type: integer
+          description: Unix millis when this result was computed.
+          format: int64
+          example: 1755000000000
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/SloCandidate'
+      description: The result of an SLO discovery scan.
+    DeriveBadQueryRequest:
+      required:
+        - good_query
+        - total_query
+      type: object
+      properties:
+        good_query:
+          description: The good-event count query to derive bad_query from.
+          oneOf:
+            - $ref: '#/components/schemas/MetricQuery'
+            - $ref: '#/components/schemas/MetricExpression'
+        total_query:
+          description: The total (valid request) count query to derive bad_query from.
+          oneOf:
+            - $ref: '#/components/schemas/MetricQuery'
+            - $ref: '#/components/schemas/MetricExpression'
+      description: >-
+        Attempts to derive a bad_query (the complement of good_query within
+        total_query) for a RATIO SLO indicator, so it can be suggested to the
+        user before an SLO is saved.
+    DeriveBadQueryResponse:
+      required:
+        - derivable
+      type: object
+      properties:
+        derivable:
+          type: boolean
+          description: >-
+            Whether a bad_query could be derived from the given good_query and
+            total_query.
+        bad_query:
+          description: >-
+            The derived bad_query. Only present when derivable is true. A
+            suggestion, not final — the caller may edit or overwrite it before
+            saving the SLO.
+          oneOf:
+            - $ref: '#/components/schemas/MetricQuery'
+            - $ref: '#/components/schemas/MetricExpression'
+        reason:
+          type: string
+          description: >-
+            Why a bad_query could not be derived. Only present when derivable is
+            false.
+          example: good_query and total_query must query the same data source.
+        warnings:
+          type: array
+          description: >-
+            Non-fatal caveats about the derived bad_query, present even when
+            derivable is true. For example, the derivation assumes every event
+            counted by total_query but not by good_query is "bad" — review
+            before saving.
+          items:
+            type: string
+      description: >-
+        The result of attempting to derive a bad_query from good_query and
+        total_query. Derivation is not always possible (e.g. mismatched data
+        sources, aggregations, or group-by dimensions, or a good_query filter
+        that isn't expressible as an additional condition on top of total_query)
+        — when it isn't, derivable is false and reason explains why, and the
+        caller should let the user supply bad_query manually instead.
+    SloStatus:
+      required:
+        - current_sli
+        - error_budget
+        - metric_id
+        - slo_id
+        - target
+      type: object
+      properties:
+        slo_id:
+          type: string
+          description: The SLO this status was computed for.
+          format: uuid
+        metric_id:
+          type: string
+          description: >-
+            Id of the internal MetricDefinition the good/total counts were read
+            from, for anything that needs to query it directly (e.g.
+            dashboards).
+        current_sli:
+          type: number
+          description: >-
+            Attainment over the objective's window, as a percentage (0-100),
+            matching target's scale.
+          format: double
+          example: 99.92
+        target:
+          type: number
+          description: The SLO's target attainment (0-100), echoing objective.target.
+          format: double
+          example: 99.9
+        error_budget:
+          $ref: '#/components/schemas/ErrorBudget'
+      description: >-
+        Current attainment and error budget for an SLO. Computed live from the
+        SLO's underlying metric timeseries; not persisted.
+    SloMonitor:
+      required:
+        - actions
+        - window
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for the SLO monitor
+          format: uuid
+          readOnly: true
+        threshold:
+          type: number
+          description: >-
+            The SLI attainment threshold, in the same 0-100 scale as the SLO's
+            objective target. The monitor fires when the current SLI drops below
+            this value. Defaults to the SLO's own objective.target if omitted;
+            set explicitly to fire before the SLO is actually breached, e.g. as
+            an early warning while error budget remains.
+          format: double
+          example: 99.9
+        warning_threshold:
+          type: number
+          description: The warning threshold value, in the same units as threshold.
+          format: double
+          example: 99.95
+        window:
+          type: string
+          description: >-
+            The time window to evaluate the monitor against; minimum five
+            minutes, maximum one day
+          example: '''Last 28 days'', ''Last 14 days'', ''Last 7 days'''
+        actions:
+          maxItems: 10
+          minItems: 1
+          type: array
+          description: >-
+            The list of actions (notifications) to take when the monitor fires
+            or resolves
+          items:
+            $ref: '#/components/schemas/Action'
+        status:
+          type: string
+          description: The status of the monitor
+          readOnly: true
+          example: OK
+          enum:
+            - OK
+            - NO_DATA
+            - ALERT
+            - WARN
+        last_trigger_ts:
+          type: integer
+          description: The timestamp of the last time the monitor fired
+          format: int64
+          readOnly: true
+          example: 1710948395538
     RetentionRule:
       required:
         - entity
@@ -16096,8 +17040,12 @@ components:
         name:
           type: string
         select:
+          maxItems: 1
+          minItems: 1
           type: array
           items:
+            maxLength: 255
+            minLength: 1
             type: string
         from:
           type: array
@@ -16126,8 +17074,12 @@ components:
         where:
           type: string
         groups:
+          maxItems: 5
+          minItems: 0
           type: array
           items:
+            maxLength: 255
+            minLength: 1
             type: string
         aggregation:
           type: array
@@ -16147,6 +17099,34 @@ components:
       description: >
         Map of parameter names to their definitions. Each key represents the
         parameter name used within the template.
+    AnomalyPreviewSeries:
+      required:
+        - timeseries
+      type: object
+      properties:
+        group:
+          type: string
+          description: >
+            The group this series was evaluated for, only present if the query
+            was group by.
+          example: checkout-service
+        timeseries:
+          type: array
+          description: >
+            The windows of the requested range in ascending time order, one per
+            monitor window. 
+
+            Windows in which nothing matched are included
+          items:
+            $ref: '#/components/schemas/AnomalyPreviewWindow'
+      description: >
+        One evaluated series and the windows it was scored over. Anomaly
+        detection builds a baseline per
+
+        group, so a monitor with a group by produces one of these per group. All
+        groups are evaluated against the
+
+        same warn and alert thresholds.
     TagValues:
       type: array
       items:
@@ -16250,13 +17230,18 @@ components:
           type: string
           description: The type of the Widget.
           enum:
-            - line
-            - bar
             - area
-            - score
+            - bar
+            - donut
+            - events-list
+            - geomap
+            - group
+            - line
             - pie
-            - treemap
+            - score
+            - table
             - top-list
+            - treemap
         metrics:
           type: array
           items:
@@ -16304,6 +17289,53 @@ components:
                 h: 5
         tags:
           $ref: '#/components/schemas/Tags'
+    UsageItem:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: Total number of events.
+          example: 32161
+        size:
+          type: integer
+          description: Total size of events in bytes.
+          example: 78732161
+    UsageItemByUserId:
+      type: object
+      properties:
+        users:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/UsageItem'
+      additionalProperties:
+        $ref: '#/components/schemas/UsageItem'
+    UsageItemByLogId:
+      type: object
+      properties:
+        logs:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/UsageItem'
+      additionalProperties:
+        $ref: '#/components/schemas/UsageItem'
+    SlackChannel:
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          minLength: 1
+          type: string
+          description: Slack channel name to send alerts to
+          example: production-alerts
+        include_graph_image:
+          type: boolean
+          description: >-
+            Whether alert notifications sent to this channel include the
+            rendered graph image
+          example: true
+          default: true
+      additionalProperties: false
     SearchDetails:
       type: object
       properties:
@@ -16731,50 +17763,133 @@ components:
           type: string
           description: Extra contextual information to add to the monitor.
           example: Average response time is over 1 seconds in the last 20 minutes
-    TopKeyValue:
+    SloIndicator:
+      required:
+        - type
       type: object
       properties:
-        value:
+        type:
           type: string
-          description: A value associated with the key.
-        rank:
+          description: >-
+            The indicator template. `RATIO` requires at least two of
+            `good_query`/`bad_query`/ `total_query` — the third is derived (e.g.
+            good + bad → total). `bad_query` is preferred whenever included
+            (i.e. `bad_query`+`total_query` or `good_query`+ `bad_query`), see
+            its description. `LATENCY` requires `total_query` and
+            `latency_threshold`.
+          enum:
+            - RATIO
+            - LATENCY
+        good_query:
+          description: >-
+            RATIO only. The good-event count, i.e. the numerator of the ratio. A
+            single query (MetricQuery) or a multi-query/formula expression
+            (MetricExpression). At least two of
+            `good_query`/`bad_query`/`total_query` must be set. If `bad_query`
+            is omitted (i.e. only `good_query`+`total_query` are set), its not
+            possible to "jump to offending events"  alert drilldown feature,
+            since `bad` can't be safely derived from `good`.
+          oneOf:
+            - $ref: '#/components/schemas/MetricQuery'
+            - $ref: '#/components/schemas/MetricExpression'
+        bad_query:
+          description: >-
+            RATIO only, the preferred field to include. The bad-event count.
+            When paired with `total_query`, good is derived as total - bad; when
+            paired with `good_query`, total is derived as good + bad. At least
+            two of `good_query`/`bad_query`/`total_query` must be set.  This is
+            also the recommended way to express an availability SLO (e.g.
+            `where: "status_code >= 500"` or `where: "service_status != 'UP'"`)
+          oneOf:
+            - $ref: '#/components/schemas/MetricQuery'
+            - $ref: '#/components/schemas/MetricExpression'
+        total_query:
+          description: >-
+            Required for LATENCY. For RATIO, at least two of
+            `good_query`/`bad_query`/ `total_query` must be set — `total_query`
+            is optional and, when omitted, its derived as good + bad. The total
+            (valid request) count, i.e. the denominator of the ratio. A single
+            query (MetricQuery) or a multi-query/formula expression
+            (MetricExpression).
+          oneOf:
+            - $ref: '#/components/schemas/MetricQuery'
+            - $ref: '#/components/schemas/MetricExpression'
+        latency_threshold:
+          $ref: '#/components/schemas/LatencyThreshold'
+      description: >-
+        The Service Level Indicator: how health is measured, expressed as a
+        good/total ratio (value in 0..1). Two templates are supported: `RATIO`
+        (any two of good/bad/total, the third derived) and `LATENCY` (a total
+        query plus a latency threshold). Field requirements per type are
+        documented below; they are enforced by the API, not expressible as a
+        JSON Schema constraint here.
+    SloObjective:
+      required:
+        - target
+        - window
+      type: object
+      properties:
+        target:
+          maximum: 100
+          exclusiveMaximum: true
+          minimum: 0
+          exclusiveMinimum: true
+          type: number
+          description: >-
+            The required target of eligible observations that must be good. For
+            example, 99.9 allows a 0.1% error budget.
+          format: double
+          example: 99.9
+        window:
+          $ref: '#/components/schemas/SloWindow'
+      description: The objective an SLI is held to - a target attainment over a window.
+    SloCandidate:
+      type: object
+      properties:
+        service:
+          type: string
+          example: checkout
+        endpoint:
+          type: string
+          example: /api/v1/checkout
+        method:
+          type: string
+          example: GET
+        total_requests:
           type: integer
           description: >-
-            A count representing the number of times a value occurred for the
-            key.
-          deprecated: true
-    MetricFormula:
-      required:
-        - expression
-        - name
-      type: object
-      properties:
-        name:
-          maxLength: 100
-          type: string
-          description: >-
-            The unique name, within a metric definition, of the formula.  The
-            name allows to identify the timeseries resulting from this formula
-            in a search response
-          example: error_rate
-        expression:
-          maxLength: 100
-          type: string
-          description: >
-            The expression that defines the formula. The formula elements refer,
-            by name, to queries defined in the Metric Definition.
-
-            When queries results have groups, the formula is computed over every
-            group timeseries that appear in all group by queries.
-          example: errors / total_requests * 100
-        aggregation:
+            Total entry-span requests observed for this endpoint over the
+            discovery window.
+          format: int64
+          example: 812000
+        success_rate:
+          type: number
+          description: 1 - (server errors / total_requests), in the range 0..1.
+          format: double
+          example: 0.9987
+        latency:
           type: object
           properties:
-            reduce_to:
-              $ref: '#/components/schemas/ReduceTo'
+            value_ms:
+              type: number
+              format: double
+              example: 240.5
+            function:
+              type: string
+              example: P95
+          description: Observed latency over the discovery window.
+        drafts:
+          type: array
           description: >-
-            The reduction to apply to the timeseries to reduce it to a single
-            value
+            Ready-to-POST /slos request bodies for this candidate (e.g. a
+            ratio/availability draft, and a latency draft), each with a default
+            objective.
+          items:
+            $ref: '#/components/schemas/CreateSloRequest'
+      description: >-
+        A candidate SLO discovered from trace data, with one or more
+        ready-to-POST draft suggestions. The `candidates` array on the response
+        is ranked by order of importance, highest first.
     MetricQuery:
       type: object
       properties:
@@ -16872,6 +17987,118 @@ components:
             - select
             - where
           type: object
+    MetricExpression:
+      required:
+        - queries
+      type: object
+      properties:
+        queries:
+          maxItems: 6
+          minItems: 1
+          type: array
+          description: >-
+            The queries computed to feed the formula. Referenced by name from
+            `formula`.
+          items:
+            $ref: '#/components/schemas/MetricQuery'
+        formula:
+          type: string
+          description: >-
+            Expression combining the queries by name, e.g. "successes_a +
+            successes_b". Omit when there is a single query.
+          example: successes_a + successes_b
+      description: >-
+        A measured quantity computed from one or more queries, optionally
+        combined by a formula. Used where an SLI's good or total count is more
+        than a single query (for example a sum of two queries, or a derived
+        expression). A single query is the degenerate case: `queries` of length
+        1 with no `formula`.
+    ErrorBudget:
+      required:
+        - consumed_ratio
+        - remaining_percent
+        - remaining_ratio
+        - total_ratio
+      type: object
+      properties:
+        total_ratio:
+          type: number
+          description: >-
+            The allowed failure ratio over all requests in the window, e.g.
+            0.001 for a 99.9% target.
+          format: double
+          example: 0.001
+        consumed_ratio:
+          type: number
+          description: The observed failure ratio consumed so far.
+          format: double
+          example: 0.00096
+        remaining_ratio:
+          type: number
+          description: >-
+            total_ratio minus consumed_ratio. Negative when the budget has been
+            exceeded.
+          format: double
+          example: 0.00004
+        remaining_percent:
+          maximum: 100
+          minimum: 0
+          type: number
+          description: >-
+            remaining_ratio expressed as a percentage of total_ratio (i.e. % of
+            the budget left).
+          format: double
+          example: 4
+      description: >-
+        The error budget derived from an objective's target: the allowed failure
+        ratio over the window, how much of it has been consumed, and how much
+        remains.
+    TopKeyValue:
+      type: object
+      properties:
+        value:
+          type: string
+          description: A value associated with the key.
+        rank:
+          type: integer
+          description: >-
+            A count representing the number of times a value occurred for the
+            key.
+          deprecated: true
+    MetricFormula:
+      required:
+        - expression
+        - name
+      type: object
+      properties:
+        name:
+          maxLength: 100
+          type: string
+          description: >-
+            The unique name, within a metric definition, of the formula.  The
+            name allows to identify the timeseries resulting from this formula
+            in a search response
+          example: error_rate
+        expression:
+          maxLength: 100
+          type: string
+          description: >
+            The expression that defines the formula. The formula elements refer,
+            by name, to queries defined in the Metric Definition.
+
+            When queries results have groups, the formula is computed over every
+            group timeseries that appear in all group by queries.
+          example: errors / total_requests * 100
+        aggregation:
+          type: object
+          properties:
+            reduce_to:
+              $ref: '#/components/schemas/ReduceTo'
+          description: >-
+            The reduction to apply to the timeseries to reduce it to a single
+            value
+        unit_config:
+          $ref: '#/components/schemas/QueryUnitConfig'
     Statement:
       required:
         - file
@@ -16918,6 +18145,161 @@ components:
           $ref: '#/components/schemas/TimeFunction'
         reduce_to:
           $ref: '#/components/schemas/ReduceTo'
+        time_function_params:
+          maxItems: 1
+          minItems: 0
+          type: array
+          description: list of parameters for the time function
+          items:
+            maxLength: 100
+            minLength: 1
+            type: string
+            example: count
+    AnomalyPreviewWindow:
+      type: object
+      properties:
+        '@timestamp':
+          type: integer
+          description: Unix time in milliseconds of the start of this window
+          format: int64
+          example: 1757586400000
+        value:
+          type: number
+          description: >
+            The monitored value for this window. Absent when count is 0, so that
+            a window holding no data
+
+            is drawn as a gap rather than as a genuine zero.
+          format: double
+          example: 42
+        count:
+          type: integer
+          description: >
+            Events matched in this window. A window with a count of 0 holds no
+            data: it is never used as a
+
+            baseline point, and it takes the monitor's no_data_status.
+          format: int64
+          example: 120
+        status:
+          type: string
+          description: >
+            The status the monitor would report for this window taken on its
+            own. A window whose baseline
+
+            could not be established reports OK, because an anomaly monitor with
+            no usable baseline
+
+            reports healthy rather than firing.
+          example: OK
+          enum:
+            - OK
+            - ALERT
+            - WARN
+            - NO_DATA
+        deviation_score:
+          type: number
+          description: >
+            How far value sits from the baseline centre, signed, in spread
+            units, so that it compares
+
+            directly against threshold and warning_threshold. Present only on
+            scored windows.
+
+
+            It does not depend on the thresholds that were submitted, so a
+            client can re-score the whole
+
+            preview against different thresholds without issuing another
+            request.
+          format: double
+          example: 0.79
+        baseline:
+          required:
+            - center
+            - spread
+          type: object
+          properties:
+            center:
+              type: number
+              description: >-
+                The centre of the baseline, that is the median of the preceding
+                windows
+              format: double
+              example: 40.1
+            spread:
+              type: number
+              description: >
+                The spread of the baseline, that is its median absolute
+                deviation scaled by 1.4826 so that
+
+                it reads like a standard deviation
+              format: double
+              example: 2.4
+          description: >
+            The baseline this window was scored against, built from the windows
+            preceding it. Present only
+
+            on scored windows.
+
+
+            Warning and alert bands are deliberately not returned: they are
+            centre plus or minus the
+
+            threshold multiplied by spread, and deriving them from these two
+            values is what allows a
+
+            threshold to be changed without re-running the query.
+        skip_reason:
+          type: string
+          description: >
+            Why this window was not scored. Present only on windows that have no
+            baseline.
+
+
+            NO_EVENTS is a window in which nothing matched.
+            INSUFFICIENT_BASELINE means too few of the
+
+            preceding windows held data to estimate a baseline from.
+            DEGENERATE_BASELINE means they held
+
+            data but no spread, so nothing could ever deviate from them: a
+            monitor left in that state
+
+            never fires, and its evaluation_window or query needs to change.
+            UNSTABLE means the baseline
+
+            was rejected as unreliable.
+          example: INSUFFICIENT_BASELINE
+          enum:
+            - NO_EVENTS
+            - INSUFFICIENT_BASELINE
+            - DEGENERATE_BASELINE
+            - UNSTABLE
+      description: >
+        One monitor window and the result of scoring it against the baseline of
+        the windows before it.
+
+
+        A window that was scored carries a baseline and a deviation_score. A
+        window that could not be
+
+        scored carries a skip_reason instead, and never both.
+      oneOf:
+        - required:
+            - '@timestamp'
+            - baseline
+            - count
+            - deviation_score
+            - status
+            - value
+          type: object
+        - required:
+            - '@timestamp'
+            - count
+            - skip_reason
+            - status
+          type: object
     TagEntityType:
       required:
         - entities
@@ -16995,17 +18377,62 @@ components:
           oneOf:
             - type: string
             - type: boolean
-    ReduceTo:
-      type: string
-      description: >
-        Final reduction applied to the aggregated result. Commonly used when
-        returning a single value instead of a full time series.
-      default: avg
-      enum:
-        - avg
-        - sum
-        - min
-        - max
+    LatencyThreshold:
+      required:
+        - comparison_operator
+        - field
+      type: object
+      properties:
+        field:
+          type: string
+          description: >-
+            The field in `total_query`'s dataset holding the latency/duration
+            value.
+          example: $span.duration_nano
+        comparison_operator:
+          type: string
+          description: >-
+            How `field` must compare to `threshold` for a request to be good.
+            `BELOW` is the common case (good = faster than the threshold).
+          default: BELOW
+          enum:
+            - BELOW
+            - ABOVE
+        threshold:
+          type: number
+          description: >-
+            The latency value requests are compared against. Omitted on
+            discovery candidates where the threshold hasn't been proposed or set
+            yet.
+          format: double
+          example: 500000000
+      description: >-
+        The threshold that classifies a request as good or bad for a LATENCY
+        indicator. `good` is derived as `total_query` filtered by `field
+        <comparison_operator> threshold`.
+    SloWindow:
+      required:
+        - duration
+      type: object
+      properties:
+        duration:
+          type: string
+          description: The time period over which the objective is evaluated.
+          example: 30d
+        alignment:
+          type: string
+          description: Resets at the start of each calendar period.
+          default: ROLLING
+          enum:
+            - ROLLING
+            - CALENDAR
+        period_timezone:
+          type: string
+          description: >-
+            IANA timezone the calendar period resets against. Only meaningful
+            when alignment is CALENDAR.
+          example: Europe/Dublin
+      description: The window over which an objective (or agreement) is evaluated.
     QueryUnitConfig:
       description: >
         Optional configuration describing the unit of the query's raw value and,
@@ -17052,6 +18479,28 @@ components:
                 - exabytes
                 - zettabytes
                 - yottabytes
+            per_unit:
+              required:
+                - time
+              type: object
+              properties:
+                time:
+                  type: string
+                  description: >-
+                    The time unit to divide by when displaying the value as a
+                    rate.
+                  enum:
+                    - nanoseconds
+                    - microseconds
+                    - milliseconds
+                    - seconds
+                    - minutes
+                    - hours
+                    - days
+              description: >
+                Optional rate denominator applied to the query unit, for example
+                bytes per second when combined with a data size config.
+                Currently only a time unit is supported.
         - required:
             - input
             - type
@@ -17086,6 +18535,28 @@ components:
                 - minutes
                 - hours
                 - days
+            per_unit:
+              required:
+                - time
+              type: object
+              properties:
+                time:
+                  type: string
+                  description: >-
+                    The time unit to divide by when displaying the value as a
+                    rate.
+                  enum:
+                    - nanoseconds
+                    - microseconds
+                    - milliseconds
+                    - seconds
+                    - minutes
+                    - hours
+                    - days
+              description: >
+                Optional rate denominator applied to the query unit, for example
+                seconds per second when combined with a time config. Currently
+                only a time unit is supported.
         - required:
             - input
             - type
@@ -17105,9 +18576,135 @@ components:
               enum:
                 - fraction
                 - percent
+            per_unit:
+              required:
+                - time
+              type: object
+              properties:
+                time:
+                  type: string
+                  description: >-
+                    The time unit to divide by when displaying the value as a
+                    rate.
+                  enum:
+                    - nanoseconds
+                    - microseconds
+                    - milliseconds
+                    - seconds
+                    - minutes
+                    - hours
+                    - days
+              description: >
+                Optional rate denominator applied to the query unit. Currently
+                only a time unit is supported.
+        - required:
+            - input
+            - type
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - binary_data_size
+            input:
+              type: string
+              description: The unit of the raw input value.
+              enum:
+                - bytes
+                - kibibytes
+                - mebibytes
+                - gibibytes
+                - tebibytes
+                - pebibytes
+                - exbibytes
+                - zebibytes
+                - yobibytes
+            output:
+              type: string
+              description: >
+                The unit to convert the value to for display. Use `auto` to
+                automatically pick a unit based on the value's magnitude. Uses
+                1024 for the conversion factor.
+              enum:
+                - auto
+                - bytes
+                - kibibytes
+                - mebibytes
+                - gibibytes
+                - tebibytes
+                - pebibytes
+                - exbibytes
+                - zebibytes
+                - yobibytes
+            per_unit:
+              required:
+                - time
+              type: object
+              properties:
+                time:
+                  type: string
+                  description: >-
+                    The time unit to divide by when displaying the value as a
+                    rate.
+                  enum:
+                    - nanoseconds
+                    - microseconds
+                    - milliseconds
+                    - seconds
+                    - minutes
+                    - hours
+                    - days
+              description: >
+                Optional rate denominator applied to the query unit, for example
+                bytes per second when combined with a data size config.
+                Currently only a time unit is supported.
+    ReduceTo:
+      type: string
+      description: >
+        Final reduction applied to the aggregated result. Commonly used when
+        returning a single value instead of a full time series.
+      default: avg
+      enum:
+        - avg
+        - sum
+        - min
+        - max
     TimeFunction:
       type: string
-      description: Aggregation applied over time buckets.
+      description: >
+        Aggregation applied over time buckets.
+
+
+        - `sum` — total of all values in each bucket
+
+        - `avg` / `average` / `mean` — arithmetic mean of values in each bucket
+
+        - `min` — smallest value in each bucket
+
+        - `max` — largest value in each bucket
+
+        - `count` — number of data points in each bucket
+
+        - `p25` — 25th percentile
+
+        - `p50` / `median` — 50th percentile
+
+        - `p75` — 75th percentile
+
+        - `p90` — 90th percentile
+
+        - `p95` — 95th percentile
+
+        - `p99` — 99th percentile
+
+        - `p999` — 99.9th percentile
+
+        - `histogram` — distribution of values aggregated over the time bucket.
+        Available only for histogram metrics.
+
+        - `rate` — per-second rate, by default computed as sum of values divided
+        by the time bucket length. To compute the rate over count set
+        `time_function_params` as ["count"]
       default: sum
       enum:
         - sum
@@ -17126,6 +18723,7 @@ components:
         - p99
         - p999
         - histogram
+        - rate
     EntityId:
       required:
         - id
