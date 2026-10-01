@@ -464,8 +464,8 @@ func TestExpansionResourcesRouteCorrectly(t *testing.T) {
 		{[]string{"slack", "list"}, http.MethodGet, "/integrations/slack"},
 		{[]string{"log-views", "list"}, http.MethodGet, "/logs/views"},
 		{[]string{"widgets", "list"}, http.MethodGet, "/widgets"},
-		{[]string{"widgets", "create", "-f", "name=x"}, http.MethodPost, "/widgets"},
-		{[]string{"widgets", "update", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000e1", "-f", "name=x"}, http.MethodPut, "/widgets/aaaaaaaa-aaaa-aaaa-aaaa-0000000000e1"},
+		{[]string{"widgets", "create", "-f", "name=x", "-f", "type=line"}, http.MethodPost, "/widgets"},
+		{[]string{"widgets", "update", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000e1", "-f", "name=x", "-f", "type=line"}, http.MethodPut, "/widgets/aaaaaaaa-aaaa-aaaa-aaaa-0000000000e1"},
 	}
 	for _, c := range cases {
 		if _, _, err := runResource(t, record, "", c.args...); err != nil {
@@ -474,5 +474,27 @@ func TestExpansionResourcesRouteCorrectly(t *testing.T) {
 		if gotMethod != c.wantMethod || gotPath != c.wantPath {
 			t.Fatalf("%v -> %s %s, want %s %s", c.args, gotMethod, gotPath, c.wantMethod, c.wantPath)
 		}
+	}
+}
+
+// TestResourceUpdateNoContentConfirmsOnStderr: updateWidget answers 204 with
+// no body. update must confirm on stderr and keep stdout empty, like delete,
+// instead of printing a bare "null".
+func TestResourceUpdateNoContentConfirmsOnStderr(t *testing.T) {
+	const id = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000e2"
+	out, errOut, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut || r.URL.Path != "/widgets/"+id {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}, "", "widgets", "update", id, "-f", "name=x", "-f", "type=line", "-o", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "" {
+		t.Fatalf("stdout = %q, want empty on a 204 update", out)
+	}
+	if want := "Updated widget " + id + "."; !strings.Contains(errOut, want) {
+		t.Fatalf("stderr = %q, want it to contain %q", errOut, want)
 	}
 }
