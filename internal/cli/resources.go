@@ -585,7 +585,7 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 			// A 204 update (widgets) has no body to print: confirm on
 			// stderr like delete does, rather than a bare "null" on stdout.
 			if payload == nil {
-				_, _ = fmt.Fprintf(app.Stderr, "Updated %s %s.\n", desc.singular(), args[0])
+				app.Notef("Updated %s %s.\n", desc.singular(), args[0])
 				return nil
 			}
 			p, err := app.Printer(false)
@@ -635,7 +635,7 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would delete %s %s.\n", desc.singular(), args[0])
 				return nil
 			}
-			_, _ = fmt.Fprintf(app.Stderr, "Deleted %s %s.\n", desc.singular(), args[0])
+			app.Notef("Deleted %s %s.\n", desc.singular(), args[0])
 			return nil
 		},
 	}
@@ -716,9 +716,9 @@ func newMonitorMuteCmd() *cobra.Command {
 				return nil
 			}
 			if unmute {
-				_, _ = fmt.Fprintf(app.Stderr, "Unmuted monitor %s.\n", args[0])
+				app.Notef("Unmuted monitor %s.\n", args[0])
 			} else {
-				_, _ = fmt.Fprintf(app.Stderr, "Muted monitor %s.\n", args[0])
+				app.Notef("Muted monitor %s.\n", args[0])
 			}
 			return nil
 		},

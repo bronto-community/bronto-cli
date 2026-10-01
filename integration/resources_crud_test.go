@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -41,6 +42,10 @@ func TestResourcesCRUD(t *testing.T) {
 	t.Run("widgets", func(t *testing.T) {
 		t.Parallel()
 		testWidgetCRUD(t, NewRunner(t, key))
+	})
+	t.Run("widget-composition", func(t *testing.T) {
+		t.Parallel()
+		testWidgetComposition(t, NewRunner(t, key))
 	})
 	t.Run("saved-searches", func(t *testing.T) {
 		t.Parallel()
@@ -149,6 +154,75 @@ func testWidgetCRUD(t *testing.T, r *Runner) {
 	}
 
 	mustExitZero(t, r, "widgets", "delete", id, "--yes")
+}
+
+// testWidgetComposition covers the #86 action sub-verbs live: attach and
+// remove widgets on a dashboard and on a widget, and detach-from-template
+// routing. Deleting a dashboard also deletes the widgets still attached to
+// it (observed live 2026-10-01), so the per-widget cleanups may 404
+// harmlessly.
+func testWidgetComposition(t *testing.T, r *Runner) {
+	newWidget := func(suffix string) string {
+		t.Helper()
+		created := mustRunJSONObject(t, r, "widgets", "create", "--input",
+			writeBodyFile(t, map[string]any{"name": resourceName(suffix), "type": "line"}))
+		id, _ := created["id"].(string)
+		if id == "" {
+			t.Fatalf("widgets create response missing id: %+v", created)
+		}
+		t.Cleanup(func() { bestEffortDelete(r, "widgets", id) })
+		return id
+	}
+	a, b := newWidget("widget-a"), newWidget("widget-b")
+
+	created := mustRunJSONObject(t, r, "dashboards", "create", "--input",
+		writeBodyFile(t, map[string]any{"name": resourceName("dashboard-widgets")}))
+	dash := resourceID(created, "dashboard_id")
+	if dash == "" {
+		t.Fatalf("dashboards create response missing id: %+v", created)
+	}
+	t.Cleanup(func() { bestEffortDelete(r, "dashboards", dash) })
+
+	widgetIDs := func(kind, id string) []string {
+		t.Helper()
+		got := mustRunJSONObject(t, r, kind, "get", id)
+		raw, _ := got["widget_ids"].([]any)
+		ids := make([]string, 0, len(raw))
+		for _, v := range raw {
+			s, _ := v.(string)
+			ids = append(ids, s)
+		}
+		slices.Sort(ids)
+		return ids
+	}
+	want := func(kind, id string, ids ...string) {
+		t.Helper()
+		slices.Sort(ids)
+		if got := widgetIDs(kind, id); !slices.Equal(got, ids) {
+			t.Fatalf("%s %s widget_ids = %v, want %v", kind, id, got, ids)
+		}
+	}
+
+	mustExitZero(t, r, "dashboards", "attach-widgets", dash, "--widget-ids", a+","+b)
+	want("dashboards", dash, a, b)
+	mustExitZero(t, r, "dashboards", "remove-widget", dash, b)
+	want("dashboards", dash, a)
+
+	mustExitZero(t, r, "widgets", "attach-widgets", a, "--widget-ids", b)
+	want("widgets", a, b)
+	mustExitZero(t, r, "widgets", "remove-widget", a, b)
+	want("widgets", a)
+
+	// A fresh dashboard isn't template-derived, so the API refuses with a
+	// 400. That still proves the path is served: a missing endpoint would
+	// 404 or 405 instead.
+	res, err := r.Run(t.Context(), "", "dashboards", "detach-from-template", dash)
+	if err != nil {
+		t.Fatalf("running detach-from-template: %v", err)
+	}
+	if res.ExitCode == 0 || !strings.Contains(res.Stderr, "400") {
+		t.Fatalf("detach-from-template on a non-template dashboard: exit %d, want a 400\nstderr: %s", res.ExitCode, res.Stderr)
+	}
 }
 
 func testSavedSearchCRUD(t *testing.T, r *Runner, logID string) {

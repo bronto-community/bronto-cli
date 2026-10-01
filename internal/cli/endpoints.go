@@ -29,6 +29,11 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/logs", Command: "bronto ping"},
 	{Pattern: "/monitors/{*}/events", Command: "bronto monitors events"},
 	{Pattern: "/monitors/{*}/status", Command: "bronto monitors mute"},
+	{Pattern: "/dashboards/{*}/detach-from-template", Command: "bronto dashboards detach-from-template"},
+	{Pattern: "/dashboards/{*}/widgets", Command: "bronto dashboards attach-widgets"},
+	{Pattern: "/dashboards/{*}/widgets/{*}", Command: "bronto dashboards remove-widget"},
+	{Pattern: "/widgets/{*}/widgets", Command: "bronto widgets attach-widgets"},
+	{Pattern: "/widgets/{*}/widgets/{*}", Command: "bronto widgets remove-widget"},
 }
 
 // EndpointInventory returns every management-API path pattern the CLI
