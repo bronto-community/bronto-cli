@@ -1,18 +1,27 @@
 package cli
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
+
+	yaml "gopkg.in/yaml.v3"
 )
 
-// specPaths reads api/openapi.yaml once and returns the set of top-level
-// path keys (e.g. "/monitors", "/monitors/{monitorId}") declared in the
-// spec. This is the CI tripwire for descriptor drift: every resourceDesc's
+// specPaths reads api/openapi.yaml and returns the set of top-level path
+// keys (e.g. "/monitors", "/monitors/{monitorId}") declared in the spec.
+// This is the CI tripwire for descriptor drift: every resourceDesc's
 // Base/CreatePath/IDBase must correspond to a real spec path, so a typo or a
 // renamed endpoint fails the build instead of silently 404ing at runtime.
+//
+// It goes through parseSpec, so a vendored spec that is not well-formed
+// fails every conformance test rather than yielding whatever path keys a
+// text scan happens to find.
 func specPaths(t *testing.T) map[string]bool {
 	t.Helper()
 	_, thisFile, _, ok := runtime.Caller(0)
@@ -24,18 +33,93 @@ func specPaths(t *testing.T) map[string]bool {
 	if err != nil {
 		t.Fatalf("reading api/openapi.yaml: %v", err)
 	}
-	paths := map[string]bool{}
-	for _, line := range strings.Split(string(data), "\n") {
-		trimmed := strings.TrimRight(line, " \r")
-		if !strings.HasPrefix(trimmed, "  /") || !strings.HasSuffix(trimmed, ":") {
-			continue
-		}
-		paths[strings.TrimSuffix(strings.TrimSpace(trimmed), ":")] = true
-	}
-	if len(paths) == 0 {
-		t.Fatal("parsed zero paths from api/openapi.yaml — parser or spec location is broken")
+	paths, err := parseSpec(data)
+	if err != nil {
+		t.Fatalf("api/openapi.yaml is not a well-formed OpenAPI document: %v\n"+
+			"Re-vendor by downloading the upstream spec whole and re-applying the "+
+			"'bronto-cli vendor patch' notes; don't hand-splice path blocks.", err)
 	}
 	return paths
+}
+
+// parseSpec parses an OpenAPI document and returns its path keys. It fails
+// on anything a hand-spliced re-vendor tends to produce: invalid YAML
+// (#116 hand-pasted a path block with an unterminated quote, and the old
+// line-based scanner still found every path key), duplicate keys
+// (yaml.v3 rejects them), a missing or empty paths map, and internal $refs
+// that point at nothing.
+func parseSpec(data []byte) (map[string]bool, error) {
+	var doc map[string]any
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, err
+	}
+	if v, _ := doc["openapi"].(string); !strings.HasPrefix(v, "3.") {
+		return nil, fmt.Errorf("missing or unsupported top-level openapi version (got %v)", doc["openapi"])
+	}
+	rawPaths, ok := doc["paths"].(map[string]any)
+	if !ok || len(rawPaths) == 0 {
+		return nil, errors.New("missing or empty top-level paths map")
+	}
+	paths := map[string]bool{}
+	for p, item := range rawPaths {
+		if !strings.HasPrefix(p, "/") {
+			return nil, fmt.Errorf("path key %q does not start with /", p)
+		}
+		if _, ok := item.(map[string]any); !ok {
+			return nil, fmt.Errorf("path %q is not a mapping of operations", p)
+		}
+		paths[p] = true
+	}
+	var dangling []string
+	walkRefs(doc, func(ref string) {
+		if !strings.HasPrefix(ref, "#/") {
+			return // external refs are out of scope for a single vendored file
+		}
+		if !resolvesPointer(doc, strings.Split(ref[2:], "/")) {
+			dangling = append(dangling, ref)
+		}
+	})
+	if len(dangling) > 0 {
+		slices.Sort(dangling)
+		return nil, fmt.Errorf("%d $ref(s) resolve to nothing: %s", len(dangling), strings.Join(slices.Compact(dangling), ", "))
+	}
+	return paths, nil
+}
+
+// walkRefs calls fn with the value of every "$ref" key in the tree.
+func walkRefs(node any, fn func(string)) {
+	switch n := node.(type) {
+	case map[string]any:
+		for k, v := range n {
+			if s, ok := v.(string); ok && k == "$ref" {
+				fn(s)
+				continue
+			}
+			walkRefs(v, fn)
+		}
+	case []any:
+		for _, v := range n {
+			walkRefs(v, fn)
+		}
+	}
+}
+
+// resolvesPointer reports whether a JSON pointer (already split on "/")
+// names an existing node in doc. Only the ~1/~0 escapes OpenAPI refs use
+// are decoded; array indices don't appear in component refs.
+func resolvesPointer(doc map[string]any, segs []string) bool {
+	var cur any = doc
+	for _, seg := range segs {
+		seg = strings.ReplaceAll(strings.ReplaceAll(seg, "~1", "/"), "~0", "~")
+		m, ok := cur.(map[string]any)
+		if !ok {
+			return false
+		}
+		if cur, ok = m[seg]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // pathPrefixExists reports whether want is a prefix of a declared spec path.
@@ -64,16 +148,18 @@ var specCreatePathExceptions = map[string]bool{}
 var specIDBaseExceptions = map[string]bool{}
 
 // specLiveButUndocumented lists base paths the published upstream spec
-// stopped documenting (2026-07-17 re-vendor removed 35 paths) but that the
-// live API still serves. dashboards and saved-searches are live-verified on
-// every PR by integration TestResourcesCRUD; parsers is untested live but
-// was working when last documented. Re-check at every re-vendor: if an
-// entry here starts 404ing live, drop the CLI command instead of keeping
-// the exception.
+// stopped documenting but that the live API still serves: dashboards,
+// saved-searches and parsers since the 2026-07-17 re-vendor (which removed
+// 35 paths), usage since the 2026-10-01 one. dashboards and saved-searches
+// are live-verified on every PR by integration TestResourcesCRUD, usage by
+// TestUsageLive, and parsers by TestParsersListTolerant. Re-check at every
+// re-vendor: if an entry here starts 404ing live, drop the CLI command
+// instead of keeping the exception.
 var specLiveButUndocumented = map[string]bool{
 	"/dashboards":     true,
 	"/saved-searches": true,
 	"/parsers":        true,
+	"/usage":          true,
 }
 
 // normalizeParams rewrites every {param} segment to a bare {} so patterns
@@ -149,5 +235,87 @@ func TestResourceRegistryMatchesSpec(t *testing.T) {
 		if idb := d.idBase(); !specIDBaseExceptions[idb] && !specLiveButUndocumented[idb] && !pathPrefixExists(paths, idb+"/{") {
 			t.Errorf("%s: IDBase %q has no matching '.../{...}' path in api/openapi.yaml", d.Name, idb)
 		}
+	}
+}
+
+// TestParseSpecRejectsMalformed proves the spec gate can go red: each case
+// is a shape a hand-edited re-vendor has produced or could produce, and the
+// line-based scanner parseSpec replaced accepted all of them.
+func TestParseSpecRejectsMalformed(t *testing.T) {
+	const head = "openapi: 3.0.3\ninfo:\n  title: t\n  version: '1'\n"
+	cases := map[string]string{
+		// The #116 shape: a hand-pasted path block ending in an
+		// unterminated quoted $ref, which swallows the next path's opening
+		// lines. The line scanner still found every path key.
+		"unterminated quote": head + `paths:
+  /a:
+    get:
+      responses:
+        default:
+          description: err
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/E
+  /b:
+    get:
+      parameters:
+        - name: from
+          in: query
+          required: false
+      responses:
+        '200':
+          description: ok
+`,
+		"duplicate path key": head + `paths:
+  /a:
+    get:
+      responses: {}
+  /a:
+    get:
+      responses: {}
+`,
+		"dangling ref": head + `paths:
+  /a:
+    get:
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Missing'
+components:
+  schemas: {}
+`,
+		"no paths":         head + "components: {}\n",
+		"not openapi 3":    "swagger: '2.0'\npaths:\n  /a: {}\n",
+		"non-mapping path": head + "paths:\n  /a: oops\n",
+	}
+	for name, doc := range cases {
+		t.Run(name, func(t *testing.T) {
+			if _, err := parseSpec([]byte(doc)); err == nil {
+				t.Fatal("parseSpec accepted a malformed spec")
+			}
+		})
+	}
+
+	ok := head + `paths:
+  /a~b/{id}:
+    get:
+      responses:
+        '200':
+          $ref: '#/components/responses/R'
+components:
+  responses:
+    R:
+      description: ok
+`
+	paths, err := parseSpec([]byte(ok))
+	if err != nil {
+		t.Fatalf("parseSpec rejected a well-formed spec: %v", err)
+	}
+	if !paths["/a~b/{id}"] {
+		t.Fatalf("parseSpec paths = %v, want /a~b/{id}", paths)
 	}
 }
