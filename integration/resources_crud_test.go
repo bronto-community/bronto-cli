@@ -100,8 +100,18 @@ func testDashboardCRUD(t *testing.T, r *Runner) {
 		t.Fatalf("dashboards get id = %q, want %q", gotID, id)
 	}
 
-	mustRunJSONObject(t, r, "dashboards", "update", id, "--input",
+	// The live API answers a dashboard update with 204 and no body (the
+	// published spec no longer documents /dashboards), so update confirms on
+	// stderr: check the rename with a get instead.
+	res := mustExitZero(t, r, "dashboards", "update", id, "--input",
 		writeBodyFile(t, map[string]any{"name": name + "-updated"}))
+	if strings.TrimSpace(res.Stdout) != "" {
+		t.Fatalf("dashboards update printed to stdout on a 204: %q", res.Stdout)
+	}
+	got = mustRunJSONObject(t, r, "dashboards", "get", id)
+	if n, _ := got["name"].(string); n != name+"-updated" {
+		t.Fatalf("dashboards get name after update = %q, want %q", n, name+"-updated")
+	}
 
 	mustExitZero(t, r, "dashboards", "delete", id, "--yes")
 }
