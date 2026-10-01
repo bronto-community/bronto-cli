@@ -110,3 +110,56 @@ func TestWidgetActionsDryRun(t *testing.T) {
 		t.Fatalf("stderr = %q", stderr)
 	}
 }
+
+// TestWidgetActionsQuiet: --quiet suppresses the non-data confirmations
+// (root.go documents it as "suppress non-data messages on stderr").
+func TestWidgetActionsQuiet(t *testing.T) {
+	noContent := func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) }
+	for _, args := range [][]string{
+		{"dashboards", "attach-widgets", wDash, "--widget-ids", wWidget, "--quiet"},
+		{"dashboards", "remove-widget", wDash, wWidget, "--quiet"},
+		{"widgets", "update", wWidget, "-f", "name=x", "-f", "type=line", "--quiet"},
+	} {
+		_, stderr, err := runResource(t, noContent, "", args...)
+		if err != nil {
+			t.Fatalf("%v: %v", args, err)
+		}
+		if stderr != "" {
+			t.Errorf("%v --quiet: stderr = %q, want empty", args, stderr)
+		}
+	}
+}
+
+// TestWidgetActionsComplete: the parent positional completes the parent
+// kind's names, and remove-widget's second positional completes widgets.
+func TestWidgetActionsComplete(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/dashboards":
+			_, _ = w.Write([]byte(`{"dashboards":[{"id":"` + wDash + `","name":"ops"}]}`))
+		case "/widgets":
+			_, _ = w.Write([]byte(`{"widgets":[{"id":"` + wWidget + `","name":"latency"}]}`))
+		default:
+			t.Errorf("unexpected API call: %s", r.URL.Path)
+		}
+	}
+	cases := []struct {
+		line []string
+		want string
+	}{
+		{[]string{"dashboards", "attach-widgets", ""}, "ops"},
+		{[]string{"dashboards", "detach-from-template", ""}, "ops"},
+		{[]string{"widgets", "attach-widgets", ""}, "latency"},
+		{[]string{"dashboards", "remove-widget", ""}, "ops"},
+		{[]string{"dashboards", "remove-widget", "ops", ""}, "latency"},
+	}
+	for _, c := range cases {
+		cands, dir := runComplete(t, handler, c.line...)
+		if dir != ":4" { // NoFileComp
+			t.Errorf("%v: directive = %q, want :4", c.line, dir)
+		}
+		if !strings.Contains(strings.Join(cands, "\n"), c.want) {
+			t.Errorf("%v: candidates %v missing %q", c.line, cands, c.want)
+		}
+	}
+}

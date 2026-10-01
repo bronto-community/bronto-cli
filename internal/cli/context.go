@@ -203,6 +203,16 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 	}, nil
 }
 
+// Notef prints a non-data confirmation ("Deleted widget x.") to stderr
+// unless --quiet is set. Dry-run plans and errors are not notices: they
+// describe the result, so they stay unconditional.
+func (a *App) Notef(format string, args ...any) {
+	if a.Quiet {
+		return
+	}
+	_, _ = fmt.Fprintf(a.Stderr, format, args...)
+}
+
 // DetectFormat resolves the effective output format for this invocation.
 // Commands that need to branch on the format themselves (tail, traces
 // show/shape) call this instead of output.DetectFormat directly, then hand

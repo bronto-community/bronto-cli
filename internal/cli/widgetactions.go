@@ -34,10 +34,11 @@ func newAttachWidgetsCmd(kind string) *cobra.Command {
 	var widgetIDs []string
 	sing := singularKind(kind)
 	cmd := &cobra.Command{
-		Use:     "attach-widgets <" + sing + "> --widget-ids <id,...>",
-		Short:   "Attach widgets to a " + sing,
-		Example: "  bronto " + kind + " attach-widgets <" + sing + "> --widget-ids <id>,<id>",
-		Args:    cobra.ExactArgs(1),
+		Use:               "attach-widgets <" + sing + "> --widget-ids <id,...>",
+		Short:             "Attach widgets to a " + sing,
+		Example:           "  bronto " + kind + " attach-widgets <" + sing + "> --widget-ids <id>,<id>",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeKindRef(kind),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
@@ -65,7 +66,7 @@ func newAttachWidgetsCmd(kind string) *cobra.Command {
 				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would attach %d widget(s) to %s %s.\n", len(widgetIDs), sing, args[0])
 				return nil
 			}
-			_, _ = fmt.Fprintf(app.Stderr, "Attached %d widget(s) to %s %s.\n", len(widgetIDs), sing, args[0])
+			app.Notef("Attached %d widget(s) to %s %s.\n", len(widgetIDs), sing, args[0])
 			return nil
 		},
 	}
@@ -73,15 +74,31 @@ func newAttachWidgetsCmd(kind string) *cobra.Command {
 	return cmd
 }
 
+// completeRemoveWidget completes remove-widget's two positionals: the
+// parent's names first, then widget names for the widget to remove.
+func completeRemoveWidget(kind string) compFunc {
+	parent, widget := completeKindRef(kind), completeKindRef("widgets")
+	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		switch len(args) {
+		case 0:
+			return parent(cmd, args, toComplete)
+		case 1:
+			return widget(cmd, nil, toComplete)
+		}
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
 // newRemoveWidgetCmd builds "<kind> remove-widget <parent> <widget-id>":
 // DELETE /<kind>/{id}/widgets/{widgetId} (204).
 func newRemoveWidgetCmd(kind string) *cobra.Command {
 	sing := singularKind(kind)
 	return &cobra.Command{
-		Use:     "remove-widget <" + sing + "> <widget-id>",
-		Short:   "Remove a widget from a " + sing,
-		Example: "  bronto " + kind + " remove-widget <" + sing + "> <widget-id>",
-		Args:    cobra.ExactArgs(2),
+		Use:               "remove-widget <" + sing + "> <widget-id>",
+		Short:             "Remove a widget from a " + sing,
+		Example:           "  bronto " + kind + " remove-widget <" + sing + "> <widget-id>",
+		Args:              cobra.ExactArgs(2),
+		ValidArgsFunction: completeRemoveWidget(kind),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
@@ -101,7 +118,7 @@ func newRemoveWidgetCmd(kind string) *cobra.Command {
 				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would remove widget %s from %s %s.\n", widgetID, sing, args[0])
 				return nil
 			}
-			_, _ = fmt.Fprintf(app.Stderr, "Removed widget %s from %s %s.\n", widgetID, sing, args[0])
+			app.Notef("Removed widget %s from %s %s.\n", widgetID, sing, args[0])
 			return nil
 		},
 	}
@@ -111,10 +128,11 @@ func newRemoveWidgetCmd(kind string) *cobra.Command {
 // <dashboard>": POST /dashboards/{id}/detach-from-template (200 Dashboard).
 func newDetachFromTemplateCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:     "detach-from-template <dashboard>",
-		Short:   "Detach a dashboard from its template",
-		Example: "  bronto dashboards detach-from-template <dashboard>",
-		Args:    cobra.ExactArgs(1),
+		Use:               "detach-from-template <dashboard>",
+		Short:             "Detach a dashboard from its template",
+		Example:           "  bronto dashboards detach-from-template <dashboard>",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeKindRef("dashboards"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
