@@ -38,6 +38,10 @@ func TestResourcesCRUD(t *testing.T) {
 		t.Parallel()
 		testDashboardCRUD(t, NewRunner(t, key))
 	})
+	t.Run("widgets", func(t *testing.T) {
+		t.Parallel()
+		testWidgetCRUD(t, NewRunner(t, key))
+	})
 	t.Run("saved-searches", func(t *testing.T) {
 		t.Parallel()
 		logID := firstDatasetLogID(t, NewRunner(t, key))
@@ -96,10 +100,55 @@ func testDashboardCRUD(t *testing.T, r *Runner) {
 		t.Fatalf("dashboards get id = %q, want %q", gotID, id)
 	}
 
-	mustRunJSONObject(t, r, "dashboards", "update", id, "--input",
+	// The live API answers a dashboard update with 204 and no body (the
+	// published spec no longer documents /dashboards), so update confirms on
+	// stderr: check the rename with a get instead.
+	res := mustExitZero(t, r, "dashboards", "update", id, "--input",
 		writeBodyFile(t, map[string]any{"name": name + "-updated"}))
+	if strings.TrimSpace(res.Stdout) != "" {
+		t.Fatalf("dashboards update printed to stdout on a 204: %q", res.Stdout)
+	}
+	got = mustRunJSONObject(t, r, "dashboards", "get", id)
+	if n, _ := got["name"].(string); n != name+"-updated" {
+		t.Fatalf("dashboards get name after update = %q, want %q", n, name+"-updated")
+	}
 
 	mustExitZero(t, r, "dashboards", "delete", id, "--yes")
+}
+
+// testWidgetCRUD is the live coverage #111 asked for: GET /widgets 500ed
+// for a month while every unit test (httptest fakes) stayed green.
+func testWidgetCRUD(t *testing.T, r *Runner) {
+	name := resourceName("widget")
+
+	created := mustRunJSONObject(t, r, "widgets", "create", "--input",
+		writeBodyFile(t, map[string]any{"name": name, "type": "line"}))
+	id, _ := created["id"].(string)
+	if id == "" {
+		t.Fatalf("widgets create response missing id: %+v", created)
+	}
+	t.Cleanup(func() { bestEffortDelete(r, "widgets", id) })
+
+	assertListContainsName(t, r, "widgets", name)
+
+	got := mustRunJSONObject(t, r, "widgets", "get", id)
+	if gotID, _ := got["id"].(string); gotID != id {
+		t.Fatalf("widgets get id = %q, want %q", gotID, id)
+	}
+
+	// updateWidget is a full-body PUT answering 204: resend name and type,
+	// and expect the stderr confirmation with nothing on stdout.
+	res := mustExitZero(t, r, "widgets", "update", id, "--input",
+		writeBodyFile(t, map[string]any{"name": name + "-updated", "type": "line"}))
+	if strings.TrimSpace(res.Stdout) != "" {
+		t.Fatalf("widgets update printed to stdout on a 204: %q", res.Stdout)
+	}
+	got = mustRunJSONObject(t, r, "widgets", "get", id)
+	if n, _ := got["name"].(string); n != name+"-updated" {
+		t.Fatalf("widgets get name after update = %q, want %q", n, name+"-updated")
+	}
+
+	mustExitZero(t, r, "widgets", "delete", id, "--yes")
 }
 
 func testSavedSearchCRUD(t *testing.T, r *Runner, logID string) {

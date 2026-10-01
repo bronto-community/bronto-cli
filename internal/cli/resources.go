@@ -134,6 +134,14 @@ var resourceRegistry = []resourceDesc{
 	{Name: "dashboards", Base: "/dashboards",
 		Columns:       []string{"name", "description", "widgets_count", "created", "id"},
 		ListTransform: dashboardListRows},
+	// updateWidget is PUT (204, no body) and a full replacement: the API
+	// rejects a create or update without both `name` and `type` (live-
+	// verified 2026-10-01). PATCH /widgets/{id} exists but takes exactly
+	// one of name/aux/layout per call, so it can't back a general update.
+	// metric_ids/widget_ids/aux go through -f as JSON literals or
+	// --input body.json (parseFieldArgs JSON-decodes -f values).
+	{Name: "widgets", Base: "/widgets", UpdateMethod: http.MethodPut,
+		Columns: []string{"name", "type", "description", "id"}},
 	{Name: "saved-searches", Base: "/saved-searches", Singular: "saved search",
 		Columns: []string{"name", "description", "created", "id"}},
 	// The vendored spec has no GET /parsers/{parser_id}: only patch and
@@ -573,6 +581,12 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 			payload, err := doJSONRequest(cmd.Context(), app, desc.updateMethod(), desc.idBase()+"/"+url.PathEscape(id), body)
 			if err != nil {
 				return err
+			}
+			// A 204 update (widgets) has no body to print: confirm on
+			// stderr like delete does, rather than a bare "null" on stdout.
+			if payload == nil {
+				_, _ = fmt.Fprintf(app.Stderr, "Updated %s %s.\n", desc.singular(), args[0])
+				return nil
 			}
 			p, err := app.Printer(false)
 			if err != nil {
