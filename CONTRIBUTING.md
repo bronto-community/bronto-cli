@@ -79,7 +79,9 @@ Commit subjects follow [Conventional Commits](https://www.conventionalcommits.or
 
 ## The vendored spec
 
-`api/openapi.yaml` is a vendored snapshot of Bronto's published OpenAPI spec (`api/upstream.sha256` records which). It is a *reference*, not a codegen source: `resourcespec_test.go` asserts every registry path still exists in it, and the weekly spec-sync workflow diffs it against upstream and files a CLI-impact digest. To re-vendor, follow the checklist spec-sync puts in its drift issue.
+`api/openapi.yaml` is a vendored snapshot of Bronto's published OpenAPI spec (`api/upstream.sha256` records which). It is a *reference*, not a codegen source: `resourcespec_test.go` asserts every registry path still exists in it, and the weekly spec-sync workflow diffs it against upstream and files a CLI-impact digest. To re-vendor, follow the checklist spec-sync puts in its drift issue. Always download the upstream file whole and re-apply the `bronto-cli vendor patch` notes; don't hand-splice path blocks into the old snapshot.
+
+CI does not accept a broken spec. `resourcespec_test.go` parses `api/openapi.yaml` as YAML before any conformance check runs, and fails the build on invalid YAML, duplicate keys, a missing `openapi: 3.x` header or `paths` map, or an internal `$ref` that resolves to nothing. `TestParseSpecRejectsMalformed` proves each of those cases goes red. (The parse gate replaced a line-based path scan that accepted a hand-spliced spec with an unterminated quote.)
 
 `make check-spec` (CI: `repo-gates`) guards the vendored spec: `api/openapi.yaml` must match the digest recorded in `api/vendored.sha256`. Any intentional spec change (re-vendor or patch) must run `make spec-baseline` and commit the updated record in the same PR — that diff is the reviewable governance step, same pattern as the coverage baseline. `make lint-workflows` (same CI job) enforces exact version pins in workflows, the Makefile's tool invocations, and Dockerfile base images.
 

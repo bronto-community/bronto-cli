@@ -115,7 +115,7 @@ jobs:
             printf -- '- Recorded baseline: `%s`\n' "$(cat api/upstream.sha256)"
             printf -- '- Full machine-readable diff: [workflow run artifacts](%s)\n\n' "$RUN_URL"
             printf 'To re-vendor:\n\n'
-            printf -- '- [ ] Download the upstream spec over `api/openapi.yaml`\n'
+            printf -- '- [ ] Download the upstream spec whole over `api/openapi.yaml` (do not hand-splice path blocks: CI parses the spec and rejects invalid YAML, duplicate keys and dangling `$ref`s)\n'
             printf -- '- [ ] Re-apply the hand patches (`grep -n "bronto-cli vendor patch" git history / previous spec`)\n'
             printf -- '- [ ] `make spec-baseline && go test ./...` (records the new vendored digest; the resource conformance test guards drift)\n'
             printf -- '- [ ] Update `api/upstream.sha256` to `%s <date>`\n\n' "$UPSTREAM_SHA"
