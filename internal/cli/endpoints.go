@@ -20,15 +20,26 @@ type EndpointPattern struct {
 // by api/openapi.yaml. TestEndpointInventoryMatchesSpec asserts every
 // pattern here still resolves against the vendored spec (or the
 // documented specLiveButUndocumented set), so this table can't silently
-// rot when endpoints move.
+// rot when endpoints move. TestEveryCommandIsInventoried guards the other
+// direction: a new hand-written command must be listed here (or declared
+// as calling no spec endpoint), so spec-sync can't under-report coverage.
+//
+// A Command names one or more commands separated by " / ". Each is a
+// command path with the "bronto " prefix dropped after the first, and it
+// covers that command and all of its subcommands ("traces" covers
+// "bronto traces show").
 var handWrittenEndpoints = []EndpointPattern{
-	{Pattern: "/search", Command: "bronto search / tail / traces"},
+	{Pattern: "/search", Command: "bronto search / tail / traces / ask / repl"},
 	{Pattern: "/context", Command: "bronto context"},
 	{Pattern: "/top-keys", Command: "bronto fields"},
 	{Pattern: "/usage", Command: "bronto usage"},
-	{Pattern: "/logs", Command: "bronto ping"},
+	{Pattern: "/logs", Command: "bronto ping / auth login / auth status / login"},
 	{Pattern: "/monitors/{*}/events", Command: "bronto monitors events"},
 	{Pattern: "/monitors/{*}/status", Command: "bronto monitors mute"},
+	{Pattern: "/groups/{*}/members", Command: "bronto groups members"},
+	{Pattern: "/users/{*}/deactivate", Command: "bronto users deactivate"},
+	{Pattern: "/users/{*}/reactivate", Command: "bronto users reactivate"},
+	{Pattern: "/users/{*}/resend-invite", Command: "bronto users resend-invite"},
 	{Pattern: "/dashboards/{*}/detach-from-template", Command: "bronto dashboards detach-from-template"},
 	{Pattern: "/dashboards/{*}/widgets", Command: "bronto dashboards attach-widgets"},
 	{Pattern: "/dashboards/{*}/widgets/{*}", Command: "bronto dashboards remove-widget"},
