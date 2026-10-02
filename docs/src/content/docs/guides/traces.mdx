@@ -1,0 +1,162 @@
+---
+title: Traces
+description: Explore OpenTelemetry traces from the terminal with waterfalls, per-service and per-operation latency, attribute aggregates, and call-tree shapes.
+sidebar:
+  order: 3
+---
+
+import Tape from '~/components/Tape.astro';
+
+`bronto traces` gives you APM-style views over the OpenTelemetry spans Bronto stores in
+the `.traces` logset. You don't pass `-d`. To get spans into Bronto in the first place, see
+[Send Traces to Bronto](https://docs.bronto.io/tracing/send-traces), and for the web
+app's trace views, [Explore Traces](https://docs.bronto.io/tracing/explore-traces).
+
+<Tape name="traces" title="From a slow service to the span that caused it" />
+
+All subcommands take `--since` for the lookback. The default is `15m`, except for
+`show` and `shape`, which default to `1h`.
+
+## Start wide: services and operations
+
+`bronto traces services` shows span counts and latency per service:
+
+```console test tty
+$ bronto traces services --since 1h
+SERVICE           SPANS  AVG    MAX
+checkout-service  204    3.95s  30.05s
+payments-api      104    7.71s  30.02s
+web-frontend      76     5.31s  30.05s
+```
+
+`bronto traces operations` breaks that down by service and operation. Narrow it to one
+service with `-s`:
+
+```console test tty
+$ bronto traces operations -s checkout-service --since 1h
+SERVICE           OPERATION           SPANS  AVG      MAX
+checkout-service  POST /api/checkout  52     7.74s    30.05s
+checkout-service  POST /charge        52     7.72s    30.02s
+checkout-service  SELECT orders       52     8.46ms   14.00ms
+checkout-service  GET /api/cart       24     23.67ms  38.00ms
+checkout-service  SELECT cart_items   24     5.25ms   9.00ms
+```
+
+Both take `--errors` to count only error spans, and `-n` to cap the number of rows.
+
+## Find spans
+
+`bronto traces list` lists individual spans. Filter by service, operation, minimum
+duration, or errors:
+
+```console test tty
+$ bronto traces list -s payments-api --errors --since 1h
+@TIME                        SERVICE       OPERATION           DURATION  STATUS  TRACE_ID
+2026-07-19 09:24:19.600 UTC  payments-api  provider.authorize  30.01s    ERROR   f7df498a556927026404a9f1e89c38e2
+2026-07-19 09:24:19.599 UTC  payments-api  POST /charge        30.02s    ERROR   f7df498a556927026404a9f1e89c38e2
+2026-07-19 09:24:02.982 UTC  payments-api  provider.authorize  30.00s    ERROR   168a296e219517ed2119957be0ed85c1
+2026-07-19 09:24:02.981 UTC  payments-api  POST /charge        30.01s    ERROR   168a296e219517ed2119957be0ed85c1
+...
+```
+
+Every failing request leaves two 30-second error spans in `payments-api`: the
+`POST /charge` handler and the `provider.authorize` call inside it. Filtering by duration
+instead of service shows the whole chain of one slow request, from `web-frontend` down:
+
+```console test tty
+$ bronto traces list --min-duration-ms 500 -n 5 --since 1h
+@TIME                        SERVICE           OPERATION           DURATION  STATUS  TRACE_ID
+2026-07-19 09:24:19.600 UTC  payments-api      provider.authorize  30.01s    ERROR   f7df498a556927026404a9f1e89c38e2
+2026-07-19 09:24:19.599 UTC  payments-api      POST /charge        30.02s    ERROR   f7df498a556927026404a9f1e89c38e2
+2026-07-19 09:24:19.598 UTC  checkout-service  POST /charge        30.02s    ERROR   f7df498a556927026404a9f1e89c38e2
+2026-07-19 09:24:19.590 UTC  checkout-service  POST /api/checkout  30.04s    ERROR   f7df498a556927026404a9f1e89c38e2
+2026-07-19 09:24:19.588 UTC  web-frontend      GET /checkout       30.05s    ERROR   f7df498a556927026404a9f1e89c38e2
+```
+
+## One trace as a waterfall
+
+Pass a trace id to `bronto traces show` to render the trace as a waterfall: each span
+on its own line, indented under its parent, with a bar showing when it ran and for how
+long.
+
+```console test tty
+$ bronto traces show 4bf92f3577b34da6a3ce929d0e0e4736
+6 span(s) across 3 service(s), total 30.05s
+web-frontend/GET /checkout             ████████████████████████████████████████ 30.05s ERROR
+  checkout-service/POST /api/checkout  ███████████████████████████████████████· 30.04s ERROR
+    checkout-service/SELECT orders     █······································· 5.00ms
+    checkout-service/POST /charge      ███████████████████████████████████████· 30.02s ERROR
+      payments-api/POST /charge        ███████████████████████████████████████· 30.02s ERROR
+        payments-api/provider.authorize ███████████████████████████████████████· 30.01s ERROR
+```
+
+The database query is fast. The time goes into `payments-api`'s `provider.authorize` call,
+which runs for 30 seconds and fails.
+
+`--bar-width` changes the width of the bars, `-n` the maximum number of spans fetched
+(default 500). If the trace is older than an hour, widen `--since`.
+
+Log events often carry the trace id. In search output it's the `message_kvs.trace_id`
+field, so a search gets you ids to feed into `traces show`:
+
+```console test
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o jsonl --jq '."message_kvs.trace_id"'
+"f7df498a556927026404a9f1e89c38e2"
+"168a296e219517ed2119957be0ed85c1"
+"59500ccbe5e06b77c4db2fee330e5ccd"
+```
+
+`--jq` prints JSON, so strings keep their quotes. To pass an id to another command, pipe
+`-o jsonl` into `jq -r` instead.
+
+## The shape of many traces
+
+`bronto traces shape` samples traces and merges their call trees into one, so you can see
+which calls a request usually makes and where the time goes, without picking a single
+trace:
+
+```console test tty
+$ bronto traces shape -s checkout-service --sample 10 --since 1h
+10 trace(s), 48 span(s) · axis 0 → 168.00ms
+legend: █ avg position · ▒ min/max spread · · before/after
+checkout-service/POST /api/checkout     ██████████████████████████████████████████████▒▒▒▒  156.33ms         —    6/10
+  checkout-service/SELECT orders        ██▒▒··············································   10.00ms    1.50ms    6/10
+  checkout-service/POST /charge         ··▒██████████████████████████████████████▒▒▒▒▒····  130.17ms   12.67ms    6/10
+    payments-api/POST /charge           ··▒█████████████████████████████████████▒▒▒▒▒·····  127.17ms   13.17ms    6/10
+      payments-api/provider.authorize   ···▒███████████████████████████████████▒▒▒▒▒▒·····  120.50ms   15.50ms    6/10
+checkout-service/GET /api/cart          █████▒▒▒▒▒········································   19.25ms         —    4/10
+  checkout-service/SELECT cart_items    █▒················································    4.75ms    1.50ms    4/10
+```
+
+The last column counts the sampled traces that contain each call: 6 of these 10 traces
+are checkouts and 4 are cart loads.
+
+By default it samples by entry (server) spans. `--any-span` samples by any span matching
+`--operation` instead. `--min-traces` drops branches seen in fewer traces than you set,
+which trims rare paths. `--errors`, `--min-duration-ms`, and `-w`/`--where` (a raw WHERE
+clause) narrow the sample.
+
+## Aggregate by attribute
+
+`bronto traces aggregate` groups spans by one or more attributes and reports counts and
+latency for each value:
+
+```console test tty
+$ bronto traces aggregate --by http.route --since 1h
+HTTP.ROUTE  SPANS  ERRORS  ERR%  AVG      MAX
+/checkout   52     13      25.0  7.75s    30.05s
+/cart       24     0       0.0   29.33ms  44.00ms
+$ bronto traces aggregate --by db.system --all-spans --kind client
+DB.SYSTEM   SPANS  ERRORS  ERR%  AVG     MAX
+postgresql  76     0       0.0   7.45ms  14.00ms
+```
+
+It looks at root spans unless you pass `--all-spans`. `-k`/`--kind` filters by span kind
+(`server`, `client`, and so on), and `--include-empty` keeps rows where the attribute is
+missing.
+
+## Output
+
+Piped, every `traces` subcommand prints JSONL like `search` does. `traces show` and
+`traces shape` draw their own views at a terminal, so `--fields` doesn't apply to them.
+See [Output formats](/reference/output-formats/).

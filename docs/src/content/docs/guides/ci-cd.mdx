@@ -1,0 +1,96 @@
+---
+title: CI/CD
+description: Run bronto in CI pipelines and containers with environment-only credentials, the published Docker images, and no keychain.
+sidebar:
+  order: 11
+---
+
+In CI there's no one to type a key and usually no OS keychain. Give the CLI its
+credentials through the environment and it never tries to use one.
+
+## Credentials from the environment
+
+```sh
+export BRONTO_API_KEY=<management-key>   # from your CI secret store
+export BRONTO_REGION=eu                  # or us
+bronto ping
+```
+
+Once `BRONTO_API_KEY` is set, no keychain lookup happens. `BRONTO_REGION` defaults to
+`eu`, so set it if your account is in `us`. Use the least-privileged key that works: an
+ingestion-only key for jobs that only run `bronto send`, a Search key for read-only jobs.
+[API Keys](https://docs.bronto.io/Account-Management/API-Keys) lists the roles.
+
+Gate a pipeline on a working credential with `bronto auth status`, which exits non-zero if
+the API rejects the key:
+
+```sh
+bronto auth status
+```
+
+## GitHub Actions
+
+```yaml
+jobs:
+  check-monitors:
+    runs-on: ubuntu-latest
+    env:
+      BRONTO_API_KEY: ${{ secrets.BRONTO_API_KEY }}
+      BRONTO_REGION: eu
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bronto
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | BINDIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Lint monitor definitions
+        run: bronto monitors check --input monitors/checkout-5xx.json --input monitors/payments-p95.json
+```
+
+Pin a version by piping to `VERSION=v<x.y.z> sh` instead of `sh`, so a new release doesn't change
+your pipeline unannounced.
+
+## Docker
+
+The published images contain only the binary (plus CA certificates), with `/bronto` as
+the entrypoint:
+
+```sh
+docker run --rm -e BRONTO_API_KEY -e BRONTO_REGION \
+  ghcr.io/bronto-community/bronto-cli:latest monitors list -o json
+```
+
+There's no shell, package manager, or keychain daemon in the image, by design. Pass
+credentials as environment variables, not files. For a base with a little more in it,
+use the `-distroless` tag. [Install](/getting-started/install/) lists
+the available tags.
+
+To feed a file into a command, mount it and use `--input`, or pipe it to stdin with
+`docker run -i`:
+
+```sh
+docker run --rm -i -e BRONTO_API_KEY -e BRONTO_REGION \
+  ghcr.io/bronto-community/bronto-cli:latest monitors check --input - < monitors/checkout-5xx.json
+```
+
+## Restricted environments
+
+Sandboxes and locked-down runners often have no keychain and a read-only home directory.
+
+- Set `BRONTO_API_KEY` and `BRONTO_REGION`. That's all most commands need.
+- If you need `bronto config set` or profile files, point `BRONTO_CONFIG_DIR` at a
+  writable directory. The CLI reads and writes `bronto/config.toml` under it, and the
+  fallback `bronto/credentials` file if there's no keychain.
+- Don't commit an API key to `.bronto.toml`. The CLI refuses to read `api_key` from any
+  config file.
+
+## Patterns that work well in CI
+
+- Make destructive steps explicit with `--yes`. Without it, `delete` refuses to run
+  outside a terminal.
+- Run mutating steps with `--dry-run` in pull-request jobs and for real on the main branch.
+- Branch on [exit codes](/reference/exit-codes/). `5` means rate limited or timed out and
+  is safe to retry.
+- Add `--quiet` to keep logs to data and errors, and `--debug` when a step fails and you
+  need to see the requests.
+- `bronto api-keys list` masks key values even in JSON, so it's safe to print in logs.

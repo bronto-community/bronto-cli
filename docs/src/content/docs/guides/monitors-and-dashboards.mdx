@@ -1,0 +1,170 @@
+---
+title: Monitors and dashboards
+description: Inspect, mute, and lint monitors, schedule downtimes, and assemble dashboards from widgets.
+sidebar:
+  order: 7
+---
+
+Monitors and dashboards follow the [shared resource pattern](/guides/resources/), plus a
+few extra commands covered here.
+
+## Monitors
+
+A [monitor](https://docs.bronto.io/core-features/monitors) runs a query on a schedule and
+alerts when a condition holds. Find one and look at what it's been doing:
+
+```console test tty
+$ bronto monitors list
+NAME                       WINDOW  THRESHOLD  CREATED     ID
+High 5xx rate on checkout  5m      5          2026-05-04  a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01
+Payments latency p95       10m     1000       2026-05-12  b2e4d0a3-5c7f-4092-8d3e-8f6c4b9a2d02
+$ bronto monitors get "High 5xx rate on checkout"
+{
+  "actions": [
+    {
+      "group_id": "0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07",
+      "type": "GROUP"
+    }
+  ],
+  "aux": {
+    "from": "0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10",
+    "select": "count(*)",
+    "where": "status \u003e= 500"
+  },
+  "comparison_operator": "GREATER_THAN",
+  "description": "More than 5 responses with status \u003e= 500 from checkout-service in 5 minutes",
+  "id": "a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01",
+  "last_trigger_ts": 1784452890000,
+  "metadata": {
+    "created_at": 1777890000000,
+    "created_by": "ada@example.com",
+    "modified_at": 1780389000000,
+    "modified_by": "grace@example.com"
+  },
+  "monitor_type": "LOG",
+  "name": "High 5xx rate on checkout",
+  "status": "ALERT",
+  "threshold": 5,
+  "window": "5m"
+}
+$ bronto monitors events "High 5xx rate on checkout"
+MESSAGE                                                      MONITOR_ID                            MONITOR_STATUS  PREVIOUS_STATUS  TIME
+count(*) = 7 > 5 for status >= 500 on prod/checkout-service  a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01  ALERT           OK               1784452890000
+count(*) = 0 <= 5                                            a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01  OK              ALERT            1784453160000
+$ bronto monitors notifications "High 5xx rate on checkout" --since 7d
+TIME           STATUS  MONITOR_STATUS  TYPE   DESTINATION        FAILURE_REASON
+1784452891204  SENT    ALERT           EMAIL  ada@example.com
+1784452891209  SENT    ALERT           EMAIL  grace@example.com
+```
+
+`bronto monitors events` lists the monitor's recent state changes: here it went to
+`ALERT` when the 502s started and back to `OK` four and a half minutes later.
+`bronto monitors notifications` lists the notifications it sent over `--since` (default
+`24h`), one per recipient. Times are Unix milliseconds.
+
+### Mute and unmute
+
+```sh
+bronto monitors mute "High 5xx rate on checkout"                       # until you unmute it
+bronto monitors mute "High 5xx rate on checkout" --until 1784451600000 # until a time, in epoch milliseconds
+bronto monitors mute "High 5xx rate on checkout" --unmute
+```
+
+`--until -1`, the default, mutes indefinitely. Try it with `--dry-run` first. It prints
+what it would do on stderr:
+
+```console test tty
+$ bronto monitors mute "High 5xx rate on checkout" --dry-run 2>&1
+DRY RUN: would set mute_until=-1 on monitor High 5xx rate on checkout.
+```
+
+### Downtimes and templates
+
+Downtimes schedule planned quiet periods. They support `list`, `create`, `update`, and
+`delete`:
+
+```sh
+bronto monitors downtimes list
+bronto monitors downtimes create --input downtime.json
+```
+
+Monitor templates have the full set of verbs under `bronto monitors templates`.
+
+### Lint monitor definitions in CI
+
+If you keep monitor definitions as JSON in a repository, `bronto monitors check`
+validates them before you apply them. It checks query syntax, window bounds, and whether
+the referenced datasets exist, and exits non-zero (code 1, `monitor_check_failed`) if it
+finds a problem:
+
+```sh
+bronto monitors check --input monitors/checkout-5xx.json --input monitors/payments-p95.json
+```
+
+`--input` is repeatable and takes `-` for stdin. A CI step that runs `monitors check` and
+then `bronto monitors create --input <file>` keeps broken monitors out of production.
+
+## Dashboards and widgets
+
+[Dashboards](https://docs.bronto.io/Search-and-Visualize/Dashboards) are built from
+widgets. You create widgets on their own, then attach them to a dashboard.
+
+```console test tty
+$ bronto dashboards list
+NAME               DESCRIPTION                                                 WIDGETS_COUNT  CREATED     ID
+Checkout overview  Request rate, 5xx errors and latency for the checkout flow  3              2026-05-04  d4c6e2b5-7e91-42b4-af50-1b8e6d3c4f04
+$ bronto dashboards get "Checkout overview"
+{
+  "description": "Request rate, 5xx errors and latency for the checkout flow",
+  "id": "d4c6e2b5-7e91-42b4-af50-1b8e6d3c4f04",
+  "metadata": {
+    "created_at": 1777890000000,
+    "created_by": "ada@example.com",
+    "modified_at": 1781023500000,
+    "modified_by": "ada@example.com"
+  },
+  "name": "Checkout overview",
+  "tags": {
+    "team": "checkout"
+  },
+  "widget_ids": [
+    "3e5a7c9b-1d2f-4e6a-8b0c-2d4f6a8c0e11",
+    "4f6b8d0c-2e3a-4f7b-9c1d-3e5a7b9d1f12",
+    "5a7c9e1d-3f4b-4a8c-8d2e-4f6b8c0e2a13"
+  ]
+}
+```
+
+`widgets create` and `widgets update` both require `name` and `type`, and `update`
+replaces the whole widget. Pass `metric_ids`, `widget_ids`, or `aux` as JSON values with
+`-f`, or put the whole body in a file:
+
+```sh
+bronto widgets create --input widget.json
+```
+
+Then assemble:
+
+```sh
+bronto dashboards attach-widgets "Checkout overview" --widget-ids <widget-id>,<widget-id>
+bronto dashboards remove-widget "Checkout overview" <widget-id>
+bronto dashboards detach-from-template "Checkout overview"
+```
+
+- `bronto dashboards attach-widgets` adds widgets by id. `--widget-ids` takes a
+  comma-separated list or can be repeated.
+- `bronto dashboards remove-widget` takes the dashboard and one widget id.
+- `bronto dashboards detach-from-template` unlinks a dashboard created from a template,
+  and prints the updated dashboard.
+
+Widgets can contain other widgets. `bronto widgets attach-widgets` and
+`bronto widgets remove-widget` work the same way, with a parent widget in place of the
+dashboard:
+
+```sh
+bronto widgets attach-widgets <parent-widget> --widget-ids <widget-id>
+bronto widgets remove-widget <parent-widget> <widget-id>
+```
+
+The dashboard or parent widget can be an id or a unique name. All of these commands
+support `--dry-run`.

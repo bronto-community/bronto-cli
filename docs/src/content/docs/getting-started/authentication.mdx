@@ -1,0 +1,127 @@
+---
+title: Authentication
+description: Log in with a Bronto API key, store it in the OS keychain, pick a region, and keep several accounts apart with profiles.
+sidebar:
+  order: 2
+---
+
+Every `bronto` command authenticates with a Bronto API key. You create keys in the web
+app under **Settings > API Keys**. The
+[API Keys page on docs.bronto.io](https://docs.bronto.io/Account-Management/API-Keys)
+covers creating, rotating, and deleting them.
+
+## Which key you need
+
+Bronto keys carry roles: Admin, Search, or Ingestion. Most of the CLI reads and manages
+data, so it needs a management key, meaning one with the Search or Admin role.
+An ingestion-only key is enough for [`bronto send`](/guides/sending-data/) and nothing
+else. Use it anywhere else and the API answers 403, which the CLI reports as
+`auth_insufficient_role` (exit code 3).
+
+## Log in
+
+```sh
+bronto auth login
+```
+
+`bronto auth login` asks for the key with a hidden prompt, then:
+
+1. Finds your region by trying the key against `eu`, then `us`. Pass `--region eu` or
+   `--region us` to try only one, or `--base-url <url>` to try a specific API host.
+2. Stores the key in the OS keychain: macOS Keychain, Linux Secret Service, or Windows
+   Credential Manager.
+3. Writes the region to the profile in your user config file and makes that profile the
+   default.
+
+`bronto login` is a shorter alias for the same command.
+
+To log in without a prompt, for example from a password manager, pipe the key in:
+
+```sh
+op read "op://Private/Bronto/credential" | bronto auth login --key-stdin
+```
+
+With no terminal and no `--key-stdin`, login fails with `usage_key_required` instead of
+waiting for input.
+
+:::note[No keychain?]
+On machines without a usable keychain (containers, some CI runners, minimal Linux), the
+key goes to a `credentials` file next to your config with `0600` permissions, and the CLI
+prints a warning. For CI, skip `auth login` entirely and set `BRONTO_API_KEY`. See
+[CI/CD](/guides/ci-cd/).
+:::
+
+## Check what's configured
+
+```console test tty
+$ bronto auth status
+PROFILE  KEY_SOURCE  KEY        REGION  BASE_URL                  STATUS
+default  env         bronto_d…  eu      https://api.eu.bronto.io  ok
+```
+
+`bronto auth status` prints one row: the active profile, where the key came from
+(`flag`, `env`, or `keychain`), the masked key, region, base URL, and whether the API
+accepted the key. If the check fails, it exits non-zero, so you can gate a script on it:
+
+```sh
+bronto auth status >/dev/null && ./deploy.sh
+```
+
+`bronto ping` is the quicker connectivity check. It reports the resolved API URL and
+the round-trip latency.
+
+```sh
+bronto ping
+```
+
+## Where the key comes from
+
+The CLI looks for a key in this order and uses the first one it finds:
+
+1. `--api-key <key>` on the command line (it ends up in shell history, so avoid it)
+2. the `BRONTO_API_KEY` environment variable
+3. the OS keychain entry (or credentials file) for the active profile
+
+Once a key is found, the keychain isn't touched at all. API keys are never read from
+config files: a `.bronto.toml` or `config.toml` that contains `api_key` is rejected with
+an error.
+
+To hand your stored key to another tool, print it with `bronto auth token`:
+
+```sh
+export BRONTO_API_KEY=$(bronto auth token)
+```
+
+## Regions
+
+Bronto runs separate regions, and a key only works in the region its account lives in.
+The CLI talks to `https://api.<region>.bronto.io` for the REST API and
+`https://ingestion.<region>.bronto.io` for `bronto send`. The default region is `eu`.
+Override it per command with `--region`, or with `BRONTO_REGION`. The
+[ingestion endpoints page](https://docs.bronto.io/getting-started/bronto-endpoints) lists
+the regional hosts.
+
+For staging or a local instance, point `--base-url` at it instead. See
+[Environments](/configuration/environments/).
+
+## Profiles
+
+A profile is a named set of settings (region, base URL, default dataset, and so on) with
+its own stored key. Use profiles to keep a production and a staging account side by side:
+
+```sh
+bronto auth login --profile prod      # prompts, stores the key, makes "prod" the default
+bronto auth login --profile staging   # same for staging; now "staging" is the default
+bronto auth switch prod               # make "prod" the default again
+bronto datasets list --profile staging   # one command against staging
+```
+
+- The first profile you log into without `--profile` is called `default`.
+- `--profile <name>` or `BRONTO_PROFILE` picks a profile for one invocation.
+- `bronto auth switch <name>` changes the default. It fails with `profile_not_found` if
+  you never logged into or configured that profile.
+- `bronto auth logout` removes the stored key for the active profile. Add
+  `--profile <name>` to remove another one.
+
+[Configuration files and profiles](/configuration/config-files/) covers what else a
+profile can hold and how values are resolved.

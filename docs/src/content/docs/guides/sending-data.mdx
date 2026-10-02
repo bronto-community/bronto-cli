@@ -1,0 +1,92 @@
+---
+title: Sending data
+description: Send single events or stream NDJSON and plain-text lines into Bronto with bronto send.
+sidebar:
+  order: 5
+---
+
+`bronto send` posts events to Bronto's ingestion API. It's meant for quick tests, shell
+scripts, and piping a local log file in. For production pipelines, use an agent or
+collector; [Ingest Data into Bronto](https://docs.bronto.io/ingest-data/overview) lists
+the options, and [Quick Ingest](https://docs.bronto.io/getting-started/quick-ingestion)
+covers the same HTTP API that `send` uses.
+
+An ingestion-only API key is enough for `send`. Every other command needs a management
+key (see [Authentication](/getting-started/authentication/#which-key-you-need)).
+
+## One event
+
+```sh
+bronto send -d checkout-service --collection staging -m 'deploy finished'
+```
+
+`-m`/`--message` sends exactly one event and exits, ignoring stdin.
+
+`-d`/`--dataset` is required and names the destination dataset. `--collection` names its
+collection. If either doesn't exist yet, Bronto creates it when the first event arrives
+(see [Data Organization](https://docs.bronto.io/Search-and-Visualize/Partitions)). Unlike
+the read commands, `send` doesn't look the name up, so pass the collection with
+`--collection` rather than as `collection/name`.
+
+Add tags with `--tag key=value`, repeatable:
+
+```sh
+bronto send -d checkout-service --collection staging --tag env=staging --tag team=payments -m 'cache warmed'
+```
+
+## Stream from stdin
+
+Without `-m`, `send` reads lines from stdin until EOF:
+
+```sh
+echo '{"message":"payment retry","status":502,"service":"checkout-service"}' | bronto send -d checkout-service --collection staging
+tail -f /var/log/app.log | bronto send -d app --collection prod
+```
+
+Each line becomes one event:
+
+- A JSON object is sent as is. If it has no `timestamp`, the current time is added. If it
+  has no non-empty string `message`, the raw line is used as the message.
+- Anything else becomes `{"message": "<line>", "timestamp": "<now>"}`.
+
+Lines are batched. A batch is sent when it reaches `--batch-size` events (default 500) or
+`--batch-bytes` (default 1 MiB), and a partial batch is flushed at least every
+`--flush-interval` (default `1s`, minimum `100ms`), so `tail -f` output shows up promptly.
+Request bodies are gzip-compressed unless you pass `--no-gzip`.
+
+:::caution
+If a batch fails, `send` stops with an error, and the events in that batch are lost.
+Batches aren't deduplicated, so re-running the command after a partial failure can send
+some events twice.
+:::
+
+The ingestion API rejects request bodies over 10 MB with `payload_too_large`. Lower
+`--batch-size` if you hit it.
+
+## Preview without sending
+
+`--dry-run` prints what would be sent, including the resolved ingestion URL, instead of
+sending it:
+
+```console test tty
+$ bronto send -d checkout-service --collection staging -m 'deploy finished' --dry-run
+{
+  "collection": "staging",
+  "dataset": "checkout-service",
+  "dry_run": true,
+  "events": [
+    {
+      "message": "deploy finished",
+...
+  ],
+  "ingest_url": "https://ingestion.eu.bronto.io"
+}
+```
+
+The `timestamp` of each event is the time you ran the command.
+
+## Ingestion endpoint
+
+`send` posts to `https://ingestion.<region>.bronto.io`. For staging or a local instance,
+override it with `--ingest-url`, `BRONTO_INGEST_URL`, or the `ingest_url` config key
+(see [Environments](/configuration/environments/)).

@@ -1,0 +1,159 @@
+---
+title: Quickstart
+description: Go from an API key to your first search and a piped JSON result in five minutes.
+sidebar:
+  order: 3
+---
+
+import Tape from '~/components/Tape.astro';
+
+This walkthrough assumes `bronto` is [installed](/getting-started/install/) and you have a
+management API key from **Settings > API Keys** in the Bronto web app. The examples use a
+small demo org: a `checkout-service` in the `prod` collection that started returning
+`502` errors because calls to `payments-api` time out.
+
+<Tape name="quickstart" title="The five-minute path" />
+
+## 1. Log in
+
+```sh
+bronto auth login
+```
+
+Paste the key at the prompt. The CLI finds the region the key belongs to and stores the
+key in your OS keychain. [Authentication](/getting-started/authentication/) has the
+details, including the non-interactive `--key-stdin` form.
+
+## 2. Check the connection
+
+```console test tty
+$ bronto ping
+```
+
+At a terminal this prints one line with the API URL and the round-trip time, for example
+`OK — https://api.eu.bronto.io (42ms)`. If it fails, run `bronto auth status` to see which
+key and region the CLI picked up.
+
+## 3. See what data you have
+
+```console test tty
+$ bronto datasets list
+COLLECTION  DATASET           LAST_ACTIVITY  LOG_ID
+prod        checkout-service  2m ago         0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10
+prod        payments-api      2m ago         5e2a9c41-7b3d-4f6a-8c20-9d1e4b5f6a21
+prod        web-frontend      2m ago         8f1d3b7a-2c5e-4a9b-b6d4-1e7f9a3c2b32
+staging     checkout-service  5h ago         c3a8e5d2-9f4b-4e1a-a7c3-6b2d8f1e4c43
+```
+
+Bronto stores logs in [datasets, grouped into collections](https://docs.bronto.io/Search-and-Visualize/Partitions).
+Wherever a command takes `-d`/`--dataset`, you can pass a dataset name instead of its id.
+A name that exists in more than one collection needs the collection in front of it, like
+`prod/checkout-service`.
+
+If you mostly work with one dataset, make it the default and drop `-d`:
+
+```sh
+bronto config set default_dataset prod/checkout-service
+```
+
+## 4. Run your first search
+
+```console test tty
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h
+@TIME                        @STATUS  MESSAGE_KVS.TRACE_ID              MESSAGE_KVS.DURATION_MS  MESSAGE_KVS.HOST  MESSAGE_KVS.MESSAGE                               MESSAGE_KVS.PATH  MESSAGE_KVS.SERVICE
+2026-07-19 09:24:49.632 UTC  error    f7df498a556927026404a9f1e89c38e2  30042                    web-3             payment failed: payments-api timed out after 30s  /api/checkout     checkout-service
+2026-07-19 09:24:33.007 UTC  error    168a296e219517ed2119957be0ed85c1  30034                    web-3             payment failed: payments-api timed out after 30s  /api/checkout     checkout-service
+2026-07-19 09:24:18.321 UTC  error    59500ccbe5e06b77c4db2fee330e5ccd  30039                    web-2             payment failed: payments-api timed out after 30s  /api/checkout     checkout-service
+...
+```
+
+The query is a Bronto WHERE expression (see the
+[search syntax](https://docs.bronto.io/query-syntax/search-syntax)). At a terminal the result
+is a table, newest first: the CLI picks the most informative fields as columns and prints
+a hint on stderr about how to see more. Fields parsed out of the log line appear under
+`message_kvs.`, so `status` in the query is the `message_kvs.status` field in the output.
+
+To see every field of a single event, untruncated, add `-x`:
+
+```console test tty
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 1 -x
+─ event 1 ──────────────────────────────
+@time                    2026-07-19 09:24:49.632 UTC
+@status                  error
+@raw                     {"level":"error","service":"checkout-service","host":"web-3","message":"payment failed: payments-api timed out after 30s","path":"/api/checkout","status":502,"duration_ms":30042,"trace_id":"f7df498a556927026404a9f1e89c38e2"}
+message_kvs.duration_ms  30042
+message_kvs.host         web-3
+message_kvs.message      payment failed: payments-api timed out after 30s
+message_kvs.path         /api/checkout
+message_kvs.service      checkout-service
+message_kvs.status       502
+message_kvs.trace_id     f7df498a556927026404a9f1e89c38e2
+metadata.logId           0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10
+metadata.origin          web-3
+metadata.sequence        48211195
+metadata.timestamp       1784453089632
+```
+
+Not sure what a field is called? `bronto fields` lists the fields in a dataset with sample
+values:
+
+```console test tty
+$ bronto fields -d prod/checkout-service
+KEY          COUNT  TYPE    SOURCE   VALUES
+duration_ms  76     number  message  123, 124, 148, 158, 32, …
+host         76     string  message  web-1, web-2, web-3
+message      76     string  message  cart loaded, checkout completed, payment failed: payments-api timed out after 30s, payments-api slow to respond (2.2s),…
+path         76     string  message  /api/cart, /api/checkout
+service      76     string  message  checkout-service
+status       76     number  message  200, 502
+trace_id     76     string  message  157e5baf0cba0bcbc198563eb6a18c38, 7616f41b346b0c914aa6fa22c95b14fc, 97d8a3a8a9ec066dea7553a7392903f2, 986b79d3495006ca1…
+```
+
+## 5. Pipe it
+
+When stdout isn't a terminal, `search` prints JSON Lines (one JSON object per event), so
+it plugs straight into `jq`, `wc`, or a script. Each event is flattened into dotted keys:
+
+```console test
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 1 | jq .
+{
+  "@raw": "{\"level\":\"error\",\"service\":\"checkout-service\",\"host\":\"web-3\",\"message\":\"payment failed: payments-api timed out after 30s\",\"path\":\"/api/checkout\",\"status\":502,\"duration_ms\":30042,\"trace_id\":\"f7df498a556927026404a9f1e89c38e2\"}",
+  "@status": "error",
+  "@time": "2026-07-19 09:24:49.632 UTC",
+  "message_kvs.duration_ms": 30042,
+  "message_kvs.host": "web-3",
+  "message_kvs.message": "payment failed: payments-api timed out after 30s",
+  "message_kvs.path": "/api/checkout",
+  "message_kvs.service": "checkout-service",
+  "message_kvs.status": 502,
+  "message_kvs.trace_id": "f7df498a556927026404a9f1e89c38e2",
+  "metadata.logId": "0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10",
+  "metadata.origin": "web-3",
+  "metadata.sequence": 48211195,
+  "metadata.timestamp": 1784453089632
+}
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h | jq -s length
+13
+```
+
+`--fields` keeps only the keys you name, and `--jq` runs a jq expression on each result
+without needing jq installed. Use the full key names from the output above:
+
+```console test
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o jsonl --fields '@time,message_kvs.status,message_kvs.host'
+{"@time":"2026-07-19 09:24:49.632 UTC","message_kvs.host":"web-3","message_kvs.status":502}
+{"@time":"2026-07-19 09:24:33.007 UTC","message_kvs.host":"web-3","message_kvs.status":502}
+{"@time":"2026-07-19 09:24:18.321 UTC","message_kvs.host":"web-2","message_kvs.status":502}
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o jsonl --jq '."message_kvs.host"'
+"web-3"
+"web-3"
+"web-2"
+```
+
+## Where next
+
+- [Searching](/guides/searching/): filter flags, aggregates, histograms, patterns, and
+  the interactive REPL.
+- [Live tail](/guides/live-tail/): follow new events as they arrive.
+- [Traces](/guides/traces/): find the slow `payments-api` span behind those 502s.
+- [Scripting and agents](/guides/scripting/): output formats, exit codes, and jq recipes.

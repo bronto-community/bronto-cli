@@ -1,0 +1,94 @@
+---
+title: Shell completion
+description: Enable tab completion for bash, zsh, fish, and PowerShell, including live dataset, field, and resource names.
+sidebar:
+  order: 3
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+`bronto completion` prints a completion script for your shell: `bronto completion zsh`,
+`bronto completion bash`, `bronto completion fish`, or `bronto completion powershell`.
+The `.deb` and `.rpm` packages
+install completions for bash, zsh, and fish for you. Otherwise, load the script from your
+shell's startup file.
+
+<Tabs syncKey="shell">
+<TabItem label="zsh">
+
+Try it in the current shell with `source <(bronto completion zsh)`. To load it in every
+session:
+
+```sh
+# Linux
+bronto completion zsh > "${fpath[1]}/_bronto"
+# macOS with Homebrew
+bronto completion zsh > "$(brew --prefix)/share/zsh/site-functions/_bronto"
+```
+
+If completion isn't enabled in your zsh yet, add `autoload -U compinit; compinit` to
+`~/.zshrc` first. Start a new shell afterwards.
+
+</TabItem>
+<TabItem label="bash">
+
+`bronto completion bash` needs the `bash-completion` package.
+
+```sh
+# current session
+source <(bronto completion bash)
+# every session, Linux
+bronto completion bash > /etc/bash_completion.d/bronto
+# every session, macOS with Homebrew
+bronto completion bash > "$(brew --prefix)/etc/bash_completion.d/bronto"
+```
+
+</TabItem>
+<TabItem label="fish">
+
+```sh
+# current session
+bronto completion fish | source
+# every session
+bronto completion fish > ~/.config/fish/completions/bronto.fish
+```
+
+</TabItem>
+<TabItem label="PowerShell">
+
+```powershell
+# current session
+bronto completion powershell | Out-String | Invoke-Expression
+```
+
+To load it in every session, add the output of that command to your PowerShell profile.
+
+</TabItem>
+</Tabs>
+
+Each shell's subcommand has its own `--help` with these instructions, for example
+`bronto completion zsh --help`. Pass `--no-descriptions` to get completions without the
+description text.
+
+## What completes
+
+Completion knows about your account, not only the command tree:
+
+- **Flags.** `bronto search <Tab>` offers the command's flags, most useful first. If you
+  haven't set a default dataset, `--dataset` is starred at the top.
+- **Datasets.** `-d <Tab>` completes your real dataset names. On large accounts it drills
+  down by collection: `prod/<Tab>` lists that collection's datasets.
+- **Resource names.** `bronto monitors get <Tab>` and the other `get`, `update`, and
+  `delete` commands complete live resource names, with the id as the description.
+- **Fields.** `--select`, `-g`, and `--fields` complete the dataset's field names.
+  `--saved` completes saved-search names.
+- **Filter values.** `--eq <Tab>` offers field names, then `--eq status=<Tab>` offers
+  values actually seen for that field. Value completion is for `--eq` and `--ne` only.
+  Comparison flags such as `--gt` complete the field and leave the number to you.
+- **Everything else.** `bronto api <Tab>` completes the HTTP method and then the path.
+  `--since` and `--window` suggest common durations, `bronto config get` and
+  `bronto config set` complete config keys, and `-o`, `--region`, and `--profile` complete
+  their allowed values. File arguments such as `--input` and `--local` complete paths.
+
+Completions that call the API have a short timeout and fail silently, so a slow network
+never hangs your shell.

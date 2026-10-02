@@ -1,40 +1,62 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
+title: The Bronto command line
+description: Search logs, tail streams, inspect traces, and manage Bronto resources from the terminal.
+template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
-  image:
-    file: ../../assets/houston.webp
+  tagline: Search, tail, and trace your Bronto data from the terminal. One binary, scriptable output, stable exit codes.
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Get started
+      link: /getting-started/install/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
-      icon: external
+    - text: GitHub
+      link: https://github.com/bronto-community/bronto-cli
+      icon: github
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import Tape from '~/components/Tape.astro';
+
+`bronto` is a command-line client for the [Bronto](https://bronto.io) observability
+platform. It wraps Bronto's REST and ingestion APIs, so anything you do in the web app
+you can also do in a shell script, a CI job, or an agent's tool call.
+
+<Tape name="quickstart" title="Log in, find the failing service, and pull its errors" />
+
+## What you can do
+
+<CardGrid>
+	<Card title="Search logs" icon="magnifier">
+		Run one-shot queries with `bronto search`, or let filter flags like `--eq` and `--gt`
+		write the WHERE clause for you. [Searching](/guides/searching/)
+	</Card>
+	<Card title="Follow live" icon="rocket">
+		`bronto tail` streams new events like `tail -f`, or redraws a live group-by every few
+		seconds. [Live tail](/guides/live-tail/)
+	</Card>
+	<Card title="Explore traces" icon="random">
+		Waterfalls, per-service latency, and the merged call-tree shape across many traces.
+		[Traces](/guides/traces/)
+	</Card>
+	<Card title="Manage resources" icon="list-format">
+		Datasets, monitors, dashboards, users, API keys and more share one
+		`list | get | create | update | delete` pattern. [Resources](/guides/resources/)
+	</Card>
+	<Card title="Script it" icon="seti:shell">
+		JSONL when piped, a JSON error envelope, `--jq`, `--dry-run`, and exit codes that mean
+		something. [Scripting and agents](/guides/scripting/)
+	</Card>
+	<Card title="Run it in CI" icon="setting">
+		Credentials from the environment, a shell-less container image, and no keychain
+		required. [CI/CD](/guides/ci-cd/)
+	</Card>
+</CardGrid>
 
 ## Next steps
 
-<CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
+<CardGrid>
+	<LinkCard title="Install" href="/getting-started/install/" description="Homebrew, install script, go install, Docker, or a release archive." />
+	<LinkCard title="Quickstart" href="/getting-started/quickstart/" description="From API key to your first piped search in five minutes." />
+	<LinkCard title="Command reference" href="/reference/commands/" description="Every command and flag, generated from the CLI itself." />
+	<LinkCard title="Bronto platform docs" href="https://docs.bronto.io/" description="Datasets, the query language, monitors, and everything else on the platform side." />
 </CardGrid>

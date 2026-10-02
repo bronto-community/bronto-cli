@@ -1,0 +1,109 @@
+---
+title: Live tail
+description: Follow new events as they arrive with bronto tail, filter them with regexes, and watch live aggregates.
+sidebar:
+  order: 2
+---
+
+import Tape from '~/components/Tape.astro';
+
+`bronto tail` works like `tail -f` for a Bronto dataset. It polls every `--interval`
+(default 3s), looks back `--window` (default 30s) on each poll, and prints events it
+hasn't shown yet. Errors are shown in red and warnings in yellow.
+
+<Tape name="tail" title="Following checkout-service errors live" />
+
+```sh
+bronto tail "status >= 500" -d prod/checkout-service
+```
+
+It takes the same positional WHERE query and `-d`/`--from-expr` dataset selection as
+[`bronto search`](/guides/searching/). Stop it with Ctrl-C.
+
+To catch up on the current window once and exit, which is handy in scripts, add
+`--no-follow`:
+
+```console test tty
+$ bronto tail "status >= 500" -d prod/checkout-service --no-follow --window 5m
+2026-07-19 09:21:47.075 UTC error web-2 {"level":"error","service":"checkout-service","host":"web-2","message":"payment failed: payments-api timed out after 30s","path":"/api/checkout","status":502,"duration_ms":30039,"trace_id":"f2efa54d9f1d9e691cf201a6de54f368"}
+2026-07-19 09:22:02.004 UTC error web-2 {"level":"error","service":"checkout-service","host":"web-2","message":"payment failed: payments-api timed out after 30s","path":"/api/checkout","status":502,"duration_ms":30029,"trace_id":"83f60d876c5ca23a0dce8cdd8a131f84"}
+2026-07-19 09:22:17.823 UTC error web-2 {"level":"error","service":"checkout-service","host":"web-2","message":"payment failed: payments-api timed out after 30s","path":"/api/checkout","status":502,"duration_ms":30035,"trace_id":"a9054192ffa103d00b174fc66a4133c9"}
+```
+
+At a terminal each line is the timestamp, the severity, the origin host, and the original
+log line. Piped, `tail` prints JSON Lines instead.
+
+## Include, exclude, highlight
+
+These flags filter the printed lines on the client side, after the query has run. Each
+takes a regex and can be repeated.
+
+- `--include <regex>` shows only matching lines. Several `--include` flags are ANDed.
+- `--exclude <regex>` hides matching lines.
+- `--highlight <regex>` colors matches without filtering anything.
+
+Write `field~regex` to scope an include or exclude to a single field instead of the whole
+line:
+
+```console test tty
+$ bronto tail -d prod/checkout-service --include 'path~^/api/checkout' --exclude healthz --no-follow --window 5m
+2026-07-19 09:20:38.409 UTC warn web-3 {"level":"warn","service":"checkout-service","host":"web-3","message":"payments-api slow to respond (2.8s)","path":"/api/checkout","status":200,"duration_ms":2842,"trace_id":"c28a11373fbf1353f20d5ecb79d07510"}
+2026-07-19 09:21:47.075 UTC error web-2 {"level":"error","service":"checkout-service","host":"web-2","message":"payment failed: payments-api timed out after 30s","path":"/api/checkout","status":502,"duration_ms":30039,"trace_id":"f2efa54d9f1d9e691cf201a6de54f368"}
+```
+
+`--fields` prints only the fields you name, in that order. `tail` asks the server for
+those fields, so use the names you'd write in a query (`status`, not
+`message_kvs.status`):
+
+```console test tty
+$ bronto tail "" -d prod/checkout-service --fields @time,status,path,message --no-follow --window 5m
+2026-07-19 09:20:38.409 UTC  200  /api/checkout  payments-api slow to respond (2.8s)
+2026-07-19 09:20:39.389 UTC  200  /api/cart  cart loaded
+2026-07-19 09:21:47.075 UTC  502  /api/checkout  payment failed: payments-api timed out after 30s
+```
+
+## Live aggregates
+
+With `--select` or `-g`/`--group-by`, `tail` switches to aggregate mode. It runs the
+same group-by query on every interval and, at a terminal, redraws the result in place as
+a small live dashboard with a trend sparkline per group. `--select` defaults to
+`count(*)`.
+
+```sh
+bronto tail -d prod/checkout-service -g status --window 1m
+```
+
+With `--no-follow` it prints a single snapshot and exits:
+
+```console test tty
+$ bronto tail -d prod/checkout-service -g status --window 5m --no-follow
+STATUS  COUNT(*)  TREND
+200     63        █
+502     13        █
+...
+```
+
+The last line is the time of the snapshot (`updated 09:41:07`). Piped, each interval
+prints one JSONL line per group instead of redrawing, with the snapshot time in `ts`:
+
+```console test
+$ bronto tail -d prod/checkout-service -g status --window 5m --no-follow --fields 'group,count(*)'
+{"count(*)":63,"group":"200"}
+{"count(*)":13,"group":"502"}
+```
+
+## Tuning
+
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `--interval` | `3s` | time between polls (minimum `1s`) |
+| `--window` | `30s` | lookback per poll, one unit only (`30s`, `5m`, `1h`) |
+| `-n`, `--limit` | `500` | maximum events per poll |
+| `--dedup-size` | `20000` | events remembered to suppress duplicates across polls |
+
+Events that arrive more than one window late aren't reordered across polls. Ordering is
+guaranteed within a batch only. On very high-volume streams, raise `--dedup-size` if you
+see repeated lines.
+
+For live tail concepts on the platform side, see
+[Log Search on docs.bronto.io](https://docs.bronto.io/Search-and-Visualize/Log-Search).

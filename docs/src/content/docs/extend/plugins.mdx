@@ -1,0 +1,56 @@
+---
+title: Plugins
+description: Add your own bronto subcommands with bronto-<name> executables on PATH, and give them API access safely.
+sidebar:
+  order: 1
+---
+
+`bronto` supports exec plugins, the same way `git`, `kubectl`, and `gh` do. Any executable
+named `bronto-<name>` on your `PATH` becomes `bronto <name>`.
+
+```sh
+cat > ~/.local/bin/bronto-errors <<'EOF'
+#!/bin/sh
+# bronto errors <dataset>: last hour of 5xx responses as a table
+exec bronto search "status >= 500" -d "$1" --since 1h -o table
+EOF
+chmod +x ~/.local/bin/bronto-errors
+
+bronto errors prod/checkout-service   # runs the plugin (skilldoc:ignore: not a built-in)
+```
+
+## How dispatch works
+
+- The plugin name must be the very first argument. `bronto errors --help` runs the plugin {/* skilldoc:ignore: example plugin name */}
+  with `--help`. `bronto --profile prod errors` does not dispatch, because a flag comes
+  first. Put global flags after the plugin name and let the plugin handle them.
+- Built-in commands always win. A `bronto-search` executable can't replace `bronto search`.
+- Names are restricted to lowercase letters, digits, and dashes.
+- If several directories on `PATH` contain the same plugin, the first one wins, as with
+  any command lookup.
+- The plugin's exit code becomes `bronto`'s exit code, and its output passes through
+  untouched.
+
+`bronto plugins list` shows the plugins it finds on your `PATH`, as a `NAME` and `PATH`
+table. With the script above installed, it lists `errors` and the script's path:
+
+```console test tty
+$ bronto plugins list
+```
+
+## Credentials for plugins
+
+Plugins inherit your environment, but not the key stored in your keychain. A plugin that
+needs the Bronto API has two options:
+
+- Call `bronto` itself, as the example above does. The nested call resolves credentials
+  the normal way.
+- Ask for the key with `bronto auth token`, which prints the key the CLI would use:
+
+  ```sh
+  BRONTO_API_KEY="${BRONTO_API_KEY:-$(bronto auth token)}"
+  ```
+
+Callers can also set `BRONTO_API_KEY` before running the plugin.
+
+For one-off API calls without writing a plugin, see [the api command](/extend/api/).

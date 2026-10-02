@@ -5,306 +5,66 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/bronto-community/bronto-cli/badge)](https://scorecard.dev/viewer/?uri=github.com/bronto-community/bronto-cli)
 
-A community command-line client for the [Bronto](https://bronto.io) observability platform. One scriptable binary wraps Bronto's REST and ingestion APIs: search and tail logs, explore OpenTelemetry traces, send events, and manage every resource from datasets to monitors.
+A command-line client for the [Bronto](https://bronto.io) observability platform. One binary wraps Bronto's REST and ingestion APIs: search and tail logs, explore OpenTelemetry traces, send events, and manage resources from datasets to monitors. It's built for scripts and agents, with JSONL when piped, typed errors, stable exit codes, and `--dry-run` on every mutating call.
 
-Built for pipelines and agents: streaming commands emit JSONL when piped, typed errors with machine-readable hints, stable exit codes, and `--dry-run` plans for every mutating call.
-
-bronto-cli is an official open-source project from [Bronto](https://bronto.io), maintained as a **community artifact**: free to use, contributions welcome — but not covered by Bronto's product support. Questions, bugs, and feature requests are handled best-effort through [GitHub issues](https://github.com/bronto-community/bronto-cli/issues), not Bronto's support channels.
+bronto-cli is an open-source project from Bronto, maintained as a **community artifact**: free to use and open to contributions, but not covered by Bronto's product support. Questions, bugs, and feature requests go to [GitHub issues](https://github.com/bronto-community/bronto-cli/issues).
 
 ## Install
-
-### Homebrew
 
 ```sh
 brew install --cask bronto-community/tap/bronto
 ```
 
-Installs from the `bronto-community/homebrew-tap` tap (the release workflow keeps the cask up to date). On first use of a third-party tap, Homebrew 6.0+ asks you to trust it once — that prompt is expected, not an error. The cask clears macOS's Gatekeeper quarantine on install, so the binary runs without the "cannot verify developer" dialog.
-
-### curl install script
+or
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | sh
 ```
 
-Downloads the latest (or a pinned `VERSION=`) release for your OS/arch from GitHub Releases and verifies its checksum against the release's `checksums.txt` before installing to `/usr/local/bin` (override with `BINDIR=`).
-
-### go install
-
-```sh
-go install github.com/bronto-community/bronto-cli/cmd/bronto@latest
-```
-
-### Docker
-
-```sh
-docker run --rm -e BRONTO_API_KEY -e BRONTO_REGION ghcr.io/bronto-community/bronto-cli:latest search "status >= 500" --since 1h
-```
-
-Two image variants are published on every release: the default (`scratch` + CA certs) and `-distroless` (`ghcr.io/bronto-community/bronto-cli:latest-distroless`), both `ENTRYPOINT ["/bronto"]`. Neither image has a shell, so pass credentials as environment variables rather than files (see [Restricted environments](#restricted-environments)).
-
-### Releases
-
-Prebuilt archives (tar.gz for macOS/Linux, zip for Windows) plus `.deb`/`.rpm` packages and shell completions are attached to every [GitHub release](https://github.com/bronto-community/bronto-cli/releases).
-
-### Shell completion
-
-`bronto completion <bash|zsh|fish|powershell>` prints a completion script (e.g. `source <(bronto completion zsh)`, or install it where your shell loads completions). Completion is **context-aware**:
-
-- **`<command> <tab>`** offers that command's flags, most-useful first — and if you haven't set a default dataset, `--dataset` is starred at the top.
-- **`-d/--dataset`** completes your real datasets; on large accounts it drills down by collection first (`web/<tab>` → that collection's datasets).
-- **`<resource> get/update/delete <tab>`** completes live resource names (id shown as the description); **`--select`/`-g`/`--fields`** complete the dataset's field names; **`--saved`** completes saved searches.
-- **The filter flags complete both halves**: `--eq <tab>` offers `$field=`, then `--eq $model=<tab>` offers a sample of that field's observed values (`$model=claude-fable-5`). Value completion is equality-only (`--eq`/`--ne`) — comparison flags (`--gt`/`--lt`/…) complete the field then leave the threshold to you. `bronto api <tab>` completes the HTTP method, then the path.
-- **`--since`/`--window`** suggest common windows, **`config get/set`** completes config keys, and **`-o`/`--region`/`--profile`** complete their allowed values.
-
-API-backed completions have a short timeout and fall back silently, so a slow or offline API never hangs your shell. File paths are still completed where one is expected (`--input`, `--local`).
+`go install`, Docker images, `.deb`/`.rpm` packages, release archives, and signature verification are covered in the [install guide](https://bronto-cli.vercel.app/getting-started/install/).
 
 ## Quickstart
 
 ```sh
-bronto auth login                                  # paste an API key, stored in the OS keychain
-bronto datasets list                               # see what data you have
-bronto search "status >= 500" -d <dataset> --since 1h   # one-shot query
-bronto tail "level = 'error'" -d <dataset> --window 5m  # follow new events live
+bronto auth login          # paste a management API key; stored in the OS keychain
+bronto ping                # check the connection
+bronto datasets list       # see what data you have
+bronto search "status >= 500" -d <dataset> --since 1h
+bronto search "status >= 500" -d <dataset> --since 1h | jq .   # JSONL when piped
 ```
 
-`bronto auth login` prompts for a key interactively (or `--key-stdin` to pipe one in) and picks a region (`eu`/`us`). Everything after that resolves credentials automatically.
+The [quickstart](https://bronto-cli.vercel.app/getting-started/quickstart/) walks through the same steps with more detail.
 
-`-d` takes a dataset **name** from `datasets list` (UUIDs work too). A name that exists in several collections is qualified as `collection/name` — e.g. `-d prod/api-logs`. You can drop `-d` entirely once you set a default (`bronto config set default_dataset <name>`) — or if the account has only one dataset, which is auto-picked.
+## Documentation
 
-At a terminal, `bronto search "status >= 500" --since 1h` renders a table. The most informative parsed fields become columns (ranked by how often they carry a real value, then how much they vary); once three real columns exist the raw JSON blob is dropped entirely:
+Full documentation lives at **https://bronto-cli.vercel.app**:
 
-```
-@TIME                        @STATUS  MESSAGE_KVS.STATUS  MESSAGE_KVS.PATH  MESSAGE_KVS.DURATION_MS
-2026-07-19 09:14:05.312 UTC  error    502                 /api/checkout     1204
-2026-07-19 09:13:58.007 UTC  error    500                 /api/search       87
-```
+- [Authentication](https://bronto-cli.vercel.app/getting-started/authentication/): API keys, regions, profiles
+- [Searching](https://bronto-cli.vercel.app/guides/searching/), [live tail](https://bronto-cli.vercel.app/guides/live-tail/), and [traces](https://bronto-cli.vercel.app/guides/traces/)
+- [Managing resources](https://bronto-cli.vercel.app/guides/resources/): the shared `list | get | create | update | delete` pattern
+- [Scripting and agents](https://bronto-cli.vercel.app/guides/scripting/) and [CI/CD](https://bronto-cli.vercel.app/guides/ci-cd/)
+- [Configuration](https://bronto-cli.vercel.app/configuration/config-files/) and [troubleshooting](https://bronto-cli.vercel.app/troubleshooting/)
+- [Command reference](https://bronto-cli.vercel.app/reference/commands/), generated from the CLI
 
-and a footer on stderr teaches the way to more:
+For agents, [`skill.md`](./skill.md) is a short orientation and [`llms.txt`](./llms.txt) a 20-line summary. `bronto --help` and `bronto <command> --help` always match the installed binary. Platform concepts (datasets, the query language, monitors) are documented at [docs.bronto.io](https://docs.bronto.io).
 
-```
-2 results. 14 fields available — 'bronto fields -d <dataset>' lists them; '--select <field,...>' picks columns; '-x' expands a row.
-```
-
-`-x`/`--expand` is the "click on a row" equivalent — every field of every event, one per line, nothing truncated:
-
-```
-─ event 1 ──────────────────────────────
-@time                2026-07-19 09:14:05.312 UTC
-@status              error
-@raw                 {"level":"error","status":502,"path":"/api/checkout","duration_ms":1204}
-message_kvs.path     /api/checkout
-message_kvs.status   502
-metadata.sequence    4367602734065516544
-```
-
-Piped, the same command emits JSONL — one full event per line, 64-bit ids preserved exactly:
-
-```json
-{"@time":"2026-07-19 09:14:05.312 UTC","@status":"error","message_kvs.status":502,"metadata.sequence":4367602734065516544,...}
-```
-
-## Command tour
-
-**Explore** — search, tail, and traces:
-
-```sh
-bronto search "status >= 500" --since 1h
-bronto search -d <dataset> --eq model=claude-fable-5 --gt duration_ms=1000   # filter flags build the WHERE for you
-bronto search "status >= 500" --since 1h -n 5 -x     # expanded record view
-bronto search --select "count()" -g host --since 15m
-bronto tail "level = 'error'" --include timeout --exclude healthz
-bronto tail -g status --window 1m                    # live count(*) by status, redrawn in place
-bronto traces show <trace-id>
-bronto traces services --since 1h
-bronto fields -d <dataset> --since 1h
-bronto fields -d <dataset> model             # fields named like "model", with sample values
-bronto context --sequence 111721913 -d <dataset> --timestamp 1711535140632
-bronto repl -d <dataset>                # interactive prompt: edit, rerun, narrow
-```
-
-`traces` also has `list`, `operations`, `aggregate`, and `shape` subcommands over the `.traces` logset.
-
-**Manage** — resources, exports, usage:
-
-```sh
-bronto datasets list
-bronto monitors get <id>
-bronto dashboards create -f name=Overview -f description=Prod
-bronto parsers update <id> -f name=new-name
-bronto api-keys delete <id> --yes
-bronto exports create -d <dataset> --since 1h --where "status=500" --wait
-bronto usage --since 7d
-bronto users list
-bronto groups create -f name=oncall
-bronto monitors templates list
-bronto webhooks create -f name=alerts -f url=https://example.com/hook
-```
-
-Every resource (`datasets`, `monitors` — incl. `monitors templates` and `monitors downtimes` — `dashboards`, `widgets`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `roles`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, plus read-only `collections`, `log-views`, `metrics` and list-only `permissions`) shares the same `list | get <id|name> | create | update <id|name> | delete <id|name> --yes` pattern (list-only where the API documents no other verbs). Everywhere an id is accepted, a unique **name** works too (users: email; datasets: `collection/name` qualifies duplicates) — ambiguous names error with the candidates; `create`/`update` take repeated `-f key=value` or `--input file.json`/`--input -`, and `delete` prompts for confirmation unless `--yes` is passed. Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `metrics`, `exports`. A few resources add composition verbs beyond CRUD: `monitors events`/`mute`, and — to assemble dashboards — `dashboards attach-widgets <dashboard> --widget-ids <id,…>` / `dashboards remove-widget` / `dashboards detach-from-template`, plus `widgets attach-widgets` / `widgets remove-widget`. Access and metrics have their own: `groups add-members` / `groups remove-members`, `users groups`, `monitors notifications`, `metrics top-keys`, and `datasets parser get|set|unset`.
-
-**Pipe** — send data in:
-
-```sh
-bronto send -d app -m 'hello world'
-echo '{"message":"m","level":"warn"}' | bronto send -d app
-```
-
-`send` posts one event with `-m`/`--message`, or reads NDJSON/plain-text lines from stdin and batches them (`--batch-size`, `--batch-bytes`, `--flush-interval`) — e.g. `tail -f access.log | bronto send -d app --collection prod`. <!-- skilldoc:ignore: tail here is the unix coreutil, not bronto tail -->
-
-**Ops** — auth, config, plugins:
-
-```sh
-bronto auth status
-bronto config list
-bronto plugins list
-bronto ping
-bronto version
-```
-
-Anything without a dedicated command is reachable via the escape hatch: `bronto api GET /monitors -f limit=10` or `bronto api POST /search --input query.json`.
-
-## Ask — natural language to query
-
-Point `bronto ask` at any OpenAI-compatible endpoint (OpenAI, a local Ollama, your gateway):
-
-```sh
-bronto config set ask_url https://api.openai.com/v1/chat/completions
-bronto config set ask_model gpt-4o-mini
-export BRONTO_ASK_API_KEY=sk-...
-
-bronto ask "5xx spikes in checkout since last night"
-```
-
-The generated `bronto search …` command and the reasoning behind each mapping are shown before anything runs (`--yes` skips the prompt; piped without `--yes` it prints the plan as JSON and executes nothing). Only the question and dataset/field *names* are sent to the endpoint — never event data, never your Bronto API key.
-
-## Scripting & agents
-
-Piped to a non-TTY, the streaming commands (`search`, `tail`, `traces`) default to **JSONL**, one JSON object per line — no flag needed. Every other command (resource `list`/`get`, `usage`, `config list`, …) piped emits one pretty-printed **JSON** document (usually an array): parse it whole, or pass `-o jsonl` for line-delimited rows. Force any format explicitly with `-o table|json|jsonl|raw|csv`.
-
-```sh
-bronto search "status >= 500" --since 1h --jq '.message' | wc -l
-bronto search "status >= 500" --since 6h --histogram   # when did it start, how big is it
-bronto search "" -d api-logs --since 1h --patterns  # cluster the firehose into templates
-kubectl logs deploy/api | bronto search --local - "level = 'error'"   # offline, no server
-bronto query check "stauts >= 500" -d api-logs      # catches the typo before the server does
-bronto search --saved oncall-500s --since 30m       # run a stored saved-search
-bronto search "status >= 500" --since 1h --open     # jump to this query in the web UI
-bronto tail "" --include 'gateway~stripe' --fields @time,level,message
-bronto datasets list --fields log,log_id
-bronto datasets list --fields '?'          # list available field names instead of data
-```
-
-- `--dry-run` prints any mutating API call as a plan document (`{"dry_run":true,"method":"POST","path":"/monitors","body":{…}}`) instead of executing it — reads still run, so dataset-name resolution keeps working. Destructive commands skip their confirmation prompt (nothing destructive can happen).
-- `--debug` traces every API request/response on stderr (method, URL, status, latency, truncated bodies — the API key never appears).
-- `--timeout <seconds>` and `--max-retries <n>` tune the HTTP client per invocation (also config keys / `BRONTO_TIMEOUT`, `BRONTO_MAX_RETRIES`).
-- `--jq '<expr>'` runs a [gojq](https://github.com/itchyny/gojq) expression over json/jsonl output, one result per line. Unlike the `jq` CLI, a value that errors or halts on the expression is silently **skipped** — every other row still prints.
-- `--fields a,b,c` narrows table/json/jsonl/csv output to those columns/keys.
-- Errors go to stderr; in machine mode (non-TTY stderr) they're a stable JSON envelope: `{"error":{"code":"...","message":"...","retryable":true|false}}`.
-- Exit codes are stable: `0` success, `1` unexpected error, `2` usage/config error, `3` auth error, `4` not found, `5` rate limited or timeout (retryable).
-
-For agents (Claude Code, MCP tool wrappers, etc.), see [`skill.md`](./skill.md) for a short orientation doc, or [`llms.txt`](./llms.txt) for a 20-line summary. `bronto --help` and `bronto <command> --help` are always the authoritative reference.
-
-## Configuration
-
-Values resolve with this precedence, highest first:
-
-| Precedence | Source | Example |
-|---|---|---|
-| 1 | Flags | `--region eu`, `--api-key ...` |
-| 2 | Environment variables | `BRONTO_API_KEY`, `BRONTO_REGION` |
-| 3 | Project file `.bronto.toml` (walks up from cwd, like `.git`) | `region = "eu"` |
-| 4 | User config `<config dir>/bronto/config.toml` (profile section) | `[profiles.prod]` |
-| 5 | Built-in defaults | `region = "eu"` |
-
-Run `bronto config list` to see every resolved value and which source it came from; `bronto config get <key>` for one value; `bronto config set <key> <value>` to persist to the user config file. `api_key` is deliberately never read from either TOML file — secrets only come from the OS keychain (`bronto auth login`) or `BRONTO_API_KEY`.
-
-Profiles let you keep multiple accounts/regions side by side: `bronto auth login --profile prod`, then `bronto auth switch prod` or `--profile prod` per-invocation.
-
-Environment variables:
-
-| Variable | Purpose |
-|---|---|
-| `BRONTO_API_KEY` | API key (bypasses the keychain) |
-| `BRONTO_REGION` | `eu` or `us` |
-| `BRONTO_BASE_URL` | full API base URL (staging, localhost) — overrides the region-derived URL |
-| `BRONTO_PROFILE` | named profile to use |
-| `BRONTO_TIMEOUT` | request timeout override (seconds) |
-| `BRONTO_MAX_RETRIES` | retries for idempotent requests on 429/5xx |
-| `BRONTO_INGEST_URL` | override the ingestion endpoint (`bronto send`) |
-| `BRONTO_CONFIG_DIR` | override the user config directory (parent of `bronto/config.toml`) |
-
-Config keys (settable via `bronto config set`, project `.bronto.toml`, or profile files — flags and env always win; `base_url`/`ingest_url` are not project-file settable, see below):
-
-| Key | Env | Purpose | Default |
-|---|---|---|---|
-| `region` | `BRONTO_REGION` | `eu` or `us` (a slug: lowercase letters, digits, dashes) | `eu` |
-| `base_url` | `BRONTO_BASE_URL` | full API base URL override (staging/localhost) | derived from region |
-| `output` | — | default output format | table (TTY); piped: jsonl (streaming cmds) / json (others) |
-| `default_dataset` | — | dataset name/UUID or `from_expr` used when `-d` is omitted | — |
-| `timeout` | `BRONTO_TIMEOUT` | HTTP timeout in seconds | 30 |
-| `max_retries` | `BRONTO_MAX_RETRIES` | retries for idempotent requests | 2 |
-| `ingest_url` | `BRONTO_INGEST_URL` | ingestion endpoint for `bronto send` | derived from region |
-| `profile` | `BRONTO_PROFILE` | named profile | `default` |
-
-`api_key` is deliberately **not** file-settable — keys live in the keychain or `BRONTO_API_KEY` only.
-
-For the same reason, **`base_url` and `ingest_url` cannot be set from a project `.bronto.toml`** — that file is discovered by walking up from the working directory, so an untrusted repo could otherwise redirect where your API key is sent. Set them via `bronto config set` (user config), `BRONTO_BASE_URL`/`BRONTO_INGEST_URL`, or `--base-url`. A project file may still set `region`, but only as a validated slug (it can't name an arbitrary host).
-
-## Troubleshooting
-
-- **`auth_invalid_key` (exit 3)** — the key is wrong or an ingestion key was used where a management key is needed. Run `bronto auth login`, or check `bronto auth status` (exits non-zero when the credential is broken, so you can gate scripts on it).
-- **No OS keychain (containers, CI)** — set `BRONTO_API_KEY` directly; the keychain is never touched once a key is resolved. `bronto auth login` falls back to a credentials file with a warning.
-- **`usage_confirmation_required` (exit 2)** — a destructive command ran without a TTY; pass `--yes` (or `--dry-run` to preview).
-- **`usage_missing_dataset`** — the account has several datasets; the error lists them. Pick one with `-d <name>` or set `default_dataset`.
-- **Wrong region** — `bronto ping` shows the resolved base URL and latency; override with `--region` / `BRONTO_REGION`.
-- **What is it actually sending?** — add `--debug` for a curl-style trace (API key never printed), or `--dry-run` to see mutating request bodies without executing.
-
-## Staging & local development
-
-Point the CLI at any Bronto-compatible API — a staging environment or a local instance:
-
-```sh
-export BRONTO_BASE_URL=http://localhost:8080   # or --base-url per invocation
-export BRONTO_INGEST_URL=http://localhost:8081 # ingestion host for `bronto send`
-```
-
-Flags beat env, env beats config files, so a one-off `--base-url` always wins. Keep environments cleanly separated with profiles instead: `bronto config set base_url https://api.staging.example --profile staging`, then `--profile staging` (or `BRONTO_PROFILE=staging`) per invocation. `bronto ping` and `bronto auth status` show which base URL actually resolved.
-
-## Restricted environments
-
-For containers, CI runners, or sandboxes without a usable OS keychain or writable home directory:
-
-- Set `BRONTO_API_KEY` (and `BRONTO_REGION`) directly — no keychain access is attempted once a key is already resolved.
-- Set `BRONTO_CONFIG_DIR` to a writable path if you need `bronto config set` or profile files to work somewhere other than the default user config directory.
-
-The published scratch-based image (`ghcr.io/bronto-community/bronto-cli:latest`) has no shell, package manager, or keychain daemon by design — pass credentials as environment variables when running it.
-
-## Plugins
-
-Any executable named `bronto-<name>` on `PATH` is invoked when `<name>` is the first argument that doesn't match a built-in command — e.g. `bronto deploy` invokes a `bronto-deploy` executable found on PATH. <!-- skilldoc:ignore: illustrative plugin name, not a real subcommand --> Built-in commands always take precedence, so a plugin can't shadow `search`, `auth`, etc. Discover installed plugins with `bronto plugins list`.
-
-Plugins do **not** inherit keychain-stored credentials — only environment variables are passed through. A plugin needing API access should call `bronto auth token` itself (prints the resolved key for scripting) or require the caller to set `BRONTO_API_KEY` directly.
-
-## Development
+## Contributing
 
 ```sh
 git clone https://github.com/bronto-community/bronto-cli
 cd bronto-cli
 make build   # -> ./bronto
-make test    # go test ./...
-make lint    # golangci-lint run
+make test
 ```
 
-No code generation is required for day-to-day development — the vendored API client is already checked in. See [CONTRIBUTING.md](./CONTRIBUTING.md) for the architecture map, TDD/lint expectations, and how to add a new resource command.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the architecture map, test and lint expectations, and how to work on the docs.
 
 ## No telemetry
 
-bronto-cli sends no telemetry, analytics, or usage data anywhere. The only network calls it makes are the ones you ask for: requests to the Bronto API and ingestion endpoints you've configured.
+bronto-cli sends no telemetry, analytics, or usage data. The only network calls it makes are the ones you ask for, to the Bronto API and ingestion endpoints you've configured.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT, see [LICENSE](./LICENSE).
 
-The Bronto name and logo are trademarks of Bronto, used with permission and
-**not** covered by the MIT license — see [TRADEMARK.md](./TRADEMARK.md).
+The Bronto name and logo are trademarks of Bronto, used with permission and **not** covered by the MIT license. See [TRADEMARK.md](./TRADEMARK.md).

@@ -35,7 +35,25 @@ To add a new one:
 1. Add an entry to `resourceRegistry` in `internal/cli/resources.go` — a `resourceDesc{Name, Base, ...}` giving the subcommand name and its collection path (e.g. `/monitors`), plus any overrides (`IDBase`, `CreatePath`, `UpdateMethod`, `Columns`, `NoCreate`/`NoUpdate`/`NoDelete`/`NoGet` for partial resources).
 2. Run `go test ./internal/cli/...` — `resourcespec_test.go` parses `api/openapi.yaml` and asserts your descriptor's `Base`/`CreatePath`/`IDBase` correspond to real paths in the vendored spec. A typo or a stale endpoint fails the build instead of silently 404ing at runtime. If your resource genuinely deviates from the vendored spec snapshot (a real, documented endpoint the spec doesn't capture), add it to `specCreatePathExceptions` with a comment explaining why.
 3. Add a short registration test alongside `resources_test.go` if the resource has any non-default behavior (custom columns, disabled verbs).
-4. Add the new resource's name to `skill.md`'s resource list and the README command tour — `TestSkillDocCoversAllCommands` fails the build if a registered command is absent from `skill.md`, so agents always learn about new commands. (An earlier "only document workhorse commands" policy let eleven resources ship undocumented; the test now prevents that.)
+4. Add the new resource's name to `skill.md`'s resource list and to the resource table in `docs/src/content/docs/guides/resources.mdx` — `TestSkillDocCoversAllCommands` fails the build if a registered command is absent from `skill.md`, and `TestDocsGuideCoverage` fails it if no docs page teaches the command (see [Documentation](#documentation)). (An earlier "only document workhorse commands" policy let eleven resources ship undocumented; the test now prevents that.)
+
+## Documentation
+
+The docs site (https://bronto-cli.vercel.app) is an [Astro Starlight](https://starlight.astro.build/) project in `docs/`. `docs/AGENTS.md` is the full contributor contract; the short version:
+
+- Hand-written pages live in `docs/src/content/docs/` (guides, configuration, reference pages). The command reference under `docs/src/content/docs/reference/commands/` is generated from the cobra tree: never edit it by hand, run `make docs-reference` and commit the result.
+- The docs cover *using the CLI*. Platform concepts (datasets, the query language, monitors, API keys) get one sentence and a link to https://docs.bronto.io.
+- Examples that should keep working use a ` ```console test ` block: `$ ` lines are commands, the lines after them are expected stdout, and `...` matches any number of lines. They run against a deterministic mock Bronto org (see "The docs mock world" in `docs/AGENTS.md`). Use ` ```sh ` for illustrative examples with `<placeholders>`. Every `bronto <command>` in either kind must be a real command; the doc-rot guard fails the build otherwise.
+- Every non-CRUD command must be taught somewhere in the hand-written pages (`TestDocsGuideCoverage`). A new subcommand without a docs mention fails CI.
+
+```sh
+make docs-dev        # local dev server with live reload
+make docs-reference  # regenerate the command reference after changing commands, flags, or help text
+make docs-tapes      # re-record the terminal videos (needs vhs and ttyd)
+make docs-check      # everything the docs CI job runs
+```
+
+PRs that change user-facing CLI behavior must update the docs in the same PR; the `docs-required` CI job checks this. If a change genuinely needs no docs (an internal refactor, a test-only fix), add the `no-docs-needed` label.
 
 ## TDD and lint expectations
 

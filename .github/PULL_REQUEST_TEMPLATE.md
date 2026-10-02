@@ -11,4 +11,4 @@
 - [ ] `make test` green
 - [ ] `make lint` green
 - [ ] `make coverage` gate passes
-- [ ] Docs/README updated if user-facing behavior changed
+- [ ] Docs updated in `docs/` (https://bronto-cli.vercel.app) if user-facing behavior changed, or the `no-docs-needed` label applied
