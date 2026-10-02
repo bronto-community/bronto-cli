@@ -136,19 +136,24 @@ $ bronto search "status >= 500" -d prod/checkout-service --since 1h | jq -s leng
 13
 ```
 
-`--fields` keeps only the keys you name, and `--jq` runs a jq expression on each result
-without needing jq installed. Use the full key names from the output above:
+`--fields` keeps only the keys you name. A bare name such as `status` finds
+`message_kvs.status`, and the output key is the name you typed. `--jq` runs a jq expression
+on each result without needing jq installed, and `-r` prints strings without quotes:
 
 ```console test
-$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o jsonl --fields '@time,message_kvs.status,message_kvs.host'
-{"@time":"2026-07-19 09:24:49.632 UTC","message_kvs.host":"web-3","message_kvs.status":502}
-{"@time":"2026-07-19 09:24:33.007 UTC","message_kvs.host":"web-3","message_kvs.status":502}
-{"@time":"2026-07-19 09:24:18.321 UTC","message_kvs.host":"web-2","message_kvs.status":502}
-$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o jsonl --jq '."message_kvs.host"'
-"web-3"
-"web-3"
-"web-2"
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o jsonl --fields '@time,status,host'
+{"@time":"2026-07-19 09:24:49.632 UTC","host":"web-3","status":502}
+{"@time":"2026-07-19 09:24:33.007 UTC","host":"web-3","status":502}
+{"@time":"2026-07-19 09:24:18.321 UTC","host":"web-2","status":502}
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o jsonl --jq '."message_kvs.host"' -r
+web-3
+web-3
+web-2
 ```
+
+Without `--fields`, `--jq` sees the whole event, so it uses the full `message_kvs.` key
+names. With `--fields`, `--jq` runs on the narrowed result and sees the names you typed:
+`--fields host --jq .host`.
 
 ## Where next
 

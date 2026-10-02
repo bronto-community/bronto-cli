@@ -108,16 +108,14 @@ func TestGroupMembershipNeedsMembers(t *testing.T) {
 
 func TestGroupMembershipDryRun(t *testing.T) {
 	var s accessStub
-	_, stderr, err := runResource(t, s.handler(), "", "groups", "add-members", aGroup, "--users", aUser, "--dry-run")
+	out, stderr, err := runResource(t, s.handler(), "", "groups", "add-members", aGroup, "--users", aUser, "--dry-run", "-o", "json")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if s.path != "" {
 		t.Fatalf("dry run made a request: %s %s", s.method, s.path)
 	}
-	if !strings.Contains(stderr, "DRY RUN: would add 1 member(s) to group") {
-		t.Fatalf("stderr = %q", stderr)
-	}
+	decodePlan(t, out, stderr, "POST", "/groups/"+aGroup+"/members")
 }
 
 // The live API returns bare group ids; users groups names them from the

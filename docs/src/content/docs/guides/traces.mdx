@@ -97,17 +97,15 @@ which runs for 30 seconds and fails.
 (default 500). If the trace is older than an hour, widen `--since`.
 
 Log events often carry the trace id. In search output it's the `message_kvs.trace_id`
-field, so a search gets you ids to feed into `traces show`:
+field, so a search gets you ids to feed into `traces show`. `-r` prints them without
+JSON quotes, ready to pass to another command:
 
 ```console test
-$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o jsonl --jq '."message_kvs.trace_id"'
-"f7df498a556927026404a9f1e89c38e2"
-"168a296e219517ed2119957be0ed85c1"
-"59500ccbe5e06b77c4db2fee330e5ccd"
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o jsonl --jq '."message_kvs.trace_id"' -r
+f7df498a556927026404a9f1e89c38e2
+168a296e219517ed2119957be0ed85c1
+59500ccbe5e06b77c4db2fee330e5ccd
 ```
-
-`--jq` prints JSON, so strings keep their quotes. To pass an id to another command, pipe
-`-o jsonl` into `jq -r` instead.
 
 ## The shape of many traces
 

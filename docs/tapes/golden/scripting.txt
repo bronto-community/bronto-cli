@@ -1,6 +1,6 @@
 > bronto search "status >= 500" -d prod/checkout-service --since 1h -o json | jq length
 13
-> bronto search "status >= 500" -d prod/checkout-service --select host -o jsonl | jq -r .host | sort | uniq -c | sed 's/
+> bronto search "status >= 500" -d prod/checkout-service --select host -o jsonl --jq .host -r | sort | uniq -c | sed 's/
 ^ *//'
 3 web-1
 6 web-2

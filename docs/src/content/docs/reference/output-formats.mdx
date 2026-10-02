@@ -47,8 +47,10 @@ columns in `table` output for resource lists, `search`, and `tail`.
 `--fields '?'` prints the field names available instead of the data. For the streaming
 commands (`tail`, `traces`), combine it with a machine format such as `-o jsonl`.
 
-The names must match the output keys exactly. `search` flattens each event, and the
-fields parsed from the log line sit under `message_kvs.`:
+`search` flattens each event, and the fields parsed from the log line sit under
+`message_kvs.`. `--fields` takes either form: a bare `status` finds `message_kvs.status`
+when the event has no top-level `status` key, and the column or key is named the way you
+typed it:
 
 ```console test tty
 $ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 1 --fields '?'
@@ -66,16 +68,16 @@ metadata.logId
 metadata.origin
 metadata.sequence
 metadata.timestamp
-$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 --fields '@time,message_kvs.host,message_kvs.status'
-@TIME                        MESSAGE_KVS.HOST  MESSAGE_KVS.STATUS
-2026-07-19 09:24:49.632 UTC  web-3             502
-2026-07-19 09:24:33.007 UTC  web-3             502
-2026-07-19 09:24:18.321 UTC  web-2             502
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 --fields '@time,host,status'
+@TIME                        HOST   STATUS
+2026-07-19 09:24:49.632 UTC  web-3  502
+2026-07-19 09:24:33.007 UTC  web-3  502
+2026-07-19 09:24:18.321 UTC  web-2  502
 ```
 
-A name that matches no key, such as a bare `status` here, is silently left out. `tail`
-is the exception: it asks the server for the fields you name, so it takes plain field
-names like `status`.
+An exact key always wins over the `message_kvs.` fallback. A name that matches neither is
+left out. The fallback applies only to names you pass to `--fields`; without it, each
+column shows its exact key. `tail` asks the server for the fields you name, so it takes the same plain names.
 
 `--fields` is rejected with `-o raw`, and with the `traces show` and `traces shape`
 renderers.
@@ -87,11 +89,18 @@ renderers.
 - It needs `json` or `jsonl` output. At a terminal, pass `-o json` or `-o jsonl`; piped,
   the default formats already qualify.
 - With `json` output of a list, the expression runs once per element.
+- It runs after `--fields`. Without `--fields` it sees the full keys, such as
+  `."message_kvs.host"` on a search event. With `--fields host` it sees only the output
+  keys you requested, so write `.host`.
 - A value that makes the expression fail is skipped. The other values still print. This
   differs from the `jq` CLI, which stops at the first error.
+- Results print as compact JSON, so strings keep their quotes. `-r` (`--raw-output`)
+  prints string results without quotes, like `jq -r`, and other values as compact JSON.
+  It needs `--jq`.
 
 ```sh
 bronto monitors list -o jsonl --jq '.name'
+id="$(bronto monitors get "Payments latency p95" --jq .id -r)"
 ```
 
 ## -x / --expand

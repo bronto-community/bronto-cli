@@ -58,6 +58,8 @@ type Printer struct {
 
 	fields     []string // SetFieldFilter: table/csv column override, json/jsonl key filter
 	jq         *gojq.Code
+	rawOutput  bool                              // SetRawOutput: jq string results print unquoted (jq -r)
+	fallback   string                            // SetFieldFallbackPrefix: --fields name -> prefix+name when name is absent
 	listFields bool                              // SetListFields: print field names instead of data
 	seenFields map[string]struct{}               // streaming PrintRow "?" mode: keys already printed
 	notice     io.Writer                         // SetNoticeWriter: human notes ("No results."); nil = silent
@@ -92,6 +94,32 @@ func (p *Printer) SetFieldFilter(fields []string) { p.fields = fields }
 // requires -o json or jsonl).
 func (p *Printer) SetJQ(code *gojq.Code) { p.jq = code }
 
+// SetRawOutput mirrors jq's -r: string results of the --jq expression
+// print without JSON quotes; every other value still prints as compact
+// JSON. No effect without SetJQ.
+func (p *Printer) SetRawOutput(v bool) { p.rawOutput = v }
+
+// SetFieldFallbackPrefix makes a --fields name that a row lacks resolve to
+// prefix+name when the row has that key (search events carry their parsed
+// fields flattened as "message_kvs.<name>"). Exact keys always win, and the
+// output key stays the name the user asked for. Only names requested via
+// SetFieldFilter fall back; unfiltered output always uses exact keys.
+func (p *Printer) SetFieldFallbackPrefix(prefix string) { p.fallback = prefix }
+
+// lookup returns row[f], falling back to row[fallback+f] (see
+// SetFieldFallbackPrefix).
+func lookup(row map[string]any, f, fallback string) (any, bool) {
+	if v, ok := row[f]; ok {
+		return v, true
+	}
+	if fallback != "" {
+		if v, ok := row[fallback+f]; ok {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
 // SetListFields switches PrintRows/PrintRow into "--fields ?" mode: instead
 // of data, they print the sorted union of row keys, one per line.
 // PrintRows sees every row up front and prints one pass; streaming
@@ -99,8 +127,12 @@ func (p *Printer) SetJQ(code *gojq.Code) { p.jq = code }
 func (p *Printer) SetListFields(v bool) { p.listFields = v }
 
 func cell(row map[string]any, col string) string {
-	v, ok := row[col]
-	if !ok || v == nil {
+	return cellValue(row[col])
+}
+
+// cellValue renders one value as a table/csv cell.
+func cellValue(v any) string {
+	if v == nil {
 		return ""
 	}
 	switch t := v.(type) {
@@ -121,22 +153,36 @@ func cell(row map[string]any, col string) string {
 	return fmt.Sprint(v)
 }
 
-func filterRow(row map[string]any, fields []string) map[string]any {
-	out := make(map[string]any, len(fields))
-	for _, f := range fields {
-		if v, ok := row[f]; ok {
+// filterRow keeps only the --fields keys of row, resolving each through
+// lookup, so the output key is always the requested name.
+func (p *Printer) filterRow(row map[string]any) map[string]any {
+	out := make(map[string]any, len(p.fields))
+	for _, f := range p.fields {
+		if v, ok := lookup(row, f, p.fallback); ok {
 			out[f] = v
 		}
 	}
 	return out
 }
 
-func filterRows(rows []map[string]any, fields []string) []map[string]any {
+func (p *Printer) filterRows(rows []map[string]any) []map[string]any {
 	out := make([]map[string]any, len(rows))
 	for i, r := range rows {
-		out[i] = filterRow(r, fields)
+		out[i] = p.filterRow(r)
 	}
 	return out
+}
+
+// cell renders row's col for table/csv. The field fallback applies only
+// when the columns are the user's --fields: unfiltered output uses exact
+// keys, so a sparse row never borrows prefix+col for a column it lacks.
+func (p *Printer) cell(row map[string]any, col string) string {
+	fallback := ""
+	if len(p.fields) > 0 {
+		fallback = p.fallback
+	}
+	v, _ := lookup(row, col, fallback)
+	return cellValue(v)
 }
 
 // printFieldUnion implements "--fields ?" for PrintRows: the sorted union
@@ -184,14 +230,14 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 	case FormatJSON:
 		filtered := rows
 		if len(p.fields) > 0 {
-			filtered = filterRows(rows, p.fields)
+			filtered = p.filterRows(rows)
 		}
 		if filtered == nil {
 			filtered = []map[string]any{}
 		}
 		if p.jq != nil {
 			for _, r := range filtered {
-				if err := runJQ(p.w, p.jq, r); err != nil {
+				if err := runJQ(p.w, p.jq, r, p.rawOutput); err != nil {
 					return err
 				}
 			}
@@ -215,7 +261,7 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 		for _, r := range rows {
 			rec := make([]string, len(columns))
 			for i, c := range columns {
-				rec[i] = cell(r, c)
+				rec[i] = p.cell(r, c)
 			}
 			if err := cw.Write(rec); err != nil {
 				return err
@@ -238,7 +284,7 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 		for _, r := range rows {
 			vals := make([]string, len(columns))
 			for i, c := range columns {
-				v := truncateCell(cell(r, c))
+				v := truncateCell(p.cell(r, c))
 				if p.colorize != nil {
 					if pre := p.colorize(c, v); pre != "" {
 						v = esc + pre + esc + v + esc + "\x1b[0m" + esc
@@ -266,10 +312,10 @@ func (p *Printer) PrintRow(columns []string, row map[string]any) error {
 	case FormatJSONL:
 		r := row
 		if len(p.fields) > 0 {
-			r = filterRow(row, p.fields)
+			r = p.filterRow(row)
 		}
 		if p.jq != nil {
-			return runJQ(p.w, p.jq, r)
+			return runJQ(p.w, p.jq, r, p.rawOutput)
 		}
 		return json.NewEncoder(p.w).Encode(r)
 	default:
@@ -284,17 +330,17 @@ func (p *Printer) PrintRow(columns []string, row map[string]any) error {
 // each element is filtered if it's a map[string]any. Any other shape (scalars,
 // nested structures) passes through unchanged — there's no single well-defined
 // key set to filter.
-func filterJSONValue(v any, fields []string) any {
+func (p *Printer) filterJSONValue(v any) any {
 	switch t := v.(type) {
 	case map[string]any:
-		return filterRow(t, fields)
+		return p.filterRow(t)
 	case []map[string]any:
-		return filterRows(t, fields)
+		return p.filterRows(t)
 	case []any:
 		out := make([]any, len(t))
 		for i, item := range t {
 			if m, ok := item.(map[string]any); ok {
-				out[i] = filterRow(m, fields)
+				out[i] = p.filterRow(m)
 			} else {
 				out[i] = item
 			}
@@ -363,10 +409,10 @@ func (p *Printer) PrintJSON(v any) error {
 		return nil
 	}
 	if len(p.fields) > 0 {
-		v = filterJSONValue(v, p.fields)
+		v = p.filterJSONValue(v)
 	}
 	if p.jq != nil {
-		return runJQ(p.w, p.jq, v)
+		return runJQ(p.w, p.jq, v, p.rawOutput)
 	}
 	enc := json.NewEncoder(p.w)
 	if p.format == FormatTable { // human context: pretty-print
@@ -420,7 +466,7 @@ func (p *Printer) PrintExpanded(rows []map[string]any, priority []string, dimKey
 		return nil
 	}
 	if len(p.fields) > 0 {
-		rows = filterRows(rows, p.fields)
+		rows = p.filterRows(rows)
 	}
 	for i, r := range rows {
 		header := fmt.Sprintf("─ event %d ", i+1)

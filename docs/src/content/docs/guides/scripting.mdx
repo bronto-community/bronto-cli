@@ -64,14 +64,15 @@ $ bronto datasets list --fields collection,dataset
 ```
 
 Search events are flattened, and fields parsed from the log line sit under
-`message_kvs.`. Use the full name: a bare `status` matches no key and prints nothing
-for that field:
+`message_kvs.`. `--fields` accepts the bare name: `status` finds `message_kvs.status`
+when the event has no top-level `status` key, and the output key is the name you typed.
+The full name `message_kvs.status` works too, and keeps that key:
 
 ```console test
-$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o jsonl --fields '@time,message_kvs.host,message_kvs.status,message_kvs.path'
-{"@time":"2026-07-19 09:24:49.632 UTC","message_kvs.host":"web-3","message_kvs.path":"/api/checkout","message_kvs.status":502}
-{"@time":"2026-07-19 09:24:33.007 UTC","message_kvs.host":"web-3","message_kvs.path":"/api/checkout","message_kvs.status":502}
-{"@time":"2026-07-19 09:24:18.321 UTC","message_kvs.host":"web-2","message_kvs.path":"/api/checkout","message_kvs.status":502}
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o jsonl --fields '@time,host,status,path'
+{"@time":"2026-07-19 09:24:49.632 UTC","host":"web-3","path":"/api/checkout","status":502}
+{"@time":"2026-07-19 09:24:33.007 UTC","host":"web-3","path":"/api/checkout","status":502}
+{"@time":"2026-07-19 09:24:18.321 UTC","host":"web-2","path":"/api/checkout","status":502}
 ```
 
 `--select` asks the server for just the named fields. It takes the names you'd write in a
@@ -89,21 +90,33 @@ $ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 2 --selec
 on its own line. It uses [gojq](https://github.com/itchyny/gojq), so you don't need jq
 installed.
 
+Results print as JSON, so strings keep their quotes. Add `-r` (`--raw-output`), as with
+`jq -r`, to print strings without quotes; other values still print as compact JSON.
+`--jq` runs after `--fields`. On its own it sees the whole event, so search fields keep
+their `message_kvs.` names. With `--fields host,trace_id` it sees only those output keys,
+and you write `.host` instead.
+
 ```console test tty
 $ bronto monitors list -o json --jq '.name'
 "High 5xx rate on checkout"
 "Payments latency p95"
-$ bronto search "status >= 500" -d prod/checkout-service --since 1h -o jsonl --jq 'select(."message_kvs.host" == "web-1") | ."message_kvs.trace_id"'
-"9c244820635f8c0dc8342c0c2058c1c3"
-"8cadcf646ba7d02e25166280c042e3cb"
-"67d30b1a2fddae59f08e7502c43a12e3"
+$ bronto monitors list -o json --jq '.name' -r
+High 5xx rate on checkout
+Payments latency p95
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -o jsonl --jq 'select(."message_kvs.host" == "web-1") | ."message_kvs.trace_id"' -r
+9c244820635f8c0dc8342c0c2058c1c3
+8cadcf646ba7d02e25166280c042e3cb
+67d30b1a2fddae59f08e7502c43a12e3
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -o jsonl --fields host,trace_id --jq 'select(.host == "web-1") | .trace_id' -r
+9c244820635f8c0dc8342c0c2058c1c3
+8cadcf646ba7d02e25166280c042e3cb
+67d30b1a2fddae59f08e7502c43a12e3
 ```
 
 Differences from the `jq` CLI:
 
 - A value that makes the expression fail is skipped, and the other rows still print.
-- Results print as JSON, so strings keep their quotes. There is no `-r`. Pipe `-o jsonl`
-  into `jq -r` when you need raw strings.
+- `-r` is the only jq option. It needs `--jq`.
 - At a terminal the default format is a table, so add `-o json` or `-o jsonl`. Piped,
   `--jq` works without `-o`.
 
@@ -112,14 +125,14 @@ Some recipes:
 ```sh
 # Count 5xx responses per path
 bronto search "status >= 500" -d prod/checkout-service --since 1h -o jsonl \
-  | jq -r '."message_kvs.path"' | sort | uniq -c | sort -rn
+  --jq '."message_kvs.path"' -r | sort | uniq -c | sort -rn
 ```
 
 Show the waterfall for the slowest failing request's trace:
 
 ```console test tty
 $ bronto traces show "$(bronto search "status >= 500" -d prod/checkout-service --since 1h \
-  --order-by 'duration_ms DESC' -n 1 -o jsonl | jq -r '."message_kvs.trace_id"')"
+  --order-by 'duration_ms DESC' -n 1 -o jsonl --jq '."message_kvs.trace_id"' -r)"
 6 span(s) across 3 service(s), total 30.05s
 web-frontend/GET /checkout             ████████████████████████████████████████ 30.05s ERROR
   checkout-service/POST /api/checkout  ███████████████████████████████████████· 30.05s ERROR
@@ -158,11 +171,11 @@ it isn't, you get one line of JSON:
 
 ## Safe automation
 
-- `--dry-run` stops before any request that changes something. `create` and `update` print the request
-  as a plan on stdout, `{"body":{...},"dry_run":true,"method":"POST","path":"/monitors"}`.
-  `delete` and some action verbs, such as `groups add-members`, print a `DRY RUN:` line on
-  stderr instead. Reads still run, so names resolve. An agent can show the plan to a human
-  before running the real command.
+- `--dry-run` stops before any request that changes something. Every mutating command,
+  `delete` and action verbs such as `groups add-members` included, prints the request as a
+  plan on stdout, `{"body":{...},"dry_run":true,"method":"POST","path":"/monitors"}`.
+  Reads still run, so names resolve and the plan's path carries the resolved id. An agent
+  can show the plan to a human before running the real command.
 - Destructive commands refuse to run without a terminal unless you pass `--yes`
   (`usage_confirmation_required`, exit code 2).
 - `--debug` traces each API request and response on stderr: method, URL, status, latency,

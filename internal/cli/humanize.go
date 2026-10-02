@@ -79,6 +79,48 @@ func humanStamp(ms float64, format output.Format, now time.Time) string {
 	return timeAgo(ms, now)
 }
 
+// rowPolish is a table/csv-only row transform (resourceListPolish,
+// eventTimeRows, the per-resource ListTransforms): presentation, never
+// applied to json/jsonl.
+type rowPolish = func(rows []map[string]any, format output.Format) []map[string]any
+
+// humanRows resolves the output format, applies the polish passes when
+// it is table or csv (json/jsonl keep the raw values), and returns the
+// printer for that format.
+func humanRows(app *App, rows []map[string]any, polish ...rowPolish) (*output.Printer, []map[string]any, error) {
+	format, err := app.DetectFormat(false)
+	if err != nil {
+		return nil, nil, err
+	}
+	if format == output.FormatTable || format == output.FormatCSV {
+		for _, f := range polish {
+			rows = f(rows, format)
+		}
+	}
+	p, err := app.PrinterFor(format)
+	return p, rows, err
+}
+
+// eventTimeRows renders the epoch-milliseconds "time" of event-history
+// rows (monitor events and notifications) as an absolute UTC timestamp:
+// "2026-07-19 09:21:30 UTC" in a table, RFC3339 in csv. Unlike the
+// relative ages of *_at metadata columns, these rows are a timeline: two
+// state changes minutes apart must stay distinguishable, which "75d ago"
+// twice would not be.
+func eventTimeRows(rows []map[string]any, format output.Format) []map[string]any {
+	for _, row := range rows {
+		if ms, ok := numericValue(row["time"]); ok && ms > 1e11 {
+			t := time.UnixMilli(int64(ms)).UTC()
+			if format == output.FormatCSV {
+				row["time"] = t.Format(time.RFC3339)
+			} else {
+				row["time"] = t.Format("2006-01-02 15:04:05 UTC")
+			}
+		}
+	}
+	return rows
+}
+
 // collectionListRows expands /collections rows — maps of collection name
 // to dataset arrays — into one row per collection with a dataset count
 // and joined names, which is what a human scanning the table wants.

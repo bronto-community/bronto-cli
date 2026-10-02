@@ -2,7 +2,6 @@ package cli
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -63,8 +62,7 @@ func newAttachWidgetsCmd(kind string) *cobra.Command {
 				return err
 			}
 			if isDryRunPlan(payload) {
-				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would attach %d widget(s) to %s %s.\n", len(widgetIDs), sing, args[0])
-				return nil
+				return printDryRunPlan(app, payload)
 			}
 			app.Notef("Attached %d widget(s) to %s %s.\n", len(widgetIDs), sing, args[0])
 			return nil
@@ -115,8 +113,7 @@ func newRemoveWidgetCmd(kind string) *cobra.Command {
 				return err
 			}
 			if isDryRunPlan(payload) {
-				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would remove widget %s from %s %s.\n", widgetID, sing, args[0])
-				return nil
+				return printDryRunPlan(app, payload)
 			}
 			app.Notef("Removed widget %s from %s %s.\n", widgetID, sing, args[0])
 			return nil

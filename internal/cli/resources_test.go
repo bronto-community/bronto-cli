@@ -418,15 +418,13 @@ func TestUserActionCommands(t *testing.T) {
 	}
 
 	// dry-run: no contact, honest message
-	_, stderr, err := runResource(t, func(_ http.ResponseWriter, _ *http.Request) {
+	out, stderr, err := runResource(t, func(_ http.ResponseWriter, _ *http.Request) {
 		t.Fatal("server must not be contacted under --dry-run")
-	}, "", "users", "deactivate", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000e1", "--dry-run")
+	}, "", "users", "deactivate", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000e1", "--dry-run", "-o", "json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(stderr, "DRY RUN: would deactivate user aaaaaaaa-aaaa-aaaa-aaaa-0000000000e1.") {
-		t.Fatalf("dry-run stderr = %q", stderr)
-	}
+	decodePlan(t, out, stderr, "POST", "/users/aaaaaaaa-aaaa-aaaa-aaaa-0000000000e1/deactivate")
 }
 
 func TestGroupMembersCommand(t *testing.T) {
@@ -442,6 +440,60 @@ func TestGroupMembersCommand(t *testing.T) {
 	var rows []map[string]any
 	if err := json.Unmarshal([]byte(out), &rows); err != nil || len(rows) != 1 || rows[0]["id"] != "aaaaaaaa-aaaa-aaaa-aaaa-0000000000e1" {
 		t.Fatalf("members out = %q err=%v", out, err)
+	}
+}
+
+// TestEpochColumnsRenderReadableInTables pins: the event-history tables
+// (monitors events/notifications) show absolute UTC times and groups
+// members shows its modified_at like other *_at list columns, while
+// json keeps the raw epoch milliseconds.
+func TestEpochColumnsRenderReadableInTables(t *testing.T) {
+	const mon = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1"
+	const grp = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000f1"
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/monitors/" + mon + "/events":
+			_, _ = w.Write([]byte(`{"monitor_events":[{"monitor_id":"m","time":1784452890000,"monitor_status":"ALERT"}]}`))
+		case "/monitors/" + mon + "/notifications":
+			_, _ = w.Write([]byte(`{"monitor_notifications":[{"time":1784452891204,"status":"SENT","type":"EMAIL"}]}`))
+		case "/groups/" + grp + "/members":
+			_, _ = w.Write([]byte(`{"members":[{"member_id":"u1","member_type":"USER","modified_at":1777890000000}]}`))
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}
+	cases := []struct {
+		args       []string
+		table, csv string // expected substrings
+		raw        string // raw epoch value expected in json
+	}{
+		{[]string{"monitors", "events", mon}, "2026-07-19 09:21:30 UTC", "2026-07-19T09:21:30Z", "1784452890000"},
+		{[]string{"monitors", "notifications", mon}, "2026-07-19 09:21:31 UTC", "2026-07-19T09:21:31Z", "1784452891204"},
+		{[]string{"groups", "members", grp}, "2026-05-04", "2026-05-04T", "1777890000000"},
+	}
+	for _, c := range cases {
+		name := strings.Join(c.args[:2], " ")
+		out, _, err := runResource(t, handler, "", append(append([]string{}, c.args...), "-o", "table")...)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if !strings.Contains(out, c.table) || strings.Contains(out, c.raw) {
+			t.Fatalf("%s table = %q, want %q and no raw %s", name, out, c.table, c.raw)
+		}
+		out, _, err = runResource(t, handler, "", append(append([]string{}, c.args...), "-o", "csv")...)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if !strings.Contains(out, c.csv) {
+			t.Fatalf("%s csv = %q, want %q", name, out, c.csv)
+		}
+		out, _, err = runResource(t, handler, "", append(append([]string{}, c.args...), "-o", "json")...)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if !strings.Contains(out, c.raw) {
+			t.Fatalf("%s json = %q, want raw %s", name, out, c.raw)
+		}
 	}
 }
 

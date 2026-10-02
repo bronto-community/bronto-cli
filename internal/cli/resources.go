@@ -307,6 +307,18 @@ func isDryRunPlan(payload any) bool {
 	return v
 }
 
+// printDryRunPlan prints a --dry-run plan on stdout through the normal
+// output engine, exactly as create/update do: verbs whose real success
+// path is a stderr confirmation ("Deleted X.") still answer a dry run with
+// the machine-readable request they would have sent, resolved ids included.
+func printDryRunPlan(app *App, plan any) error {
+	p, err := app.Printer(false)
+	if err != nil {
+		return err
+	}
+	return p.PrintJSON(plan)
+}
+
 // resourceRequestBody resolves the create/update request body from exactly
 // one of --input (file or "-" for stdin) or -f k=v fields.
 func resourceRequestBody(cmd *cobra.Command, input string, fields []string) ([]byte, error) {
@@ -693,8 +705,7 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 				return err
 			}
 			if isDryRunPlan(payload) {
-				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would delete %s %s.\n", desc.singular(), args[0])
-				return nil
+				return printDryRunPlan(app, payload)
 			}
 			app.Notef("Deleted %s %s.\n", desc.singular(), args[0])
 			return nil
@@ -729,7 +740,7 @@ func newMonitorEventsCmd() *cobra.Command {
 				return err
 			}
 			rows := rowsFromPayload(payload)
-			p, err := app.Printer(false)
+			p, rows, err := humanRows(app, rows, eventTimeRows)
 			if err != nil {
 				return err
 			}
@@ -773,8 +784,7 @@ func newMonitorMuteCmd() *cobra.Command {
 				return err
 			}
 			if isDryRunPlan(payload) {
-				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would set mute_until=%d on monitor %s.\n", muteUntil, args[0])
-				return nil
+				return printDryRunPlan(app, payload)
 			}
 			if unmute {
 				app.Notef("Unmuted monitor %s.\n", args[0])
@@ -813,8 +823,7 @@ func newUserActionCmd(action, short string) *cobra.Command {
 				return err
 			}
 			if isDryRunPlan(payload) {
-				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would %s user %s.\n", action, args[0])
-				return nil
+				return printDryRunPlan(app, payload)
 			}
 			_, _ = fmt.Fprintf(app.Stderr, "%s: user %s.\n", short, args[0])
 			return nil
@@ -845,7 +854,7 @@ func newGroupMembersCmd() *cobra.Command {
 				return err
 			}
 			rows := rowsFromPayload(payload)
-			p, err := app.Printer(false)
+			p, rows, err := humanRows(app, rows, resourceListPolish)
 			if err != nil {
 				return err
 			}

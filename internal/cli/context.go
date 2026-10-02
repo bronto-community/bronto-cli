@@ -50,6 +50,8 @@ type App struct {
 	// JQ is the compiled --jq expression, or nil. Compiled here (before any
 	// network call) so a bad expression fails fast as a usage error.
 	JQ *gojq.Code
+	// RawOutput is --raw-output/-r: string --jq results print unquoted.
+	RawOutput bool
 
 	// SecretLookupErr holds a genuine (non-"not found") error from the
 	// keychain/credentials-file lookup — e.g. a corrupt credentials file.
@@ -159,6 +161,13 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 		}
 		jqCode = code
 	}
+	rawOutput, _ := cmd.Flags().GetBool("raw-output")
+	if rawOutput && jqCode == nil {
+		// -r only changes how --jq results print; accepting it alone would
+		// make it a silent no-op (same reasoning as --fields with -o raw).
+		return nil, clierr.New("usage_invalid_flags", "--raw-output requires --jq").
+			WithHint("Example: bronto monitors get <id> --jq .id -r")
+	}
 	// CRITICAL: httpClient captures cfg.APIKey() at construction time, so the
 	// keychain injection above MUST happen before this line.
 	httpClient := api.NewHTTPClient(cfg.APIKey(), version.Version)
@@ -198,6 +207,7 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 		FieldFilter:     fieldFilter,
 		ListFieldsOnly:  listFieldsOnly,
 		JQ:              jqCode,
+		RawOutput:       rawOutput,
 		SecretLookupErr: secretLookupErr,
 		Color:           output.ColorEnabled(noColor, ttyNow, os.Getenv),
 	}, nil
@@ -245,6 +255,7 @@ func (a *App) PrinterFor(format output.Format) (*output.Printer, error) {
 	}
 	if a.JQ != nil {
 		p.SetJQ(a.JQ)
+		p.SetRawOutput(a.RawOutput)
 	}
 	return p, nil
 }

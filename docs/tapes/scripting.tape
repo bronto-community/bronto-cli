@@ -10,7 +10,7 @@ Sleep 300ms
 Enter
 Wait
 Sleep 2s
-Type `bronto search "status >= 500" -d prod/checkout-service --select host -o jsonl | jq -r .host | sort | uniq -c | sed 's/^ *//'`
+Type `bronto search "status >= 500" -d prod/checkout-service --select host -o jsonl --jq .host -r | sort | uniq -c | sed 's/^ *//'`
 Sleep 300ms
 Enter
 Wait
