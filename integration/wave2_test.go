@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -94,13 +95,24 @@ func TestTailNoFollowSeeded(t *testing.T) {
 // TestAuthLoginKeyStdin exercises the full credential round trip with NO
 // env key: login --key-stdin stores the key (file fallback on CI runners
 // without a keychain), and auth status must then resolve it from the store.
+//
+// The Runner's config dir is hermetic but the OS keychain is not: on a
+// developer Mac, login writes the real macOS keychain entry for its
+// profile. It once used the default profile, so running the suite locally
+// overwrote the developer's own key with the CI key. It now logs in to a
+// per-run bronto-ci-* profile and logs out of it on cleanup; never point
+// this test at "default".
 func TestAuthLoginKeyStdin(t *testing.T) {
 	key := skipIfNoCreds(t)
 	r := NewRunner(t, key)
 	r.OmitEnvKey = true
+	profile := resourceName("auth-login")
+	t.Cleanup(func() {
+		_, _ = r.Run(context.Background(), "", "auth", "logout", "--profile", profile)
+	})
 
 	res, err := r.Run(t.Context(), key+"\n",
-		"auth", "login", "--key-stdin", "--region", regionOrDefault())
+		"auth", "login", "--key-stdin", "--profile", profile, "--region", regionOrDefault())
 	if err != nil {
 		t.Fatalf("running auth login: %v", err)
 	}
@@ -111,12 +123,15 @@ func TestAuthLoginKeyStdin(t *testing.T) {
 		t.Fatalf("login confirmation missing: %q", res.Stderr)
 	}
 
-	status := mustRunJSONArray(t, r, "auth", "status", "-o", "json")
+	status := mustRunJSONArray(t, r, "auth", "status", "--profile", profile, "-o", "json")
 	if len(status) == 0 {
 		t.Fatal("auth status returned no rows after login")
 	}
 	if s, _ := status[0]["status"].(string); s != "ok" {
 		t.Fatalf("auth status after login = %+v", status[0])
+	}
+	if p, _ := status[0]["profile"].(string); p != profile {
+		t.Fatalf("auth status profile = %q, want %q", p, profile)
 	}
 }
 
