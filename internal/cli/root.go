@@ -18,7 +18,8 @@ func NewRootCmd() *cobra.Command {
 		Use:   "bronto",
 		Short: "CLI for the Bronto observability platform",
 		Long: "bronto is a command-line client for the Bronto observability platform.\nDocs: https://docs.bronto.io\n\n" +
-			"plugins: an executable named bronto-<name> on PATH is invoked when <name> is the first argument.",
+			"Plugins: 'bronto <name>' runs an executable named bronto-<name> from PATH\n" +
+			"when <name> is not a built-in command.",
 		Args:          cobra.NoArgs,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -33,7 +34,7 @@ func NewRootCmd() *cobra.Command {
 	})
 
 	pf := cmd.PersistentFlags()
-	pf.String("api-key", "", "Bronto management API key (prefer BRONTO_API_KEY env)")
+	pf.String("api-key", "", "Bronto management API key (prefer the BRONTO_API_KEY env var)")
 	pf.String("profile", "", "named profile to use")
 	pf.String("region", "", "Bronto region: eu or us")
 	pf.String("base-url", "", "override the API base URL")
@@ -46,7 +47,7 @@ func NewRootCmd() *cobra.Command {
 	pf.StringSlice("fields", nil, "select specific fields (comma-separated); use '?' to list available field names")
 	pf.Int("timeout", 0, "HTTP timeout in seconds (config: timeout, env: BRONTO_TIMEOUT)")
 	pf.Int("max-retries", 2, "retries for idempotent requests on 429/5xx (config: max_retries, env: BRONTO_MAX_RETRIES)")
-	pf.Bool("debug", false, "trace API requests/responses on stderr (API key redacted)")
+	pf.Bool("debug", false, "print API requests and responses on stderr, with the API key redacted")
 	pf.Bool("dry-run", false, "print mutating API calls instead of executing them (reads still run)")
 	// Completion for the global (persistent) flags — one registration covers
 	// every subcommand. --fields needs a -d on the line; it no-ops otherwise.

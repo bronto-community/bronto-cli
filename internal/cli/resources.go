@@ -130,6 +130,26 @@ func (d resourceDesc) singular() string {
 	return strings.TrimSuffix(d.Name, "s")
 }
 
+// aSingular is singular() with its indefinite article, for help text
+// ("a monitor", "an API key"). "u" is left out on purpose: "a user".
+func (d resourceDesc) aSingular() string {
+	s := d.singular()
+	if strings.ContainsRune("aeioAEIO", rune(s[0])) {
+		return "an " + s
+	}
+	return "a " + s
+}
+
+// plural is the human plural for help text ("API keys", "saved searches",
+// "monitor templates"), built from singular() rather than the command name.
+func (d resourceDesc) plural() string {
+	s := d.singular()
+	if strings.HasSuffix(s, "s") || strings.HasSuffix(s, "ch") || strings.HasSuffix(s, "sh") {
+		return s + "es"
+	}
+	return s + "s"
+}
+
 // resourceRegistry is the single source of truth for every uniform Bronto
 // management resource. resourcespec_test.go asserts each entry's Base,
 // CreatePath, and IDBase correspond to real api/openapi.yaml paths (modulo
@@ -435,7 +455,7 @@ func confirmDestructive(cmd *cobra.Command, app *App, prompt string, yes bool) e
 func newResourceCmd(desc resourceDesc, extras ...*cobra.Command) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   desc.Name,
-		Short: fmt.Sprintf("Manage %s", desc.Name),
+		Short: fmt.Sprintf("Manage %s", desc.plural()),
 	}
 
 	replaced := map[string]bool{}
@@ -479,7 +499,7 @@ func firstWord(use string) string {
 func newResourceListCmd(desc resourceDesc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
-		Short:   fmt.Sprintf("List %s", desc.Name),
+		Short:   fmt.Sprintf("List %s", desc.plural()),
 		Example: fmt.Sprintf("  bronto %s list", desc.display()),
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -539,7 +559,7 @@ func maskSecretRows(rows []map[string]any, keys []string) {
 func newResourceGetCmd(desc resourceDesc) *cobra.Command {
 	return &cobra.Command{
 		Use:               "get <id>",
-		Short:             fmt.Sprintf("Get a %s by ID", desc.singular()),
+		Short:             fmt.Sprintf("Get %s by ID", desc.aSingular()),
 		Example:           fmt.Sprintf("  bronto %s get <id>", desc.display()),
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeResourceRef(desc),
@@ -570,8 +590,8 @@ func newResourceCreateCmd(desc resourceDesc) *cobra.Command {
 	var input string
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: fmt.Sprintf("Create a %s", desc.singular()),
-		Example: "  bronto " + desc.display() + " create -f name=x -f limit=10\n" +
+		Short: fmt.Sprintf("Create %s", desc.aSingular()),
+		Example: "  bronto " + desc.display() + " create -f name=<name>\n" +
 			"  bronto " + desc.display() + " create --input body.json",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -594,8 +614,8 @@ func newResourceCreateCmd(desc resourceDesc) *cobra.Command {
 			return p.PrintJSON(payload)
 		},
 	}
-	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil, "key=value pair for the request body (repeatable)")
-	cmd.Flags().StringVar(&input, "input", "", "request body from file, or - for stdin")
+	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil, "request body field as key=value; values parse as JSON when possible (repeatable)")
+	cmd.Flags().StringVar(&input, "input", "", "read the request body from a file, or - for stdin")
 	return cmd
 }
 
@@ -604,8 +624,8 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 	var input string
 	cmd := &cobra.Command{
 		Use:   "update <id>",
-		Short: fmt.Sprintf("Update a %s", desc.singular()),
-		Example: "  bronto " + desc.display() + " update <id> -f name=x\n" +
+		Short: fmt.Sprintf("Update %s", desc.aSingular()),
+		Example: "  bronto " + desc.display() + " update <id> -f name=<name>\n" +
 			"  bronto " + desc.display() + " update <id> --input body.json",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeResourceRef(desc),
@@ -642,8 +662,8 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 			return p.PrintJSON(payload)
 		},
 	}
-	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil, "key=value pair for the request body (repeatable)")
-	cmd.Flags().StringVar(&input, "input", "", "request body from file, or - for stdin")
+	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil, "request body field as key=value; values parse as JSON when possible (repeatable)")
+	cmd.Flags().StringVar(&input, "input", "", "read the request body from a file, or - for stdin")
 	return cmd
 }
 
@@ -677,7 +697,7 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 	var yes bool
 	cmd := &cobra.Command{
 		Use:               "delete <id>",
-		Short:             fmt.Sprintf("Delete a %s", desc.singular()),
+		Short:             fmt.Sprintf("Delete %s", desc.aSingular()),
 		Example:           fmt.Sprintf("  bronto %s delete <id> --yes", desc.display()),
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeResourceRef(desc),
@@ -754,7 +774,7 @@ func newMonitorMuteCmd() *cobra.Command {
 	var unmute bool
 	cmd := &cobra.Command{
 		Use:   "mute <id>",
-		Short: "Mute (or unmute) a monitor",
+		Short: "Mute or unmute a monitor",
 		Example: "  bronto monitors mute <id>\n" +
 			"  bronto monitors mute <id> --until 1710958395538\n" +
 			"  bronto monitors mute <id> --unmute",
@@ -794,8 +814,8 @@ func newMonitorMuteCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().Int64Var(&until, "until", -1, "mute until this epoch-millis timestamp (-1 = forever)")
-	cmd.Flags().BoolVar(&unmute, "unmute", false, "unmute the monitor instead")
+	cmd.Flags().Int64Var(&until, "until", -1, "mute until this Unix timestamp in milliseconds (-1 mutes indefinitely)")
+	cmd.Flags().BoolVar(&unmute, "unmute", false, "unmute the monitor")
 	return cmd
 }
 

@@ -21,9 +21,9 @@ func newUsageCmd() *cobra.Command {
 	var since string
 	cmd := &cobra.Command{
 		Use:   "usage",
-		Short: "Show ingestion/search/export usage over a time period",
-		Long: "Show ingestion/search/export usage over a time period.\n\n" +
-			"For per-dataset usage, use: bronto api GET /usage/organizations/logs",
+		Short: "Show ingestion, search, and export usage over a time period",
+		Long: "Shows organization-wide ingestion, search, and export usage over a time period.\n\n" +
+			"For per-dataset usage, run: bronto api GET /usage/organizations/logs",
 		Example: "  bronto usage --since 7d\n" +
 			"  bronto usage --since 1h",
 		Args: cobra.NoArgs,

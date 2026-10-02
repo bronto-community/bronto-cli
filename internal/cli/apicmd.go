@@ -28,8 +28,8 @@ func newAPICmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "api <METHOD> <path>",
 		Short: "Make an authenticated request to any Bronto API endpoint",
-		Long: "Escape hatch for endpoints without a dedicated command.\n" +
-			"Auth and region resolution are handled for you.",
+		Long: "Calls any API endpoint, including ones without a dedicated command.\n" +
+			"bronto adds the API key and sends the request to your region's base URL.",
 		Example: "  bronto api GET /logs\n" +
 			"  bronto api GET /monitors -f limit=10\n" +
 			"  bronto api POST /search --input query.json\n" +
@@ -143,8 +143,8 @@ func newAPICmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil,
-		"key=value pair: query param for GET/DELETE, JSON body field otherwise (repeatable)")
-	cmd.Flags().StringVar(&input, "input", "", "request body from file, or - for stdin")
+		"key=value: a query parameter for GET/DELETE, a JSON body field otherwise (repeatable)")
+	cmd.Flags().StringVar(&input, "input", "", "read the request body from a file, or - for stdin")
 	cmd.Flags().StringVar(&contentType, "content-type", "application/json", "Content-Type header for request bodies")
 	return cmd
 }

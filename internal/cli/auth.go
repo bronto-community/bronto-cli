@@ -382,7 +382,7 @@ func newAuthLogoutCmd() *cobra.Command {
 func newAuthTokenCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "token",
-		Short:   "Print the resolved API key (for scripting)",
+		Short:   "Print the API key in use, for scripts",
 		Args:    cobra.NoArgs,
 		Example: "  export BRONTO_API_KEY=$(bronto auth token)",
 		RunE: func(cmd *cobra.Command, _ []string) error {

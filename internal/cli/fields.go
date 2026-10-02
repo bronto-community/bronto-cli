@@ -20,11 +20,11 @@ func newFieldsCmd() *cobra.Command {
 	var limit int
 	cmd := &cobra.Command{
 		Use:   "fields [name-filter]",
-		Short: "Discover field names (top keys) in a dataset",
-		Long: "Discover field names (top keys) in a dataset, with a sample of the\n" +
-			"values seen for each. Pass a name-filter to keep only fields whose\n" +
-			"name contains it (case-insensitive) — handy for finding the exact\n" +
-			"spelling of a field to use in a search query.",
+		Short: "List the field names (top keys) in a dataset",
+		Long: "Lists the field names (top keys) in a dataset, with a sample of the values\n" +
+			"seen for each. Pass a name-filter to keep only fields whose name contains it\n" +
+			"(case-insensitive). Use it to find the exact spelling of a field before you\n" +
+			"write a search query.",
 		Example: "  bronto fields -d <dataset> --since 1h\n" +
 			"  bronto fields -d <dataset> model      # fields with \"model\" in the name\n" +
 			"  bronto fields --since 15m -n 20",
@@ -66,7 +66,7 @@ func newFieldsCmd() *cobra.Command {
 			return printTopKeyRows(app, rows)
 		},
 	}
-	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset name or UUID (omit for all datasets)")
+	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset name or UUID (omit to cover all datasets)")
 	cmd.Flags().StringVar(&since, "since", "1h", "relative lookback (single unit: 30s, 15m, 1h, 2d)")
 	cmd.Flags().IntVarP(&limit, "limit", "n", 0, "maximum keys to return")
 	// The positional name-filter completes to the dataset's own field names

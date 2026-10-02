@@ -24,8 +24,8 @@ bronto exports <command> [flags]
 | Command | Description |
 | --- | --- |
 | [`bronto exports create`](/reference/commands/exports/#bronto-exports-create) | Create an export |
-| [`bronto exports delete`](/reference/commands/exports/#bronto-exports-delete) | Delete a export |
-| [`bronto exports get`](/reference/commands/exports/#bronto-exports-get) | Get a export by ID |
+| [`bronto exports delete`](/reference/commands/exports/#bronto-exports-delete) | Delete an export |
+| [`bronto exports get`](/reference/commands/exports/#bronto-exports-get) | Get an export by ID |
 | [`bronto exports list`](/reference/commands/exports/#bronto-exports-list) | List exports |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
@@ -42,16 +42,16 @@ bronto exports create [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--dataset` | `-d` | string |  | dataset (name or UUID) to export (convenience flag) |
+| `--dataset` | `-d` | string |  | dataset name or UUID to export |
 | `--download` |  | string |  | download the completed export to this path (implies --wait) |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--from` |  | string |  | absolute start time, RFC3339 (convenience flag) |
-| `--input` |  | string |  | request body from file, or - for stdin |
-| `--since` |  | string |  | relative lookback, e.g. 1h (convenience flag) |
-| `--to` |  | string |  | absolute end time, RFC3339 (convenience flag) |
-| `--wait` |  | bool |  | poll GET /exports/&#123;id&#125; until COMPLETE or FAILED (backing off 2s→30s) |
-| `--wait-timeout` |  | duration | `15m0s` | give up waiting after this long (e.g. 5m, 30m); 0 uses the default |
-| `--where` |  | string |  | query filter (convenience flag) |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--from` |  | string |  | absolute start time (RFC3339) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
+| `--since` |  | string |  | relative lookback, e.g. 1h |
+| `--to` |  | string |  | absolute end time (RFC3339) |
+| `--wait` |  | bool |  | poll the export until it is COMPLETE or FAILED, backing off from 2s to 30s |
+| `--wait-timeout` |  | duration | `15m0s` | stop waiting after this long, e.g. 5m or 30m (0 means the default) |
+| `--where` |  | string |  | WHERE expression that selects the events to export |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
@@ -65,7 +65,7 @@ bronto exports create --dataset <dataset> --since 1h --download out.json.gz
 
 ## bronto exports delete
 
-Delete a export
+Delete an export
 
 ```sh
 bronto exports delete <id> [flags]
@@ -87,7 +87,7 @@ bronto exports delete <id> --yes
 
 ## bronto exports get
 
-Get a export by ID
+Get an export by ID
 
 ```sh
 bronto exports get <id> [flags]

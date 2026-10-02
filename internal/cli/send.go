@@ -26,13 +26,14 @@ func newSendCmd() *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "send",
-		Short: "Send events into Bronto (one-shot message or NDJSON stream from stdin)",
-		Long: "Sends events into Bronto's ingestion API. With -m/--message, sends exactly one\n" +
-			"event and exits. Otherwise reads NDJSON or plain-text lines from stdin, batching\n" +
-			"them by --batch-size/--batch-bytes and flushing on a --flush-interval ticker so\n" +
-			"'tail -f access.log | bronto send -d app' ships promptly. If a batch fails to\n" +
-			"send, that error aborts the command; events already in flight for that batch are\n" +
-			"lost (retry the command; batches are not deduplicated).",
+		Short: "Send events to Bronto from a message or stdin",
+		Long: "Sends events to Bronto's ingestion API. With -m/--message it sends one event\n" +
+			"and exits. Otherwise it reads NDJSON or plain-text lines from stdin and sends them\n" +
+			"in batches capped by --batch-size and --batch-bytes. A partial batch is flushed\n" +
+			"every --flush-interval, so 'tail -f access.log | bronto send -d app' delivers\n" +
+			"lines soon after they are written. If a batch fails, the command stops and the\n" +
+			"events in that batch are lost. Rerunning the command can send duplicates, because\n" +
+			"batches are not deduplicated.",
 		Example: "  bronto send -d app -m 'hello world'\n" +
 			"  tail -f access.log | bronto send -d app --collection prod\n" +
 			"  echo '{\"message\":\"m\",\"level\":\"warn\"}' | bronto send -d app",
@@ -107,13 +108,13 @@ func newSendCmd() *cobra.Command {
 	f := cmd.Flags()
 	f.StringVarP(&dataset, "dataset", "d", "", "destination dataset (required)")
 	f.StringVar(&collection, "collection", "", "destination collection")
-	f.StringArrayVar(&tags, "tag", nil, "tag as key=value (repeatable)")
-	f.StringVarP(&message, "message", "m", "", "send exactly one event with this message and exit (ignores stdin)")
+	f.StringArrayVar(&tags, "tag", nil, "tag to attach, as key=value (repeatable)")
+	f.StringVarP(&message, "message", "m", "", "send one event with this message and exit (stdin is ignored)")
 	f.StringVar(&ingestURLFlag, "ingest-url", "", "override the ingestion URL (config: ingest_url, env: BRONTO_INGEST_URL)")
 	f.IntVar(&batchSize, "batch-size", 500, "max events per batch")
 	f.IntVar(&batchBytes, "batch-bytes", 1<<20, "max bytes per batch")
 	f.DurationVar(&flushInterval, "flush-interval", time.Second, "flush a partial batch at least this often (min 100ms)")
-	f.BoolVar(&noGzip, "no-gzip", false, "disable gzip compression of the request body")
+	f.BoolVar(&noGzip, "no-gzip", false, "send request bodies uncompressed")
 	_ = cmd.MarkFlagRequired("dataset")
 	return cmd
 }

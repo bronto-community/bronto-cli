@@ -31,10 +31,10 @@ func newTailCmd() *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "tail [query]",
-		Short: "Follow new events live (like tail -f)",
-		Long: "Follows new events live (like tail -f), polling on --interval and looking back --window\n" +
-			"each poll. Known limitation: out-of-order events arriving later than one window are not\n" +
-			"re-ordered across polls (per-batch ordering only); a cross-poll reorder buffer is future work.",
+		Short: "Follow new events as they arrive (like tail -f)",
+		Long: "Follows new events as they arrive (like tail -f). Every --interval it polls for\n" +
+			"events in the last --window. Events are sorted within each poll but not across\n" +
+			"polls, so an event that arrives more than one window late prints out of order.",
 		Example: "  bronto tail\n" +
 			"  bronto tail \"level = 'error'\" --include 'timeout' --exclude 'healthz'\n" +
 			"  bronto tail --no-follow --window 5m   # catch up, then exit\n" +
@@ -166,10 +166,10 @@ func newTailCmd() *cobra.Command {
 	f.StringArrayVar(&includes, "include", nil, "only show lines matching this regex (repeatable, ANDed)")
 	f.StringArrayVar(&excludes, "exclude", nil, "hide lines matching this regex (repeatable)")
 	f.StringArrayVar(&highlights, "highlight", nil, "highlight regex matches in the output (repeatable)")
-	f.BoolVar(&noFollow, "no-follow", false, "fetch the current window once, then exit")
-	f.StringArrayVar(&aggSelects, "select", nil, "aggregate to compute live, e.g. count(*) (repeatable; switches to aggregate mode)")
+	f.BoolVar(&noFollow, "no-follow", false, "fetch the current window once and exit")
+	f.StringArrayVar(&aggSelects, "select", nil, "aggregate to compute on each poll, e.g. count(*) (repeatable; switches to aggregate mode)")
 	f.StringArrayVarP(&aggGroups, "group-by", "g", nil, "group-by key for live aggregates (repeatable; switches to aggregate mode)")
-	f.IntVar(&dedupSize, "dedup-size", 20000, "events remembered for duplicate suppression across polls; very high-volume streams may need more")
+	f.IntVar(&dedupSize, "dedup-size", 20000, "number of recent events remembered to drop duplicates across polls; raise it for very high-volume streams")
 	cmd.ValidArgsFunction = defaultArgComplete // positional is a WHERE expr; hint flags instead
 	return cmd
 }

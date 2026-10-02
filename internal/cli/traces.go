@@ -15,7 +15,7 @@ import (
 func newTracesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traces",
-		Short: "Explore OpenTelemetry traces (APM-style views over the .traces logset)",
+		Short: "Explore OpenTelemetry traces stored in the .traces dataset",
 	}
 	cmd.AddCommand(newTracesServicesCmd(), newTracesOperationsCmd(),
 		newTracesAggregateCmd(), newTracesListCmd(), newTracesShowCmd(), newTracesShapeCmd())
@@ -57,7 +57,7 @@ func newTracesServicesCmd() *cobra.Command {
 	var limit int
 	cmd := &cobra.Command{
 		Use:     "services",
-		Short:   "Span counts and latency per service",
+		Short:   "Show span counts and latency per service",
 		Example: "  bronto traces services --since 15m\n  bronto traces services --errors",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -88,9 +88,9 @@ func newTracesOperationsCmd() *cobra.Command {
 	var limit int
 	cmd := &cobra.Command{
 		Use:   "operations",
-		Short: "Span counts and latency per service and operation",
+		Short: "Show span counts and latency per service and operation",
 		Example: "  bronto traces operations --since 15m\n" +
-			"  bronto traces operations -s checkout --errors -n 10",
+			"  bronto traces operations -s checkout-service --errors -n 10",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			app, agg, err := tracesAgg(cmd, since, "15m")
@@ -172,7 +172,7 @@ func newTracesAggregateCmd() *cobra.Command {
 	f.BoolVar(&allSpans, "all-spans", false, "consider all spans, not just roots")
 	cmd.MarkFlagsMutuallyExclusive("root-only", "all-spans")
 	f.StringVarP(&service, "service", "s", "", "filter by service name")
-	f.StringVarP(&kind, "kind", "k", "", "filter by span kind (server, client, ...)")
+	f.StringVarP(&kind, "kind", "k", "", "filter by span kind, e.g. server or client")
 	f.BoolVar(&errorsOnly, "errors", false, "only error spans")
 	f.StringVarP(&where, "where", "w", "", "additional raw WHERE clause")
 	f.BoolVar(&includeEmpty, "include-empty", false, "include rows where an attribute is missing")
@@ -189,7 +189,7 @@ func newTracesListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List individual spans",
-		Example: "  bronto traces list -s checkout --errors\n" +
+		Example: "  bronto traces list -s checkout-service --errors\n" +
 			"  bronto traces list --min-duration-ms 500 -n 20",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -217,7 +217,7 @@ func newTracesListCmd() *cobra.Command {
 	f := cmd.Flags()
 	f.StringVarP(&service, "service", "s", "", "filter by service name")
 	f.StringVar(&operation, "operation", "", "filter by operation (span) name")
-	f.Float64Var(&minDurationMS, "min-duration-ms", 0, "only spans at least this long")
+	f.Float64Var(&minDurationMS, "min-duration-ms", 0, "only spans at least this many milliseconds long")
 	f.BoolVar(&errorsOnly, "errors", false, "only error spans")
 	f.IntVarP(&limit, "limit", "n", 50, "max spans")
 	f.StringVar(&since, "since", "", "relative lookback (default 15m)")
@@ -338,7 +338,7 @@ func newTracesShapeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "shape",
 		Short: "Show the merged call-tree shape across a sample of traces",
-		Example: "  bronto traces shape -s checkout --sample 20\n" +
+		Example: "  bronto traces shape -s checkout-service --sample 20\n" +
 			"  bronto traces shape --any-span --operation 'SELECT users'",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -423,7 +423,7 @@ func newTracesShapeCmd() *cobra.Command {
 	f.StringVar(&operation, "operation", "", "filter by operation (span) name")
 	f.StringVarP(&where, "where", "w", "", "additional raw WHERE clause")
 	f.BoolVar(&errorsOnly, "errors", false, "only error spans/traces")
-	f.Float64Var(&minDurationMS, "min-duration-ms", 0, "only entry spans at least this long")
+	f.Float64Var(&minDurationMS, "min-duration-ms", 0, "only entry spans at least this many milliseconds long")
 	f.BoolVar(&entry, "entry", true, "sample by entry (server) spans")
 	f.BoolVar(&anySpan, "any-span", false, "sample by any matching span, not just entries")
 	cmd.MarkFlagsMutuallyExclusive("entry", "any-span")

@@ -31,7 +31,7 @@ func newGroupMembershipCmd(add bool) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   use + " <group> [--users <id|email,...>] [--groups <id|name,...>]",
 		Short: map[bool]string{true: "Add users or groups to a group", false: "Remove users or groups from a group"}[add],
-		Example: "  bronto groups " + use + " oncall --users alice@example.com,bob@example.com\n" +
+		Example: "  bronto groups " + use + " oncall --users ada@example.com,grace@example.com\n" +
 			"  bronto groups " + use + " oncall --groups sre",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeKindRef("groups"),
@@ -96,7 +96,7 @@ func newUserGroupsCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:               "groups <user>",
 		Short:             "List the groups a user belongs to",
-		Example:           "  bronto users groups alice@example.com",
+		Example:           "  bronto users groups ada@example.com",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeKindRef("users"),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -194,7 +194,7 @@ func newMonitorNotificationsCmd() *cobra.Command {
 				eventTimeRows)
 		},
 	}
-	cmd.Flags().StringVar(&since, "since", "24h", "lookback window (e.g. 1h, 7d, 1h30m)")
+	cmd.Flags().StringVar(&since, "since", "24h", "lookback window, e.g. 1h, 7d, or 1h30m")
 	return cmd
 }
 
@@ -237,7 +237,7 @@ func newMetricTopKeysCmd() *cobra.Command {
 			return printTopKeyRows(app, rows)
 		},
 	}
-	cmd.Flags().StringVar(&since, "since", "1h", "lookback window (e.g. 15m, 1h, 1h30m)")
+	cmd.Flags().StringVar(&since, "since", "1h", "lookback window, e.g. 15m, 1h, or 1h30m")
 	return cmd
 }
 

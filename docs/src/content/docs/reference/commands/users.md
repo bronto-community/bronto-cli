@@ -47,15 +47,15 @@ bronto users create [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto users create -f name=x -f limit=10
+bronto users create -f name=<name>
 bronto users create --input body.json
 ```
 
@@ -126,7 +126,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto users groups alice@example.com
+bronto users groups ada@example.com
 ```
 
 ## bronto users list
@@ -189,14 +189,14 @@ bronto users update <id> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto users update <id> -f name=x
+bronto users update <id> -f name=<name>
 bronto users update <id> --input body.json
 ```

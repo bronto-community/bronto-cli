@@ -58,11 +58,13 @@ func newAskCmd() *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "ask <question>",
-		Short: "Translate a question into a query (LLM-assisted)",
-		Long: "Translates a natural-language question into a bronto search using a configured\n" +
-			"OpenAI-compatible endpoint (config: ask_url, ask_model; key: BRONTO_ASK_API_KEY).\n" +
-			"The generated command and its reasoning are shown BEFORE anything runs; only the\n" +
-			"question plus dataset and field NAMES (never event data) are sent to the endpoint.",
+		Short: "Turn a question into a search query using an LLM",
+		Long: "Turns a natural-language question into a bronto search, using an OpenAI-compatible\n" +
+			"chat-completions endpoint you configure (config: ask_url, ask_model; API key in\n" +
+			"BRONTO_ASK_API_KEY). bronto prints the generated command and the model's reasoning\n" +
+			"before it runs anything. In a terminal it asks for confirmation; elsewhere nothing\n" +
+			"runs without --yes. The endpoint receives the question and dataset and field names\n" +
+			"only, never event data or your Bronto API key.",
 		Example: "  bronto ask \"5xx spikes in checkout since last night\"\n" +
 			"  bronto ask \"errors by host this morning\" --yes\n" +
 			"  bronto config set ask_url https://api.openai.com/v1/chat/completions",
@@ -128,8 +130,8 @@ func newAskCmd() *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
-	f.StringVarP(&dataset, "dataset", "d", "", "target dataset (overrides the model's pick, grounds field discovery)")
-	f.BoolVar(&yes, "yes", false, "run the generated query without confirmation")
+	f.StringVarP(&dataset, "dataset", "d", "", "dataset to search; overrides the model's choice and sends the model its field names")
+	f.BoolVar(&yes, "yes", false, "run the generated query without asking")
 	cmd.ValidArgsFunction = defaultArgComplete // positional is free text; hint flags instead
 	return cmd
 }

@@ -23,23 +23,23 @@ bronto monitors <command> [flags]
 
 | Command | Description |
 | --- | --- |
-| [`bronto monitors check`](/reference/commands/monitors/#bronto-monitors-check) | Validate monitor definitions (CI-friendly: non-zero exit on problems) |
+| [`bronto monitors check`](/reference/commands/monitors/#bronto-monitors-check) | Validate monitor definition files, exiting non-zero on problems |
 | [`bronto monitors create`](/reference/commands/monitors/#bronto-monitors-create) | Create a monitor |
 | [`bronto monitors delete`](/reference/commands/monitors/#bronto-monitors-delete) | Delete a monitor |
 | [`bronto monitors downtimes`](/reference/commands/monitors/#bronto-monitors-downtimes) | Manage downtimes |
 | [`bronto monitors events`](/reference/commands/monitors/#bronto-monitors-events) | List recent events for a monitor |
 | [`bronto monitors get`](/reference/commands/monitors/#bronto-monitors-get) | Get a monitor by ID |
 | [`bronto monitors list`](/reference/commands/monitors/#bronto-monitors-list) | List monitors |
-| [`bronto monitors mute`](/reference/commands/monitors/#bronto-monitors-mute) | Mute (or unmute) a monitor |
+| [`bronto monitors mute`](/reference/commands/monitors/#bronto-monitors-mute) | Mute or unmute a monitor |
 | [`bronto monitors notifications`](/reference/commands/monitors/#bronto-monitors-notifications) | List notifications a monitor sent |
-| [`bronto monitors templates`](/reference/commands/monitors/#bronto-monitors-templates) | Manage templates |
+| [`bronto monitors templates`](/reference/commands/monitors/#bronto-monitors-templates) | Manage monitor templates |
 | [`bronto monitors update`](/reference/commands/monitors/#bronto-monitors-update) | Update a monitor |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 ## bronto monitors check
 
-Validate monitor definitions (CI-friendly: non-zero exit on problems)
+Validate monitor definition files, exiting non-zero on problems
 
 ```sh
 bronto monitors check --input <file.json> [--input more.json] [flags]
@@ -72,15 +72,15 @@ bronto monitors create [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto monitors create -f name=x -f limit=10
+bronto monitors create -f name=<name>
 bronto monitors create --input body.json
 ```
 
@@ -137,15 +137,15 @@ bronto monitors downtimes create [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto monitors downtimes create -f name=x -f limit=10
+bronto monitors downtimes create -f name=<name>
 bronto monitors downtimes create --input body.json
 ```
 
@@ -199,15 +199,15 @@ bronto monitors downtimes update <id> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto monitors downtimes update <id> -f name=x
+bronto monitors downtimes update <id> -f name=<name>
 bronto monitors downtimes update <id> --input body.json
 ```
 
@@ -261,7 +261,7 @@ bronto monitors list
 
 ## bronto monitors mute
 
-Mute (or unmute) a monitor
+Mute or unmute a monitor
 
 ```sh
 bronto monitors mute <id> [flags]
@@ -271,8 +271,8 @@ bronto monitors mute <id> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--unmute` |  | bool |  | unmute the monitor instead |
-| `--until` |  | int | `-1` | mute until this epoch-millis timestamp (-1 = forever) |
+| `--unmute` |  | bool |  | unmute the monitor |
+| `--until` |  | int | `-1` | mute until this Unix timestamp in milliseconds (-1 mutes indefinitely) |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
@@ -296,7 +296,7 @@ bronto monitors notifications <id> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--since` |  | string | `24h` | lookback window (e.g. 1h, 7d, 1h30m) |
+| `--since` |  | string | `24h` | lookback window, e.g. 1h, 7d, or 1h30m |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
@@ -308,7 +308,7 @@ bronto monitors notifications <id> --since 7d
 
 ## bronto monitors templates
 
-Manage templates
+Manage monitor templates
 
 ```sh
 bronto monitors templates <command> [flags]
@@ -321,7 +321,7 @@ bronto monitors templates <command> [flags]
 | [`bronto monitors templates create`](/reference/commands/monitors/#bronto-monitors-templates-create) | Create a monitor template |
 | [`bronto monitors templates delete`](/reference/commands/monitors/#bronto-monitors-templates-delete) | Delete a monitor template |
 | [`bronto monitors templates get`](/reference/commands/monitors/#bronto-monitors-templates-get) | Get a monitor template by ID |
-| [`bronto monitors templates list`](/reference/commands/monitors/#bronto-monitors-templates-list) | List templates |
+| [`bronto monitors templates list`](/reference/commands/monitors/#bronto-monitors-templates-list) | List monitor templates |
 | [`bronto monitors templates update`](/reference/commands/monitors/#bronto-monitors-templates-update) | Update a monitor template |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
@@ -338,15 +338,15 @@ bronto monitors templates create [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto monitors templates create -f name=x -f limit=10
+bronto monitors templates create -f name=<name>
 bronto monitors templates create --input body.json
 ```
 
@@ -390,7 +390,7 @@ bronto monitors templates get <id>
 
 ## bronto monitors templates list
 
-List templates
+List monitor templates
 
 ```sh
 bronto monitors templates list [flags]
@@ -416,15 +416,15 @@ bronto monitors templates update <id> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto monitors templates update <id> -f name=x
+bronto monitors templates update <id> -f name=<name>
 bronto monitors templates update <id> --input body.json
 ```
 
@@ -440,14 +440,14 @@ bronto monitors update <id> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto monitors update <id> -f name=x
+bronto monitors update <id> -f name=<name>
 bronto monitors update <id> --input body.json
 ```

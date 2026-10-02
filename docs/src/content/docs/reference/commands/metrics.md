@@ -73,7 +73,7 @@ bronto metrics top-keys <metric> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--since` |  | string | `1h` | lookback window (e.g. 15m, 1h, 1h30m) |
+| `--since` |  | string | `1h` | lookback window, e.g. 15m, 1h, or 1h30m |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 

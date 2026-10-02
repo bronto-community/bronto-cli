@@ -54,7 +54,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto groups add-members oncall --users alice@example.com,bob@example.com
+bronto groups add-members oncall --users ada@example.com,grace@example.com
 bronto groups add-members oncall --groups sre
 ```
 
@@ -70,15 +70,15 @@ bronto groups create [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto groups create -f name=x -f limit=10
+bronto groups create -f name=<name>
 bronto groups create --input body.json
 ```
 
@@ -172,7 +172,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto groups remove-members oncall --users alice@example.com,bob@example.com
+bronto groups remove-members oncall --users ada@example.com,grace@example.com
 bronto groups remove-members oncall --groups sre
 ```
 
@@ -188,14 +188,14 @@ bronto groups update <id> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto groups update <id> -f name=x
+bronto groups update <id> -f name=<name>
 bronto groups update <id> --input body.json
 ```
