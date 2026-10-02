@@ -21,8 +21,10 @@ type EndpointPattern struct {
 // pattern here still resolves against the vendored spec (or the
 // documented specLiveButUndocumented set), so this table can't silently
 // rot when endpoints move. TestEveryCommandIsInventoried guards the other
-// direction: a new hand-written command must be listed here (or declared
-// as calling no spec endpoint), so spec-sync can't under-report coverage.
+// direction: it runs each hand-written command against a recording server
+// and fails if a path it calls isn't listed here under that command, so
+// spec-sync can't under-report coverage. Shell-completion lookups (GET
+// /logs, /top-keys) are not commands and aren't listed.
 //
 // A Command names one or more commands separated by " / ". Each is a
 // command path with the "bronto " prefix dropped after the first, and it
@@ -31,9 +33,15 @@ type EndpointPattern struct {
 var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/search", Command: "bronto search / tail / traces / ask / repl"},
 	{Pattern: "/context", Command: "bronto context"},
-	{Pattern: "/top-keys", Command: "bronto fields"},
+	{Pattern: "/top-keys", Command: "bronto fields / ask / query check / search / repl"},
 	{Pattern: "/usage", Command: "bronto usage"},
-	{Pattern: "/logs", Command: "bronto ping / auth login / auth status / login"},
+	// GET /logs is the health probe (ping, auth) and also how every
+	// command that takes a dataset name resolves it to an id.
+	{Pattern: "/logs", Command: "bronto ping / auth login / auth status / login / ask / context / fields / " +
+		"query check / search / tail / repl / monitors check / exports create"},
+	{Pattern: "/saved-searches", Command: "bronto search"},
+	{Pattern: "/saved-searches/{*}", Command: "bronto search"},
+	{Pattern: "/organizations", Command: "bronto search"},
 	{Pattern: "/monitors/{*}/events", Command: "bronto monitors events"},
 	{Pattern: "/monitors/{*}/status", Command: "bronto monitors mute"},
 	{Pattern: "/groups/{*}/members", Command: "bronto groups members"},
@@ -68,7 +76,7 @@ func EndpointInventory() []EndpointPattern {
 		out = append(out, EndpointPattern{Pattern: pattern, Command: command})
 	}
 	for _, d := range resourceRegistry {
-		cmd := "bronto " + d.Name
+		cmd := "bronto " + d.display()
 		add(d.Base, cmd)
 		add(d.createPath(), cmd)
 		if !d.NoGet || !d.NoUpdate || !d.NoDelete {

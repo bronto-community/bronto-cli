@@ -155,11 +155,16 @@ var specIDBaseExceptions = map[string]bool{}
 // TestUsageLive, and parsers by TestParsersListTolerant. Re-check at every
 // re-vendor: if an entry here starts 404ing live, drop the CLI command
 // instead of keeping the exception.
+//
+// organizations was never in any vendored spec: `search --url/--open` reads
+// the active org from it to build the web-UI link (live-verified
+// 2026-10-02).
 var specLiveButUndocumented = map[string]bool{
 	"/dashboards":     true,
 	"/saved-searches": true,
 	"/parsers":        true,
 	"/usage":          true,
+	"/organizations":  true,
 }
 
 // normalizeParams rewrites every {param} segment to a bare {} so patterns
