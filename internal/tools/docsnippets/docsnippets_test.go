@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/bronto-community/bronto-cli/internal/tools/docsmock/mock"
@@ -85,9 +86,12 @@ func newRunner(t *testing.T) *Runner {
 	// The mock's URLs are padded to the exact length of the public URLs
 	// they stand in for, so that after Replace rewrites them a table that
 	// shows them (config list) keeps the column widths a reader gets.
-	var pad string
+	// pad is set after the server starts and read by handlers serving the
+	// bronto subprocesses; atomic so the race detector sees the ordering.
+	var padv atomic.Value
+	padv.Store("")
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if pad != "" {
+		if pad := padv.Load().(string); pad != "" {
 			if rest, ok := strings.CutPrefix(r.URL.Path, pad); ok && strings.HasPrefix(rest, "/") {
 				r.URL.Path = rest
 			}
@@ -96,9 +100,11 @@ func newRunner(t *testing.T) *Runner {
 	}))
 	t.Cleanup(ts.Close)
 	const publicBase, publicIngest = "https://api.eu.bronto.io", "https://ingestion.eu.bronto.io"
+	var pad string
 	if n := len(publicBase) - len(ts.URL); n >= 2 {
 		pad = "/" + strings.Repeat("_", n-1)
 	}
+	padv.Store(pad)
 	baseURL := ts.URL + pad
 	ingestURL := ts.URL + mock.IngestPath
 	if n := len(publicIngest) - len(ingestURL); n >= 1 {

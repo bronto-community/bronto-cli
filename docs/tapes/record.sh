@@ -86,10 +86,12 @@ fi
 work=$(mktemp -d "${TMPDIR:-/tmp}/bronto-tapes.XXXXXX")
 mock_pid=""
 sender_pid=""
-# shellcheck disable=SC2329 # invoked by the EXIT trap
+# Invoked by the EXIT trap. Older shellcheck reports that as unreachable
+# code (SC2317), newer as an unused function (SC2329).
+# shellcheck disable=SC2317,SC2329
 cleanup() {
-  [ -n "$sender_pid" ] && kill "$sender_pid" 2>/dev/null || true
-  [ -n "$mock_pid" ] && kill "$mock_pid" 2>/dev/null || true
+  if [ -n "$sender_pid" ]; then kill "$sender_pid" 2>/dev/null || true; fi
+  if [ -n "$mock_pid" ]; then kill "$mock_pid" 2>/dev/null || true; fi
   rm -rf "$work"
 }
 trap cleanup EXIT
