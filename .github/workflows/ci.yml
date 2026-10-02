@@ -100,7 +100,7 @@ jobs:
           if-no-files-found: warn
 
   # integration runs the black-box suite (integration/) against a dedicated,
-  # throwaway Bronto test org (see docs/superpowers/plans for the full
+  # throwaway Bronto test org (see .design/plans for the full
   # rationale). It lives here in ci.yml rather than a separately-triggered
   # workflow: a workflow that never fires leaves any required check pending
   # forever, which would wedge every PR once this becomes required.
