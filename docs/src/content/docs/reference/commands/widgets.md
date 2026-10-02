@@ -75,7 +75,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto widgets create -f name=<name>
+bronto widgets create -f name=<name> -f type=<type>
 bronto widgets create --input body.json
 ```
 
@@ -169,6 +169,6 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto widgets update <id> -f name=<name>
+bronto widgets update <id> -f name=<name> -f type=<type>
 bronto widgets update <id> --input body.json
 ```

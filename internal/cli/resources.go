@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strings"
 
@@ -68,6 +69,13 @@ type resourceDesc struct {
 	// UpdateRequiresHint tells the user how to build a complete body.
 	UpdateRequires     []string
 	UpdateRequiresHint string
+
+	// CreateFields and UpdateFields are the key=value pairs the generated
+	// create/update Example passes with -f, for resources whose request
+	// body needs more than a name. nil means name=<name>.
+	// resourceexample_test.go checks they cover the spec's required fields.
+	CreateFields []string
+	UpdateFields []string
 
 	// SecretKeys are list-row fields holding key material that must be
 	// masked in EVERY output format by default (json/jsonl are the piped/CI
@@ -157,6 +165,7 @@ func (d resourceDesc) plural() string {
 // models it as base-path PUT/DELETE + /tags/search; use `bronto api`.
 var resourceRegistry = []resourceDesc{
 	{Name: "monitors", Base: "/monitors", UpdateMethod: http.MethodPut,
+		CreateFields: monitorExampleFields, UpdateFields: monitorExampleFields,
 		Columns: []string{"name", "window", "threshold", "created", "id"}},
 	{Name: "dashboards", Base: "/dashboards",
 		Columns:       []string{"name", "description", "widgets_count", "created", "id"},
@@ -168,7 +177,9 @@ var resourceRegistry = []resourceDesc{
 	// metric_ids/widget_ids/aux go through -f as JSON literals or
 	// --input body.json (parseFieldArgs JSON-decodes -f values).
 	{Name: "widgets", Base: "/widgets", UpdateMethod: http.MethodPut,
-		Columns: []string{"name", "type", "description", "id"}},
+		CreateFields: []string{"name=<name>", "type=<type>"},
+		UpdateFields: []string{"name=<name>", "type=<type>"},
+		Columns:      []string{"name", "type", "description", "id"}},
 	{Name: "saved-searches", Base: "/saved-searches", Singular: "saved search",
 		Columns: []string{"name", "description", "created", "id"}},
 	// The vendored spec has no GET /parsers/{parser_id}: only patch and
@@ -179,9 +190,11 @@ var resourceRegistry = []resourceDesc{
 		// Key material is masked in every format by default (SecretKeys);
 		// --reveal opts back in. Full keys were rendering into terminals,
 		// scrollback, and — via the json/jsonl piped default — build logs.
-		SecretKeys: []string{"api_key", "key"},
-		Columns:    []string{"name", "api_key", "created", "id"}},
+		SecretKeys:   []string{"api_key", "key"},
+		CreateFields: []string{"name=<name>", `roles=["IngestionApi"]`},
+		Columns:      []string{"name", "api_key", "created", "id"}},
 	{Name: "datasets", Base: "/logs", CreatePath: "/datasets", UpdateMethod: http.MethodPut,
+		CreateFields: []string{"collection=<collection>", "dataset=<dataset>"},
 		// The raw /logs rows are unreadable as a table (duplicate name
 		// fields, a metadata blob with epoch floats); curate the human
 		// view and derive LAST_ACTIVITY from metadata.last_heartbeat_at.
@@ -203,25 +216,37 @@ var resourceRegistry = []resourceDesc{
 	{Name: "limits", Base: "/limits", Singular: "limit",
 		// Limits have no "name"; they're identified by category (also used by
 		// resolveResourceRef and shell completion).
-		NameKeys: []string{"category"},
-		Columns:  []string{"category", "description", "value", "unit", "created", "id"}},
-	{Name: "encryption-keys", Base: "/encryption-keys", Singular: "encryption key"},
+		NameKeys:     []string{"category"},
+		CreateFields: limitExampleFields, UpdateFields: limitExampleFields,
+		Columns: []string{"category", "description", "value", "unit", "created", "id"}},
+	{Name: "encryption-keys", Base: "/encryption-keys", Singular: "encryption key",
+		CreateFields: []string{"name=<name>", "provider=AWS_KMS", `aws_kms={"alias_arn":"<alias-arn>"}`}},
 	// No per-ID GET documented for these three; update is full-body PUT.
 	{Name: "forward-configs", Base: "/forward-configs", Singular: "forward config",
-		UpdateMethod: http.MethodPut, NoGet: true},
+		UpdateMethod: http.MethodPut, NoGet: true,
+		CreateFields: forwardConfigExampleFields, UpdateFields: forwardConfigExampleFields},
 	{Name: "webhooks", Base: "/integrations/webhooks", Singular: "webhook",
-		UpdateMethod: http.MethodPut, NoGet: true},
+		UpdateMethod: http.MethodPut, NoGet: true,
+		CreateFields: []string{"name=<name>", "url=<url>"},
+		UpdateFields: []string{"name=<name>", "url=<url>"}},
 	{Name: "slack", Base: "/integrations/slack", Singular: "Slack integration",
-		UpdateMethod: http.MethodPut, NoGet: true},
+		UpdateMethod: http.MethodPut, NoGet: true,
+		CreateFields: slackExampleFields, UpdateFields: slackExampleFields},
 	{Name: "templates", AttachTo: "monitors", Base: "/monitors/templates",
 		Singular: "monitor template", UpdateMethod: http.MethodPut,
-		Columns: []string{"name", "description", "monitor_type", "window", "threshold", "id"}},
+		// Only create requires this_template_tags (an object there, an
+		// array on update), so update leaves it out.
+		CreateFields: append(slices.Clip(templateExampleFields), "this_template_tags=<json>"),
+		UpdateFields: templateExampleFields,
+		Columns:      []string{"name", "description", "monitor_type", "window", "threshold", "id"}},
 	{Name: "downtimes", AttachTo: "monitors", Base: "/monitors/downtimes",
 		Singular: "downtime", UpdateMethod: http.MethodPut, NoGet: true},
 	{Name: "users", Base: "/users", Singular: "user",
 		Columns:       []string{"email", "first_name", "last_name", "last_login", "id"},
 		NameKeys:      []string{"email"},
-		ListTransform: userListRows},
+		ListTransform: userListRows,
+		CreateFields:  []string{"email=<email>", "first_name=<first-name>", "last_name=<last-name>", `roles=["ReadOnly"]`},
+		UpdateFields:  []string{`roles=["Standard"]`}},
 	{Name: "groups", Base: "/groups", Singular: "group",
 		Columns: []string{"name", "description", "created_at", "group_id"}, IDKey: "group_id"},
 	// System roles have readable, non-UUID ids ("Admin", "ReadOnly"), so a
@@ -231,6 +256,7 @@ var resourceRegistry = []resourceDesc{
 	{Name: "roles", Base: "/roles", Singular: "role", UpdateMethod: http.MethodPut,
 		IDKey: "role_id", NameKeys: []string{"display_name"},
 		UpdateRequires: []string{"display_name", "permissions"},
+		CreateFields:   roleExampleFields, UpdateFields: roleExampleFields,
 		// Not "start from roles get": reads return permission objects, and
 		// live every role reads back with the full catalog, so round-
 		// tripping a get could grant every permission.
@@ -254,6 +280,43 @@ var resourceRegistry = []resourceDesc{
 	// replaces the generic factory create (see newResourceCmd's extras
 	// override rule).
 	{Name: "exports", Singular: "export", Base: "/exports", NoUpdate: true, IDKey: "export_id"},
+}
+
+// Example -f fields shared by a resource's create and update. Values in
+// <angle brackets> are placeholders; <json> stands for a structured value
+// (see the API reference for its shape) or use --input body.json.
+var (
+	monitorExampleFields = []string{"name=<name>", "window=Last 20 minutes", "threshold=1000",
+		"comparison_operator=ABOVE", "queries=<json>", "actions=<json>"}
+	limitExampleFields = []string{"category=INGESTION_LIMITS", "target=TEAM", "scope=<json>",
+		"time_window=PER_MONTH", "unit=BYTES", "value=<bytes>"}
+	forwardConfigExampleFields = []string{"name=<name>", "all_logs=true", "compression=GZIP",
+		`destination={"destination_type":"S3","bucket":"<bucket>"}`}
+	slackExampleFields    = []string{"name=<name>", "workspace_id=<workspace-id>", `channels=["<channel>"]`}
+	templateExampleFields = []string{"name=<name>", "window=Last 20 minutes", "threshold=1000",
+		"comparison_operator=ABOVE", "metric=<json>"}
+	roleExampleFields = []string{"display_name=<name>", `permissions=["logs_read"]`}
+)
+
+// exampleFieldArgs renders fields as -f arguments for an Example line,
+// single-quoting values the shell would split or expand (and <json>
+// placeholders, whose replacement will need it), continuing
+// onto a new line after every third field.
+func exampleFieldArgs(fields []string) string {
+	if fields == nil {
+		fields = []string{"name=<name>"}
+	}
+	var b strings.Builder
+	for i, f := range fields {
+		if i > 0 && i%3 == 0 {
+			b.WriteString(" \\\n     ")
+		}
+		if strings.ContainsAny(f, " \"[]{}") || strings.Contains(f, "<json>") {
+			f = "'" + f + "'"
+		}
+		b.WriteString(" -f " + f)
+	}
+	return b.String()
 }
 
 // doJSONRequest issues an authenticated request against the resolved base
@@ -591,7 +654,7 @@ func newResourceCreateCmd(desc resourceDesc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: fmt.Sprintf("Create %s", desc.aSingular()),
-		Example: "  bronto " + desc.display() + " create -f name=<name>\n" +
+		Example: "  bronto " + desc.display() + " create" + exampleFieldArgs(desc.CreateFields) + "\n" +
 			"  bronto " + desc.display() + " create --input body.json",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -625,7 +688,7 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update <id>",
 		Short: fmt.Sprintf("Update %s", desc.aSingular()),
-		Example: "  bronto " + desc.display() + " update <id> -f name=<name>\n" +
+		Example: "  bronto " + desc.display() + " update <id>" + exampleFieldArgs(desc.UpdateFields) + "\n" +
 			"  bronto " + desc.display() + " update <id> --input body.json",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeResourceRef(desc),

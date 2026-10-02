@@ -50,7 +50,8 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto forward-configs create -f name=<name>
+bronto forward-configs create -f name=<name> -f all_logs=true -f compression=GZIP \
+    -f 'destination={"destination_type":"S3","bucket":"<bucket>"}'
 bronto forward-configs create --input body.json
 ```
 
@@ -112,6 +113,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto forward-configs update <id> -f name=<name>
+bronto forward-configs update <id> -f name=<name> -f all_logs=true -f compression=GZIP \
+    -f 'destination={"destination_type":"S3","bucket":"<bucket>"}'
 bronto forward-configs update <id> --input body.json
 ```

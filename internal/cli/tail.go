@@ -33,8 +33,12 @@ func newTailCmd() *cobra.Command {
 		Use:   "tail [query]",
 		Short: "Follow new events as they arrive (like tail -f)",
 		Long: "Follows new events as they arrive (like tail -f). Every --interval it polls for\n" +
-			"events in the last --window. Events are sorted within each poll but not across\n" +
-			"polls, so an event that arrives more than one window late prints out of order.",
+			"events in the last --window and prints the ones it has not printed yet.\n\n" +
+			"Events are sorted within each poll but not across polls, so a late event can\n" +
+			"print after newer ones.\n\n" +
+			"An event whose timestamp is already older than --window by the time it becomes\n" +
+			"searchable is never printed. If events reach Bronto with a delay, use a larger\n" +
+			"--window, or 'bronto search' when you need every event.",
 		Example: "  bronto tail\n" +
 			"  bronto tail \"level = 'error'\" --include 'timeout' --exclude 'healthz'\n" +
 			"  bronto tail --no-follow --window 5m   # catch up, then exit\n" +

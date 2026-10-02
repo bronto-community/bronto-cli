@@ -47,7 +47,8 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto limits create -f name=<name>
+bronto limits create -f category=INGESTION_LIMITS -f target=TEAM -f 'scope=<json>' \
+    -f time_window=PER_MONTH -f unit=BYTES -f value=<bytes>
 bronto limits create --input body.json
 ```
 
@@ -125,6 +126,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto limits update <id> -f name=<name>
+bronto limits update <id> -f category=INGESTION_LIMITS -f target=TEAM -f 'scope=<json>' \
+    -f time_window=PER_MONTH -f unit=BYTES -f value=<bytes>
 bronto limits update <id> --input body.json
 ```

@@ -50,7 +50,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto webhooks create -f name=<name>
+bronto webhooks create -f name=<name> -f url=<url>
 bronto webhooks create --input body.json
 ```
 
@@ -112,6 +112,6 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto webhooks update <id> -f name=<name>
+bronto webhooks update <id> -f name=<name> -f url=<url>
 bronto webhooks update <id> --input body.json
 ```

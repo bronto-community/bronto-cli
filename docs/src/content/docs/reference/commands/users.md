@@ -55,7 +55,8 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto users create -f name=<name>
+bronto users create -f email=<email> -f first_name=<first-name> -f last_name=<last-name> \
+    -f 'roles=["ReadOnly"]'
 bronto users create --input body.json
 ```
 
@@ -197,6 +198,6 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto users update <id> -f name=<name>
+bronto users update <id> -f 'roles=["Standard"]'
 bronto users update <id> --input body.json
 ```

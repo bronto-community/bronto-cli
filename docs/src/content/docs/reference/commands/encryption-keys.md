@@ -51,7 +51,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto encryption-keys create -f name=<name>
+bronto encryption-keys create -f name=<name> -f provider=AWS_KMS -f 'aws_kms={"alias_arn":"<alias-arn>"}'
 bronto encryption-keys create --input body.json
 ```
 

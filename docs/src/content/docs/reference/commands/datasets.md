@@ -52,7 +52,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto datasets create -f name=<name>
+bronto datasets create -f collection=<collection> -f dataset=<dataset>
 bronto datasets create --input body.json
 ```
 

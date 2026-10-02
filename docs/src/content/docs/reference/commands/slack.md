@@ -50,7 +50,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto slack create -f name=<name>
+bronto slack create -f name=<name> -f workspace_id=<workspace-id> -f 'channels=["<channel>"]'
 bronto slack create --input body.json
 ```
 
@@ -112,6 +112,6 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto slack update <id> -f name=<name>
+bronto slack update <id> -f name=<name> -f workspace_id=<workspace-id> -f 'channels=["<channel>"]'
 bronto slack update <id> --input body.json
 ```

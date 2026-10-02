@@ -50,7 +50,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto api-keys create -f name=<name>
+bronto api-keys create -f name=<name> -f 'roles=["IngestionApi"]'
 bronto api-keys create --input body.json
 ```
 

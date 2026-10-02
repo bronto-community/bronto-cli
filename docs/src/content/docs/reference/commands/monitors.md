@@ -80,7 +80,8 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto monitors create -f name=<name>
+bronto monitors create -f name=<name> -f 'window=Last 20 minutes' -f threshold=1000 \
+    -f comparison_operator=ABOVE -f 'queries=<json>' -f 'actions=<json>'
 bronto monitors create --input body.json
 ```
 
@@ -346,7 +347,8 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto monitors templates create -f name=<name>
+bronto monitors templates create -f name=<name> -f 'window=Last 20 minutes' -f threshold=1000 \
+    -f comparison_operator=ABOVE -f 'metric=<json>' -f 'this_template_tags=<json>'
 bronto monitors templates create --input body.json
 ```
 
@@ -424,7 +426,8 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto monitors templates update <id> -f name=<name>
+bronto monitors templates update <id> -f name=<name> -f 'window=Last 20 minutes' -f threshold=1000 \
+    -f comparison_operator=ABOVE -f 'metric=<json>'
 bronto monitors templates update <id> --input body.json
 ```
 
@@ -448,6 +451,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 #### Examples
 
 ```sh
-bronto monitors update <id> -f name=<name>
+bronto monitors update <id> -f name=<name> -f 'window=Last 20 minutes' -f threshold=1000 \
+    -f comparison_operator=ABOVE -f 'queries=<json>' -f 'actions=<json>'
 bronto monitors update <id> --input body.json
 ```
