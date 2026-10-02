@@ -1,0 +1,192 @@
+name: Docs
+on:
+  pull_request:
+    # labeled/unlabeled re-run docs-required when `no-docs-needed` is added
+    # or removed.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    paths:
+      - docs/**
+      - internal/**
+      - cmd/**
+      - README.md
+      - skill.md
+      - llms.txt
+      - Makefile
+      - .github/workflows/docs.yml
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - internal/**
+      - cmd/**
+      - README.md
+      - skill.md
+      - llms.txt
+      - Makefile
+      - .github/workflows/docs.yml
+
+# Default every job to a read-only token; jobs needing more must say so.
+permissions:
+  contents: read
+
+# One run per PR (or per main push). Label events get their own group, so
+# adding `no-docs-needed` does not cancel an in-flight build and deploy of
+# the same PR. On main every push runs to completion.
+concurrency:
+  group: docs-${{ github.event.pull_request.number || github.sha }}-${{ (github.event.action == 'labeled' || github.event.action == 'unlabeled') && 'label' || 'code' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Pinned Vercel CLI (lint-workflows rejects floating versions).
+  VERCEL_CLI_VERSION: 62.1.0
+  # ttyd for VHS recordings; checksum from the release's SHA256SUMS.
+  TTYD_VERSION: 1.7.7
+  TTYD_SHA256: 8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55
+  VHS_VERSION: v0.12.1
+
+jobs:
+  # docs-check runs everything `make docs-check` covers: generated reference
+  # is current, coverage, tested snippets against the docs mock, VHS tape
+  # goldens, and the site build (which fails on broken internal links).
+  docs-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: docs/.nvmrc
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - name: Install VHS, ttyd and ffmpeg
+        env:
+          # vhs needs a newer Go than go.mod's toolchain line; setup-go sets
+          # GOTOOLCHAIN=local, so let `go install` fetch what vhs asks for.
+          GOTOOLCHAIN: auto
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core jq
+          curl -fsSL -o /tmp/ttyd "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VERSION}/ttyd.x86_64"
+          echo "${TTYD_SHA256}  /tmp/ttyd" | sha256sum -c -
+          sudo install -m 0755 /tmp/ttyd /usr/local/bin/ttyd
+          go install "github.com/charmbracelet/vhs@${VHS_VERSION}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          "$(go env GOPATH)/bin/vhs" --version
+          ttyd --version
+      - run: make docs-check
+        env:
+          # Ubuntu 24.04 blocks Chrome's user-namespace sandbox, which VHS
+          # drives headless.
+          VHS_NO_SANDBOX: "true"
+
+  # docs-required fails a PR that changes user-facing CLI code without
+  # touching the hand-written docs, unless it carries `no-docs-needed`.
+  docs-required:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Check that docs changed with user-facing code
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: scripts/docs-required.sh
+
+  # deploy builds with the Vercel CLI and uploads the prebuilt output. The
+  # Vercel project has no Git connection, so this is the only deploy path.
+  # Previews: same-repo PRs only (fork PRs get no secrets). Production: push
+  # to main.
+  deploy:
+    needs: docs-check
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.action != 'labeled' && github.event.action != 'unlabeled')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # sticky preview-URL comment
+    concurrency:
+      group: docs-deploy-${{ github.event_name == 'push' && 'production' || github.event.pull_request.number }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID || secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID || secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TELEMETRY_DISABLED: "1"
+      TARGET: ${{ github.event_name == 'push' && 'production' || 'preview' }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: docs/.nvmrc
+      - name: Install Vercel CLI
+        run: npm install --global "vercel@${VERCEL_CLI_VERSION}"
+      # The project's root directory is docs/, so the CLI runs from the repo
+      # root. VERCEL_TOKEN/ORG_ID/PROJECT_ID come from the environment.
+      - name: Pull Vercel project settings
+        run: vercel pull --yes --environment="${TARGET}"
+      - name: Build
+        run: |
+          if [ "${TARGET}" = production ]; then
+            vercel build --prod
+          else
+            vercel build
+          fi
+      - name: Deploy
+        id: deploy
+        run: |
+          if [ "${TARGET}" = production ]; then
+            url=$(vercel deploy --prebuilt --prod)
+          else
+            url=$(vercel deploy --prebuilt)
+          fi
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+          echo "Deployed ${TARGET}: ${url}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Comment preview URL
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          marker='<!-- bronto-docs-preview -->'
+          body="${marker}
+          **Docs preview:** ${URL}
+
+          Built from ${SHA}. Previews sit behind Vercel Deployment Protection; sign in with a Bronto Vercel account to view."
+          id=$(gh api --paginate "repos/${REPO}/issues/${PR}/comments" \
+            --jq ".[] | select(.body | startswith(\"${marker}\")) | .id" | head -n 1)
+          if [ -n "${id}" ]; then
+            gh api --method PATCH "repos/${REPO}/issues/comments/${id}" -f body="${body}" >/dev/null
+          else
+            gh api --method POST "repos/${REPO}/issues/${PR}/comments" -f body="${body}" >/dev/null
+          fi
