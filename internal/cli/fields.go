@@ -63,24 +63,7 @@ func newFieldsCmd() *cobra.Command {
 			if limit > 0 && len(rows) > limit {
 				rows = rows[:limit]
 			}
-			format, err := app.DetectFormat(false)
-			if err != nil {
-				return err
-			}
-			// The values sample is an array on the wire; json/jsonl keep it
-			// verbatim, but a table/csv cell needs a compact human string.
-			if format == output.FormatTable || format == output.FormatCSV {
-				for _, r := range rows {
-					if vals, ok := r["values"].([]string); ok {
-						r["values"] = displayValues(vals)
-					}
-				}
-			}
-			p, err := app.PrinterFor(format)
-			if err != nil {
-				return err
-			}
-			return p.PrintRows(fieldsColumns(rows), rows)
+			return printTopKeyRows(app, rows)
 		},
 	}
 	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset name or UUID (omit for all datasets)")
@@ -117,12 +100,41 @@ func resolveRelativeSince(since, defaultRange, cmdName, endpoint string) (timera
 // endpoint: GET with the given params, normalized into rows. Callers build
 // their own params (log_id, time_range, limit) and shape the rows.
 func topKeyRows(ctx context.Context, app *App, params url.Values) ([]map[string]any, error) {
+	return topKeyRowsAt(ctx, app, "/top-keys", params)
+}
+
+// topKeyRowsAt is topKeyRows for another endpoint with the same response
+// shape (GET /metrics/{id}/top-keys).
+func topKeyRowsAt(ctx context.Context, app *App, path string, params url.Values) ([]map[string]any, error) {
 	var payload map[string]any
 	client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
-	if err := client.GetJSON(ctx, "/top-keys", params, &payload); err != nil {
+	if err := client.GetJSON(ctx, path, params, &payload); err != nil {
 		return nil, err
 	}
 	return normalizeTopKeys(payload), nil
+}
+
+// printTopKeyRows prints normalized top-keys rows (fields, metrics
+// top-keys) through the output engine.
+func printTopKeyRows(app *App, rows []map[string]any) error {
+	format, err := app.DetectFormat(false)
+	if err != nil {
+		return err
+	}
+	// The values sample is an array on the wire; json/jsonl keep it
+	// verbatim, but a table/csv cell needs a compact human string.
+	if format == output.FormatTable || format == output.FormatCSV {
+		for _, r := range rows {
+			if vals, ok := r["values"].([]string); ok {
+				r["values"] = displayValues(vals)
+			}
+		}
+	}
+	p, err := app.PrinterFor(format)
+	if err != nil {
+		return err
+	}
+	return p.PrintRows(fieldsColumns(rows), rows)
 }
 
 // topKeyNames lists recently-seen field names for one dataset (logID) over

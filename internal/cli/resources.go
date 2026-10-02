@@ -62,6 +62,12 @@ type resourceDesc struct {
 	// plain "id" (e.g. groups' group_id, datasets' log_id).
 	IDKey string
 
+	// UpdateRequires are body fields update refuses to send without. For
+	// full-replacement PUTs where the API blanks an omitted field or fails
+	// with a 500 instead of a 400 (roles), this catches it client-side with
+	// a hint.
+	UpdateRequires []string
+
 	// SecretKeys are list-row fields holding key material that must be
 	// masked in EVERY output format by default (json/jsonl are the piped/CI
 	// default, so verbatim keys land in build logs). When set, `list` gains
@@ -197,6 +203,26 @@ var resourceRegistry = []resourceDesc{
 		ListTransform: userListRows},
 	{Name: "groups", Base: "/groups", Singular: "group",
 		Columns: []string{"name", "description", "created_at", "group_id"}, IDKey: "group_id"},
+	// System roles have readable, non-UUID ids ("Admin", "ReadOnly"), so a
+	// role resolves by display_name or by its exact role_id. updateRole is a
+	// full-replacement PUT answering with the updated Role. Live (2026-10-02)
+	// it blanks an omitted display_name and 500s without permissions.
+	{Name: "roles", Base: "/roles", Singular: "role", UpdateMethod: http.MethodPut,
+		IDKey: "role_id", NameKeys: []string{"display_name"},
+		UpdateRequires: []string{"display_name", "permissions"},
+		Columns:        []string{"display_name", "role_type", "is_system_role", "description", "role_id"}},
+	// GET /permissions is the catalog of permission names a role can grant,
+	// grouped by resource. The human formats flatten it to one row per
+	// permission; json keeps the grouped payload.
+	{Name: "permissions", Base: "/permissions", Singular: "permission",
+		NoCreate: true, NoUpdate: true, NoDelete: true, NoGet: true,
+		ListRowKeys: []string{"resources"}, ListTransform: permissionListRows,
+		Columns: []string{"group", "name", "type", "display_name"}},
+	// Metric metadata is read-only: metrics are created by ingestion.
+	{Name: "metrics", Base: "/metrics", Singular: "metric",
+		NoCreate: true, NoUpdate: true, NoDelete: true,
+		IDKey: "metric_id", NameKeys: []string{"metric_name"},
+		Columns: []string{"metric_name", "type", "unit", "description", "metric_id"}},
 	// exports has no update verb; its create is hand-written (exports.go) to
 	// support the convenience flags / --wait / --download workflow and
 	// replaces the generic factory create (see newResourceCmd's extras
@@ -570,6 +596,9 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if err := checkUpdateRequires(desc, body); err != nil {
+				return err
+			}
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
@@ -598,6 +627,31 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil, "key=value pair for the request body (repeatable)")
 	cmd.Flags().StringVar(&input, "input", "", "request body from file, or - for stdin")
 	return cmd
+}
+
+// checkUpdateRequires rejects an update body missing a field in
+// desc.UpdateRequires, before any request is made.
+func checkUpdateRequires(desc resourceDesc, body []byte) error {
+	if len(desc.UpdateRequires) == 0 {
+		return nil
+	}
+	var obj map[string]any
+	if err := json.Unmarshal(body, &obj); err != nil {
+		return nil // not an object: let the API report it
+	}
+	var missing []string
+	for _, k := range desc.UpdateRequires {
+		if _, ok := obj[k]; !ok {
+			missing = append(missing, k)
+		}
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return clierr.New("usage_missing_fields",
+		fmt.Sprintf("%s update replaces the whole %s: the body must include %s",
+			desc.display(), desc.singular(), strings.Join(missing, ", "))).
+		WithHint(fmt.Sprintf("Start from the current one: bronto %s get <id> -o json, edit it, then pass it with --input.", desc.display()))
 }
 
 func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
@@ -812,6 +866,11 @@ func resolveResourceRef(ctx context.Context, app *App, desc resourceDesc, ref st
 	rows := rowsFromPayload(payload, desc.ListRowKeys...)
 	var matchIDs, available []string
 	for _, row := range rows {
+		// An exact id always wins: some ids aren't UUIDs (system roles'
+		// "Admin"), so the short-circuit above doesn't catch them.
+		if id := desc.rowID(row); id != "" && id == ref {
+			return id, nil
+		}
 		for _, key := range desc.nameKeys() {
 			if v, _ := row[key].(string); v != "" {
 				if v == ref {

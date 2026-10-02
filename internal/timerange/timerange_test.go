@@ -141,3 +141,20 @@ func TestValidCompoundRangeStaysOrdered(t *testing.T) {
 		t.Fatalf("FromTs >= ToTs: %+v", spec)
 	}
 }
+
+func TestAbsolute(t *testing.T) {
+	now := time.UnixMilli(10_000_000)
+	clock := func() time.Time { return now }
+	for since, want := range map[string]int64{"1h": 3_600_000, "90m": 5_400_000, "1h30m": 5_400_000} {
+		spec, err := Absolute(since, clock)
+		if err != nil {
+			t.Fatalf("%s: %v", since, err)
+		}
+		if spec.TimeRange != "" || spec.ToTs != now.UnixMilli() || spec.ToTs-spec.FromTs != want {
+			t.Fatalf("%s: %+v", since, spec)
+		}
+	}
+	if _, err := Absolute("soon", clock); err == nil {
+		t.Fatal("Absolute accepted an unparseable --since")
+	}
+}

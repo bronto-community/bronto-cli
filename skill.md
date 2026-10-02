@@ -66,7 +66,7 @@ Agent-critical flags (global): `--dry-run` prints any mutating call as a plan do
 
 ## Resource commands
 
-Resources (`datasets`, `monitors` — plus nested `monitors templates` and `monitors downtimes` — `dashboards`, `widgets` (dashboard components; create and update both require `name` and `type` — update is a full replacement — with `metric_ids`/`widget_ids`/`aux` passed as `-f` JSON or `--input body.json`), `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, and read-only `collections` / `log-views`) share one pattern (list-only where the API documents no other verbs):
+Resources (`datasets`, `monitors` — plus nested `monitors templates` and `monitors downtimes` — `dashboards`, `widgets` (dashboard components; create and update both require `name` and `type` — update is a full replacement — with `metric_ids`/`widget_ids`/`aux` passed as `-f` JSON or `--input body.json`), `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `roles`, `webhooks`, `slack`, `limits`, `encryption-keys`, `forward-configs`, and read-only `collections` / `log-views` / `metrics`, list-only `permissions`) share one pattern (list-only where the API documents no other verbs):
 
 ```
 bronto <resource> list
@@ -76,7 +76,7 @@ bronto <resource> update <id-or-name> -f key=value
 bronto <resource> delete <id-or-name> --yes              # --yes skips the confirmation prompt
 ```
 
-Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `exports`.
+Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `metrics`, `exports`.
 
 Composition actions beyond CRUD: `monitors events <id>` / `monitors mute <id> [--until|--unmute]`; `dashboards attach-widgets <dashboard> --widget-ids <id,…>` / `dashboards remove-widget <dashboard> <widget-id>` / `dashboards detach-from-template <dashboard>` (returns the updated dashboard); `widgets attach-widgets <widget> --widget-ids <id,…>` / `widgets remove-widget <widget> <widget-id>`. The parent takes an id or a unique name; `--widget-ids` takes widget ids (comma-separated or repeated). All honor `--dry-run`.
 
@@ -84,7 +84,9 @@ A unique name resolves anywhere an id is accepted (users match by email; dataset
 
 `api-keys list` masks key material in **every** format (including json/jsonl) by default so keys don't leak into pipelines or CI logs; pass `--reveal` for the full values.
 
-Extras beyond the uniform pattern: `monitors events|mute|check` (`check --input monitor.json` lints definitions — query syntax, window bounds, dataset existence — with non-zero exit for CI), `users deactivate|reactivate|resend-invite`, `groups members`.
+Extras beyond the uniform pattern: `monitors events|mute|check` (`check --input monitor.json` lints definitions — query syntax, window bounds, dataset existence — with non-zero exit for CI), `users deactivate|reactivate|resend-invite|groups`, `groups members|add-members|remove-members` (`add-members <group> --users <email,…> --groups <name,…>`), `monitors notifications <id> [--since 7d]`, `metrics top-keys <metric> [--since 1h]` (attribute keys, like `fields` for a dataset), `datasets parser get|set|unset <dataset> [<parser>]`.
+
+`roles` ids for system roles are readable strings (`Admin`, `ReadOnly`), and a role also resolves by `display_name`. `permissions list` prints the permission names a role's `permissions` array takes (`-f 'permissions=["logs_read","dashboards_read"]'`).
 
 ## Utility commands
 

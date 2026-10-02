@@ -78,6 +78,14 @@ var endpointProbes = map[string][][]string{
 	"bronto monitors mute":                   {{"monitors", "mute", probeID}},
 	"bronto exports create":                  {{"exports", "create", "-d", "ds", "--since", "1h"}},
 	"bronto groups members":                  {{"groups", "members", probeID}},
+	"bronto groups add-members":              {{"groups", "add-members", "g1", "--users", "alice@example.com", "--groups", "g2"}},
+	"bronto groups remove-members":           {{"groups", "remove-members", probeID, "--users", "alice@example.com"}},
+	"bronto users groups":                    {{"users", "groups", "alice@example.com"}},
+	"bronto monitors notifications":          {{"monitors", "notifications", "m1"}},
+	"bronto metrics top-keys":                {{"metrics", "top-keys", "cpu"}},
+	"bronto datasets parser get":             {{"datasets", "parser", "get", "ds"}},
+	"bronto datasets parser set":             {{"datasets", "parser", "set", "ds", "p1"}},
+	"bronto datasets parser unset":           {{"datasets", "parser", "unset", "ds"}},
 	"bronto users deactivate":                {{"users", "deactivate", probeID}},
 	"bronto users reactivate":                {{"users", "reactivate", probeID}},
 	"bronto users resend-invite":             {{"users", "resend-invite", probeID}},
@@ -117,7 +125,8 @@ const (
 
 // recordRequests runs one command against a stub API and returns the
 // "METHOD /path" of every request it made. The stub answers just enough
-// for name resolution to succeed (dataset "ds", saved search "s1"), and
+// for name resolution to succeed (dataset "ds", saved search "s1", user
+// alice@example.com, groups g1/g2, monitor m1, metric cpu, parser p1), and
 // --ask_url points at a fake LLM on the same server, excluded from the
 // result. Errors are ignored: a command that fails after its first calls
 // has still shown which endpoints it uses.
@@ -133,11 +142,25 @@ func recordRequests(t *testing.T, args []string) []string {
 		mu.Lock()
 		seen[r.Method+" "+r.URL.Path] = true
 		mu.Unlock()
+		if strings.HasPrefix(r.URL.Path, "/users/") && strings.HasSuffix(r.URL.Path, "/groups") {
+			_, _ = fmt.Fprintf(w, `{"groups":[%q]}`, probeID) // live shape: bare ids
+			return
+		}
 		switch r.URL.Path {
 		case "/logs":
 			_, _ = fmt.Fprintf(w, `{"logs":[{"log_id":%q,"log":"ds","collection":"c"}]}`, probeDataset)
 		case "/saved-searches":
 			_, _ = fmt.Fprintf(w, `{"saved_searches":[{"id":%q,"name":"s1"}]}`, probeID)
+		case "/users":
+			_, _ = fmt.Fprintf(w, `{"users":[{"id":%q,"email":"alice@example.com"}]}`, probeID)
+		case "/groups":
+			_, _ = fmt.Fprintf(w, `{"groups":[{"group_id":%q,"name":"g1"},{"group_id":"aaaaaaaa-aaaa-aaaa-aaaa-0000000000d3","name":"g2"}]}`, probeID)
+		case "/monitors":
+			_, _ = fmt.Fprintf(w, `{"monitors":[{"id":%q,"name":"m1"}]}`, probeID)
+		case "/metrics":
+			_, _ = fmt.Fprintf(w, `{"metrics":[{"metric_id":%q,"metric_name":"cpu"}]}`, probeID)
+		case "/parsers":
+			_, _ = fmt.Fprintf(w, `{"parsers":[{"id":%q,"name":"p1"}]}`, probeID)
 		default:
 			_, _ = fmt.Fprint(w, `{}`)
 		}

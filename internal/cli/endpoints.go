@@ -44,7 +44,17 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/organizations", Command: "bronto search"},
 	{Pattern: "/monitors/{*}/events", Command: "bronto monitors events"},
 	{Pattern: "/monitors/{*}/status", Command: "bronto monitors mute"},
-	{Pattern: "/groups/{*}/members", Command: "bronto groups members"},
+	{Pattern: "/groups/{*}/members", Command: "bronto groups members / groups add-members / groups remove-members"},
+	// add-members/remove-members resolve --users emails through the users list.
+	{Pattern: "/users", Command: "bronto groups add-members / groups remove-members"},
+	{Pattern: "/users/{*}/groups", Command: "bronto users groups"},
+	// users groups names the bare group ids it gets back via the groups list.
+	{Pattern: "/groups", Command: "bronto users groups"},
+	{Pattern: "/monitors/{*}/notifications", Command: "bronto monitors notifications"},
+	{Pattern: "/metrics/{*}/top-keys", Command: "bronto metrics top-keys"},
+	{Pattern: "/datasets/{*}/parser", Command: "bronto datasets parser"},
+	// parser set resolves the parser name through the parsers list.
+	{Pattern: "/parsers", Command: "bronto datasets parser set"},
 	{Pattern: "/users/{*}/deactivate", Command: "bronto users deactivate"},
 	{Pattern: "/users/{*}/reactivate", Command: "bronto users reactivate"},
 	{Pattern: "/users/{*}/resend-invite", Command: "bronto users resend-invite"},
