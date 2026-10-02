@@ -145,6 +145,15 @@ homebrew_casks:
     # dialog. The OS.mac? guard is required: xattr/quarantine are macOS-only
     # and running the hook unconditionally breaks `brew install` on Linux.
     #
+    # Homebrew 7.0 deprecated the `postflight` block this renders into. The
+    # tap's audit workflow rewrites this exact line into `postflight_steps`
+    # in place (.github/scripts/postflight-steps.sh there), so keep it
+    # byte-identical or update that script too. Don't move it to
+    # custom_block: that lands at the top of the cask, and brew style's
+    # stanza-order autocorrect can delete a moved postflight_steps block.
+    # Switch to the native stanza once goreleaser/goreleaser#6870 ships
+    # (v2.19.0) and the pin in release.yml is bumped.
+    #
     # Written as a modifier `if` because the tap runs `brew style`, whose
     # Style/IfUnlessModifier cop rejects a multi-line `if` around a single
     # statement. At 98 characters it stays under the 118-char cask limit.

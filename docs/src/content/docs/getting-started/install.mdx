@@ -18,8 +18,8 @@ brew install --cask bronto-community/tap/bronto
 ```
 
 The cask lives in the `bronto-community/homebrew-tap` tap, and the release workflow
-updates it on every release. The first time you use a third-party tap, Homebrew 6.0 and
-later ask you to trust it once. That prompt is expected.
+updates it on every release. Installing by the fully qualified name taps it and trusts
+that one cask, so you don't need `brew tap` or `brew trust` first.
 
 The cask clears macOS Gatekeeper's quarantine flag on install, so you won't see the
 "cannot verify developer" dialog.
