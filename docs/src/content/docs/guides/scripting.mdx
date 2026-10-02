@@ -92,7 +92,9 @@ installed.
 
 Results print as JSON, so strings keep their quotes. Add `-r` (`--raw-output`), as with
 `jq -r`, to print strings without quotes; other values still print as compact JSON.
-`--jq` sees the whole event, so search fields keep their `message_kvs.` names:
+`--jq` runs after `--fields`. On its own it sees the whole event, so search fields keep
+their `message_kvs.` names. With `--fields host,trace_id` it sees only those output keys,
+and you write `.host` instead.
 
 ```console test tty
 $ bronto monitors list -o json --jq '.name'
@@ -102,6 +104,10 @@ $ bronto monitors list -o json --jq '.name' -r
 High 5xx rate on checkout
 Payments latency p95
 $ bronto search "status >= 500" -d prod/checkout-service --since 1h -o jsonl --jq 'select(."message_kvs.host" == "web-1") | ."message_kvs.trace_id"' -r
+9c244820635f8c0dc8342c0c2058c1c3
+8cadcf646ba7d02e25166280c042e3cb
+67d30b1a2fddae59f08e7502c43a12e3
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -o jsonl --fields host,trace_id --jq 'select(.host == "web-1") | .trace_id' -r
 9c244820635f8c0dc8342c0c2058c1c3
 8cadcf646ba7d02e25166280c042e3cb
 67d30b1a2fddae59f08e7502c43a12e3

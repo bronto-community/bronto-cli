@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -204,6 +205,93 @@ func TestSearchFieldsExactKeyWins(t *testing.T) {
 	}
 	if got, want := strings.TrimSpace(out), `{"host":"top"}`; got != want {
 		t.Fatalf("jsonl = %q, want %q", got, want)
+	}
+}
+
+// TestSearchFieldFallbackOnlyForRequestedFields pins: the message_kvs.
+// fallback applies only to names the user passed via --fields. Unfiltered
+// table/csv output looks up columns by exact key, so a sparse row that
+// lacks top-level host shows an empty host cell (as JSON shows it absent)
+// rather than borrowing message_kvs.host.
+func TestSearchFieldFallbackOnlyForRequestedFields(t *testing.T) {
+	const resp = `{"events":[` +
+		`{"@raw":"e1","@time":"t1","host":"top"},` +
+		`{"@raw":"e2","@time":"t2","message_kvs":{"host":"kv"}}]}`
+
+	out, err := runSearchArgs(t, resp, "-o", "csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	recs, err := csv.NewReader(strings.NewReader(out)).ReadAll()
+	if err != nil {
+		t.Fatalf("csv parse: %v\n%s", err, out)
+	}
+	hostCol, kvCol := -1, -1
+	for i, c := range recs[0] {
+		switch c {
+		case "host":
+			hostCol = i
+		case "message_kvs.host":
+			kvCol = i
+		}
+	}
+	if hostCol < 0 || kvCol < 0 || len(recs) != 3 {
+		t.Fatalf("csv = %q, want host and message_kvs.host columns, 2 rows", out)
+	}
+	if got := recs[1][hostCol]; got != "top" {
+		t.Fatalf("row 1 host = %q, want top", got)
+	}
+	if got := recs[2][hostCol]; got != "" {
+		t.Fatalf("csv row 2 host = %q, want empty (no top-level host): %q", got, out)
+	}
+	if got := recs[2][kvCol]; got != "kv" {
+		t.Fatalf("row 2 message_kvs.host = %q, want kv", got)
+	}
+
+	out, err = runSearchArgs(t, resp, "-o", "table")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("table = %q, want header + 2 rows", out)
+	}
+	if n := strings.Count(lines[2], "kv"); n != 1 {
+		t.Fatalf("table row 2 shows kv %d times, want once (message_kvs.host only): %q", n, out)
+	}
+
+	// With --fields host the fallback is what the user asked for.
+	out, err = runSearchArgs(t, resp, "--fields", "host", "-o", "csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := strings.TrimSpace(out), "host\ntop\nkv"; got != want {
+		t.Fatalf("--fields csv = %q, want %q", got, want)
+	}
+}
+
+// TestSearchJQSeesFieldsProjection pins: --jq runs on the row AFTER
+// --fields projection, so it sees the output keys the user requested
+// (.host), not the full flattened event (."message_kvs.host" is gone).
+// Without --fields, --jq sees the full flattened keys.
+func TestSearchJQSeesFieldsProjection(t *testing.T) {
+	const resp = `{"events":[{"@raw":"e1","@time":"t1","message_kvs":{"host":"web-1"}}]}`
+	for _, tc := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"--jq", `."message_kvs.host"`}, `"web-1"`},
+		{[]string{"--jq", `.host`}, `null`},
+		{[]string{"--fields", "host", "--jq", `.host`}, `"web-1"`},
+		{[]string{"--fields", "host", "--jq", `."message_kvs.host"`}, `null`},
+	} {
+		out, err := runSearchArgs(t, resp, tc.args...)
+		if err != nil {
+			t.Fatalf("%v: %v", tc.args, err)
+		}
+		if got := strings.TrimSpace(out); got != tc.want {
+			t.Fatalf("%v: out = %q, want %q", tc.args, got, tc.want)
+		}
 	}
 }
 

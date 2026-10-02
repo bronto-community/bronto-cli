@@ -151,7 +151,9 @@ web-3
 web-2
 ```
 
-`--jq` sees the whole event, so it uses the full `message_kvs.` key names.
+Without `--fields`, `--jq` sees the whole event, so it uses the full `message_kvs.` key
+names. With `--fields`, `--jq` runs on the narrowed result and sees the names you typed:
+`--fields host --jq .host`.
 
 ## Where next
 

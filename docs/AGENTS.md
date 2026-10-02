@@ -138,7 +138,9 @@ in terms of this data:
   API does. `search --fields status` falls back to `message_kvs.status` and
   keeps the bare name as the output key, like `tail --fields` (which selects
   server-side). `--select`, `-g` and the WHERE clause take bare names too.
-  `--jq` sees the whole event, so write `--jq '."message_kvs.status"'`.
+  `--jq` runs after `--fields`: alone it sees the whole flattened event
+  (`--jq '."message_kvs.status"'`); with `--fields status` it sees only the
+  output keys you asked for (`--jq .status`).
 - `--jq` prints JSON, so strings keep their quotes. When an id feeds another
   command, add `-r` (`--raw-output`) to print it bare.
 - Never stable: `ping` latency, the `updated HH:MM:SS` line of live

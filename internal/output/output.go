@@ -102,7 +102,8 @@ func (p *Printer) SetRawOutput(v bool) { p.rawOutput = v }
 // SetFieldFallbackPrefix makes a --fields name that a row lacks resolve to
 // prefix+name when the row has that key (search events carry their parsed
 // fields flattened as "message_kvs.<name>"). Exact keys always win, and the
-// output key stays the name the user asked for.
+// output key stays the name the user asked for. Only names requested via
+// SetFieldFilter fall back; unfiltered output always uses exact keys.
 func (p *Printer) SetFieldFallbackPrefix(prefix string) { p.fallback = prefix }
 
 // lookup returns row[f], falling back to row[fallback+f] (see
@@ -172,9 +173,15 @@ func (p *Printer) filterRows(rows []map[string]any) []map[string]any {
 	return out
 }
 
-// cell renders row's col for table/csv, honoring the field fallback.
+// cell renders row's col for table/csv. The field fallback applies only
+// when the columns are the user's --fields: unfiltered output uses exact
+// keys, so a sparse row never borrows prefix+col for a column it lacks.
 func (p *Printer) cell(row map[string]any, col string) string {
-	v, _ := lookup(row, col, p.fallback)
+	fallback := ""
+	if len(p.fields) > 0 {
+		fallback = p.fallback
+	}
+	v, _ := lookup(row, col, fallback)
 	return cellValue(v)
 }
 
