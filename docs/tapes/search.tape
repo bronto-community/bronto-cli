@@ -2,6 +2,8 @@
 Output search.webm
 Output search.txt
 Source settings.tape
+# The -x scene is 24 rows tall; 580 px gives a 25-row terminal.
+Set Height 580
 Require bronto
 
 Type "bronto fields -d prod/checkout-service status"
