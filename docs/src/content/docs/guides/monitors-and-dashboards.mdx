@@ -5,13 +5,13 @@ sidebar:
   order: 7
 ---
 
-Monitors and dashboards follow the [shared resource pattern](/guides/resources/), plus a
-few extra commands covered here.
+Monitors and dashboards follow the [shared resource pattern](/guides/resources/). This
+page covers their extra commands.
 
 ## Monitors
 
 A [monitor](https://docs.bronto.io/core-features/monitors) runs a query on a schedule and
-alerts when a condition holds. Find one and look at what it's been doing:
+alerts when a condition holds. To see what a monitor has been doing:
 
 ```console test tty
 $ bronto monitors list
@@ -57,7 +57,7 @@ TIME           STATUS  MONITOR_STATUS  TYPE   DESTINATION        FAILURE_REASON
 1784452891209  SENT    ALERT           EMAIL  grace@example.com
 ```
 
-`bronto monitors events` lists the monitor's recent state changes: here it went to
+`bronto monitors events` lists the monitor's recent state changes. Here it went to
 `ALERT` when the 502s started and back to `OK` four and a half minutes later.
 `bronto monitors notifications` lists the notifications it sent over `--since` (default
 `24h`), one per recipient. Times are Unix milliseconds.
@@ -70,8 +70,8 @@ bronto monitors mute "High 5xx rate on checkout" --until 1784451600000 # until a
 bronto monitors mute "High 5xx rate on checkout" --unmute
 ```
 
-`--until -1`, the default, mutes indefinitely. Try it with `--dry-run` first. It prints
-what it would do on stderr:
+`--until -1`, the default, mutes indefinitely. With `--dry-run` it prints what it would do
+on stderr:
 
 ```console test tty
 $ bronto monitors mute "High 5xx rate on checkout" --dry-run 2>&1
@@ -93,21 +93,21 @@ Monitor templates have the full set of verbs under `bronto monitors templates`.
 ### Lint monitor definitions in CI
 
 If you keep monitor definitions as JSON in a repository, `bronto monitors check`
-validates them before you apply them. It checks query syntax, window bounds, and whether
-the referenced datasets exist, and exits non-zero (code 1, `monitor_check_failed`) if it
-finds a problem:
+validates them before you apply them. It checks query syntax, window bounds, and that the
+referenced datasets exist. On any problem it exits 1 with `monitor_check_failed`:
 
 ```sh
 bronto monitors check --input monitors/checkout-5xx.json --input monitors/payments-p95.json
 ```
 
-`--input` is repeatable and takes `-` for stdin. A CI step that runs `monitors check` and
-then `bronto monitors create --input <file>` keeps broken monitors out of production.
+`--input` is repeatable and takes `-` for stdin. Run `monitors check` in CI before
+`bronto monitors create --input <file>` so a broken definition fails the build instead of
+being created.
 
 ## Dashboards and widgets
 
 [Dashboards](https://docs.bronto.io/Search-and-Visualize/Dashboards) are built from
-widgets. You create widgets on their own, then attach them to a dashboard.
+widgets. Create the widgets first, then attach them to a dashboard.
 
 ```console test tty
 $ bronto dashboards list
@@ -143,7 +143,7 @@ replaces the whole widget. Pass `metric_ids`, `widget_ids`, or `aux` as JSON val
 bronto widgets create --input widget.json
 ```
 
-Then assemble:
+Then attach, remove, or detach:
 
 ```sh
 bronto dashboards attach-widgets "Checkout overview" --widget-ids <widget-id>,<widget-id>

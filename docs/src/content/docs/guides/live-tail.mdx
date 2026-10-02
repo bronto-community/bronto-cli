@@ -20,8 +20,7 @@ bronto tail "status >= 500" -d prod/checkout-service
 It takes the same positional WHERE query and `-d`/`--from-expr` dataset selection as
 [`bronto search`](/guides/searching/). Stop it with Ctrl-C.
 
-To catch up on the current window once and exit, which is handy in scripts, add
-`--no-follow`:
+To print the current window once and exit, for example in a script, add `--no-follow`:
 
 ```console test tty
 $ bronto tail "status >= 500" -d prod/checkout-service --no-follow --window 5m

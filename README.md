@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/bronto-community/bronto-cli/badge)](https://scorecard.dev/viewer/?uri=github.com/bronto-community/bronto-cli)
 
-A command-line client for the [Bronto](https://bronto.io) observability platform. One binary wraps Bronto's REST and ingestion APIs: search and tail logs, explore OpenTelemetry traces, send events, and manage resources from datasets to monitors. It's built for scripts and agents, with JSONL when piped, typed errors, stable exit codes, and `--dry-run` on every mutating call.
+A command-line client for the [Bronto](https://bronto.io) observability platform. One binary wraps Bronto's REST and ingestion APIs: search and tail logs, explore OpenTelemetry traces, send events, and manage resources such as datasets and monitors. It's built for scripts and agents, with JSONL when piped, typed errors, stable exit codes, and `--dry-run` on every mutating call.
 
 bronto-cli is an open-source project from Bronto, maintained as a **community artifact**: free to use and open to contributions, but not covered by Bronto's product support. Questions, bugs, and feature requests go to [GitHub issues](https://github.com/bronto-community/bronto-cli/issues).
 
@@ -21,7 +21,7 @@ or
 curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | sh
 ```
 
-`go install`, Docker images, `.deb`/`.rpm` packages, release archives, and signature verification are covered in the [install guide](https://bronto-cli.vercel.app/getting-started/install/).
+The [install guide](https://bronto-cli.vercel.app/getting-started/install/) covers `go install`, Docker images, `.deb`/`.rpm` packages, release archives, and signature verification.
 
 ## Quickstart
 
@@ -33,11 +33,11 @@ bronto search "status >= 500" -d <dataset> --since 1h
 bronto search "status >= 500" -d <dataset> --since 1h | jq .   # JSONL when piped
 ```
 
-The [quickstart](https://bronto-cli.vercel.app/getting-started/quickstart/) walks through the same steps with more detail.
+The [quickstart](https://bronto-cli.vercel.app/getting-started/quickstart/) walks through these steps in more detail.
 
 ## Documentation
 
-Full documentation lives at **https://bronto-cli.vercel.app**:
+The full documentation is at **https://bronto-cli.vercel.app**:
 
 - [Authentication](https://bronto-cli.vercel.app/getting-started/authentication/): API keys, regions, profiles
 - [Searching](https://bronto-cli.vercel.app/guides/searching/), [live tail](https://bronto-cli.vercel.app/guides/live-tail/), and [traces](https://bronto-cli.vercel.app/guides/traces/)

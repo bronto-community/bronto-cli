@@ -46,8 +46,7 @@ useful columns it drops the raw JSON. A footer on stderr points to `bronto field
 
 ## Filter flags instead of WHERE
 
-If you'd rather not write the WHERE expression yourself, the filter flags build it for
-you:
+The filter flags build the WHERE expression for you:
 
 | Flag | Keeps events where the field... |
 | --- | --- |
@@ -65,8 +64,8 @@ $ bronto search -d prod/checkout-service --ge status=500 --gt duration_ms=1000 -
 ...
 ```
 
-Each flag can be repeated, and all of them are ANDed together and with a positional
-query if you pass one. The CLI looks up each field name in the dataset's field index, so
+Each flag can be repeated. The CLI ANDs them together, and with the positional query if
+you pass one. The CLI looks up each field name in the dataset's field index, so
 `model` finds `$model` and matching is case-insensitive. It quotes the value based on its
 shape: numbers and booleans stay bare, strings get single quotes. The compiled filter is
 echoed to stderr.
@@ -83,8 +82,8 @@ status >= 500 AND service = 'checkout-service'
 
 ## Look closer at events
 
-`-x`/`--expand` is the "click on a row" view: every field of every event, one per line,
-nothing truncated, including the `metadata.*` fields the table hides.
+`-x`/`--expand` is the "click on a row" view. It prints every field of every event, one
+per line and untruncated, including the `metadata.*` fields the table hides.
 
 ```console test tty
 $ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 2 -x
@@ -151,8 +150,8 @@ $ bronto query check "status >= 500 AND service = 'checkout-service'"
 ```
 
 With `-d <dataset>` it also warns about fields that haven't appeared in that dataset
-recently and suggests close matches. `--strict` turns those warnings into a failure,
-which is what you want in CI.
+recently and suggests close matches. `--strict` turns those warnings into a failure
+for use in CI.
 
 ## Aggregate
 
@@ -192,8 +191,8 @@ total: 13 events (bucket: 1m15s)
 All 13 errors land in the few buckets after 09:21. Empty buckets print `0`, so a quiet
 period before a spike is easy to see.
 
-`--patterns` clusters events into message templates with counts. It's the fastest way to
-get a feel for a noisy dataset (learn more about
+`--patterns` clusters events into message templates with counts, which shows what a noisy
+dataset is mostly made of (learn more about
 [patterns](https://docs.bronto.io/core-features/patterns)):
 
 ```console test tty
@@ -243,7 +242,7 @@ range, select, and group-by flags don't apply and are rejected.
 ## The REPL
 
 For a longer investigation, `bronto repl` opens a psql-style prompt. Type a WHERE
-expression to run it, edit, run again.
+expression to run it, then edit it and run it again.
 
 ```sh
 bronto repl -d prod/checkout-service --since 1h

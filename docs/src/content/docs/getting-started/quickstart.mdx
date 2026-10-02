@@ -94,7 +94,7 @@ metadata.sequence        48211195
 metadata.timestamp       1784453089632
 ```
 
-Not sure what a field is called? `bronto fields` lists the fields in a dataset with sample
+To look up a field name, `bronto fields` lists the fields in a dataset with sample
 values:
 
 ```console test tty
@@ -112,7 +112,7 @@ trace_id     76     string  message  157e5baf0cba0bcbc198563eb6a18c38, 7616f41b3
 ## 5. Pipe it
 
 When stdout isn't a terminal, `search` prints JSON Lines (one JSON object per event), so
-it plugs straight into `jq`, `wc`, or a script. Each event is flattened into dotted keys:
+you can pipe it into `jq`, `wc`, or a script. Each event is flattened into dotted keys:
 
 ```console test
 $ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 1 | jq .

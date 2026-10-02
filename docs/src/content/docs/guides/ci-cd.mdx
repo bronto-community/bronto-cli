@@ -5,8 +5,8 @@ sidebar:
   order: 11
 ---
 
-In CI there's no one to type a key and usually no OS keychain. Give the CLI its
-credentials through the environment and it never tries to use one.
+In CI there's no one to type a key and usually no OS keychain. Pass the credentials
+through the environment and the CLI won't touch the keychain.
 
 ## Credentials from the environment
 
@@ -21,8 +21,8 @@ Once `BRONTO_API_KEY` is set, no keychain lookup happens. `BRONTO_REGION` defaul
 ingestion-only key for jobs that only run `bronto send`, a Search key for read-only jobs.
 [API Keys](https://docs.bronto.io/Account-Management/API-Keys) lists the roles.
 
-Gate a pipeline on a working credential with `bronto auth status`, which exits non-zero if
-the API rejects the key:
+To fail a pipeline early on a bad credential, run `bronto auth status`. It exits non-zero
+if the API rejects the key:
 
 ```sh
 bronto auth status
@@ -84,7 +84,7 @@ Sandboxes and locked-down runners often have no keychain and a read-only home di
 - Don't commit an API key to `.bronto.toml`. The CLI refuses to read `api_key` from any
   config file.
 
-## Patterns that work well in CI
+## Tips for CI
 
 - Make destructive steps explicit with `--yes`. Without it, `delete` refuses to run
   outside a terminal.

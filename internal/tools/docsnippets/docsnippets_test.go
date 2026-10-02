@@ -311,16 +311,23 @@ func TestSelfTestGoesRed(t *testing.T) {
 func TestBackgroundChildDoesNotHang(t *testing.T) {
 	for _, tty := range []bool{false, true} {
 		r := &Runner{Env: []string{"PATH=" + os.Getenv("PATH")}, TempDir: t.TempDir, Timeout: 20 * time.Second}
+		pidFile := filepath.Join(t.TempDir(), "child.pid")
 		start := time.Now()
-		res := r.exec(Command{Cmd: "sleep 30 & echo started"}, r.Env, t.TempDir(), r.Timeout, tty)
+		res := r.exec(Command{Cmd: "sleep 30 & echo $! > " + pidFile + "; echo started"}, r.Env, t.TempDir(), r.Timeout, tty)
 		if d := time.Since(start); d > 10*time.Second {
 			t.Errorf("tty=%v: took %s, want about %s", tty, d, ptyDrainGrace)
 		}
 		if !strings.Contains(res.Stdout, "started") {
 			t.Errorf("tty=%v: stdout = %q, want it to contain %q", tty, res.Stdout, "started")
 		}
-	}
-	if out, err := exec.Command("pgrep", "-f", "sleep 30").Output(); err == nil && len(out) > 0 {
-		t.Errorf("background child survived the snippet: pids %s", strings.Fields(string(out)))
+		// Only this snippet's own child counts: other test runs on the
+		// machine may have their own sleeps going.
+		b, err := os.ReadFile(pidFile)
+		if err != nil {
+			t.Fatalf("tty=%v: %v", tty, err)
+		}
+		if err := exec.Command("kill", "-0", strings.TrimSpace(string(b))).Run(); err == nil {
+			t.Errorf("tty=%v: background child %s survived the snippet", tty, strings.TrimSpace(string(b)))
+		}
 	}
 }

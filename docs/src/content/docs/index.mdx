@@ -3,7 +3,7 @@ title: The Bronto command line
 description: Search logs, tail streams, inspect traces, and manage Bronto resources from the terminal.
 template: splash
 hero:
-  tagline: Search, tail, and trace your Bronto data from the terminal. One binary, scriptable output, stable exit codes.
+  tagline: Search, tail, and trace your Bronto data from the terminal. It's a single binary with scriptable output and stable exit codes.
   actions:
     - text: Get started
       link: /getting-started/install/
@@ -35,7 +35,8 @@ you can also do in a shell script, a CI job, or an agent's tool call.
 		seconds. [Live tail](/guides/live-tail/)
 	</Card>
 	<Card title="Explore traces" icon="random">
-		Waterfalls, per-service latency, and the merged call-tree shape across many traces.
+		See a trace's waterfall, latency per service, and the call-tree shape merged across
+		many traces.
 		[Traces](/guides/traces/)
 	</Card>
 	<Card title="Manage resources" icon="list-format">
@@ -43,12 +44,12 @@ you can also do in a shell script, a CI job, or an agent's tool call.
 		`list | get | create | update | delete` pattern. [Resources](/guides/resources/)
 	</Card>
 	<Card title="Script it" icon="seti:shell">
-		JSONL when piped, a JSON error envelope, `--jq`, `--dry-run`, and exit codes that mean
-		something. [Scripting and agents](/guides/scripting/)
+		JSONL when piped, a JSON error envelope, `--jq`, `--dry-run`, and documented exit
+		codes. [Scripting and agents](/guides/scripting/)
 	</Card>
 	<Card title="Run it in CI" icon="setting">
-		Credentials from the environment, a shell-less container image, and no keychain
-		required. [CI/CD](/guides/ci-cd/)
+		Read the key from the environment instead of a keychain, or use the container image,
+		which has no shell. [CI/CD](/guides/ci-cd/)
 	</Card>
 </CardGrid>
 

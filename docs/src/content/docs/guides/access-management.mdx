@@ -5,7 +5,7 @@ sidebar:
   order: 8
 ---
 
-Bronto controls access with users, groups of users, and roles that bundle permissions.
+Bronto access control has users, groups of users, and roles that bundle permissions.
 [Access Control](https://docs.bronto.io/Account-Management/Access-Control) and
 [User Management](https://docs.bronto.io/Account-Management/User-Management) on
 docs.bronto.io explain the model. The commands below follow the
@@ -37,7 +37,7 @@ $ bronto users get ada@example.com
 
 `get` prints the full record as JSON, even at a terminal.
 
-Users resolve by email anywhere an id is accepted. Beyond CRUD:
+Users resolve by email anywhere an id is accepted. The user commands beyond CRUD:
 
 ```console test tty
 $ bronto users groups ada@example.com
@@ -51,8 +51,8 @@ bronto users deactivate grace@example.com
 bronto users reactivate grace@example.com
 ```
 
-`bronto users groups` lists the groups a user belongs to. `bronto users deactivate`
-deactivates a user and `bronto users reactivate` undoes it.
+`bronto users groups` lists the groups a user belongs to. `bronto users deactivate` and
+`bronto users reactivate` switch a user off and back on.
 `bronto users resend-invite` sends a new invitation to a user who hasn't accepted yet.
 
 ## Groups
@@ -67,8 +67,8 @@ NAME    DESCRIPTION                     CREATED_AT  GROUP_ID
 oncall  Paged by the checkout monitors  2026-05-04  0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07
 ```
 
-`groups members` lists members by id: here Ada and Grace (compare the ids with
-`bronto users list`).
+`groups members` lists members by id. Here they are Ada and Grace, as the ids in
+`bronto users list` show.
 
 Add or remove members with `bronto groups add-members` and
 `bronto groups remove-members`. Both take users by id or email with `--users`, and other
@@ -82,8 +82,7 @@ bronto groups add-members oncall --groups sre
 bronto groups remove-members oncall --users grace@example.com
 ```
 
-Preview a membership change first. `--dry-run` resolves the users and prints what it
-would do on stderr, without changing the group:
+`--dry-run` resolves the users and prints the change on stderr without making it:
 
 ```console test tty
 $ bronto groups add-members oncall --users grace@example.com --dry-run 2>&1
@@ -110,9 +109,9 @@ Read only     USER       true            Search and view, no changes      ReadOn
 System roles have readable ids such as `Admin` and `ReadOnly`, and a role also resolves
 by its `display_name`.
 
-`roles update` replaces the whole role. Always pass `display_name` and the exact set of
-`permissions` you want the role to have: omitted fields are cleared, and the CLI refuses
-an update body without them.
+`roles update` replaces the whole role, so omitted fields are cleared. Pass
+`display_name` and the exact set of `permissions` the role should have. The CLI refuses an
+update body without them.
 
 ```sh
 bronto roles create -f display_name=Viewer -f 'permissions=["logs_read","dashboards_read"]'
@@ -121,15 +120,15 @@ bronto roles update Viewer -f display_name=Viewer -f 'permissions=["logs_read"]'
 
 :::caution
 Don't copy `permissions` from `roles get` output into an update. Reads return the full
-permission catalog, not just what the role grants.
+permission catalog, including permissions the role doesn't grant.
 :::
 
-Values passed with `-f` are parsed as JSON, which is why the permissions array above
-arrives as an array, not a string.
+Values passed with `-f` are parsed as JSON, so the `permissions` value above is sent as
+an array.
 
 ## API keys
 
-API keys are a resource too: `bronto api-keys list`, `create`, `update`, and `delete`.
+API keys have `bronto api-keys list`, `create`, `update`, and `delete`.
 `list` masks the key values unless you pass `--reveal`. See
 [API Keys on docs.bronto.io](https://docs.bronto.io/Account-Management/API-Keys) for the
 roles a key can have.

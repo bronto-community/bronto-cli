@@ -7,8 +7,8 @@ sidebar:
 
 import Tape from '~/components/Tape.astro';
 
-Everything you can configure in Bronto has a resource command, and they all work the same
-way. Learn the pattern once and it applies to datasets, monitors, API keys, and the rest.
+Every Bronto resource (datasets, monitors, API keys, and the rest) has a command, and
+they all take the same verbs.
 
 <Tape name="resources" title="Listing, inspecting, and changing resources" />
 
@@ -58,7 +58,7 @@ $ bronto monitors get "High 5xx rate on checkout"
 }
 ```
 
-At a terminal, `list` prints a table of the most useful columns and `get` prints the whole
+At a terminal, `list` prints a table of the main columns and `get` prints the whole
 object as JSON.
 
 Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `metrics`, `exports`.
@@ -97,13 +97,13 @@ Every command that takes an id also takes a unique name:
 - Monitors, dashboards, and the rest resolve by `name`. Quote names with spaces.
 
 If a name matches more than one resource, the command fails with exit code 2 and lists the
-candidate ids so you can pick one.
+matching ids.
 
 ## Creating and updating
 
-`create` and `update` build the request body from repeated `-f key=value` flags. Each
-value is parsed as JSON when it can be, so numbers, booleans, arrays, and objects keep
-their type, and anything else is sent as a string:
+`create` and `update` build the request body from repeated `-f key=value` flags. A value
+that parses as JSON keeps its type (number, boolean, array, or object). Anything else is
+sent as a string:
 
 ```sh
 bronto dashboards create -f name=Overview -f description=Prod
@@ -119,15 +119,15 @@ bronto monitors create --input monitor.json
 ./generate-monitor.sh | bronto monitors create --input -
 ```
 
-The body is sent as is, so the fields are whatever the
+The CLI sends the body unchanged, so use the fields the
 [Bronto API](https://docs.bronto.io/api-reference/introduction) expects for that
 resource. Updates to `monitors`, `widgets`, `datasets`, and `roles` use HTTP PUT. For
 widgets and roles that replaces the whole object, so send every field you want to keep.
 
 ## Deleting
 
-`delete` asks for confirmation at a terminal. In a script there's no one to ask, so it
-refuses with `usage_confirmation_required` (exit code 2) unless you pass `--yes`:
+`delete` asks for confirmation at a terminal. Without a terminal it can't ask, so it
+fails with `usage_confirmation_required` (exit code 2) unless you pass `--yes`:
 
 ```sh
 bronto api-keys delete <id> --yes
@@ -135,8 +135,9 @@ bronto api-keys delete <id> --yes
 
 ## Preview changes with --dry-run
 
-`--dry-run` works on every command that changes something. Reads still run, so names are
-resolved and a name that doesn't exist fails as it would for real. Nothing is changed.
+`--dry-run` works on every command that changes something. It changes nothing, but reads
+still run, so names resolve and an unknown name fails the same way it would without
+`--dry-run`.
 
 `create` and `update` print the request they would send as a JSON plan on stdout: method,
 path, and body. `delete` and some action verbs, such as `groups add-members`,
@@ -203,7 +204,7 @@ bronto metrics top-keys system.cpu.utilization --since 1h
 ## API keys
 
 `bronto api-keys list` masks key values in every output format, JSON included, so keys
-don't end up in CI logs by accident. Pass `--reveal` to see them in full.
+don't leak into CI logs. Pass `--reveal` to see them in full.
 
 ```console test tty
 $ bronto api-keys list

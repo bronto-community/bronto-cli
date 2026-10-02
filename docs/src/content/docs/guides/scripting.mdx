@@ -7,8 +7,8 @@ sidebar:
 
 import Tape from '~/components/Tape.astro';
 
-`bronto` is built to be called by other programs: shell scripts, CI jobs, and AI agents.
-Data goes to stdout, everything else goes to stderr, and both are predictable.
+`bronto` is meant to be called from shell scripts, CI jobs, and AI agents. Data goes to
+stdout and everything else to stderr, in the formats described on this page.
 
 <Tape name="scripting" title="Piping bronto into jq and back" />
 
@@ -21,8 +21,8 @@ You usually don't need `-o`. The CLI checks whether stdout is a terminal:
 | `search`, `tail`, `traces` | table | JSON Lines, one object per line |
 | everything else (`list`, `get`, `usage`, `config list`, ...) | table | one pretty-printed JSON document, usually an array |
 
-Parse the JSON document as a whole, not line by line. If you want one row per line from a
-non-streaming command, pass `-o jsonl`.
+Parse that JSON document as a whole. For one row per line from a non-streaming command,
+pass `-o jsonl`.
 
 ```console test
 $ bronto datasets list -o jsonl --fields collection,dataset,log_id
@@ -35,7 +35,7 @@ $ bronto monitors list | jq length
 ```
 
 `-o` forces a format: `table`, `json`, `jsonl`, `csv`, or `raw`. `raw` prints each event's
-original `@raw` line, which is handy for piping logs back into other tools. The full rules
+original `@raw` line, for piping logs into other tools. The full rules
 are in [Output formats](/reference/output-formats/).
 
 64-bit numbers such as `metadata.sequence` come through `json`, `jsonl`, and `--jq`
@@ -64,7 +64,7 @@ $ bronto datasets list --fields collection,dataset
 ```
 
 Search events are flattened, and fields parsed from the log line sit under
-`message_kvs.`. Name them in full. A bare `status` matches no key, so it prints nothing
+`message_kvs.`. Use the full name: a bare `status` matches no key and prints nothing
 for that field:
 
 ```console test
@@ -74,8 +74,8 @@ $ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 -o json
 {"@time":"2026-07-19 09:24:18.321 UTC","message_kvs.host":"web-2","message_kvs.path":"/api/checkout","message_kvs.status":502}
 ```
 
-`--select` is different: it asks the server for just those fields, using the names you'd
-write in a query, and the result keys come back under those names:
+`--select` asks the server for just the named fields. It takes the names you'd write in a
+query, and the result uses them as keys:
 
 ```console test
 $ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 2 --select status --select path
@@ -99,7 +99,7 @@ $ bronto search "status >= 500" -d prod/checkout-service --since 1h -o jsonl --j
 "67d30b1a2fddae59f08e7502c43a12e3"
 ```
 
-A few things differ from the `jq` CLI:
+Differences from the `jq` CLI:
 
 - A value that makes the expression fail is skipped, and the other rows still print.
 - Results print as JSON, so strings keep their quotes. There is no `-r`. Pipe `-o jsonl`
@@ -107,7 +107,7 @@ A few things differ from the `jq` CLI:
 - At a terminal the default format is a table, so add `-o json` or `-o jsonl`. Piped,
   `--jq` works without `-o`.
 
-A few recipes:
+Some recipes:
 
 ```sh
 # Count 5xx responses per path
@@ -139,9 +139,9 @@ it isn't, you get one line of JSON:
 ```
 
 - `code` is a stable identifier such as `auth_invalid_key` or `resource_not_found`. Match
-  on it, not on `message`.
+  on `code`. `message` can change.
 - `retryable` is `true` for rate limits, timeouts, network errors, and server errors.
-- `hint` is present when there's a suggested fix. Agents should read it.
+- `hint` holds a suggested fix, when there is one. Agents should read it.
 
 ## Exit codes
 
@@ -158,7 +158,7 @@ it isn't, you get one line of JSON:
 
 ## Safe automation
 
-- `--dry-run` stops before any mutating request. `create` and `update` print the request
+- `--dry-run` stops before any request that changes something. `create` and `update` print the request
   as a plan on stdout, `{"body":{...},"dry_run":true,"method":"POST","path":"/monitors"}`.
   `delete` and some action verbs, such as `groups add-members`, print a `DRY RUN:` line on
   stderr instead. Reads still run, so names resolve. An agent can show the plan to a human
@@ -174,8 +174,8 @@ it isn't, you get one line of JSON:
 
 ## Credentials for scripts
 
-On a machine where a person has run `bronto auth login`, a script can reuse that key
-without touching the keychain itself:
+On a machine where someone has run `bronto auth login`, a script can reuse that key
+without reading the keychain itself:
 
 ```sh
 export BRONTO_API_KEY=$(bronto auth token)
@@ -187,8 +187,8 @@ In CI, set `BRONTO_API_KEY` directly. See [CI/CD](/guides/ci-cd/).
 ## For AI agents
 
 - [`skill.md`](https://github.com/bronto-community/bronto-cli/blob/main/skill.md) in the
-  repository is a short orientation written for agents such as Claude Code: the main
-  commands, the output contract, and the exit codes. Point your agent at it, or drop it into
+  repository is a short guide for agents such as Claude Code. It covers the main commands,
+  the output contract, and the exit codes. Point your agent at it, or drop it into
   your agent's skills directory.
 - [`llms.txt`](https://github.com/bronto-community/bronto-cli/blob/main/llms.txt) is a
   20-line summary. This site also publishes

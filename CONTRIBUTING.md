@@ -53,7 +53,7 @@ make docs-tapes      # re-record the terminal videos (needs vhs and ttyd)
 make docs-check      # everything the docs CI job runs
 ```
 
-PRs that change user-facing CLI behavior must update the docs in the same PR; the `docs-required` CI job checks this. If a change genuinely needs no docs (an internal refactor, a test-only fix), add the `no-docs-needed` label.
+PRs that change user-facing CLI behavior must update the docs in the same PR; the `docs-required` CI job checks this. If a change needs no docs (an internal refactor, a test-only fix), add the `no-docs-needed` label.
 
 ## TDD and lint expectations
 

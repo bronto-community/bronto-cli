@@ -5,8 +5,8 @@ sidebar:
   order: 3
 ---
 
-Data goes to stdout. Notices, progress, warnings, and errors go to stderr, so piping
-stdout never mixes the two. `--quiet` suppresses the notices.
+Data goes to stdout. Notices, progress, warnings, and errors go to stderr, so a pipe on
+stdout carries only data. `--quiet` suppresses the notices.
 
 ## How the format is chosen
 
@@ -29,8 +29,8 @@ stdout never mixes the two. `--quiet` suppresses the notices.
 | `csv` | A header row, then one row per record. |
 | `raw` | For events, the original `@raw` line. Other rows print as compact JSON. |
 
-`jsonl` is the format to stream: a consumer can process each line as it arrives. `json`
-needs to be parsed as a whole.
+Use `jsonl` for streaming, since a consumer can process each line as it arrives. `json`
+has to be parsed as a whole.
 
 Numbers keep their exact value in `json`, `jsonl`, and `--jq` output. 64-bit ids such as
 `metadata.sequence` aren't rounded to floats.
@@ -96,8 +96,8 @@ bronto monitors list -o jsonl --jq '.name'
 
 ## -x / --expand
 
-`bronto search -x` prints each event as a block of `key value` lines, every field,
-untruncated. It's table-only: with `-o json`, `jsonl`, `csv`, or `raw` it fails with a
+`bronto search -x` prints each event as a block of `key value` lines with every field,
+untruncated. It works only with table output: with `-o json`, `jsonl`, `csv`, or `raw` it fails with a
 usage error, because those formats already include every field. To get the expanded view
 in a pipe, pass `-o table -x`.
 

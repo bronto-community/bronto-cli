@@ -21,7 +21,7 @@ bronto errors prod/checkout-service   # runs the plugin (skilldoc:ignore: not a 
 
 ## How dispatch works
 
-- The plugin name must be the very first argument. `bronto errors --help` runs the plugin {/* skilldoc:ignore: example plugin name */}
+- The plugin name must be the first argument. `bronto errors --help` runs the plugin {/* skilldoc:ignore: example plugin name */}
   with `--help`. `bronto --profile prod errors` does not dispatch, because a flag comes
   first. Put global flags after the plugin name and let the plugin handle them.
 - Built-in commands always win. A `bronto-search` executable can't replace `bronto search`.
@@ -41,7 +41,7 @@ $ bronto plugins list
 ## Credentials for plugins
 
 Plugins inherit your environment, but not the key stored in your keychain. A plugin that
-needs the Bronto API has two options:
+needs the Bronto API can get credentials in two ways:
 
 - Call `bronto` itself, as the example above does. The nested call resolves credentials
   the normal way.

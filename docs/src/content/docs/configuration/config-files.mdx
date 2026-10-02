@@ -5,9 +5,9 @@ sidebar:
   order: 1
 ---
 
-Most people never edit a config file: `bronto auth login` writes the region, and
-`bronto config set` handles the rest. This page explains what gets stored where and which
-value wins when several sources disagree.
+You rarely need to edit a config file by hand: `bronto auth login` writes the region, and
+`bronto config set` writes everything else. This page covers what is stored where, and
+which value wins when several sources disagree.
 
 ## Precedence
 
@@ -70,7 +70,7 @@ Use `--profile <name>` to write to a profile other than the active one.
 | `output` | | table at a terminal; JSON or JSONL piped | default output format |
 | `default_dataset` | | | dataset used when you omit `-d` |
 | `timeout` | `BRONTO_TIMEOUT` | `30` | HTTP timeout in seconds |
-| `max_retries` | `BRONTO_MAX_RETRIES` | `2` | retries for idempotent requests on 429 and 5xx |
+| `max_retries` | `BRONTO_MAX_RETRIES` | `2` | retries for idempotent requests on 429, 502, 503, and 504 |
 | `app_url` | `BRONTO_APP_URL` | from region | web app URL for `search --url` and `--open` |
 | `org_id` | `BRONTO_ORG_ID` | from the API | org for web-app links |
 | `ask_url` | `BRONTO_ASK_URL` | | chat-completions endpoint for [`bronto ask`](/guides/ask/) |
@@ -126,8 +126,8 @@ of profiles.
 ## Project files
 
 A `.bronto.toml` in your working directory, or in any directory above it, applies to
-every command run there. It's a flat TOML file, without profile sections, and is useful
-for pinning a repository to its dataset:
+every command run there. It's a flat TOML file with no profile sections. Use it to pin a
+repository to its dataset:
 
 ```toml
 default_dataset = "prod/checkout-service"
