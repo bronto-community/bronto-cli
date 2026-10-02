@@ -107,8 +107,30 @@ func TestAuthLoginKeyStdin(t *testing.T) {
 	r := NewRunner(t, key)
 	r.OmitEnvKey = true
 	profile := resourceName("auth-login")
+	// Logout is checked, then verified: secrets.Delete deliberately ignores
+	// keyring deletion errors, so a clean logout exit alone doesn't prove
+	// the entry is gone. auth token must then report the key missing (exit
+	// 3, auth_missing_key). Its stdout is the key itself, so it's never
+	// printed.
 	t.Cleanup(func() {
-		_, _ = r.Run(context.Background(), "", "auth", "logout", "--profile", profile)
+		ctx := context.Background()
+		leftover := "the CI key may be left in the OS keychain; remove it with: bronto auth logout --profile " + profile
+		res, err := r.Run(ctx, "", "auth", "logout", "--profile", profile)
+		if err != nil {
+			t.Errorf("running auth logout: %v (%s)", err, leftover)
+			return
+		}
+		if res.ExitCode != 0 {
+			t.Errorf("auth logout exited %d\nstderr: %s\n%s", res.ExitCode, res.Stderr, leftover)
+		}
+		tok, err := r.Run(ctx, "", "auth", "token", "--profile", profile)
+		if err != nil {
+			t.Errorf("running auth token: %v (%s)", err, leftover)
+			return
+		}
+		if tok.ExitCode != 3 || !strings.Contains(tok.Stderr, "auth_missing_key") {
+			t.Errorf("profile %s still resolves a key after logout (auth token exit %d); %s", profile, tok.ExitCode, leftover)
+		}
 	})
 
 	res, err := r.Run(t.Context(), key+"\n",
