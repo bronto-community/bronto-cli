@@ -24,6 +24,7 @@ These flags are defined on the root `bronto` command and are accepted by every s
 | `--output` | `-o` | string |  | output format: table\|json\|jsonl\|raw\|csv |
 | `--profile` |  | string |  | named profile to use |
 | `--quiet` |  | bool |  | suppress non-data messages on stderr |
+| `--raw-output` | `-r` | bool |  | with --jq, print string results without JSON quotes (like jq -r); other values stay compact JSON |
 | `--region` |  | string |  | Bronto region: eu or us |
 | `--timeout` |  | int |  | HTTP timeout in seconds (config: timeout, env: BRONTO\_TIMEOUT) |
 

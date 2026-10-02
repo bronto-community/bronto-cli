@@ -99,16 +99,14 @@ func TestDashboardDetachFromTemplate(t *testing.T) {
 
 func TestWidgetActionsDryRun(t *testing.T) {
 	// --dry-run must not hit the API and must report the intent.
-	_, stderr, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) {
+	out, stderr, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) {
 		t.Error("dry-run must not call the API")
 		w.WriteHeader(http.StatusNoContent)
-	}, "", "widgets", "attach-widgets", wWidget, "--widget-ids", "id-1", "--dry-run")
+	}, "", "widgets", "attach-widgets", wWidget, "--widget-ids", "id-1", "--dry-run", "-o", "json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(stderr, "DRY RUN") || !strings.Contains(stderr, "attach 1 widget(s)") {
-		t.Fatalf("stderr = %q", stderr)
-	}
+	decodePlan(t, out, stderr, "POST", "/widgets/"+wWidget+"/widgets")
 }
 
 // TestWidgetActionsQuiet: --quiet suppresses the non-data confirmations

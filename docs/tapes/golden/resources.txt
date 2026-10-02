@@ -9,7 +9,14 @@ OK              count(*) = 0 <= 5
 >
 ────────────────────────────────────────────────────────────────────────────────
 > bronto monitors mute "High 5xx rate on checkout" --dry-run
-DRY RUN: would set mute_until=-1 on monitor High 5xx rate on checkout.
+{
+  "body": {
+    "mute_until": -1
+  },
+  "dry_run": true,
+  "method": "POST",
+  "path": "/monitors/a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01/status"
+}
 > bronto groups members oncall --fields member_id,member_type
 MEMBER_ID                             MEMBER_TYPE
 e5d7f3c6-8fa2-43c5-b061-2c9f7e4d5a05  USER

@@ -60,8 +60,8 @@ bronto users reactivate grace@example.com
 ```console test tty
 $ bronto groups members oncall
 GROUP_ID                              MEMBER_ID                             MEMBER_TYPE  MODIFIED_AT
-0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07  e5d7f3c6-8fa2-43c5-b061-2c9f7e4d5a05  USER         1777890000000
-0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07  f6e8a4d7-9ab3-44d6-c172-3dab8f5e6b06  USER         1780389000000
+0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07  e5d7f3c6-8fa2-43c5-b061-2c9f7e4d5a05  USER         2026-05-04
+0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07  f6e8a4d7-9ab3-44d6-c172-3dab8f5e6b06  USER         2026-06-02
 $ bronto groups list
 NAME    DESCRIPTION                     CREATED_AT  GROUP_ID
 oncall  Paged by the checkout monitors  2026-05-04  0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07
@@ -82,11 +82,24 @@ bronto groups add-members oncall --groups sre
 bronto groups remove-members oncall --users grace@example.com
 ```
 
-`--dry-run` resolves the users and prints the change on stderr without making it:
+`--dry-run` resolves the group and the users and prints the request it would send,
+without making the change:
 
 ```console test tty
-$ bronto groups add-members oncall --users grace@example.com --dry-run 2>&1
-DRY RUN: would add 1 member(s) to group oncall.
+$ bronto groups add-members oncall --users grace@example.com --dry-run
+{
+  "body": {
+    "members": [
+      {
+        "member_id": "f6e8a4d7-9ab3-44d6-c172-3dab8f5e6b06",
+        "member_type": "USER"
+      }
+    ]
+  },
+  "dry_run": true,
+  "method": "POST",
+  "path": "/groups/0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07/members"
+}
 ```
 
 ## Roles and permissions

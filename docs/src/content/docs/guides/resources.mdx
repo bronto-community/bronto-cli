@@ -139,10 +139,11 @@ bronto api-keys delete <id> --yes
 still run, so names resolve and an unknown name fails the same way it would without
 `--dry-run`.
 
-`create` and `update` print the request they would send as a JSON plan on stdout: method,
-path, and body. `delete` and some action verbs, such as `groups add-members`,
-`monitors mute`, and `users deactivate`, print a one-line `DRY RUN:` note on stderr
-instead. `delete` also skips its confirmation prompt, because nothing is deleted.
+Every command that changes something prints the request it would send as a JSON plan on
+stdout: method, path, and body. That includes `delete` and action verbs such as
+`groups add-members`, `monitors mute`, and `users deactivate`. A name you pass shows up
+as the id it resolved to in the plan's path. `delete` also skips its confirmation prompt,
+because nothing is deleted.
 
 ```console test tty
 $ bronto dashboards create -f name=Overview -f description=Prod --dry-run
@@ -155,8 +156,12 @@ $ bronto dashboards create -f name=Overview -f description=Prod --dry-run
   "method": "POST",
   "path": "/dashboards"
 }
-$ bronto monitors delete "Payments latency p95" --dry-run 2>&1
-DRY RUN: would delete monitor Payments latency p95.
+$ bronto monitors delete "Payments latency p95" --dry-run
+{
+  "dry_run": true,
+  "method": "DELETE",
+  "path": "/monitors/b2e4d0a3-5c7f-4092-8d3e-8f6c4b9a2d02"
+}
 ```
 
 ## Commands beyond CRUD

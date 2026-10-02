@@ -98,11 +98,7 @@ func newAPICmd() *cobra.Command {
 			// to preview an UNdocumented mutation, so skipping this here
 			// would execute exactly the calls --dry-run exists to preview.
 			if app.DryRun && method != http.MethodGet && method != http.MethodHead {
-				p, err := app.Printer(false)
-				if err != nil {
-					return err
-				}
-				return p.PrintJSON(dryRunPlan(method, path, bodyBytes))
+				return printDryRunPlan(app, dryRunPlan(method, path, bodyBytes))
 			}
 
 			var body io.Reader

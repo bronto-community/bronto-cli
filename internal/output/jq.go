@@ -31,7 +31,8 @@ func CompileJQ(expr string) (*gojq.Code, error) {
 // runJQ runs code against v and writes every emitted result as its own
 // compact JSON line — jq semantics: a query can yield zero, one, or many
 // results per input, and each result (object, array, string, number, ...)
-// prints as one line.
+// prints as one line. With raw (jq -r), a string result prints as the
+// bare string instead of a quoted JSON string.
 //
 // Deliberate deviation from the jq CLI: both a per-value runtime error (e.g.
 // a type mismatch) and an explicit halt/halt_error are treated as "skip the
@@ -42,7 +43,7 @@ func CompileJQ(expr string) (*gojq.Code, error) {
 // would be far more surprising than just skipping that row. So a query that
 // errors or halts on some or all inputs still completes and exits cleanly,
 // having printed results for every input it could.
-func runJQ(w io.Writer, code *gojq.Code, v any) error {
+func runJQ(w io.Writer, code *gojq.Code, v any, raw bool) error {
 	iter := code.Run(normalizeForJQ(v))
 	for {
 		res, ok := iter.Next()
@@ -52,9 +53,14 @@ func runJQ(w io.Writer, code *gojq.Code, v any) error {
 		if _, isErr := res.(error); isErr {
 			continue
 		}
-		b, err := json.Marshal(res)
-		if err != nil {
-			continue
+		var b []byte
+		if str, isStr := res.(string); isStr && raw {
+			b = []byte(str)
+		} else {
+			var err error
+			if b, err = json.Marshal(res); err != nil {
+				continue
+			}
 		}
 		b = append(b, '\n')
 		if _, err := w.Write(b); err != nil {

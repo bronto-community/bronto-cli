@@ -103,11 +103,7 @@ func newExportsCreateCmd() *cobra.Command {
 			}
 			obj, _ := payload.(map[string]any)
 			if isDryRunPlan(payload) {
-				p, perr := app.Printer(false)
-				if perr != nil {
-					return perr
-				}
-				return p.PrintJSON(payload)
+				return printDryRunPlan(app, payload)
 			}
 			if !wait {
 				p, err := app.Printer(false)

@@ -51,8 +51,8 @@ $ bronto tail -d prod/checkout-service --include 'path~^/api/checkout' --exclude
 ```
 
 `--fields` prints only the fields you name, in that order. `tail` asks the server for
-those fields, so use the names you'd write in a query (`status`, not
-`message_kvs.status`):
+those fields, so use the names you'd write in a query, such as `status`, as you would with
+`search --fields`:
 
 ```console test tty
 $ bronto tail "" -d prod/checkout-service --fields @time,status,path,message --no-follow --window 5m

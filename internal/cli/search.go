@@ -335,6 +335,9 @@ func printEvents(app *App, events []map[string]any, view eventView) error {
 	if err != nil {
 		return err
 	}
+	// Events carry their parsed fields flattened as message_kvs.<name>:
+	// let --fields status find message_kvs.status (exact keys still win).
+	p.SetFieldFallbackPrefix("message_kvs.")
 	if f == output.FormatJSONL || f == output.FormatRaw {
 		for _, r := range rows {
 			if err := p.PrintRow(nil, r); err != nil {

@@ -2,7 +2,6 @@ package cli
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -76,8 +75,7 @@ func newGroupMembershipCmd(add bool) *cobra.Command {
 				return err
 			}
 			if isDryRunPlan(payload) {
-				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would %s %d member(s) %s group %s.\n", verb, len(members), map[bool]string{true: "to", false: "from"}[add], args[0])
-				return nil
+				return printDryRunPlan(app, payload)
 			}
 			app.Notef("%s %d member(s) %s group %s.\n", past, len(members), map[bool]string{true: "to", false: "from"}[add], args[0])
 			return nil
@@ -192,7 +190,8 @@ func newMonitorNotificationsCmd() *cobra.Command {
 				"to_ts":   {strconv.FormatInt(spec.ToTs, 10)},
 			}
 			return getAndPrintRows(cmd, app, "/monitors/"+url.PathEscape(id)+"/notifications", params,
-				[]string{"time", "status", "monitor_status", "type", "destination", "failure_reason"}, "monitor_notifications")
+				[]string{"time", "status", "monitor_status", "type", "destination", "failure_reason"}, "monitor_notifications",
+				eventTimeRows)
 		},
 	}
 	cmd.Flags().StringVar(&since, "since", "24h", "lookback window (e.g. 1h, 7d, 1h30m)")
@@ -302,8 +301,7 @@ func newDatasetParserCmd() *cobra.Command {
 				return err
 			}
 			if isDryRunPlan(payload) {
-				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would assign parser %s to dataset %s.\n", args[1], args[0])
-				return nil
+				return printDryRunPlan(app, payload)
 			}
 			app.Notef("Assigned parser %s to dataset %s.\n", args[1], args[0])
 			return nil
@@ -324,8 +322,7 @@ func newDatasetParserCmd() *cobra.Command {
 				return err
 			}
 			if isDryRunPlan(payload) {
-				_, _ = fmt.Fprintf(app.Stderr, "DRY RUN: would remove the parser from dataset %s.\n", args[0])
-				return nil
+				return printDryRunPlan(app, payload)
 			}
 			app.Notef("Removed the parser from dataset %s.\n", args[0])
 			return nil
@@ -348,14 +345,14 @@ func completeDatasetThenParser(cmd *cobra.Command, args []string, toComplete str
 
 // getAndPrintRows GETs path and prints its rows with cols (auto columns
 // when the payload carries other fields).
-func getAndPrintRows(cmd *cobra.Command, app *App, path string, params url.Values, cols []string, rowKey string) error {
+func getAndPrintRows(cmd *cobra.Command, app *App, path string, params url.Values, cols []string, rowKey string, polish ...rowPolish) error {
 	var payload any
 	client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
 	if err := client.GetJSON(cmd.Context(), path, params, &payload); err != nil {
 		return err
 	}
 	rows := rowsFromPayload(payload, rowKey)
-	p, err := app.Printer(false)
+	p, rows, err := humanRows(app, rows, polish...)
 	if err != nil {
 		return err
 	}
