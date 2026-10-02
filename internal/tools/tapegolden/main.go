@@ -16,8 +16,12 @@
 //     to that next frame
 //
 // What remains is one frame per scene. This holds as long as a scene's
-// output fits on the screen (no scrolling), which the tapes are written
-// to respect.
+// output fits on the screen (no scrolling). VHS's text output reads the
+// terminal buffer from the top, not the visible viewport, so a scene that
+// scrolls doesn't look different in the text: it just loses its bottom
+// rows, the first being the prompt that a settled scene always ends on.
+// tapegolden therefore fails when a settled frame doesn't end at a prompt,
+// so a scene that outgrew its tape's Height can't slip into a golden.
 //
 //	go run ./internal/tools/tapegolden < raw.txt > golden.txt
 package main
@@ -39,6 +43,12 @@ func main() {
 		os.Exit(1)
 	}
 	frames := Settled(string(b))
+	if bad := Unsettled(frames); len(bad) > 0 {
+		for _, i := range bad {
+			fmt.Fprintf(os.Stderr, "tapegolden: scene %d doesn't end at a prompt; it probably scrolled off a too-short screen. Raise the tape's Set Height.\n", i+1)
+		}
+		os.Exit(1)
+	}
 	w := bufio.NewWriter(os.Stdout)
 	for _, f := range frames {
 		_, _ = fmt.Fprintln(w, f)
@@ -88,6 +98,19 @@ func Settled(raw string) []string {
 		out = append(out, f)
 	}
 	return out
+}
+
+// Unsettled returns the indexes of frames whose last line isn't a shell
+// prompt (">", possibly after echoed input such as tail's "^C").
+func Unsettled(frames []string) []int {
+	var bad []int
+	for i, f := range frames {
+		last := f[strings.LastIndex(f, "\n")+1:]
+		if !strings.HasSuffix(last, ">") {
+			bad = append(bad, i)
+		}
+	}
+	return bad
 }
 
 func normalize(lines []string) string {

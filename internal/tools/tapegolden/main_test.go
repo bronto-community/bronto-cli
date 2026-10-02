@@ -26,3 +26,14 @@ func TestSettled(t *testing.T) {
 		t.Fatalf("Settled = %q\nwant %q", got, want)
 	}
 }
+
+func TestUnsettled(t *testing.T) {
+	frames := []string{
+		"> bronto datasets list\nNAME\nprod\n>",       // settled
+		"> bronto tail\nevent\n^C>",                   // interrupted, still at a prompt
+		"> bronto users list\nEMAIL\nada@example.com", // scrolled: prompt lost below the screen
+	}
+	if got, want := Unsettled(frames), []int{2}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("Unsettled = %v, want %v", got, want)
+	}
+}

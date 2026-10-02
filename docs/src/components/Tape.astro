@@ -9,11 +9,15 @@
  * A missing video is a build warning, not an error: the page renders a short
  * notice instead, so content can land before its recording.
  *
+ * The video's width/height attributes come from the poster PNG (the tape's
+ * Width/Height), so the browser reserves the right box before the video
+ * loads: tapes can have different heights (see tapes/settings.tape).
+ *
  * Playback: the video is muted and loops. It starts when it scrolls into view,
  * unless the reader prefers reduced motion. Controls are always shown, so
  * playback can be paused or started by hand.
  */
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 interface Props {
@@ -32,6 +36,14 @@ const hasVideo = existsSync(join(tapesDir, `${name}.webm`));
 const hasPoster = existsSync(join(tapesDir, `${name}.png`));
 const label = title ?? `Terminal recording: ${name}`;
 
+// Pixel size of a PNG, read from its IHDR chunk (bytes 16-23).
+function pngSize(file: string): { width: number; height: number } | undefined {
+	const b = readFileSync(file);
+	if (b.length < 24 || b.toString('ascii', 12, 16) !== 'IHDR') return undefined;
+	return { width: b.readUInt32BE(16), height: b.readUInt32BE(20) };
+}
+const size = hasPoster ? pngSize(join(tapesDir, `${name}.png`)) : undefined;
+
 if (!hasVideo) {
 	// Leading newline: Astro prints page progress without a trailing one.
 	console.warn(
@@ -47,6 +59,8 @@ if (!hasVideo) {
 			<video
 				src={`${base}/tapes/${name}.webm`}
 				poster={hasPoster ? `${base}/tapes/${name}.png` : undefined}
+				width={size?.width}
+				height={size?.height}
 				muted
 				loop
 				playsinline
