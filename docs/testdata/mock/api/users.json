@@ -1,0 +1,25 @@
+{
+  "users": [
+    {
+      "id": "e5d7f3c6-8fa2-43c5-b061-2c9f7e4d5a05",
+      "first_name": "Ada",
+      "last_name": "Lovelace",
+      "email": "ada@example.com",
+      "roles": ["Admin"],
+      "status": "ACTIVE",
+      "last_logins": {"Password": "${ago_s:3h}"},
+      "invited_at": 1776762000000
+    },
+    {
+      "id": "f6e8a4d7-9ab3-44d6-c172-3dab8f5e6b06",
+      "first_name": "Grace",
+      "last_name": "Hopper",
+      "email": "grace@example.com",
+      "roles": ["ReadOnly"],
+      "status": "ACTIVE",
+      "last_logins": {"Google": "${ago_s:26h}"},
+      "invited_at": 1777889700000,
+      "invited_by": "ada@example.com"
+    }
+  ]
+}

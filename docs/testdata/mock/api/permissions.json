@@ -1,0 +1,20 @@
+{
+  "resources": [
+    {
+      "group_name": "logs",
+      "group_display_name": "Logs",
+      "permissions": [
+        {"name": "logs_read", "display_name": "Read logs", "description": "Search and tail log data", "type": "READ"},
+        {"name": "logs_write", "display_name": "Write logs", "description": "Create and change datasets", "type": "WRITE"}
+      ]
+    },
+    {
+      "group_name": "monitors",
+      "group_display_name": "Monitors",
+      "permissions": [
+        {"name": "monitors_read", "display_name": "Read monitors", "description": "View monitors and their events", "type": "READ"},
+        {"name": "monitors_write", "display_name": "Write monitors", "description": "Create, change and mute monitors", "type": "WRITE"}
+      ]
+    }
+  ]
+}

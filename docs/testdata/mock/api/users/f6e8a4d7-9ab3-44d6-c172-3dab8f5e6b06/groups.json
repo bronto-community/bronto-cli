@@ -1,0 +1,5 @@
+{
+  "groups": [
+    {"group_id": "0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07", "name": "oncall", "description": "Paged by the checkout monitors", "created_at": 1777890000000, "modified_at": 1780389000000}
+  ]
+}

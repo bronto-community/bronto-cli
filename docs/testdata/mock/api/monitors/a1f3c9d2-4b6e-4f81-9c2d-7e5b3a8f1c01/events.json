@@ -1,0 +1,18 @@
+{
+  "monitor_events": [
+    {
+      "monitor_id": "a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01",
+      "time": 1784452890000,
+      "monitor_status": "ALERT",
+      "previous_status": "OK",
+      "message": "count(*) = 7 > 5 for status >= 500 on prod/checkout-service"
+    },
+    {
+      "monitor_id": "a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01",
+      "time": 1784453160000,
+      "monitor_status": "OK",
+      "previous_status": "ALERT",
+      "message": "count(*) = 0 <= 5"
+    }
+  ]
+}

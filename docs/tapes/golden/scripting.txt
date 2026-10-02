@@ -1,0 +1,18 @@
+> bronto search "status >= 500" -d prod/checkout-service --since 1h -o json | jq length
+13
+> bronto search "status >= 500" -d prod/checkout-service --select host -o jsonl | jq -r .host | sort | uniq -c
+   3 web-1
+   6 web-2
+   4 web-3
+> bronto monitors list -o json --jq 'select(.status == "ALERT") | .name'
+"High 5xx rate on checkout"
+"Payments latency p95"
+>
+────────────────────────────────────────────────────────────────────────────────
+> bronto search "status >= 500" -d checkout-service; echo "exit code: $?"
+Error: 2 datasets are named "checkout-service": prod/checkout-service, staging/checkout-service (usage_ambiguous_dataset
+)
+Hint: Qualify it as <collection>/<name> — e.g. -d prod/checkout-service — or pass the UUID from 'bronto datasets list'.
+exit code: 2
+>
+────────────────────────────────────────────────────────────────────────────────

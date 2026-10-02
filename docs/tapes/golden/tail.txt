@@ -1,0 +1,16 @@
+> bronto tail -d prod/checkout-service --interval 1s --fields @time,@status,host,message
+Tailing every 1s (window 30s). Ctrl-C to stop.
+2026-07-19 09:20:38.409 UTC  warn  web-3  payments-api slow to respond (2.8s)
+2026-07-19 09:20:39.389 UTC  info  web-2  cart loaded
+2026-07-19 09:21:47.075 UTC  error  web-2  payment failed: payments-api timed out after 30s
+2026-07-19 09:21:56.329 UTC  info  web-3  cart loaded
+2026-07-19 09:22:02.004 UTC  error  web-2  payment failed: payments-api timed out after 30s
+2026-07-19 09:22:17.823 UTC  error  web-2  payment failed: payments-api timed out after 30s
+2026-07-19 09:22:33.008 UTC  error  web-2  payment failed: payments-api timed out after 30s
+2026-07-19 09:22:48.041 UTC  error  web-1  payment failed: payments-api timed out after 30s
+2026-07-19 09:23:01.296 UTC  error  web-2  payment failed: payments-api timed out after 30s
+2026-07-19 09:23:07.067 UTC  info  web-2  cart loaded
+2026-07-19 09:23:17.556 UTC  error  web-3  payment failed: payments-api timed out after 30s
+2026-07-19 09:23:32.988 UTC  error  web-1  payment failed: payments-api timed out after 30s
+^C>
+────────────────────────────────────────────────────────────────────────────────

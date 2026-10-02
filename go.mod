@@ -5,6 +5,7 @@ go 1.26.0
 toolchain go1.26.6
 
 require (
+	github.com/creack/pty v1.1.24
 	github.com/itchyny/gojq v0.12.19
 	github.com/klauspost/compress v1.20.1
 	github.com/mattn/go-isatty v0.0.24

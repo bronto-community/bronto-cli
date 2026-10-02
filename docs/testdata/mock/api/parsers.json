@@ -1,0 +1,5 @@
+{
+  "parsers": [
+    {"id": "8d0f2b4c-6e7a-4c9d-9f3b-4c6e8a0d2f16", "name": "json", "description": "Parse JSON log lines into message_kvs", "type": "JSON", "enabled": true, "metadata": {"created_at": 1776762000000}}
+  ]
+}

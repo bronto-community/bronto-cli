@@ -1,0 +1,32 @@
+{
+  "logs": [
+    {
+      "log_id": "0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10",
+      "log": "checkout-service",
+      "dataset": "checkout-service",
+      "collection": "prod",
+      "metadata": {"created_at": 1776762000000, "last_heartbeat_at": "${ago:2m}"}
+    },
+    {
+      "log_id": "5e2a9c41-7b3d-4f6a-8c20-9d1e4b5f6a21",
+      "log": "payments-api",
+      "dataset": "payments-api",
+      "collection": "prod",
+      "metadata": {"created_at": 1776762000000, "last_heartbeat_at": "${ago:2m}"}
+    },
+    {
+      "log_id": "8f1d3b7a-2c5e-4a9b-b6d4-1e7f9a3c2b32",
+      "log": "web-frontend",
+      "dataset": "web-frontend",
+      "collection": "prod",
+      "metadata": {"created_at": 1776762000000, "last_heartbeat_at": "${ago:2m}"}
+    },
+    {
+      "log_id": "c3a8e5d2-9f4b-4e1a-a7c3-6b2d8f1e4c43",
+      "log": "checkout-service",
+      "dataset": "checkout-service",
+      "collection": "staging",
+      "metadata": {"created_at": 1777889700000, "last_heartbeat_at": "${ago:5h}"}
+    }
+  ]
+}

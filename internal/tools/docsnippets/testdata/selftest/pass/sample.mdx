@@ -1,0 +1,56 @@
+---
+title: Snippet tester self-test (passing)
+---
+
+Temporary sample snippets for the snippet tester's own tests. They run
+real bronto commands against the docs mock and must stay green.
+
+```console test
+$ bronto datasets list -o table
+COLLECTION  DATASET           LAST_ACTIVITY  LOG_ID
+prod        checkout-service  2m ago         0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10
+...
+staging     checkout-service  5h ago         c3a8e5d2-9f4b-4e1a-a7c3-6b2d8f1e4c43
+```
+
+A pipe into jq, and a command that only has to succeed:
+
+```console test
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -o json | jq length
+13
+$ bronto ping -o json | jq -r .base_url
+https://api.eu.bronto.io
+$ bronto send -d checkout-service --collection staging -m "deploy finished"
+```
+
+<Steps>
+
+1. An indented block with an expected failure exit code:
+
+   ```console test exit=2
+   $ bronto search "status >= 500" -d checkout-service
+   ```
+
+</Steps>
+
+`test tty` puts stdout on a pseudo-terminal, so bronto prints its terminal default (a
+table) without `-o`, while a pipe inside the command still sees a pipe:
+
+```console test tty
+$ test -t 1 && echo stdout is a terminal
+stdout is a terminal
+$ bronto collections list
+COLLECTION  DATASETS  NAMES
+prod        3         checkout-service, payments-api, web-frontend
+staging     1         checkout-service
+$ bronto collections list | jq -r '.[0] | keys[]'
+prod
+staging
+```
+
+Without `tty`, stdout is a pipe:
+
+```console test
+$ test -t 1 || echo stdout is a pipe
+stdout is a pipe
+```
