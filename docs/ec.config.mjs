@@ -42,11 +42,21 @@ function pluginConsoleSnippets() {
 				for (const { codeBlock, renderedBlockAst } of renderedGroupContents) {
 					if (codeBlock.language !== 'console') continue;
 
-					const commands = codeBlock
-						.getLines()
-						.map((line) => line.text)
-						.filter((text) => text.startsWith('$ '))
-						.map((text) => text.slice(2));
+					// Copy only the commands: "$ " lines, plus the lines that
+					// continue them after a trailing backslash. Expected output
+					// is left out.
+					const commands = [];
+					let continuing = false;
+					for (const { text } of codeBlock.getLines()) {
+						if (text.startsWith('$ ')) {
+							commands.push(text.slice(2));
+						} else if (continuing) {
+							commands[commands.length - 1] += '\n' + text;
+						} else {
+							continue;
+						}
+						continuing = text.trimEnd().endsWith('\\');
+					}
 					if (commands.length > 0) {
 						for (const button of selectAll('.copy button', renderedBlockAst)) {
 							button.properties.dataCode = commands.join('\x7F');

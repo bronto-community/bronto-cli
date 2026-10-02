@@ -101,8 +101,11 @@ At a terminal the default format is a table, which `--jq` can't process. Add `-o
 
 ### `rate_limited` or `timeout` (exit 5)
 
-The API throttled the request or it took too long. Both are safe to retry. Idempotent
-requests are already retried (twice by default) on 429, 502, 503, and 504. Raise the
+The API throttled the request or it took too long. A rate-limited request, or any read,
+is safe to retry. A timed-out write (`create`, `update`, `delete`, `send`, a `bronto api`
+POST) may already have been applied on the server, so check its result, for example with
+`list` or `get`, before running it again. Idempotent requests are already retried (twice
+by default) on 429, 502, 503, and 504. Raise the
 limits with `--max-retries` and `--timeout`, or the matching `BRONTO_MAX_RETRIES` and
 `BRONTO_TIMEOUT` variables.
 

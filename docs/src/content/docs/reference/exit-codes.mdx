@@ -14,7 +14,7 @@ sidebar:
 | `2` | usage or config error: bad flags or arguments, missing dataset, invalid config | no, fix the command |
 | `3` | auth error: missing, invalid, or under-privileged API key | no, fix the credentials |
 | `4` | not found | no |
-| `5` | rate limited or timed out | yes |
+| `5` | rate limited or timed out | yes for reads and rate limits; after a timed-out write, check whether it landed first |
 | `130` | interrupted by Ctrl-C or SIGTERM | |
 
 When `bronto` runs an [exec plugin](/extend/plugins/), the plugin's own exit code passes

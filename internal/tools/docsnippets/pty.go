@@ -7,9 +7,14 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/creack/pty"
 )
+
+// ptyDrainGrace is how long runOnPTY waits for output after the command
+// exits before it closes the terminal on anything still holding it.
+const ptyDrainGrace = 2 * time.Second
 
 // runOnPTY runs cmd with its stdout on the slave side of a fresh
 // pseudo-terminal and copies everything written there into stdout. That
@@ -47,7 +52,17 @@ func runOnPTY(cmd *exec.Cmd, stdout *bytes.Buffer, env []string) error {
 		close(copied)
 	}()
 	waitErr := cmd.Wait()
-	<-copied
+	// A descendant that inherited stdout (`sleep 60 &`) keeps the slave
+	// open after the shell exits, so the copy never sees hangup. Closing
+	// the master does not interrupt a blocked read on every platform, so
+	// after a moment to flush, kill the snippet's process group: with the
+	// last holder gone the copy ends.
+	select {
+	case <-copied:
+	case <-time.After(ptyDrainGrace):
+		_ = killGroup(cmd)
+		<-copied
+	}
 	stdout.WriteString(strings.ReplaceAll(raw.String(), "\r\n", "\n"))
 	return waitErr
 }

@@ -12,6 +12,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/bronto-community/bronto-cli/internal/tools/docsmock/mock"
 )
@@ -300,5 +301,26 @@ func TestSelfTestGoesRed(t *testing.T) {
 		if f.Reason != want[i].reason || !strings.Contains(msg, want[i].contains) || !strings.HasPrefix(msg, loc) {
 			t.Errorf("%s: failure =\n%s\nwant reason %q containing %q and starting %q", s.Name(), msg, want[i].reason, want[i].contains, loc)
 		}
+	}
+}
+
+// TestBackgroundChildDoesNotHang pins the drain bound: a snippet that leaves
+// a process holding stdout open must finish shortly after the shell exits,
+// on a pipe and on a pseudo-terminal, instead of blocking until that
+// process exits (or forever).
+func TestBackgroundChildDoesNotHang(t *testing.T) {
+	for _, tty := range []bool{false, true} {
+		r := &Runner{Env: []string{"PATH=" + os.Getenv("PATH")}, TempDir: t.TempDir, Timeout: 20 * time.Second}
+		start := time.Now()
+		res := r.exec(Command{Cmd: "sleep 30 & echo started"}, r.Env, t.TempDir(), r.Timeout, tty)
+		if d := time.Since(start); d > 10*time.Second {
+			t.Errorf("tty=%v: took %s, want about %s", tty, d, ptyDrainGrace)
+		}
+		if !strings.Contains(res.Stdout, "started") {
+			t.Errorf("tty=%v: stdout = %q, want it to contain %q", tty, res.Stdout, "started")
+		}
+	}
+	if out, err := exec.Command("pgrep", "-f", "sleep 30").Output(); err == nil && len(out) > 0 {
+		t.Errorf("background child survived the snippet: pids %s", strings.Fields(string(out)))
 	}
 }

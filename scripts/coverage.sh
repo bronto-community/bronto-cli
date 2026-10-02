@@ -69,10 +69,12 @@ go tool covdata textfmt -i="$covdata_inputs" -o "$raw_profile"
 echo "==> filtering generated code and test infrastructure -> coverage.filtered.txt"
 # Excluded from accounting: the
 # integration/ package itself (test harness, not product code — its live
-# paths only execute with credentials and would dilute the ratchet).
+# paths only execute with credentials and would dilute the ratchet), and
+# internal/tools/ (repo dev tooling — docs generator, docs mock and snippet
+# runner, endpoint map — never linked into the shipped binary).
 {
 	head -n1 "$raw_profile"
-	grep -v -e "^${module}/integration/" "$raw_profile" | tail -n +2
+	grep -v -e "^${module}/integration/" -e "^${module}/internal/tools/" "$raw_profile" | tail -n +2
 } >"$filtered_profile"
 
 echo "==> writing HTML report -> coverage.html"

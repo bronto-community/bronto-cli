@@ -374,6 +374,13 @@ func (r *Runner) exec(c Command, env []string, dir string, timeout time.Duration
 	cmd := exec.CommandContext(ctx, "sh", "-c", c.Cmd) // #nosec G204 -- running the repo's own docs snippets is the point
 	cmd.Env = env
 	cmd.Dir = dir
+	// The snippet runs in its own process group, and a timeout kills the
+	// whole group, not just the shell. WaitDelay bounds Wait when a
+	// background process that inherited stdout or stderr outlives the
+	// shell.
+	ownProcessGroup(cmd)
+	cmd.Cancel = func() error { return killGroup(cmd) }
+	cmd.WaitDelay = ptyDrainGrace
 	var stdout, stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	var err error
@@ -383,6 +390,8 @@ func (r *Runner) exec(c Command, env []string, dir string, timeout time.Duration
 		cmd.Stdout = &stdout
 		err = cmd.Run()
 	}
+	// Reap anything the snippet left running in the background.
+	_ = killGroup(cmd)
 	res := Result{Command: c, Stdout: stdout.String(), Stderr: stderr.String()}
 	for _, rep := range r.Replace {
 		if rep.Old != "" {
