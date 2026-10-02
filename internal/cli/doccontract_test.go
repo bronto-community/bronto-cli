@@ -41,8 +41,11 @@ func verbExceptionsSentence() string {
 }
 
 // TestDocsStateResourceVerbExceptions welds the resource-pattern paragraph
-// in the user-facing docs to the registry: skill.md and README.md must
-// contain the generated exceptions sentence verbatim. The 2026-07-23 audit
+// in the user-facing docs to the registry: skill.md and the docs site's
+// managing-resources guide (docs/src/content/docs/guides/resources.mdx)
+// must contain the generated exceptions sentence verbatim. (README.md was
+// slimmed to a quickstart that links to the guide, so it no longer carries
+// the resource-pattern paragraph.) The 2026-07-23 audit
 // found the docs promising `get`/`update` on seven resources that don't
 // have them — an error class the command-level doc-rot guard structurally
 // cannot catch, because the claim hides behind a `<resource>` placeholder.
@@ -53,10 +56,11 @@ func TestDocsStateResourceVerbExceptions(t *testing.T) {
 		t.Fatal("runtime.Caller failed")
 	}
 	repoRoot := filepath.Join(filepath.Dir(thisFile), "..", "..")
-	for _, docFile := range []string{"skill.md", "README.md"} {
-		data, err := os.ReadFile(filepath.Join(repoRoot, docFile))
+	for _, docFile := range []string{"skill.md", "docs/src/content/docs/guides/resources.mdx"} {
+		data, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(docFile)))
 		if err != nil {
-			t.Fatalf("reading %s: %v", docFile, err)
+			t.Errorf("reading %s: %v\nThis page must exist and state the resource verb exceptions. Paste this sentence (generated from resourceRegistry) into its resource-pattern paragraph:\n%s", docFile, err, want)
+			continue
 		}
 		if !strings.Contains(string(data), want) {
 			t.Errorf("%s does not state the resource verb exceptions — the uniform-verbs claim overpromises.\nPaste this sentence (generated from resourceRegistry) into the resource-pattern paragraph:\n%s", docFile, want)
