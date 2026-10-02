@@ -199,3 +199,26 @@ func logViewListRows(rows []map[string]any, _ output.Format) []map[string]any {
 	}
 	return rows
 }
+
+// permissionListRows flattens GET /permissions' grouped catalog
+// ({group_name, permissions: [...]} per resource) into one row per
+// permission for table/csv, carrying the group's name onto each row.
+func permissionListRows(rows []map[string]any, _ output.Format) []map[string]any {
+	var out []map[string]any
+	for _, g := range rows {
+		group, _ := g["group_name"].(string)
+		perms, _ := g["permissions"].([]any)
+		for _, p := range perms {
+			m, ok := p.(map[string]any)
+			if !ok {
+				continue
+			}
+			row := map[string]any{"group": group}
+			for k, v := range m {
+				row[k] = v
+			}
+			out = append(out, row)
+		}
+	}
+	return out
+}

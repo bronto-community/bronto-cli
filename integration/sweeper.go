@@ -27,9 +27,9 @@ import (
 // throwaway resource this suite leaves behind, so there's nothing for the
 // sweeper to find or clean up.
 // groups and webhooks joined with the wave-3 resource expansion, widgets
-// with the widgets resource — their CRUD tests mint bronto-ci-* names like
-// every other kind.
-var ciResourceKinds = []string{"monitors", "dashboards", "widgets", "saved-searches", "api-keys", "datasets", "groups", "webhooks"}
+// with the widgets resource, roles with #122 — their CRUD tests mint
+// bronto-ci-* names like every other kind.
+var ciResourceKinds = []string{"monitors", "dashboards", "widgets", "saved-searches", "api-keys", "datasets", "groups", "webhooks", "roles"}
 
 // resourceIDKey maps each swept resource kind to the JSON key its API uses
 // for the resource's identifier. These differ across kinds (api/openapi.yaml):
@@ -46,6 +46,7 @@ var resourceIDKey = map[string]string{
 	"groups":         "id",
 	"webhooks":       "id",
 	"widgets":        "id",
+	"roles":          "role_id",
 	"dashboards":     "dashboard_id",
 	"saved-searches": "saved_search_id",
 	"api-keys":       "id",
@@ -59,6 +60,7 @@ var resourceIDKey = map[string]string{
 // against seed_test.go's pollSeedVisible, which resolves the same field).
 var resourceNameKey = map[string]string{
 	"datasets": "log",
+	"roles":    "display_name",
 }
 
 // nameKeyFor returns the list-response name field for kind, defaulting to

@@ -82,6 +82,7 @@ func testMonitorCRUD(t *testing.T, r *Runner, logID string) {
 		writeBodyFile(t, monitorBody(name, logID, 2_000_000)))
 
 	mustExitZero(t, r, "monitors", "events", id)
+	mustExitZero(t, r, "monitors", "notifications", id, "--since", "1h")
 	mustExitZero(t, r, "monitors", "mute", id)
 
 	mustExitZero(t, r, "monitors", "delete", id, "--yes")

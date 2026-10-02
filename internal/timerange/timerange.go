@@ -90,11 +90,47 @@ func resolveSince(since string, now func() time.Time) (Spec, error) {
 		}
 		return Spec{TimeRange: fmt.Sprintf("Last %d %s", n, unit)}, nil
 	}
+	total, err := sumTokens(since, tokens)
+	if err != nil {
+		return Spec{}, err
+	}
+	end := now()
+	return Spec{FromTs: end.Add(-total).UnixMilli(), ToTs: end.UnixMilli()}, nil
+}
+
+// Absolute resolves --since to absolute millisecond bounds ending now,
+// for endpoints that take only from_ts/to_ts. Unlike Resolve, a
+// single-unit value ("24h") also yields bounds rather than a relative
+// time_range string.
+func Absolute(since string, now func() time.Time) (Spec, error) {
+	if now == nil {
+		now = time.Now
+	}
+	tokens := tokenRe.FindAllStringSubmatch(since, -1)
+	consumed := 0
+	for _, tok := range tokens {
+		consumed += len(tok[0])
+	}
+	if len(tokens) == 0 || consumed != len(since) {
+		return Spec{}, clierr.New("usage_invalid_since",
+			fmt.Sprintf("cannot parse --since %q", since)).
+			WithHint("Use forms like 30s, 15m, 1h, 2d, 1w, or compounds like 1h30m.")
+	}
+	total, err := sumTokens(since, tokens)
+	if err != nil {
+		return Spec{}, err
+	}
+	end := now()
+	return Spec{FromTs: end.Add(-total).UnixMilli(), ToTs: end.UnixMilli()}, nil
+}
+
+// sumTokens adds up parsed --since tokens, guarding against overflow.
+func sumTokens(since string, tokens [][]string) (time.Duration, error) {
 	var total time.Duration
 	for _, tok := range tokens {
 		n, err := strconv.ParseInt(tok[1], 10, 64)
 		if err != nil {
-			return Spec{}, clierr.New("usage_invalid_since",
+			return 0, clierr.New("usage_invalid_since",
 				fmt.Sprintf("cannot parse --since %q: number too large", since))
 		}
 		unit := unitDur[tok[2]]
@@ -102,16 +138,15 @@ func resolveSince(since string, now func() time.Time) (Spec, error) {
 		// a value can pass ParseInt yet wrap time.Duration (max ~292y),
 		// silently producing a FromTs after ToTs. Check before computing.
 		if n > int64(math.MaxInt64/unit) {
-			return Spec{}, errSinceTooLarge(since)
+			return 0, errSinceTooLarge(since)
 		}
 		term := time.Duration(n) * unit
 		if term > math.MaxInt64-total {
-			return Spec{}, errSinceTooLarge(since)
+			return 0, errSinceTooLarge(since)
 		}
 		total += term
 	}
-	end := now()
-	return Spec{FromTs: end.Add(-total).UnixMilli(), ToTs: end.UnixMilli()}, nil
+	return total, nil
 }
 
 func errSinceTooLarge(since string) error {

@@ -82,7 +82,7 @@ func NewRootCmd() *cobra.Command {
 		var rc *cobra.Command
 		switch d.Name {
 		case "monitors":
-			rc = newResourceCmd(d, newMonitorEventsCmd(), newMonitorMuteCmd(), newMonitorCheckCmd())
+			rc = newResourceCmd(d, newMonitorEventsCmd(), newMonitorNotificationsCmd(), newMonitorMuteCmd(), newMonitorCheckCmd())
 		case "exports":
 			rc = newResourceCmd(d, newExportsCreateCmd())
 		case "dashboards":
@@ -94,9 +94,14 @@ func NewRootCmd() *cobra.Command {
 			rc = newResourceCmd(d,
 				newUserActionCmd("deactivate", "Deactivate a user"),
 				newUserActionCmd("reactivate", "Reactivate a deactivated user"),
-				newUserActionCmd("resend-invite", "Resend a pending user's invitation"))
+				newUserActionCmd("resend-invite", "Resend a pending user's invitation"),
+				newUserGroupsCmd())
 		case "groups":
-			rc = newResourceCmd(d, newGroupMembersCmd())
+			rc = newResourceCmd(d, newGroupMembersCmd(), newGroupMembershipCmd(true), newGroupMembershipCmd(false))
+		case "metrics":
+			rc = newResourceCmd(d, newMetricTopKeysCmd())
+		case "datasets":
+			rc = newResourceCmd(d, newDatasetParserCmd())
 		default:
 			rc = newResourceCmd(d)
 		}
