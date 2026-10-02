@@ -90,3 +90,28 @@ npm --prefix docs ci && npm --prefix docs run build   # build the site
 make docs-reference       # regenerate reference/commands from cobra
 make docs-check           # everything CI runs for docs
 ```
+
+## The docs mock world
+
+Tested snippets and tapes all run against one deterministic fake Bronto org,
+served by `internal/tools/docsmock` from `docs/testdata/mock/`. Write examples
+in terms of this data:
+
+- Region `eu`. API key `bronto_docs_example_key` (a fake key the mock accepts).
+- Collections: `prod`, `staging`.
+- Datasets: `prod/checkout-service`, `prod/payments-api`, `prod/web-frontend`,
+  `staging/checkout-service`.
+- Log fields: `@time`, `@status` (`info|warn|error`), `message`, `service`,
+  `host` (`web-1`…`web-3`), `status` (HTTP code), `duration_ms`, `path`,
+  `trace_id`.
+- The story: `checkout-service` in `prod` emits a burst of `status=502`
+  errors from `payments-api` timeouts. Searches for `status >= 500` return
+  them, and `traces` shows the slow `payments-api` span.
+- Services in `.traces`: `web-frontend`, `checkout-service`, `payments-api`.
+  Trace id example: `4bf92f3577b34da6a3ce929d0e0e4736`.
+- Monitors: `High 5xx rate on checkout`, `Payments latency p95`. Dashboards:
+  `Checkout overview`. Users: `ada@example.com`, `grace@example.com`. Groups:
+  `oncall`.
+- Time is frozen: every fixture timestamp falls between
+  `2026-07-19 09:00 UTC` and `09:30 UTC`. The mock ignores the requested time
+  range, so `--since 1h` always returns this data.
