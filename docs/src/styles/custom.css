@@ -55,3 +55,19 @@
 	background-color: #f4c430;
 	color: #1f1f1e;
 }
+
+/* Starlight's splash hero reserves a 4fr column for a hero image even when
+   there is none, which squeezes the title onto two lines. Without an image,
+   give the copy the full width. */
+@media (min-width: 50rem) {
+	.hero:not(:has(> img, > .hero-html)) {
+		grid-template-columns: 100%;
+	}
+}
+
+/* Where a heading must wrap (phones), balance the lines rather than
+   stranding the last word. */
+.hero h1,
+.sl-markdown-content :is(h1, h2, h3) {
+	text-wrap: balance;
+}
