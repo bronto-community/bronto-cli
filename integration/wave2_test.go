@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -94,13 +95,46 @@ func TestTailNoFollowSeeded(t *testing.T) {
 // TestAuthLoginKeyStdin exercises the full credential round trip with NO
 // env key: login --key-stdin stores the key (file fallback on CI runners
 // without a keychain), and auth status must then resolve it from the store.
+//
+// The Runner's config dir is hermetic but the OS keychain is not: on a
+// developer Mac, login writes the real macOS keychain entry for its
+// profile. It once used the default profile, so running the suite locally
+// overwrote the developer's own key with the CI key. It now logs in to a
+// per-run bronto-ci-* profile and logs out of it on cleanup; never point
+// this test at "default".
 func TestAuthLoginKeyStdin(t *testing.T) {
 	key := skipIfNoCreds(t)
 	r := NewRunner(t, key)
 	r.OmitEnvKey = true
+	profile := resourceName("auth-login")
+	// Logout is checked, then verified: secrets.Delete deliberately ignores
+	// keyring deletion errors, so a clean logout exit alone doesn't prove
+	// the entry is gone. auth token must then report the key missing (exit
+	// 3, auth_missing_key). Its stdout is the key itself, so it's never
+	// printed.
+	t.Cleanup(func() {
+		ctx := context.Background()
+		leftover := "the CI key may be left in the OS keychain; remove it with: bronto auth logout --profile " + profile
+		res, err := r.Run(ctx, "", "auth", "logout", "--profile", profile)
+		if err != nil {
+			t.Errorf("running auth logout: %v (%s)", err, leftover)
+			return
+		}
+		if res.ExitCode != 0 {
+			t.Errorf("auth logout exited %d\nstderr: %s\n%s", res.ExitCode, res.Stderr, leftover)
+		}
+		tok, err := r.Run(ctx, "", "auth", "token", "--profile", profile)
+		if err != nil {
+			t.Errorf("running auth token: %v (%s)", err, leftover)
+			return
+		}
+		if tok.ExitCode != 3 || !strings.Contains(tok.Stderr, "auth_missing_key") {
+			t.Errorf("profile %s still resolves a key after logout (auth token exit %d); %s", profile, tok.ExitCode, leftover)
+		}
+	})
 
 	res, err := r.Run(t.Context(), key+"\n",
-		"auth", "login", "--key-stdin", "--region", regionOrDefault())
+		"auth", "login", "--key-stdin", "--profile", profile, "--region", regionOrDefault())
 	if err != nil {
 		t.Fatalf("running auth login: %v", err)
 	}
@@ -111,12 +145,15 @@ func TestAuthLoginKeyStdin(t *testing.T) {
 		t.Fatalf("login confirmation missing: %q", res.Stderr)
 	}
 
-	status := mustRunJSONArray(t, r, "auth", "status", "-o", "json")
+	status := mustRunJSONArray(t, r, "auth", "status", "--profile", profile, "-o", "json")
 	if len(status) == 0 {
 		t.Fatal("auth status returned no rows after login")
 	}
 	if s, _ := status[0]["status"].(string); s != "ok" {
 		t.Fatalf("auth status after login = %+v", status[0])
+	}
+	if p, _ := status[0]["profile"].(string); p != profile {
+		t.Fatalf("auth status profile = %q, want %q", p, profile)
 	}
 }
 
