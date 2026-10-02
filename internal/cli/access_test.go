@@ -23,7 +23,7 @@ type accessStub struct {
 	method, path, query, body string
 }
 
-func (s *accessStub) handler(t *testing.T) http.HandlerFunc {
+func (s *accessStub) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/users":
@@ -56,7 +56,7 @@ func (s *accessStub) handler(t *testing.T) http.HandlerFunc {
 
 func TestGroupAddMembersResolvesUsersAndGroups(t *testing.T) {
 	var s accessStub
-	_, stderr, err := runResource(t, s.handler(t), "",
+	_, stderr, err := runResource(t, s.handler(), "",
 		"groups", "add-members", "oncall", "--users", "alice@example.com", "--groups", "sre")
 	if err != nil {
 		t.Fatal(err)
@@ -75,7 +75,7 @@ func TestGroupAddMembersResolvesUsersAndGroups(t *testing.T) {
 
 func TestGroupRemoveMembersUsesDelete(t *testing.T) {
 	var s accessStub
-	if _, _, err := runResource(t, s.handler(t), "", "groups", "remove-members", aGroup, "--users", aUser); err != nil {
+	if _, _, err := runResource(t, s.handler(), "", "groups", "remove-members", aGroup, "--users", aUser); err != nil {
 		t.Fatal(err)
 	}
 	if s.method != http.MethodDelete || s.path != "/groups/"+aGroup+"/members" ||
@@ -86,7 +86,7 @@ func TestGroupRemoveMembersUsesDelete(t *testing.T) {
 
 func TestGroupMembershipNeedsMembers(t *testing.T) {
 	var s accessStub
-	_, _, err := runResource(t, s.handler(t), "", "groups", "add-members", aGroup)
+	_, _, err := runResource(t, s.handler(), "", "groups", "add-members", aGroup)
 	if err == nil || !strings.Contains(err.Error(), "--users and/or --groups") {
 		t.Fatalf("err = %v", err)
 	}
@@ -97,7 +97,7 @@ func TestGroupMembershipNeedsMembers(t *testing.T) {
 
 func TestGroupMembershipDryRun(t *testing.T) {
 	var s accessStub
-	_, stderr, err := runResource(t, s.handler(t), "", "groups", "add-members", aGroup, "--users", aUser, "--dry-run")
+	_, stderr, err := runResource(t, s.handler(), "", "groups", "add-members", aGroup, "--users", aUser, "--dry-run")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +113,7 @@ func TestGroupMembershipDryRun(t *testing.T) {
 // groups list and keeps the id of a group it can't find.
 func TestUserGroupsNamesBareIDs(t *testing.T) {
 	var s accessStub
-	out, _, err := runResource(t, s.handler(t), "", "users", "groups", "alice@example.com", "-o", "csv")
+	out, _, err := runResource(t, s.handler(), "", "users", "groups", "alice@example.com", "-o", "csv")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestUserGroupsNamesBareIDs(t *testing.T) {
 
 func TestMonitorNotificationsSendsBounds(t *testing.T) {
 	var s accessStub
-	if _, _, err := runResource(t, s.handler(t), "", "monitors", "notifications", aMon, "--since", "2h"); err != nil {
+	if _, _, err := runResource(t, s.handler(), "", "monitors", "notifications", aMon, "--since", "2h"); err != nil {
 		t.Fatal(err)
 	}
 	if s.path != "/monitors/"+aMon+"/notifications" || !strings.Contains(s.query, "from_ts=") || !strings.Contains(s.query, "to_ts=") {
@@ -137,7 +137,7 @@ func TestMonitorNotificationsSendsBounds(t *testing.T) {
 
 func TestMetricTopKeys(t *testing.T) {
 	var s accessStub
-	if _, _, err := runResource(t, s.handler(t), "", "metrics", "top-keys", "system.cpu", "--since", "15m"); err != nil {
+	if _, _, err := runResource(t, s.handler(), "", "metrics", "top-keys", "system.cpu", "--since", "15m"); err != nil {
 		t.Fatal(err)
 	}
 	if s.path != "/metrics/"+aMetric+"/top-keys" || !strings.Contains(s.query, "time_range=Last+15+minutes") {
@@ -147,19 +147,19 @@ func TestMetricTopKeys(t *testing.T) {
 
 func TestDatasetParserSetGetUnset(t *testing.T) {
 	var s accessStub
-	if _, _, err := runResource(t, s.handler(t), "", "datasets", "parser", "set", "default/nginx", "kvp"); err != nil {
+	if _, _, err := runResource(t, s.handler(), "", "datasets", "parser", "set", "default/nginx", "kvp"); err != nil {
 		t.Fatal(err)
 	}
 	if s.method != http.MethodPut || s.path != "/datasets/"+aDS+"/parser" || s.body != `{"parser_id":"`+aParser+`"}` {
 		t.Fatalf("set: %s %s %s", s.method, s.path, s.body)
 	}
-	if _, _, err := runResource(t, s.handler(t), "", "datasets", "parser", "get", "nginx"); err != nil {
+	if _, _, err := runResource(t, s.handler(), "", "datasets", "parser", "get", "nginx"); err != nil {
 		t.Fatal(err)
 	}
 	if s.method != http.MethodGet || s.path != "/datasets/"+aDS+"/parser" {
 		t.Fatalf("get: %s %s", s.method, s.path)
 	}
-	_, stderr, err := runResource(t, s.handler(t), "", "datasets", "parser", "unset", "nginx", "--quiet")
+	_, stderr, err := runResource(t, s.handler(), "", "datasets", "parser", "unset", "nginx", "--quiet")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,13 +171,13 @@ func TestDatasetParserSetGetUnset(t *testing.T) {
 // System roles have non-UUID ids, which must resolve exactly.
 func TestRoleResolvesByNonUUIDID(t *testing.T) {
 	var s accessStub
-	if _, _, err := runResource(t, s.handler(t), "", "roles", "get", "Admin"); err != nil {
+	if _, _, err := runResource(t, s.handler(), "", "roles", "get", "Admin"); err != nil {
 		t.Fatal(err)
 	}
 	if s.path != "/roles/Admin" {
 		t.Fatalf("path = %s", s.path)
 	}
-	if _, _, err := runResource(t, s.handler(t), "", "roles", "get", "Administrator Role"); err != nil {
+	if _, _, err := runResource(t, s.handler(), "", "roles", "get", "Administrator Role"); err != nil {
 		t.Fatal(err)
 	}
 	if s.path != "/roles/Admin" {
@@ -189,14 +189,14 @@ func TestRoleResolvesByNonUUIDID(t *testing.T) {
 // body, so the CLI refuses one before calling the API.
 func TestRoleUpdateRequiresFullBody(t *testing.T) {
 	var s accessStub
-	_, _, err := runResource(t, s.handler(t), "", "roles", "update", "Admin", "-f", "description=x")
+	_, _, err := runResource(t, s.handler(), "", "roles", "update", "Admin", "-f", "description=x")
 	if err == nil || !strings.Contains(err.Error(), "display_name, permissions") {
 		t.Fatalf("err = %v", err)
 	}
 	if s.path != "" {
 		t.Fatalf("made a request: %s %s", s.method, s.path)
 	}
-	if _, _, err := runResource(t, s.handler(t), "", "roles", "update", "Admin",
+	if _, _, err := runResource(t, s.handler(), "", "roles", "update", "Admin",
 		"-f", "display_name=A", "-f", `permissions=["logs_read"]`); err != nil {
 		t.Fatal(err)
 	}

@@ -636,8 +636,9 @@ func checkUpdateRequires(desc resourceDesc, body []byte) error {
 		return nil
 	}
 	var obj map[string]any
-	if err := json.Unmarshal(body, &obj); err != nil {
-		return nil // not an object: let the API report it
+	_ = json.Unmarshal(body, &obj)
+	if obj == nil {
+		return nil // not a JSON object: let the API report it
 	}
 	var missing []string
 	for _, k := range desc.UpdateRequires {

@@ -92,8 +92,11 @@ func TestGroupMembershipLive(t *testing.T) {
 
 	hasMember := func() (bool, error) {
 		res, err := r.Run(t.Context(), "", "groups", "members", group, "-o", "json")
-		if err != nil || res.ExitCode != 0 {
-			return false, fmt.Errorf("groups members: exit %d err %v\nstderr: %s", res.ExitCode, err, res.Stderr)
+		if err != nil {
+			return false, err
+		}
+		if res.ExitCode != 0 {
+			return false, fmt.Errorf("groups members: exit %d\nstderr: %s", res.ExitCode, res.Stderr)
 		}
 		var rows []map[string]any
 		if err := json.Unmarshal([]byte(res.Stdout), &rows); err != nil {
@@ -118,16 +121,22 @@ func TestGroupMembershipLive(t *testing.T) {
 	// The group itself may not be readable yet; retry the add until it is.
 	PollUntil(t, 30*time.Second, 2*time.Second, func() (bool, error) {
 		res, err := r.Run(t.Context(), "", "groups", "add-members", group, "--users", user)
-		if err != nil || res.ExitCode != 0 {
-			return false, fmt.Errorf("add-members: exit %d err %v\nstderr: %s", res.ExitCode, err, res.Stderr)
+		if err != nil {
+			return false, err
+		}
+		if res.ExitCode != 0 {
+			return false, fmt.Errorf("add-members: exit %d\nstderr: %s", res.ExitCode, res.Stderr)
 		}
 		return true, nil
 	})
 	poll("group has member", true, hasMember)
 	poll("user lists group", true, func() (bool, error) {
 		res, err := r.Run(t.Context(), "", "users", "groups", user, "-o", "json")
-		if err != nil || res.ExitCode != 0 {
-			return false, fmt.Errorf("users groups: exit %d err %v\nstderr: %s", res.ExitCode, err, res.Stderr)
+		if err != nil {
+			return false, err
+		}
+		if res.ExitCode != 0 {
+			return false, fmt.Errorf("users groups: exit %d\nstderr: %s", res.ExitCode, res.Stderr)
 		}
 		var rows []map[string]any
 		if err := json.Unmarshal([]byte(res.Stdout), &rows); err != nil {
@@ -161,8 +170,11 @@ func TestDatasetParserLive(t *testing.T) {
 	// A new dataset can take a moment to resolve by name.
 	PollUntil(t, 30*time.Second, 2*time.Second, func() (bool, error) {
 		res, err := r.Run(t.Context(), "", "datasets", "parser", "set", ref, parser)
-		if err != nil || res.ExitCode != 0 {
-			return false, fmt.Errorf("parser set: exit %d err %v\nstderr: %s", res.ExitCode, err, res.Stderr)
+		if err != nil {
+			return false, err
+		}
+		if res.ExitCode != 0 {
+			return false, fmt.Errorf("parser set: exit %d\nstderr: %s", res.ExitCode, res.Stderr)
 		}
 		return true, nil
 	})
