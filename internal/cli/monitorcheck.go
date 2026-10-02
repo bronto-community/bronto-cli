@@ -36,7 +36,7 @@ func newMonitorCheckCmd() *cobra.Command {
 	var inputs []string
 	cmd := &cobra.Command{
 		Use:   "check --input <file.json> [--input more.json]",
-		Short: "Validate monitor definitions (CI-friendly: non-zero exit on problems)",
+		Short: "Validate monitor definition files, exiting non-zero on problems",
 		Example: "  bronto monitors check --input monitor.json\n" +
 			"  bronto monitors check --input monitors/a.json --input monitors/b.json",
 		Args: cobra.NoArgs,

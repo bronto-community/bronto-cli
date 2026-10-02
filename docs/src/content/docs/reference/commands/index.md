@@ -14,39 +14,39 @@ This reference is generated from the `bronto` command tree, so it always matches
 | Command | Description |
 | --- | --- |
 | [`bronto api`](/reference/commands/api/) | Make an authenticated request to any Bronto API endpoint |
-| [`bronto api-keys`](/reference/commands/api-keys/) | Manage api-keys |
-| [`bronto ask`](/reference/commands/ask/) | Translate a question into a query (LLM-assisted) |
+| [`bronto api-keys`](/reference/commands/api-keys/) | Manage API keys |
+| [`bronto ask`](/reference/commands/ask/) | Turn a question into a search query using an LLM |
 | [`bronto auth`](/reference/commands/auth/) | Manage Bronto credentials and profiles |
 | [`bronto collections`](/reference/commands/collections/) | Manage collections |
 | [`bronto completion`](/reference/commands/completion/) | Generate the autocompletion script for the specified shell |
-| [`bronto config`](/reference/commands/config/) | Inspect and modify bronto configuration |
+| [`bronto config`](/reference/commands/config/) | Show and change bronto configuration |
 | [`bronto context`](/reference/commands/context/) | Show events around a specific log event |
 | [`bronto dashboards`](/reference/commands/dashboards/) | Manage dashboards |
 | [`bronto datasets`](/reference/commands/datasets/) | Manage datasets |
-| [`bronto encryption-keys`](/reference/commands/encryption-keys/) | Manage encryption-keys |
+| [`bronto encryption-keys`](/reference/commands/encryption-keys/) | Manage encryption keys |
 | [`bronto exports`](/reference/commands/exports/) | Manage exports |
-| [`bronto fields`](/reference/commands/fields/) | Discover field names (top keys) in a dataset |
-| [`bronto forward-configs`](/reference/commands/forward-configs/) | Manage forward-configs |
+| [`bronto fields`](/reference/commands/fields/) | List the field names (top keys) in a dataset |
+| [`bronto forward-configs`](/reference/commands/forward-configs/) | Manage forward configs |
 | [`bronto groups`](/reference/commands/groups/) | Manage groups |
 | [`bronto limits`](/reference/commands/limits/) | Manage limits |
-| [`bronto log-views`](/reference/commands/log-views/) | Manage log-views |
+| [`bronto log-views`](/reference/commands/log-views/) | Manage log views |
 | [`bronto login`](/reference/commands/login/) | Alias for 'bronto auth login' |
 | [`bronto metrics`](/reference/commands/metrics/) | Manage metrics |
 | [`bronto monitors`](/reference/commands/monitors/) | Manage monitors |
 | [`bronto parsers`](/reference/commands/parsers/) | Manage parsers |
 | [`bronto permissions`](/reference/commands/permissions/) | Manage permissions |
 | [`bronto ping`](/reference/commands/ping/) | Check connectivity and credentials against the Bronto API |
-| [`bronto plugins`](/reference/commands/plugins/) | Discover exec plugins (bronto-\* executables on PATH) |
-| [`bronto query`](/reference/commands/query/) | Work with the search query language |
-| [`bronto repl`](/reference/commands/repl/) | Interactive query prompt (psql-style) |
+| [`bronto plugins`](/reference/commands/plugins/) | Find plugins (bronto-\* executables on PATH) |
+| [`bronto query`](/reference/commands/query/) | Check expressions in the search query language |
+| [`bronto repl`](/reference/commands/repl/) | Start an interactive query prompt |
 | [`bronto roles`](/reference/commands/roles/) | Manage roles |
-| [`bronto saved-searches`](/reference/commands/saved-searches/) | Manage saved-searches |
-| [`bronto search`](/reference/commands/search/) | Run a one-shot query against Bronto |
-| [`bronto send`](/reference/commands/send/) | Send events into Bronto (one-shot message or NDJSON stream from stdin) |
-| [`bronto slack`](/reference/commands/slack/) | Manage slack |
-| [`bronto tail`](/reference/commands/tail/) | Follow new events live (like tail -f) |
-| [`bronto traces`](/reference/commands/traces/) | Explore OpenTelemetry traces (APM-style views over the .traces logset) |
-| [`bronto usage`](/reference/commands/usage/) | Show ingestion/search/export usage over a time period |
+| [`bronto saved-searches`](/reference/commands/saved-searches/) | Manage saved searches |
+| [`bronto search`](/reference/commands/search/) | Search events with a one-off query |
+| [`bronto send`](/reference/commands/send/) | Send events to Bronto from a message or stdin |
+| [`bronto slack`](/reference/commands/slack/) | Manage Slack integrations |
+| [`bronto tail`](/reference/commands/tail/) | Follow new events as they arrive (like tail -f) |
+| [`bronto traces`](/reference/commands/traces/) | Explore OpenTelemetry traces stored in the .traces dataset |
+| [`bronto usage`](/reference/commands/usage/) | Show ingestion, search, and export usage over a time period |
 | [`bronto users`](/reference/commands/users/) | Manage users |
 | [`bronto version`](/reference/commands/version/) | Print version, commit, and build date |
 | [`bronto webhooks`](/reference/commands/webhooks/) | Manage webhooks |

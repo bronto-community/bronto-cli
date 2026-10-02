@@ -15,7 +15,7 @@ import (
 func newQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "query",
-		Short: "Work with the search query language",
+		Short: "Check expressions in the search query language",
 	}
 	cmd.AddCommand(newQueryCheckCmd())
 	return cmd
@@ -31,7 +31,7 @@ func newQueryCheckCmd() *cobra.Command {
 		Use:   "check <query>",
 		Short: "Validate a query expression before using it",
 		Example: "  bronto query check \"status >= 500 AND level = 'error'\"\n" +
-			"  bronto query check \"stauts >= 500\" -d payments-api   # catches the typo",
+			"  bronto query check \"stauts >= 500\" -d prod/payments-api   # catches the typo",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			input := args[0]
@@ -91,7 +91,7 @@ func newQueryCheckCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset (name or UUID) to check field names against")
-	cmd.Flags().BoolVar(&strict, "strict", false, "treat unknown fields as errors (for CI)")
+	cmd.Flags().BoolVar(&strict, "strict", false, "fail on unknown fields instead of warning (for CI)")
 	cmd.ValidArgsFunction = defaultArgComplete // positional is free text; hint flags instead
 	return cmd
 }

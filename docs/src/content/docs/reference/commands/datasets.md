@@ -44,15 +44,15 @@ bronto datasets create [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto datasets create -f name=x -f limit=10
+bronto datasets create -f collection=<collection> -f dataset=<dataset>
 bronto datasets create --input body.json
 ```
 
@@ -192,14 +192,14 @@ bronto datasets update <id> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto datasets update <id> -f name=x
+bronto datasets update <id> -f name=<name>
 bronto datasets update <id> --input body.json
 ```

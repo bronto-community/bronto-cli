@@ -47,8 +47,9 @@ func newSearchCmd() *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "search [query]",
-		Short: "Run a one-shot query against Bronto",
+		Short: "Search events with a one-off query",
 		Long: "Runs a query (a Bronto WHERE expression) against one or more datasets.\n" +
+			"Without a time flag or a saved search's range it searches the last 15 minutes.\n" +
 			"Pass '-' as the query to read it from stdin.",
 		Example: "  bronto search \"status >= 500\" --since 1h\n" +
 			"  bronto search \"level = 'error'\" -d <dataset-uuid> --limit 50\n" +
@@ -297,13 +298,13 @@ func newSearchCmd() *cobra.Command {
 	f.IntVarP(&limit, "limit", "n", 100, "maximum events to return (1-10000)")
 	f.StringVar(&orderBy, "order-by", "", "SQL-style order, e.g. 'duration_ms DESC'")
 	f.BoolVar(&oldestFirst, "oldest-first", false, "return oldest events first")
-	f.BoolVar(&explainOnly, "explain-only", false, "return only the query plan / cost estimate")
-	f.BoolVarP(&expand, "expand", "x", false, "expanded record view: every field of every event, one per line (table output only)")
-	f.BoolVar(&showPatterns, "patterns", false, "cluster matching events into templates with counts (drain-style)")
-	f.StringVar(&localPath, "local", "", "evaluate the query offline over a local NDJSON/text file ('-' = stdin), no server involved")
+	f.BoolVar(&explainOnly, "explain-only", false, "return only the query plan and cost estimate")
+	f.BoolVarP(&expand, "expand", "x", false, "print every field of every event, one field per line (table output only)")
+	f.BoolVar(&showPatterns, "patterns", false, "group matching events into message templates with counts (Drain-style)")
+	f.StringVar(&localPath, "local", "", "run the query offline against a local NDJSON or text file ('-' for stdin)")
 	registerFilterFlags(f, &filters)
-	f.BoolVar(&exactFields, "exact", false, "with the filter flags, use field names verbatim (no fuzzy $-/case resolution)")
-	f.BoolVar(&showQuery, "show-query", false, "print the compiled WHERE (positional query ANDed with filter flags) and exit")
+	f.BoolVar(&exactFields, "exact", false, "use filter-flag field names exactly as typed, without $-prefix or case matching")
+	f.BoolVar(&showQuery, "show-query", false, "print the compiled WHERE expression (the query ANDed with the filter flags) and exit")
 	// The positional is a WHERE expression, not a file — hint flags instead.
 	// Flag-value completion (dataset/select/group-by/saved/filter flags) is
 	// wired tree-wide by applyCompletions.

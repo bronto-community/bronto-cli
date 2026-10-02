@@ -13,9 +13,9 @@ These flags are defined on the root `bronto` command and are accepted by every s
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--api-key` |  | string |  | Bronto management API key (prefer BRONTO\_API\_KEY env) |
+| `--api-key` |  | string |  | Bronto management API key (prefer the BRONTO\_API\_KEY env var) |
 | `--base-url` |  | string |  | override the API base URL |
-| `--debug` |  | bool |  | trace API requests/responses on stderr (API key redacted) |
+| `--debug` |  | bool |  | print API requests and responses on stderr, with the API key redacted |
 | `--dry-run` |  | bool |  | print mutating API calls instead of executing them (reads still run) |
 | `--fields` |  | strings |  | select specific fields (comma-separated); use '?' to list available field names |
 | `--jq` |  | string |  | jq expression applied to json/jsonl output (each result prints on its own line); values that fail the expression are skipped |

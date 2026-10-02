@@ -42,15 +42,15 @@ bronto webhooks create [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto webhooks create -f name=x -f limit=10
+bronto webhooks create -f name=<name> -f url=<url>
 bronto webhooks create --input body.json
 ```
 
@@ -104,14 +104,14 @@ bronto webhooks update <id> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto webhooks update <id> -f name=x
+bronto webhooks update <id> -f name=<name> -f url=<url>
 bronto webhooks update <id> --input body.json
 ```

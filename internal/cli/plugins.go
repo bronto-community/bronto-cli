@@ -146,7 +146,7 @@ func pluginDispatchArgs(argv []string) (name string, rest []string, ok bool) {
 func newPluginsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "plugins",
-		Short: "Discover exec plugins (bronto-* executables on PATH)",
+		Short: "Find plugins (bronto-* executables on PATH)",
 	}
 	cmd.AddCommand(newPluginsListCmd())
 	return cmd

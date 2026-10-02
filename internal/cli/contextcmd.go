@@ -63,11 +63,11 @@ func newContextCmd() *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
-	f.Int64Var(&sequence, "sequence", 0, "sequence number of the anchor event (required)")
-	f.StringVarP(&dataset, "dataset", "d", "", "dataset (name or UUID) the event belongs to (required)")
-	f.Int64Var(&timestamp, "timestamp", 0, "unix-ms timestamp of the anchor event (required)")
-	f.StringVar(&direction, "direction", "both", "before | after | both")
-	f.IntVarP(&limit, "limit", "n", 50, "events per direction")
+	f.Int64Var(&sequence, "sequence", 0, "sequence number of the event to look around (required)")
+	f.StringVarP(&dataset, "dataset", "d", "", "dataset name or UUID that holds the event (required)")
+	f.Int64Var(&timestamp, "timestamp", 0, "timestamp of the event in Unix milliseconds (required)")
+	f.StringVar(&direction, "direction", "both", "which side of the event to show: before, after, or both")
+	f.IntVarP(&limit, "limit", "n", 50, "maximum events on each side")
 	_ = cmd.MarkFlagRequired("sequence")
 	_ = cmd.MarkFlagRequired("dataset")
 	_ = cmd.MarkFlagRequired("timestamp")

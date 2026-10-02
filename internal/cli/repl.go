@@ -151,12 +151,13 @@ func newReplCmd() *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "repl",
-		Short: "Interactive query prompt (psql-style)",
-		Long: "An interactive prompt for iterative log investigation: type a WHERE expression to run\n" +
-			"it, refine, rerun. Meta-commands (\\help lists them) switch dataset and window, page\n" +
-			"through results, or drop into a live tail. History persists across sessions.",
-		Example: "  bronto repl -d payments-api\n" +
-			"  bronto repl -d payments-api --since 1h",
+		Short: "Start an interactive query prompt",
+		Long: "Opens a psql-style prompt for exploring logs. Type a WHERE expression to run it,\n" +
+			"then edit and run it again. Meta-commands (\\help lists them) switch the dataset or\n" +
+			"time window, page through results, or start a live tail. History is kept between\n" +
+			"sessions.",
+		Example: "  bronto repl -d prod/payments-api\n" +
+			"  bronto repl -d prod/payments-api --since 1h",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !stdinIsTTY() || !stdoutIsTTY() {
@@ -204,7 +205,7 @@ func newReplCmd() *cobra.Command {
 	f := cmd.Flags()
 	f.StringArrayVarP(&datasets, "dataset", "d", nil, "dataset name or UUID to query (repeatable)")
 	f.StringVar(&fromExpr, "from-expr", "", "dataset selector expression")
-	f.StringVar(&since, "since", "", "initial lookback window (default 15m)")
+	f.StringVar(&since, "since", "", "starting lookback window (default 15m)")
 	return cmd
 }
 

@@ -27,7 +27,7 @@ bronto auth <command> [flags]
 | [`bronto auth logout`](/reference/commands/auth/#bronto-auth-logout) | Remove the stored API key for a profile |
 | [`bronto auth status`](/reference/commands/auth/#bronto-auth-status) | Show the resolved profile, credential source, and API reachability |
 | [`bronto auth switch`](/reference/commands/auth/#bronto-auth-switch) | Set the default profile |
-| [`bronto auth token`](/reference/commands/auth/#bronto-auth-token) | Print the resolved API key (for scripting) |
+| [`bronto auth token`](/reference/commands/auth/#bronto-auth-token) | Print the API key in use, for scripts |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
@@ -79,7 +79,7 @@ Also accepts the [global flags](/reference/commands/global-flags/).
 
 ## bronto auth token
 
-Print the resolved API key (for scripting)
+Print the API key in use, for scripts
 
 ```sh
 bronto auth token [flags]

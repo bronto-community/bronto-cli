@@ -39,15 +39,16 @@ bronto limits create [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto limits create -f name=x -f limit=10
+bronto limits create -f category=INGESTION_LIMITS -f target=TEAM -f 'scope=<json>' \
+    -f time_window=PER_MONTH -f unit=BYTES -f value=<bytes>
 bronto limits create --input body.json
 ```
 
@@ -117,14 +118,15 @@ bronto limits update <id> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--field` | `-f` | stringArray |  | key=value pair for the request body (repeatable) |
-| `--input` |  | string |  | request body from file, or - for stdin |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 
 #### Examples
 
 ```sh
-bronto limits update <id> -f name=x
+bronto limits update <id> -f category=INGESTION_LIMITS -f target=TEAM -f 'scope=<json>' \
+    -f time_window=PER_MONTH -f unit=BYTES -f value=<bytes>
 bronto limits update <id> --input body.json
 ```

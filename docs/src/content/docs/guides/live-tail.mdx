@@ -100,9 +100,15 @@ $ bronto tail -d prod/checkout-service -g status --window 5m --no-follow --field
 | `-n`, `--limit` | `500` | maximum events per poll |
 | `--dedup-size` | `20000` | events remembered to suppress duplicates across polls |
 
-Events that arrive more than one window late aren't reordered across polls. Ordering is
-guaranteed within a batch only. On very high-volume streams, raise `--dedup-size` if you
-see repeated lines.
+Events are sorted within each poll but not across polls, so a late event can print after
+newer ones.
+
+An event whose timestamp is already older than `--window` by the time it becomes
+searchable is never printed: every poll asks for the last `--window` only. If events
+reach Bronto with a delay, use a larger `--window`, or use `bronto search` over a fixed
+time range when you need every event.
+
+On very high-volume streams, raise `--dedup-size` if you see repeated lines.
 
 For live tail concepts on the platform side, see
 [Log Search on docs.bronto.io](https://docs.bronto.io/Search-and-Visualize/Log-Search).

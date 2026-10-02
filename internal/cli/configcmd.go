@@ -13,12 +13,12 @@ import (
 func newConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "Inspect and modify bronto configuration",
+		Short: "Show and change bronto configuration",
 	}
 
 	list := &cobra.Command{
 		Use:   "list",
-		Short: "Show all resolved config values and where each came from",
+		Short: "List all config values and where each one comes from",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			app, err := NewApp(cmd)
@@ -50,7 +50,7 @@ func newConfigCmd() *cobra.Command {
 
 	get := &cobra.Command{
 		Use:               "get <key>",
-		Short:             "Print a single resolved config value",
+		Short:             "Print one config value",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeConfigKeys,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -73,7 +73,7 @@ func newConfigCmd() *cobra.Command {
 
 	set := &cobra.Command{
 		Use:               "set <key> <value>",
-		Short:             "Persist a config value in the user config file",
+		Short:             "Save a config value to the user config file",
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: completeConfigKeys,
 		RunE: func(cmd *cobra.Command, args []string) error {

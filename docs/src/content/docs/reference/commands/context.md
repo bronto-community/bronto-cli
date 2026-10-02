@@ -23,11 +23,11 @@ bronto context [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--dataset` | `-d` | string |  | dataset (name or UUID) the event belongs to (required) |
-| `--direction` |  | string | `both` | before \| after \| both |
-| `--limit` | `-n` | int | `50` | events per direction |
-| `--sequence` |  | int |  | sequence number of the anchor event (required) |
-| `--timestamp` |  | int |  | unix-ms timestamp of the anchor event (required) |
+| `--dataset` | `-d` | string |  | dataset name or UUID that holds the event (required) |
+| `--direction` |  | string | `both` | which side of the event to show: before, after, or both |
+| `--limit` | `-n` | int | `50` | maximum events on each side |
+| `--sequence` |  | int |  | sequence number of the event to look around (required) |
+| `--timestamp` |  | int |  | timestamp of the event in Unix milliseconds (required) |
 
 Also accepts the [global flags](/reference/commands/global-flags/).
 

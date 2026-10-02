@@ -136,16 +136,16 @@ func newExportsCreateCmd() *cobra.Command {
 			return p.PrintJSON(final)
 		},
 	}
-	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil, "key=value pair for the request body (repeatable)")
-	cmd.Flags().StringVar(&input, "input", "", "request body from file, or - for stdin")
-	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset (name or UUID) to export (convenience flag)")
-	cmd.Flags().StringVar(&where, "where", "", "query filter (convenience flag)")
-	cmd.Flags().StringVar(&since, "since", "", "relative lookback, e.g. 1h (convenience flag)")
-	cmd.Flags().StringVar(&from, "from", "", "absolute start time, RFC3339 (convenience flag)")
-	cmd.Flags().StringVar(&to, "to", "", "absolute end time, RFC3339 (convenience flag)")
-	cmd.Flags().BoolVar(&wait, "wait", false, "poll GET /exports/{id} until COMPLETE or FAILED (backing off 2s→30s)")
+	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil, "request body field as key=value; values parse as JSON when possible (repeatable)")
+	cmd.Flags().StringVar(&input, "input", "", "read the request body from a file, or - for stdin")
+	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset name or UUID to export")
+	cmd.Flags().StringVar(&where, "where", "", "WHERE expression that selects the events to export")
+	cmd.Flags().StringVar(&since, "since", "", "relative lookback, e.g. 1h")
+	cmd.Flags().StringVar(&from, "from", "", "absolute start time (RFC3339)")
+	cmd.Flags().StringVar(&to, "to", "", "absolute end time (RFC3339)")
+	cmd.Flags().BoolVar(&wait, "wait", false, "poll the export until it is COMPLETE or FAILED, backing off from 2s to 30s")
 	cmd.Flags().DurationVar(&waitTimeout, "wait-timeout", exportWaitTimeout,
-		"give up waiting after this long (e.g. 5m, 30m); 0 uses the default")
+		"stop waiting after this long, e.g. 5m or 30m (0 means the default)")
 	cmd.Flags().StringVar(&download, "download", "",
 		"download the completed export to this path (implies --wait)")
 	return cmd
