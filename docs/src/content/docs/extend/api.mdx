@@ -1,0 +1,90 @@
+---
+title: The api command
+description: Call any Bronto API endpoint with bronto api, with authentication, region, retries, and output handled for you.
+sidebar:
+  order: 2
+---
+
+Not every Bronto endpoint has its own command. `bronto api` calls any of them directly,
+using the same credentials, region, retries, `--debug` tracing, and output formatting as
+the rest of the CLI.
+
+```sh
+bronto api <METHOD> <path> [-f key=value]... [--input <file|->]
+```
+
+The path is relative to the API base URL, for example `/monitors`. The
+[Bronto API reference](https://docs.bronto.io/api-reference/introduction) lists the
+endpoints.
+
+```console test tty
+$ bronto api GET /monitors
+{
+  "monitors": [
+    {
+      "actions": [
+        {
+          "group_id": "0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07",
+          "type": "GROUP"
+        }
+      ],
+...
+      "name": "Payments latency p95",
+      "status": "ALERT",
+      "threshold": 1000,
+      "window": "10m"
+    }
+  ]
+}
+```
+
+Unlike `bronto monitors list`, which prints a table, `bronto api` prints the response
+body exactly as the API sent it.
+
+## Parameters and bodies
+
+`-f key=value` means different things depending on the method:
+
+- For `GET` and `DELETE`, each `-f` becomes a query parameter.
+- For other methods, each `-f` becomes a field in a JSON body. Values are parsed as JSON
+  when possible, so `-f limit=10` sends a number and `-f enabled=true` a boolean.
+
+```sh
+bronto api GET /monitors -f limit=10
+bronto api POST /search --input query.json
+echo '{"time_range":"Last 15 minutes"}' | bronto api POST /search --input -
+```
+
+`--input` reads the body from a file, or from stdin with `-`. `--content-type` changes the
+`Content-Type` header (default `application/json`).
+
+## Useful endpoints without a command
+
+```sh
+bronto api GET /usage/organizations/logs   # per-dataset usage; bronto usage shows totals
+```
+
+## Safety
+
+`--dry-run` prints the request as a plan for any method except `GET` and `HEAD`, so you can check a
+`POST`, `PUT`, or `DELETE` before sending it:
+
+```console test tty
+$ bronto api POST /search -f 'time_range=Last 15 minutes' --dry-run
+{
+  "body": {
+    "time_range": "Last 15 minutes"
+  },
+  "dry_run": true,
+  "method": "POST",
+  "path": "/search"
+}
+```
+
+The output is the response body as JSON: indented at a terminal, compact when piped.
+`--fields` and `--jq` apply to the whole response document. HTTP errors map
+to the same error codes and [exit codes](/reference/exit-codes/) as every other command.
+
+If you call the same endpoint often, wrap it in a
+[plugin](/extend/plugins/), or [open an issue](https://github.com/bronto-community/bronto-cli/issues)
+asking for a dedicated command.

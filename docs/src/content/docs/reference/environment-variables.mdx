@@ -1,0 +1,61 @@
+---
+title: Environment variables
+description: Every environment variable bronto reads, what it overrides, and its matching config key.
+sidebar:
+  order: 2
+---
+
+Environment variables override config files and are overridden by command-line flags.
+See [precedence](/configuration/config-files/#precedence).
+
+## Credentials and endpoints
+
+| Variable | Config key | Flag | Purpose |
+| --- | --- | --- | --- |
+| `BRONTO_API_KEY` | none (never read from files) | `--api-key` | API key. When set, the keychain isn't consulted. |
+| `BRONTO_REGION` | `region` | `--region` | `eu` (default) or `us`. Must be a lowercase slug. |
+| `BRONTO_BASE_URL` | `base_url` | `--base-url` | Full REST API base URL. Overrides the region-derived `https://api.<region>.bronto.io`. |
+| `BRONTO_INGEST_URL` | `ingest_url` | `--ingest-url` on `bronto send` | Ingestion endpoint. Overrides `https://ingestion.<region>.bronto.io`. |
+| `BRONTO_PROFILE` | `profile` | `--profile` | Named profile to use. |
+| `BRONTO_CONFIG_DIR` | | | Parent directory of `bronto/config.toml`, the fallback credentials file, and REPL history. Defaults to the OS user config directory. |
+
+## HTTP behavior
+
+| Variable | Config key | Flag | Purpose |
+| --- | --- | --- | --- |
+| `BRONTO_TIMEOUT` | `timeout` | `--timeout` | HTTP timeout in seconds (default 30). |
+| `BRONTO_MAX_RETRIES` | `max_retries` | `--max-retries` | Retries for idempotent requests on 429, 502, 503, and 504 (default 2). |
+
+## Web app links
+
+Used by `bronto search --url` and `--open`.
+
+| Variable | Config key | Purpose |
+| --- | --- | --- |
+| `BRONTO_APP_URL` | `app_url` | Web app base URL. Defaults to the region's web app. |
+| `BRONTO_ORG_ID` | `org_id` | Organization id for links. Defaults to the active org reported by the API. |
+
+## bronto ask
+
+| Variable | Config key | Purpose |
+| --- | --- | --- |
+| `BRONTO_ASK_URL` | `ask_url` | OpenAI-compatible chat-completions URL. |
+| `BRONTO_ASK_MODEL` | `ask_model` | Model name (default `gpt-4o-mini`). |
+| `BRONTO_ASK_API_KEY` | none (env only) | Key for the ask endpoint, sent as a bearer token. |
+
+## Output
+
+| Variable | Purpose |
+| --- | --- |
+| `NO_COLOR` | Any non-empty value turns off color. `--no-color` does the same. |
+| `FORCE_COLOR` | Any non-empty value forces color on, even when not writing to a terminal. `NO_COLOR` and `--no-color` win over it. |
+| `TERM` | `TERM=dumb` turns off color unless `FORCE_COLOR` is set. |
+
+## Install script
+
+These apply to `scripts/install.sh` only, not to the CLI:
+
+| Variable | Purpose |
+| --- | --- |
+| `VERSION` | Release tag to install, for example `v0.1.0`. Defaults to the latest release. |
+| `BINDIR` | Install directory. Defaults to `/usr/local/bin`. |

@@ -1,0 +1,32 @@
+> bronto datasets list
+COLLECTION  DATASET           LAST_ACTIVITY  LOG_ID
+prod        checkout-service  2m ago         0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10
+prod        payments-api      2m ago         5e2a9c41-7b3d-4f6a-8c20-9d1e4b5f6a21
+prod        web-frontend      2m ago         8f1d3b7a-2c5e-4a9b-b6d4-1e7f9a3c2b32
+staging     checkout-service  5h ago         c3a8e5d2-9f4b-4e1a-a7c3-6b2d8f1e4c43
+>
+────────────────────────────────────────────────────────────────────────────────
+> bronto config set default_dataset prod/checkout-service
+Set default_dataset in profile "default"
+> bronto search "status >= 500" --since 1h --histogram --slices 10
+09:00   0
+09:03   0
+09:06   0
+09:09   0
+09:12   0
+09:15   0
+09:18   0
+09:21  ████████████████████████████████████████ 9
+09:24  █████████████████ 4
+09:27   0
+total: 13 events (bucket: 3m0s)
+>
+────────────────────────────────────────────────────────────────────────────────
+> bronto search "status >= 500" --since 1h -n 3 --select @time --select host --select duration_ms
+Execution time: 12 ms
+@TIME                        DURATION_MS  HOST
+2026-07-19 09:24:49.632 UTC  30042        web-3
+2026-07-19 09:24:33.007 UTC  30034        web-3
+2026-07-19 09:24:18.321 UTC  30039        web-2
+>
+────────────────────────────────────────────────────────────────────────────────

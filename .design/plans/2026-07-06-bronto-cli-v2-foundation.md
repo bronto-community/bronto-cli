@@ -4,7 +4,7 @@
 
 **Goal:** A working `bronto` binary that resolves config/profiles, authenticates against the Bronto API, and can hit any endpoint via `bronto api`, `bronto ping`, and `bronto config` — with the generated OpenAPI client, output engine, and typed-error system in place for later plans.
 
-**Architecture:** Three layers per the spec (`docs/superpowers/specs/2026-07-06-bronto-cli-v2-design.md` §4): Cobra command layer → service layer (minimal in this plan) → generated oapi-codegen client + hand-written transport. One output engine, one config resolver, one typed-error system used by everything.
+**Architecture:** Three layers per the spec (`.design/specs/2026-07-06-bronto-cli-v2-design.md` §4): Cobra command layer → service layer (minimal in this plan) → generated oapi-codegen client + hand-written transport. One output engine, one config resolver, one typed-error system used by everything.
 
 **Tech Stack:** Go ≥1.24, Cobra, oapi-codegen v2 (generated client checked in), pelletier/go-toml/v2, mattn/go-isatty, rogpeppe/go-internal (testscript).
 

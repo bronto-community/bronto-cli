@@ -17,7 +17,7 @@ No code generation, network access, or Bronto account is needed to build and run
 
 - **`internal/cli`** — the Cobra command tree (`root.go` builds it; one file per command or command family). This is where flag parsing, plugin-exec dispatch (`bronto-<name>` on `PATH`), and wiring between config/auth/output happen. Most new features touch this package.
 - **`internal/bronto`** — the typed client for the two things almost every command needs: running a search (`search.go`) and polling for new events (`tail.go`), built on top of `internal/api`'s generated transport.
-- **`internal/traces`** — the trace explorer: span model, field literals, and the aggregation/waterfall/shape algorithms that turn raw `.traces`-logset search results into `traces show|list|services|operations|aggregate|shape` output. Field literals and formulas intentionally match the v1 CLI exactly (see `docs/superpowers/specs/2026-07-07-v1-traces-extraction.md`).
+- **`internal/traces`** — the trace explorer: span model, field literals, and the aggregation/waterfall/shape algorithms that turn raw `.traces`-logset search results into `traces show|list|services|operations|aggregate|shape` output. Field literals and formulas intentionally match the v1 CLI exactly (see `.design/specs/2026-07-07-v1-traces-extraction.md`).
 - **`internal/ingest`** — sends events to Bronto's ingestion host, which is a separate host from the REST API: NDJSON request bodies, routing headers, optional gzip. Backs `bronto send`.
 - **`internal/secrets`** — stores API keys in the OS keychain (macOS Keychain, Linux Secret Service, Windows Credential Manager) with a `0600` credentials-file fallback for headless environments. Backs `bronto auth login|logout|token|status`.
 - **`internal/config`** — resolves configuration with precedence flags > env > project `.bronto.toml` > user config > defaults, tracking the source of every value so `bronto config list` can show its provenance. `api_key` is deliberately excluded from both file formats; secrets only ever come from the keychain or `BRONTO_API_KEY`. Host-naming keys (`base_url`, `ingest_url`) are further restricted to trusted sources — `projectFileKeys` omits them so a discovered `.bronto.toml` can't redirect where the key is sent — and `region` is validated as a slug for the same reason (`validateRegion`). See `config_security_test.go`.
@@ -35,7 +35,25 @@ To add a new one:
 1. Add an entry to `resourceRegistry` in `internal/cli/resources.go` — a `resourceDesc{Name, Base, ...}` giving the subcommand name and its collection path (e.g. `/monitors`), plus any overrides (`IDBase`, `CreatePath`, `UpdateMethod`, `Columns`, `NoCreate`/`NoUpdate`/`NoDelete`/`NoGet` for partial resources).
 2. Run `go test ./internal/cli/...` — `resourcespec_test.go` parses `api/openapi.yaml` and asserts your descriptor's `Base`/`CreatePath`/`IDBase` correspond to real paths in the vendored spec. A typo or a stale endpoint fails the build instead of silently 404ing at runtime. If your resource genuinely deviates from the vendored spec snapshot (a real, documented endpoint the spec doesn't capture), add it to `specCreatePathExceptions` with a comment explaining why.
 3. Add a short registration test alongside `resources_test.go` if the resource has any non-default behavior (custom columns, disabled verbs).
-4. Add the new resource's name to `skill.md`'s resource list and the README command tour — `TestSkillDocCoversAllCommands` fails the build if a registered command is absent from `skill.md`, so agents always learn about new commands. (An earlier "only document workhorse commands" policy let eleven resources ship undocumented; the test now prevents that.)
+4. Add the new resource's name to `skill.md`'s resource list and to the resource table in `docs/src/content/docs/guides/resources.mdx` — `TestSkillDocCoversAllCommands` fails the build if a registered command is absent from `skill.md`, and `TestDocsGuideCoverage` fails it if no docs page teaches the command (see [Documentation](#documentation)). (An earlier "only document workhorse commands" policy let eleven resources ship undocumented; the test now prevents that.)
+
+## Documentation
+
+The docs site (https://bronto-cli.vercel.app) is an [Astro Starlight](https://starlight.astro.build/) project in `docs/`. `docs/AGENTS.md` is the full contributor contract; the short version:
+
+- Hand-written pages live in `docs/src/content/docs/` (guides, configuration, reference pages). The command reference under `docs/src/content/docs/reference/commands/` is generated from the cobra tree: never edit it by hand, run `make docs-reference` and commit the result.
+- The docs cover *using the CLI*. Platform concepts (datasets, the query language, monitors, API keys) get one sentence and a link to https://docs.bronto.io.
+- Examples that should keep working use a ` ```console test ` block: `$ ` lines are commands, the lines after them are expected stdout, and `...` matches any number of lines. They run against a deterministic mock Bronto org (see "The docs mock world" in `docs/AGENTS.md`). Use ` ```sh ` for illustrative examples with `<placeholders>`. Every `bronto <command>` in either kind must be a real command; the doc-rot guard fails the build otherwise.
+- Every non-CRUD command must be taught somewhere in the hand-written pages (`TestDocsGuideCoverage`). A new subcommand without a docs mention fails CI.
+
+```sh
+make docs-dev        # local dev server with live reload
+make docs-reference  # regenerate the command reference after changing commands, flags, or help text
+make docs-tapes      # re-record the terminal videos (needs vhs and ttyd)
+make docs-check      # everything the docs CI job runs
+```
+
+PRs that change user-facing CLI behavior must update the docs in the same PR; the `docs-required` CI job checks this. If a change needs no docs (an internal refactor, a test-only fix), add the `no-docs-needed` label.
 
 ## TDD and lint expectations
 

@@ -1,0 +1,15 @@
+# Commands exempt from the guide-coverage gate (TestDocsGuideCoverage,
+# `make docs-coverage`).
+#
+# The gate requires every top-level command, and every subcommand that is
+# not a uniform resource verb (list/get/create/update/delete), to appear as
+# a `bronto <command> ...` code span in at least one hand-written page under
+# docs/src/content/docs/ (the generated reference/commands/ does not count).
+#
+# Format: one command path per line, without the leading "bronto", followed
+# by a mandatory reason:
+#
+#   completion powershell  # covered by the generic `bronto completion <shell>` line
+#
+# Stale entries fail the build: a path that is not a command, a uniform
+# resource verb, or a command a page now covers must be removed.

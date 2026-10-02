@@ -1,0 +1,77 @@
+---
+title: Environments
+description: Point bronto at staging or a local Bronto instance with --base-url and BRONTO_INGEST_URL, and keep environments apart with profiles.
+sidebar:
+  order: 2
+---
+
+By default the CLI talks to Bronto's hosted regions:
+
+| | Host |
+| --- | --- |
+| REST API | `https://api.<region>.bronto.io` |
+| Ingestion (`bronto send`) | `https://ingestion.<region>.bronto.io` |
+
+`<region>` is `eu` unless you set `--region`, `BRONTO_REGION`, or the `region` config key.
+The [ingestion endpoints page](https://docs.bronto.io/getting-started/bronto-endpoints)
+on docs.bronto.io lists the regional hosts.
+
+## Staging or a local instance
+
+To use any Bronto-compatible API, such as a staging environment or a local instance,
+override the hosts instead of the region:
+
+```sh
+export BRONTO_BASE_URL=http://localhost:8080    # REST API; --base-url for one command
+export BRONTO_INGEST_URL=http://localhost:8081  # ingestion; --ingest-url on bronto send
+```
+
+A trailing slash on the base URL is fine. The base URL replaces the region-derived API
+host completely, and the ingestion URL does the same for `bronto send`. Set both if you
+send data.
+
+Flags beat environment variables, which beat config files, so a one-off
+`--base-url` always wins.
+
+## One profile per environment
+
+To avoid exporting variables in every shell, store each environment in its own profile:
+
+```sh
+bronto config set base_url https://api.staging.example.com --profile staging
+bronto config set ingest_url https://ingestion.staging.example.com --profile staging
+bronto auth login --profile staging --base-url https://api.staging.example.com
+```
+
+Then pick the environment per command, or per shell:
+
+```sh
+bronto datasets list --profile staging
+export BRONTO_PROFILE=staging
+```
+
+`bronto auth login --base-url <url>` checks the key against that host instead of trying the
+public regions. `auth login` also makes the profile you log into the default, so
+run `bronto auth switch <name>` afterwards if you want a different default.
+
+## Check where requests go
+
+```sh
+bronto ping              # prints the resolved API URL and latency
+bronto auth status       # profile, key source, region, base URL, and whether the key works
+bronto config list       # every value with its source
+```
+
+Add `--debug` to any command to see the full URL of each request on stderr.
+
+:::note
+`base_url` and `ingest_url` can only come from flags, environment variables, or your user
+config file, never from a project `.bronto.toml`. See
+[Project files](/configuration/config-files/#project-files) for why.
+:::
+
+## Containers, CI, and sandboxes
+
+Environments without a keychain or a writable home directory need a few environment
+variables set instead. [CI/CD](/guides/ci-cd/#restricted-environments) covers
+them.

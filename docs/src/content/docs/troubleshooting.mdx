@@ -1,0 +1,139 @@
+---
+title: Troubleshooting
+description: Fixes for the errors people hit most often with bronto, from rejected keys to missing datasets.
+---
+
+Every error has a stable code in parentheses (or in the `code` field of the JSON envelope
+when stderr isn't a terminal) and usually a hint with the fix. These three commands
+answer most questions:
+
+```sh
+bronto auth status   # which profile, key source, region, base URL, and whether the key works
+bronto ping          # can the CLI reach the API, and how fast
+bronto config list   # every resolved setting and where it came from
+```
+
+## Authentication
+
+### `auth_invalid_key` (exit 3)
+
+The API rejected the key (HTTP 401). It may be mistyped, revoked, or from another region.
+Run `bronto auth login` again; it tries both regions and stores the one that works. Check
+that `BRONTO_API_KEY` isn't set to an old value, because it takes priority over the
+keychain.
+
+### `auth_insufficient_role` (exit 3)
+
+The key is valid but lacks permission (HTTP 403). The usual cause is an ingestion-only
+key, which can run `bronto send` and nothing else. Create a key with the Search or Admin
+role ([API Keys](https://docs.bronto.io/Account-Management/API-Keys)) and log in with it.
+
+### `auth_missing_key` (exit 3)
+
+No key was found in `--api-key`, `BRONTO_API_KEY`, or the keychain for the active profile.
+If you use profiles, check that you're on the one you logged into: `bronto auth status`
+shows the active profile.
+
+### No keychain available
+
+In containers, CI, and minimal Linux installs, `bronto auth login` falls back to a
+`credentials` file with `0600` permissions and prints a warning. To avoid both, set
+`BRONTO_API_KEY` directly; the keychain isn't touched once a key is resolved.
+[CI/CD](/guides/ci-cd/) has the details.
+
+### "could not read stored credentials"
+
+The keychain or credentials file returned an error, for example a corrupt file. The
+command still runs with any key from the flag or environment. `bronto auth status` shows the
+underlying error. `bronto auth logout` followed by `bronto auth login` rewrites the entry.
+
+## Datasets and queries
+
+### `usage_missing_dataset` (exit 2)
+
+The account has several datasets and the command doesn't know which one to use. The error
+lists them. Pass `-d <name>`, or set a default:
+
+```sh
+bronto config set default_dataset prod/checkout-service
+```
+
+### `usage_ambiguous_dataset` (exit 2)
+
+The name exists in more than one collection. Qualify it: `-d prod/checkout-service`
+instead of `-d checkout-service`.
+
+### `dataset_not_found` (exit 4)
+
+No dataset has that name or id. `bronto datasets list` shows what exists. Names are exact
+and include the collection when you use the `collection/name` form.
+
+### `usage_invalid_query` (exit 2)
+
+The WHERE expression didn't parse. The hint shows a caret under the problem. Check it
+locally with `bronto query check "<query>"`, and see the
+[search syntax](https://docs.bronto.io/query-syntax/search-syntax).
+
+### `usage_unknown_field` or `usage_ambiguous_field` (exit 2)
+
+A filter flag such as `--eq` named a field the dataset doesn't have, or one that matches
+several. The error lists candidates. `bronto fields -d <dataset> <part-of-name>` finds the
+exact spelling.
+
+### No results, but you expected some
+
+- Widen the window. Without a time flag, `search` covers the last 15 minutes. Pass
+  `--since 24h` or an explicit `--from`/`--to`.
+- Check the dataset with `-d`. Without it, the CLI may have used `default_dataset`.
+- Print the compiled filter with `--show-query` when you use filter flags.
+
+## Scripts and CI
+
+### `usage_confirmation_required` (exit 2)
+
+A destructive command ran without a terminal to confirm on. Pass `--yes`, or `--dry-run`
+to see what it would do.
+
+### `usage_invalid_flags`: --jq requires -o json or jsonl
+
+At a terminal the default format is a table, which `--jq` can't process. Add `-o json` or
+`-o jsonl`. Piped output works without it.
+
+### `rate_limited` or `timeout` (exit 5)
+
+The API throttled the request or it took too long. A rate-limited request, or any read,
+is safe to retry. A timed-out write (`create`, `update`, `delete`, `send`, a `bronto api`
+POST) may already have been applied on the server, so check its result, for example with
+`list` or `get`, before running it again. Idempotent requests are already retried (twice
+by default) on 429, 502, 503, and 504. Raise the
+limits with `--max-retries` and `--timeout`, or the matching `BRONTO_MAX_RETRIES` and
+`BRONTO_TIMEOUT` variables.
+
+### `usage_repl_requires_tty` (exit 2)
+
+`bronto repl` is interactive and won't run with piped input or output. Use
+`bronto search` in scripts.
+
+## Wrong environment
+
+### Requests go to the wrong region or host
+
+`bronto ping` prints the URL it used. Override it with `--region`, `BRONTO_REGION`, or
+for staging and local instances `--base-url` / `BRONTO_BASE_URL`. A `base_url` in a
+project `.bronto.toml` is ignored on purpose; see
+[Project files](/configuration/config-files/#project-files).
+
+### `config_invalid_region` (exit 2)
+
+A region must be a slug such as `eu` or `us`. To use a custom host, set `base_url`
+instead.
+
+## See what the CLI is doing
+
+- `--debug` prints every request and response on stderr: method, URL, status, latency, and
+  truncated bodies. The API key never appears.
+- `--dry-run` prints mutating requests instead of sending them.
+
+Still stuck? Search or open an issue on
+[GitHub](https://github.com/bronto-community/bronto-cli/issues). bronto-cli is a community
+project, so questions go there rather than to Bronto's support channels.

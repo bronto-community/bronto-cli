@@ -1,0 +1,130 @@
+---
+title: Install
+description: Install the bronto CLI with Homebrew, the install script, go install, Docker, or a release archive, and verify the download.
+sidebar:
+  order: 1
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+`bronto` is a single static binary for macOS, Linux, and Windows. Install it with
+any of the methods below, then run `bronto version` to check that it works.
+
+<Tabs syncKey="install">
+<TabItem label="Homebrew">
+
+```sh
+brew install --cask bronto-community/tap/bronto
+```
+
+The cask lives in the `bronto-community/homebrew-tap` tap, and the release workflow
+updates it on every release. The first time you use a third-party tap, Homebrew 6.0 and
+later ask you to trust it once. That prompt is expected.
+
+The cask clears macOS Gatekeeper's quarantine flag on install, so you won't see the
+"cannot verify developer" dialog.
+
+</TabItem>
+<TabItem label="Install script">
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | sh
+```
+
+The script downloads the release archive for your OS and architecture from GitHub
+Releases, checks it against the release's `checksums.txt`, and installs the binary to
+`/usr/local/bin`. Two environment variables change that:
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `VERSION` | latest release | Install a specific tag, for example `VERSION=v0.1.0` |
+| `BINDIR` | `/usr/local/bin` | Install somewhere else |
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | BINDIR="$HOME/.local/bin" sh
+```
+
+</TabItem>
+<TabItem label="go install">
+
+```sh
+go install github.com/bronto-community/bronto-cli/cmd/bronto@latest
+```
+
+This builds from source with your local Go toolchain and puts `bronto` in
+`$(go env GOPATH)/bin`. `bronto version` reports `dev` for builds made this way.
+
+</TabItem>
+<TabItem label="Docker">
+
+```sh
+docker run --rm -e BRONTO_API_KEY -e BRONTO_REGION \
+  ghcr.io/bronto-community/bronto-cli:latest search "status >= 500" --since 1h
+```
+
+Every release publishes two images for `linux/amd64` and `linux/arm64`:
+
+| Tag | Base |
+| --- | --- |
+| `ghcr.io/bronto-community/bronto-cli:latest` | `scratch` plus CA certificates |
+| `ghcr.io/bronto-community/bronto-cli:latest-distroless` | distroless |
+
+Each release also gets versioned tags (`:<version>` and `:<version>-distroless`).
+Pre-releases don't move `:latest`. The entrypoint is `/bronto`, so arguments go straight to the CLI.
+Neither image has a shell or a keychain, so pass credentials as environment variables.
+[CI/CD](/guides/ci-cd/) has the details.
+
+</TabItem>
+<TabItem label="Release archive">
+
+Every [GitHub release](https://github.com/bronto-community/bronto-cli/releases) has:
+
+- `tar.gz` archives for macOS and Linux, and `zip` archives for Windows
+- `.deb` and `.rpm` packages, which also install bash, zsh, and fish completions
+- an SPDX SBOM per archive
+- `checksums.txt`, its cosign signature, and certificate
+
+Download the archive for your platform, extract it, and put `bronto` on your `PATH`.
+
+</TabItem>
+</Tabs>
+
+## Check the install
+
+```console test tty
+$ bronto version
+```
+
+It prints one line with the version, the commit it was built from, and the build date.
+`bronto version -o json` prints the same three values as JSON.
+
+## Verify a release
+
+The install script already checks the SHA-256 checksum. To also check that the checksum
+file is the one the release workflow produced, verify its keyless
+[cosign](https://docs.sigstore.dev/) signature, then the archive against it:
+
+```sh
+cosign verify-blob \
+  --certificate checksums.txt.pem \
+  --signature checksums.txt.sig \
+  --certificate-identity-regexp 'github.com/bronto-community/bronto-cli' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  checksums.txt
+sha256sum --check --ignore-missing checksums.txt
+```
+
+Release archives and packages also carry signed SLSA build provenance. With the GitHub
+CLI:
+
+```sh
+gh attestation verify bronto_<version>_<os>_<arch>.tar.gz --repo bronto-community/bronto-cli
+```
+
+The container images on ghcr.io also carry provenance and SBOM attestations.
+
+## Next
+
+- [Authenticate](/getting-started/authentication/) with an API key.
+- Turn on [shell completion](/configuration/shell-completion/). It completes dataset names,
+  field names, and resource names from your account.

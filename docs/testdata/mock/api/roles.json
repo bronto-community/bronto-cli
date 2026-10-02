@@ -1,0 +1,20 @@
+{
+  "roles": [
+    {
+      "role_id": "Admin",
+      "role_type": "USER",
+      "display_name": "Admin",
+      "description": "Full access to the organization",
+      "is_system_role": true,
+      "permissions": [{"group_name": "logs", "name": "logs_read", "display_name": "Read logs", "type": "READ"}, {"group_name": "logs", "name": "logs_write", "display_name": "Write logs", "type": "WRITE"}]
+    },
+    {
+      "role_id": "ReadOnly",
+      "role_type": "USER",
+      "display_name": "Read only",
+      "description": "Search and view, no changes",
+      "is_system_role": true,
+      "permissions": [{"group_name": "logs", "name": "logs_read", "display_name": "Read logs", "type": "READ"}]
+    }
+  ]
+}

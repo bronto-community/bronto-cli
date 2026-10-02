@@ -1,0 +1,12 @@
+{
+  "dashboards": [
+    {
+      "id": "d4c6e2b5-7e91-42b4-af50-1b8e6d3c4f04",
+      "name": "Checkout overview",
+      "description": "Request rate, 5xx errors and latency for the checkout flow",
+      "widget_ids": ["3e5a7c9b-1d2f-4e6a-8b0c-2d4f6a8c0e11", "4f6b8d0c-2e3a-4f7b-9c1d-3e5a7b9d1f12", "5a7c9e1d-3f4b-4a8c-8d2e-4f6b8c0e2a13"],
+      "tags": {"team": "checkout"},
+      "metadata": {"created_at": 1777890000000, "created_by": "ada@example.com", "modified_at": 1781023500000, "modified_by": "ada@example.com"}
+    }
+  ]
+}

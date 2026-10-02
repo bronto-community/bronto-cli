@@ -1,0 +1,38 @@
+# Hand-maintained "Learn more" links for the generated command reference
+# (internal/tools/docgen, `make docs-reference`).
+#
+# Key: command path without the leading "bronto" (e.g. "datasets parser").
+# Value: a docs.bronto.io page explaining the platform concept behind it.
+# Only list pages that exist — verify with `curl -sI <url>` (HTTP 200).
+# Subcommands without an entry inherit nothing; they get the link only
+# if they are listed here themselves.
+search: https://docs.bronto.io/query-syntax/search-syntax
+tail: https://docs.bronto.io/Search-and-Visualize/Log-Search
+context: https://docs.bronto.io/api-reference/context/overview
+fields: https://docs.bronto.io/Search-and-Visualize/Log-Search
+query: https://docs.bronto.io/query-syntax/search-syntax
+traces: https://docs.bronto.io/tracing/explore-traces
+send: https://docs.bronto.io/getting-started/quick-ingestion
+usage: https://docs.bronto.io/api-reference/usage/overview
+api: https://docs.bronto.io/api-reference/introduction
+auth: https://docs.bronto.io/Account-Management/API-Keys
+login: https://docs.bronto.io/Account-Management/API-Keys
+api-keys: https://docs.bronto.io/Account-Management/API-Keys
+collections: https://docs.bronto.io/Search-and-Visualize/Partitions
+datasets: https://docs.bronto.io/Search-and-Visualize/Partitions
+datasets parser: https://docs.bronto.io/core-features/custom-parser
+parsers: https://docs.bronto.io/core-features/custom-parser
+monitors: https://docs.bronto.io/core-features/monitors
+dashboards: https://docs.bronto.io/Search-and-Visualize/Dashboards
+widgets: https://docs.bronto.io/Search-and-Visualize/Log-Visualization
+saved-searches: https://docs.bronto.io/Search-and-Visualize/Saved-Searches
+exports: https://docs.bronto.io/api-reference/exports/overview
+metrics: https://docs.bronto.io/metrics/explore-metrics
+users: https://docs.bronto.io/Account-Management/User-Management
+groups: https://docs.bronto.io/Account-Management/Access-Control
+roles: https://docs.bronto.io/Account-Management/Access-Control
+permissions: https://docs.bronto.io/Account-Management/Access-Control
+encryption-keys: https://docs.bronto.io/Account-Management/BYOK
+forward-configs: https://docs.bronto.io/core-features/log-forwarding
+slack: https://docs.bronto.io/integrations/slack
+webhooks: https://docs.bronto.io/integrations/webhooks

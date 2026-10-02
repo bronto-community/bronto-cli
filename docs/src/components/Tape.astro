@@ -1,0 +1,119 @@
+---
+/**
+ * Embeds a VHS recording from public/tapes/.
+ *
+ *   import Tape from '~/components/Tape.astro';
+ *   <Tape name="quickstart" title="Searching the last hour of errors" />
+ *
+ * `name` maps to public/tapes/<name>.webm (and an optional <name>.png poster).
+ * A missing video is a build warning, not an error: the page renders a short
+ * notice instead, so content can land before its recording.
+ *
+ * Playback: the video is muted and loops. It starts when it scrolls into view,
+ * unless the reader prefers reduced motion. Controls are always shown, so
+ * playback can be paused or started by hand.
+ */
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+interface Props {
+	/** Tape name, e.g. "quickstart" for public/tapes/quickstart.webm. */
+	name: string;
+	/** Caption, also used as the video's accessible label. */
+	title?: string;
+}
+
+const { name, title } = Astro.props;
+
+// Astro runs from the docs/ package root (npm run build / astro dev).
+const tapesDir = join(process.cwd(), 'public', 'tapes');
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const hasVideo = existsSync(join(tapesDir, `${name}.webm`));
+const hasPoster = existsSync(join(tapesDir, `${name}.png`));
+const label = title ?? `Terminal recording: ${name}`;
+
+if (!hasVideo) {
+	// Leading newline: Astro prints page progress without a trailing one.
+	console.warn(
+		`\n[Tape] WARNING: public/tapes/${name}.webm not found (used on ${Astro.url.pathname}). ` +
+			'Run `make docs-tapes` to render it.',
+	);
+}
+---
+
+<figure class="tape not-content" data-tape={name}>
+	{
+		hasVideo ? (
+			<video
+				src={`${base}/tapes/${name}.webm`}
+				poster={hasPoster ? `${base}/tapes/${name}.png` : undefined}
+				muted
+				loop
+				playsinline
+				controls
+				preload="metadata"
+				aria-label={label}
+				data-tape-autoplay
+			>
+				<a href={`${base}/tapes/${name}.webm`}>Download the recording ({name}.webm)</a>
+			</video>
+		) : (
+			<div class="tape-missing" role="note">
+				Recording <code>{name}</code> is not available yet.
+			</div>
+		)
+	}
+	{title && <figcaption>{title}</figcaption>}
+</figure>
+
+<script>
+	// Autoplay only while visible and only when the reader allows motion.
+	const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+	const videos = document.querySelectorAll<HTMLVideoElement>('video[data-tape-autoplay]');
+	const observer = new IntersectionObserver(
+		(entries) => {
+			for (const { target, isIntersecting } of entries) {
+				const video = target as HTMLVideoElement;
+				if (isIntersecting && !reduced.matches) {
+					video.play().catch(() => {
+						/* Autoplay blocked: the controls are there. */
+					});
+				} else if (!isIntersecting) {
+					video.pause();
+				}
+			}
+		},
+		{ threshold: 0.4 },
+	);
+	videos.forEach((video) => observer.observe(video));
+	reduced.addEventListener('change', () => {
+		if (reduced.matches) videos.forEach((video) => video.pause());
+	});
+</script>
+
+<style>
+	.tape {
+		margin-block: 1.5rem;
+	}
+	.tape video {
+		display: block;
+		width: 100%;
+		height: auto;
+		border-radius: 0.5rem;
+		border: 1px solid var(--sl-color-gray-5);
+		background: #1f1f1e;
+	}
+	.tape figcaption {
+		margin-top: 0.5rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+		text-align: center;
+	}
+	.tape-missing {
+		padding: 1rem;
+		border: 1px dashed var(--sl-color-gray-4);
+		border-radius: 0.5rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+</style>

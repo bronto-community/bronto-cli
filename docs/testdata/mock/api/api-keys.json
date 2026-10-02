@@ -1,0 +1,12 @@
+{
+  "api_keys": [
+    {
+      "id": "7c9e1a3b-5d6f-4b8c-8e2a-3b5d7f9c1e15",
+      "name": "docs-ci",
+      "api_key": "bronto_docs_example_key",
+      "roles": {"ReadOnly": true},
+      "tags": {"owner": "ada@example.com"},
+      "metadata": {"created_at": 1777890000000, "created_by": "ada@example.com"}
+    }
+  ]
+}

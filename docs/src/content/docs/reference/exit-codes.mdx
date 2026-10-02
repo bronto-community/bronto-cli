@@ -1,0 +1,99 @@
+---
+title: Exit codes and errors
+description: The exit-code contract, the JSON error envelope, and which error code maps to which exit status.
+sidebar:
+  order: 1
+---
+
+## Exit codes
+
+| Code | Meaning | Retry? |
+| --- | --- | --- |
+| `0` | success | |
+| `1` | unexpected or unclassified error, including API errors that aren't auth, not-found, or rate limits | sometimes; check `retryable` |
+| `2` | usage or config error: bad flags or arguments, missing dataset, invalid config | no, fix the command |
+| `3` | auth error: missing, invalid, or under-privileged API key | no, fix the credentials |
+| `4` | not found | no |
+| `5` | rate limited or timed out | yes for reads and rate limits; after a timed-out write, check whether it landed first |
+| `130` | interrupted by Ctrl-C or SIGTERM | |
+
+When `bronto` runs an [exec plugin](/extend/plugins/), the plugin's own exit code passes
+through unchanged.
+
+The exit code comes from the error code's prefix or suffix:
+
+- `usage_*` and `config_*` exit `2`.
+- `auth_*` exits `3`.
+- `*_not_found` exits `4`.
+- `rate_limited` and `timeout` exit `5`.
+- Everything else exits `1`.
+
+An unfinished query is a `usage_invalid_query` error, so it exits `2`:
+
+```console test
+$ bronto query check "status >= 500 AND" 2>/dev/null; echo "exit code $?"
+exit code 2
+```
+
+## The error envelope
+
+Errors always go to stderr. If stderr is a terminal, you get:
+
+```
+Error: incomplete expression — expected a condition (usage_invalid_query)
+Hint:   status >= 500 AND
+                   ^
+```
+
+If stderr isn't a terminal, you get one line of JSON instead:
+
+```console test exit=2
+$ bronto query check "status >= 500 AND" 2>&1
+{"error":{"code":"usage_invalid_query","hint":"  status \u003e= 500 AND\n                   ^","message":"incomplete expression — expected a condition","retryable":false}}
+```
+
+| Field | Always present | Meaning |
+| --- | --- | --- |
+| `code` | yes | stable machine-readable error code (see below) |
+| `message` | yes | human-readable description; don't parse it |
+| `retryable` | yes | `true` when retrying the same command may succeed |
+| `hint` | no | suggested fix, when there is one |
+
+## Error codes
+
+The common codes are below. Scripts should match on `code`.
+
+| Code | Exit | When |
+| --- | --- | --- |
+| `auth_invalid_key` | 3 | the API rejected the key (HTTP 401) |
+| `auth_insufficient_role` | 3 | the key lacks permission (HTTP 403), often an ingestion-only key |
+| `auth_missing_key` | 3 | no key from flag, environment, or keychain |
+| `auth_status_not_ok` | 3 | `bronto auth status` found a broken credential |
+| `usage_missing_dataset` | 2 | several datasets and no `-d` or `default_dataset` |
+| `usage_ambiguous_dataset` | 2 | a dataset name exists in more than one collection |
+| `usage_unknown_field`, `usage_ambiguous_field` | 2 | a filter flag names a field that doesn't exist or matches several |
+| `usage_invalid_query` | 2 | the WHERE expression doesn't parse |
+| `usage_confirmation_required` | 2 | a destructive command ran without a terminal and without `--yes` |
+| `usage_invalid_flag`, `usage_invalid_flags` | 2 | unknown flag, or flags that can't be combined |
+| `usage_key_required` | 2 | `bronto auth login` without a terminal or `--key-stdin` |
+| `usage_repl_requires_tty` | 2 | `bronto repl` with piped input or output |
+| `config_ask_not_configured` | 2 | `bronto ask` without `ask_url` |
+| `config_invalid_region` | 2 | region isn't a slug like `eu` |
+| `config_secret_in_project_file`, `config_secret_in_config_file` | 2 | a config file contains `api_key` |
+| `config_unknown_key` | 2 | `bronto config get` for a key with no value |
+| `resource_not_found` | 4 | the API returned 404 |
+| `dataset_not_found`, `trace_not_found`, `profile_not_found`, `org_not_found` | 4 | the named thing doesn't exist |
+| `rate_limited` | 5 | the API returned 429 |
+| `timeout` | 5 | the request timed out |
+| `network_error` | 1 | the host couldn't be reached (retryable) |
+| `api_server_error` | 1 | the API returned a 5xx (retryable) |
+| `api_error` | 1 | any other API error status |
+| `query_unknown_field` | 1 | `bronto query check --strict` found unknown fields |
+| `monitor_check_failed` | 1 | `bronto monitors check` found problems |
+| `export_failed`, `export_wait_timeout` | 1 | an export job failed, or `--wait` gave up |
+| `payload_too_large` | 1 | an ingestion batch was over 10 MB |
+| `ask_llm_error` | 1 | the `bronto ask` endpoint failed or returned something unusable |
+| `unknown_error` | 1 | an error without a code |
+
+Idempotent requests that get a 429, 502, 503, or 504 are retried automatically before an
+error is reported, `--max-retries` times (default 2).

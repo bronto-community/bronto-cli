@@ -1,0 +1,27 @@
+---
+// Header override: a "Bronto platform docs" link next to the GitHub icon.
+import Default from '@astrojs/starlight/components/SocialIcons.astro';
+---
+
+<a class="platform-docs" href="https://docs.bronto.io" rel="noopener">Bronto platform docs</a>
+<Default />
+
+<style>
+	.platform-docs {
+		font-size: var(--sl-text-sm);
+		font-weight: 600;
+		color: var(--sl-color-text-accent);
+		text-decoration: none;
+		white-space: nowrap;
+		margin-inline-end: 0.5rem;
+	}
+	.platform-docs:hover {
+		color: var(--sl-color-white);
+	}
+	/* The sidebar has the same link; keep the header uncluttered on small screens. */
+	@media (max-width: 50rem) {
+		.platform-docs {
+			display: none;
+		}
+	}
+</style>

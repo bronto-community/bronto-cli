@@ -5,7 +5,7 @@ description: Use when querying Bronto logs/traces, sending events, or managing B
 
 # bronto-cli
 
-Command-line client for the [Bronto](https://bronto.io) observability platform. This file is a short orientation — `bronto --help` and `bronto <command> --help` are the source of truth for exact flags.
+Command-line client for the [Bronto](https://bronto.io) observability platform. This file is a short orientation — `bronto --help` and `bronto <command> --help` are the source of truth for exact flags. Task guides live at https://bronto-cli.vercel.app.
 
 ## Auth quickstart
 
@@ -32,7 +32,7 @@ The default `search` table promotes the most informative parsed fields into colu
 
 `-d`/`--dataset` accepts a dataset **name** or UUID everywhere; a name duplicated across collections is qualified as `collection/name` (e.g. `-d prod/api-logs`). With one dataset in the account it is auto-picked; with several, the error lists them.
 
-Agent-critical flags (global): `--dry-run` prints any mutating call as a plan document (`{"dry_run":true,"method":"POST","path":"/monitors","body":{…}}`) instead of executing — reads still run. `--debug` traces requests/responses on stderr (API key never printed). `--timeout <s>` and `--max-retries <n>` tune the HTTP client.
+Agent-critical flags (global): `--dry-run` stops any mutating call — reads still run. `create`/`update` print it as a plan document on stdout (`{"dry_run":true,"method":"POST","path":"/monitors","body":{…}}`); `delete` and some action verbs (`groups add-members`, `monitors mute`, `users deactivate`) print a one-line `DRY RUN: would …` note on stderr instead. `--debug` traces requests/responses on stderr (API key never printed). `--timeout <s>` and `--max-retries <n>` tune the HTTP client.
 
 ## Offline mode
 
@@ -50,7 +50,7 @@ Agent-critical flags (global): `--dry-run` prints any mutating call as a plan do
 - Streaming commands (`search`, `tail`, `traces`) piped to a non-TTY default to JSONL, one JSON object per line — no flag needed. Every other command (resource `list`/`get`, `usage`, `config list`, …) piped emits a single pretty-printed JSON document (usually an array) — parse it whole, not line-by-line; pass `-o jsonl` if you want line-delimited rows.
 - Force a format with `-o json|jsonl|raw|csv|table`.
 - `--jq '<expr>'` runs a jq expression over json/jsonl output, one result per line. Deviation from the `jq` CLI: a value that errors or halts on the expression is silently **skipped**, not a fatal abort — every other row still prints.
-- `--fields a,b,c` narrows output to those columns/keys; `--fields ?` lists the field names available instead of the data. Works with json/jsonl/csv, table for resource lists, and `tail`'s table view (klp-style projection). `-o raw` and the custom trace renderers (`traces show`, `traces shape`) reject `--fields`; `--fields ?` (name listing) needs a machine format like `-o jsonl` for the streaming views (`tail`, `traces`).
+- `--fields a,b,c` narrows output to those columns/keys; `--fields ?` lists the field names available instead of the data. Names must match output keys exactly: `search` events are flattened, with parsed log fields under `message_kvs.` (`--fields '@time,message_kvs.status'`, `--jq '."message_kvs.path"'`); a bare `status` matches nothing and is silently dropped. `tail` is the exception — it selects the named fields server-side, so plain names (`status`) work there, as they do for `--select`. Works with json/jsonl/csv, table for resource lists, and `tail`'s table view (klp-style projection). `-o raw` and the custom trace renderers (`traces show`, `traces shape`) reject `--fields`; `--fields ?` (name listing) needs a machine format like `-o jsonl` for the streaming views (`tail`, `traces`).
 - Errors go to stderr. In machine mode (non-TTY stderr) they're a stable JSON envelope: `{"error":{"code":"...","message":"...","retryable":true|false,"hint":"..."}}` (`hint` present only when there is remediation advice).
 - Numbers are lossless: 64-bit ids (e.g. `metadata.sequence`) survive json/jsonl/`--jq` byte-exact.
 - Exit codes:

@@ -1,0 +1,107 @@
+---
+title: Output formats
+description: How bronto picks an output format, what table, json, jsonl, csv, and raw look like, and how --fields and --jq apply.
+sidebar:
+  order: 3
+---
+
+Data goes to stdout. Notices, progress, warnings, and errors go to stderr, so a pipe on
+stdout carries only data. `--quiet` suppresses the notices.
+
+## How the format is chosen
+
+1. `-o`/`--output` on the command line.
+2. The `output` setting from a project `.bronto.toml` or your profile.
+3. Otherwise, based on where stdout goes:
+
+| stdout | `search`, `tail`, `traces` | every other command |
+| --- | --- | --- |
+| a terminal | `table` | `table` |
+| a pipe or file | `jsonl` | `json` |
+
+## Formats
+
+| Format | Shape |
+| --- | --- |
+| `table` | Aligned columns with an uppercase header. Long cells are truncated. Prints `No results.` to stderr when empty. |
+| `json` | One JSON document. Lists are an array, pretty-printed. |
+| `jsonl` | One compact JSON object per line. |
+| `csv` | A header row, then one row per record. |
+| `raw` | For events, the original `@raw` line. Other rows print as compact JSON. |
+
+Use `jsonl` for streaming, since a consumer can process each line as it arrives. `json`
+has to be parsed as a whole.
+
+Numbers keep their exact value in `json`, `jsonl`, and `--jq` output. 64-bit ids such as
+`metadata.sequence` aren't rounded to floats.
+
+Some views render their own layout at a terminal instead of a table: the expanded view
+(`search -x`), `--histogram`, `--patterns`, live `tail` aggregates, and the `traces show`
+and `traces shape` waterfalls.
+
+## --fields
+
+`--fields a,b,c` keeps only the named keys in `json`, `jsonl`, and `csv`, and picks the
+columns in `table` output for resource lists, `search`, and `tail`.
+
+`--fields '?'` prints the field names available instead of the data. For the streaming
+commands (`tail`, `traces`), combine it with a machine format such as `-o jsonl`.
+
+The names must match the output keys exactly. `search` flattens each event, and the
+fields parsed from the log line sit under `message_kvs.`:
+
+```console test tty
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 1 --fields '?'
+@raw
+@status
+@time
+message_kvs.duration_ms
+message_kvs.host
+message_kvs.message
+message_kvs.path
+message_kvs.service
+message_kvs.status
+message_kvs.trace_id
+metadata.logId
+metadata.origin
+metadata.sequence
+metadata.timestamp
+$ bronto search "status >= 500" -d prod/checkout-service --since 1h -n 3 --fields '@time,message_kvs.host,message_kvs.status'
+@TIME                        MESSAGE_KVS.HOST  MESSAGE_KVS.STATUS
+2026-07-19 09:24:49.632 UTC  web-3             502
+2026-07-19 09:24:33.007 UTC  web-3             502
+2026-07-19 09:24:18.321 UTC  web-2             502
+```
+
+A name that matches no key, such as a bare `status` here, is silently left out. `tail`
+is the exception: it asks the server for the fields you name, so it takes plain field
+names like `status`.
+
+`--fields` is rejected with `-o raw`, and with the `traces show` and `traces shape`
+renderers.
+
+## --jq
+
+`--jq '<expr>'` applies a jq expression and prints each result on its own line.
+
+- It needs `json` or `jsonl` output. At a terminal, pass `-o json` or `-o jsonl`; piped,
+  the default formats already qualify.
+- With `json` output of a list, the expression runs once per element.
+- A value that makes the expression fail is skipped. The other values still print. This
+  differs from the `jq` CLI, which stops at the first error.
+
+```sh
+bronto monitors list -o jsonl --jq '.name'
+```
+
+## -x / --expand
+
+`bronto search -x` prints each event as a block of `key value` lines with every field,
+untruncated. It works only with table output: with `-o json`, `jsonl`, `csv`, or `raw` it fails with a
+usage error, because those formats already include every field. To get the expanded view
+in a pipe, pass `-o table -x`.
+
+## Color
+
+Colors are on at a terminal and off otherwise. The order of precedence is `--no-color`,
+then `NO_COLOR`, then `FORCE_COLOR`, then `TERM=dumb`, then whether stdout is a terminal.

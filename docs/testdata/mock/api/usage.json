@@ -1,0 +1,14 @@
+[
+  {
+    "name": "ingestion_org_usage",
+    "key": "bytes_total",
+    "series": [
+      {"@time": "Sun Jul 19 09:00:00 UTC 2026", "count": "41", "value": "9512.0"},
+      {"@time": "Sun Jul 19 09:05:00 UTC 2026", "count": "39", "value": "9077.0"},
+      {"@time": "Sun Jul 19 09:10:00 UTC 2026", "count": "40", "value": "9284.0"},
+      {"@time": "Sun Jul 19 09:15:00 UTC 2026", "count": "38", "value": "8890.0"},
+      {"@time": "Sun Jul 19 09:20:00 UTC 2026", "count": "52", "value": "13640.0"},
+      {"@time": "Sun Jul 19 09:25:00 UTC 2026", "count": "34", "value": "7911.0"}
+    ]
+  }
+]

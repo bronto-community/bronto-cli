@@ -1,0 +1,66 @@
+---
+title: Ask in plain English
+description: Turn a natural-language question into a bronto search with any OpenAI-compatible endpoint, and review the query before it runs.
+sidebar:
+  order: 4
+---
+
+`bronto ask` translates a question into a `bronto search` command using a language model
+you configure. It shows you the generated command and the reasoning behind it before
+anything runs.
+
+## Set up an endpoint
+
+`ask` works with any endpoint that speaks the OpenAI chat-completions API: OpenAI itself,
+a local Ollama, or your company's LLM gateway.
+
+```sh
+bronto config set ask_url https://api.openai.com/v1/chat/completions
+bronto config set ask_model gpt-4o-mini
+export BRONTO_ASK_API_KEY=sk-...
+```
+
+For a local Ollama, which needs no key:
+
+```sh
+bronto config set ask_url http://localhost:11434/v1/chat/completions
+bronto config set ask_model llama3.1
+```
+
+| Setting | Config key | Environment variable |
+| --- | --- | --- |
+| Endpoint URL | `ask_url` | `BRONTO_ASK_URL` |
+| Model name (default `gpt-4o-mini`) | `ask_model` | `BRONTO_ASK_MODEL` |
+| Endpoint key | none, by design | `BRONTO_ASK_API_KEY` |
+
+The endpoint key is only read from the environment and is never written to a config file.
+A project `.bronto.toml` can't set `ask_url`, so a repository you `cd` into can't redirect
+your questions somewhere else. Without `ask_url`, `ask` fails with
+`config_ask_not_configured` (exit code 2).
+
+## Ask
+
+```sh
+bronto ask "5xx spikes in checkout since last night"
+bronto ask "errors by host this morning" -d prod/checkout-service
+```
+
+`ask` prints the `bronto search` command it came up with and explains how it mapped each
+part of your question. At a terminal it then asks `[Y/n]` before running it.
+
+- `--yes` runs the generated query without asking.
+- Piped or with a machine output format, and without `--yes`, it prints the plan as JSON
+  and runs nothing, so an agent can inspect the plan before deciding to run it.
+- `-d <dataset>` pins the dataset instead of letting the model pick one, and grounds the
+  field lookup in that dataset.
+
+## What gets sent
+
+The endpoint receives your question plus the names of your datasets and fields. Event
+data and your Bronto API key are never sent to it.
+
+If the model returns something that isn't a usable query, `ask` fails with
+`ask_llm_error`. Rephrase, or try a stronger model.
+
+If you'd rather write the query yourself, the [filter flags](/guides/searching/#filter-flags-instead-of-where)
+on `bronto search` save you most of the syntax.

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Existing stack, no new dependencies.
 
-**Canonical reference:** `docs/superpowers/specs/2026-07-07-v1-traces-extraction.md` — a field-exact extraction of v1's 1179-line `traces.py`. This plan embeds everything needed, but when in doubt about a literal string or formula, that document is authoritative. Cite it as "extraction §N".
+**Canonical reference:** `.design/specs/2026-07-07-v1-traces-extraction.md` — a field-exact extraction of v1's 1179-line `traces.py`. This plan embeds everything needed, but when in doubt about a literal string or formula, that document is authoritative. Cite it as "extraction §N".
 
 ## Global Constraints
 
@@ -164,7 +164,7 @@ Run: `go test ./internal/traces -v` — Expected: FAIL.
 // Package traces implements the trace explorer: span model, aggregations,
 // and the waterfall/shape algorithms over Bronto's .traces logset.
 // Field literals and formulas follow v1 exactly (see
-// docs/superpowers/specs/2026-07-07-v1-traces-extraction.md).
+// .design/specs/2026-07-07-v1-traces-extraction.md).
 package traces
 
 import (

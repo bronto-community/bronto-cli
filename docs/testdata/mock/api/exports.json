@@ -1,0 +1,15 @@
+{
+  "exports": [
+    {
+      "export_id": "6b8d0f2a-4c5e-4a7b-9d1f-2a4c6e8b0d14",
+      "org_id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e09",
+      "status": "COMPLETE",
+      "progress": 100,
+      "events": 13,
+      "bytes": 4123,
+      "search_details": {"from": "0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10", "where": "status >= 500", "time_range": "Last 1 hour"},
+      "created_at": "${ago:20m}",
+      "modified_at": "${ago:19m}"
+    }
+  ]
+}

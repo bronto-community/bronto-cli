@@ -13,8 +13,54 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// skillDocFiles lists the repo-root docs the doc-rot guard covers.
+// skillDocFiles lists the repo-root docs the doc-rot guard covers. Every
+// hand-written page of the docs site (handWrittenDocFiles) is covered too.
 var skillDocFiles = []string{"skill.md", "README.md", "llms.txt"}
+
+// docsContentDir is the docs site's content root, relative to the repo
+// root; docsReferenceDir (under it) holds the GENERATED command reference,
+// which the guards skip — it is derived from the command tree, so it is
+// correct by construction and checked by `make docs-reference-check`.
+const (
+	docsContentDir   = "docs/src/content/docs"
+	docsReferenceDir = docsContentDir + "/reference/commands"
+)
+
+// handWrittenDocFiles returns the repo-relative paths (sorted, slash-
+// separated) of every .md/.mdx page under docsContentDir except the
+// generated reference. Zero pages is fine (the site may be empty); a
+// missing content directory is an error — the guard must not silently
+// pass because the docs moved.
+func handWrittenDocFiles(repoRoot string) ([]string, error) {
+	contentRoot := filepath.Join(repoRoot, filepath.FromSlash(docsContentDir))
+	if fi, err := os.Stat(contentRoot); err != nil {
+		return nil, fmt.Errorf("docs content directory %s is missing (did the docs site move? update docsContentDir): %w", docsContentDir, err)
+	} else if !fi.IsDir() {
+		return nil, fmt.Errorf("docs content path %s is not a directory", docsContentDir)
+	}
+	refRoot := filepath.Join(repoRoot, filepath.FromSlash(docsReferenceDir))
+	var files []string
+	err := filepath.WalkDir(contentRoot, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if path == refRoot {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if ext := filepath.Ext(path); ext == ".md" || ext == ".mdx" {
+			rel, err := filepath.Rel(repoRoot, path)
+			if err != nil {
+				return err
+			}
+			files = append(files, filepath.ToSlash(rel))
+		}
+		return nil
+	})
+	return files, err
+}
 
 // brontoInvocation captures the first token after a "bronto " prefix in a
 // code span, e.g. "bronto auth login" -> "auth", "bronto --help" -> "--help".
@@ -30,7 +76,9 @@ var inlineCodeSpan = regexp.MustCompile("`([^`]+)`")
 const ignoreMarker = "skilldoc:ignore"
 
 // TestSkillDocCommandsAreReal is the mechanical doc-rot guard: it scans
-// each file in skillDocFiles for backtick code spans — both inline `...`
+// each file in skillDocFiles, plus every hand-written docs-site page
+// (handWrittenDocFiles: docs/src/content/docs/**/*.{md,mdx} minus the
+// generated reference), for backtick code spans — both inline `...`
 // and fenced ``` blocks (one span per line) — that start with "bronto ",
 // and asserts the first token after "bronto" is either:
 //
@@ -67,7 +115,11 @@ func TestSkillDocCommandsAreReal(t *testing.T) {
 	}
 	repoRoot := filepath.Join(filepath.Dir(thisFile), "..", "..")
 
-	for _, docFile := range skillDocFiles {
+	siteFiles, err := handWrittenDocFiles(repoRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, docFile := range append(append([]string(nil), skillDocFiles...), siteFiles...) {
 		path := filepath.Join(repoRoot, docFile)
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -161,6 +213,9 @@ func deeperTokenProblems(span codeSpan, cmd *cobra.Command) []string {
 			}
 			continue
 		}
+		if shellOperators[w] {
+			break // the rest of the line is another program (| jq ..., && ...)
+		}
 		if w[0] == '\'' || w[0] == '"' {
 			if len(w) < 2 || !strings.HasSuffix(w, w[:1]) {
 				inQuote = w[0]
@@ -197,6 +252,11 @@ func deeperTokenProblems(span codeSpan, cmd *cobra.Command) []string {
 	return probs
 }
 
+// shellOperators end a bronto invocation inside a code span: whatever
+// follows ("| jq -r ...", "&& echo ok", "> out.json") belongs to another
+// program or the shell, so its flags are not bronto's.
+var shellOperators = map[string]bool{"|": true, "||": true, "&&": true, ";": true, ">": true, ">>": true, "2>": true, "2>&1": true, "<": true, "&": true}
+
 // TestDocCheckerCatchesUnknownFlags tests the checker itself: a doc-rot
 // guard that cannot fail on a defect class guards nothing (the 2026-07-23
 // audit found exactly that — renamed or phantom flags in examples sail
@@ -213,6 +273,7 @@ func TestDocCheckerCatchesUnknownFlags(t *testing.T) {
 		"bronto monitors list --definitely-not-real",
 		"bronto tail --nope 5m",
 		"bronto monitors update <id> --frobnicate x",
+		"bronto search 'a | b' --no-such-flag", // a quoted pipe is data, not a shell pipe
 	}
 	for _, text := range bad {
 		if probs := docSpanProblems(root, codeSpan{text: text}); len(probs) == 0 {
@@ -227,6 +288,8 @@ func TestDocCheckerCatchesUnknownFlags(t *testing.T) {
 		"bronto exports create --dataset <id> --since 1h --wait",
 		"bronto send --dataset <id> --message 'one event' --dry-run",
 		"bronto api GET /monitors -f limit=10",
+		"bronto search 'status >= 500' -o json | jq --raw-output .message",
+		"bronto datasets list -o json && echo --not-a-bronto-flag",
 	}
 	for _, text := range good {
 		if probs := docSpanProblems(root, codeSpan{text: text}); len(probs) != 0 {
@@ -244,29 +307,75 @@ type codeSpan struct {
 // each line of a fenced ``` block is treated as one span, and each
 // single-backtick `...` span outside a fence is checked independently. A
 // span's ignore bit is set when its source line contains ignoreMarker.
+//
+// A shell prompt ("$ bronto ...") counts as a bronto span, with the prompt
+// stripped. Inside a ```console block only prompt lines are commands — the
+// lines after them are expected output (the snippet-tester convention in
+// docs/AGENTS.md), so an output line that happens to start with "bronto "
+// is not checked.
 func brontoCodeSpans(doc string) []codeSpan {
 	var spans []codeSpan
-	inFence := false
+	inFence, console := false, false
 	for _, line := range strings.Split(doc, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "```") {
 			inFence = !inFence
+			info := strings.Fields(strings.TrimLeft(trimmed, "`"))
+			console = inFence && len(info) > 0 && info[0] == "console"
 			continue
 		}
 		ignore := strings.Contains(line, ignoreMarker)
 		if inFence {
-			if strings.HasPrefix(trimmed, "bronto ") {
-				spans = append(spans, codeSpan{text: trimmed, ignore: ignore})
+			text, prompted := strings.CutPrefix(trimmed, "$ ")
+			if console && !prompted {
+				continue
+			}
+			if strings.HasPrefix(text, "bronto ") {
+				spans = append(spans, codeSpan{text: strings.TrimSpace(text), ignore: ignore})
 			}
 			continue
 		}
 		for _, m := range inlineCodeSpan.FindAllStringSubmatch(line, -1) {
-			if strings.HasPrefix(m[1], "bronto ") {
-				spans = append(spans, codeSpan{text: m[1], ignore: ignore})
+			text, _ := strings.CutPrefix(m[1], "$ ")
+			if strings.HasPrefix(text, "bronto ") {
+				spans = append(spans, codeSpan{text: text, ignore: ignore})
 			}
 		}
 	}
 	return spans
+}
+
+// TestBrontoCodeSpansExtraction pins the extractor's handling of the docs
+// site's snippet conventions: "$ " prompts are stripped (so prompted
+// commands are checked at all), and console-block output lines are not
+// mistaken for commands.
+func TestBrontoCodeSpansExtraction(t *testing.T) {
+	doc := strings.Join([]string{
+		"Run `bronto ping` or `$ bronto version`.",
+		"```console test",
+		"$ bronto search 'status >= 500' --since 1h",
+		"bronto output line that is not a command",
+		"$ echo not-bronto",
+		"```",
+		"```sh",
+		"$ bronto tail --window 30s",
+		"bronto datasets list # skilldoc:ignore",
+		"```",
+	}, "\n")
+	var got []string
+	for _, s := range brontoCodeSpans(doc) {
+		got = append(got, fmt.Sprintf("%s|%v", s.text, s.ignore))
+	}
+	want := []string{
+		"bronto ping|false",
+		"bronto version|false",
+		"bronto search 'status >= 500' --since 1h|false",
+		"bronto tail --window 30s|false",
+		"bronto datasets list # skilldoc:ignore|true",
+	}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("spans:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
 }
 
 // TestSkillDocCoversAllCommands is the other half of doc-rot protection:

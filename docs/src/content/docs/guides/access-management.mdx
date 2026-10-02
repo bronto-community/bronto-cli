@@ -1,0 +1,134 @@
+---
+title: Access management
+description: Manage users, groups, roles, and permissions from the command line.
+sidebar:
+  order: 8
+---
+
+Bronto access control has users, groups of users, and roles that bundle permissions.
+[Access Control](https://docs.bronto.io/Account-Management/Access-Control) and
+[User Management](https://docs.bronto.io/Account-Management/User-Management) on
+docs.bronto.io explain the model. The commands below follow the
+[shared resource pattern](/guides/resources/) and need an API key with the Admin role.
+
+## Users
+
+```console test tty
+$ bronto users list
+EMAIL              FIRST_NAME  LAST_NAME  LAST_LOGIN  ID
+ada@example.com    Ada         Lovelace   3h ago      e5d7f3c6-8fa2-43c5-b061-2c9f7e4d5a05
+grace@example.com  Grace       Hopper     1d ago      f6e8a4d7-9ab3-44d6-c172-3dab8f5e6b06
+$ bronto users get ada@example.com
+{
+  "email": "ada@example.com",
+  "first_name": "Ada",
+  "id": "e5d7f3c6-8fa2-43c5-b061-2c9f7e4d5a05",
+  "invited_at": 1776762000000,
+  "last_logins": {
+...
+  },
+  "last_name": "Lovelace",
+  "roles": [
+    "Admin"
+  ],
+  "status": "ACTIVE"
+}
+```
+
+`get` prints the full record as JSON, even at a terminal.
+
+Users resolve by email anywhere an id is accepted. The user commands beyond CRUD:
+
+```console test tty
+$ bronto users groups ada@example.com
+NAME    DESCRIPTION                     GROUP_ID
+oncall  Paged by the checkout monitors  0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07
+```
+
+```sh
+bronto users resend-invite grace@example.com
+bronto users deactivate grace@example.com
+bronto users reactivate grace@example.com
+```
+
+`bronto users groups` lists the groups a user belongs to. `bronto users deactivate` and
+`bronto users reactivate` switch a user off and back on.
+`bronto users resend-invite` sends a new invitation to a user who hasn't accepted yet.
+
+## Groups
+
+```console test tty
+$ bronto groups members oncall
+GROUP_ID                              MEMBER_ID                             MEMBER_TYPE  MODIFIED_AT
+0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07  e5d7f3c6-8fa2-43c5-b061-2c9f7e4d5a05  USER         1777890000000
+0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07  f6e8a4d7-9ab3-44d6-c172-3dab8f5e6b06  USER         1780389000000
+$ bronto groups list
+NAME    DESCRIPTION                     CREATED_AT  GROUP_ID
+oncall  Paged by the checkout monitors  2026-05-04  0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07
+```
+
+`groups members` lists members by id. Here they are Ada and Grace, as the ids in
+`bronto users list` show.
+
+Add or remove members with `bronto groups add-members` and
+`bronto groups remove-members`. Both take users by id or email with `--users`, and other
+groups by id or name with `--groups`. Each flag takes a comma-separated list or can be
+repeated.
+
+```sh
+bronto groups create -f name=sre
+bronto groups add-members oncall --users ada@example.com,grace@example.com
+bronto groups add-members oncall --groups sre
+bronto groups remove-members oncall --users grace@example.com
+```
+
+`--dry-run` resolves the users and prints the change on stderr without making it:
+
+```console test tty
+$ bronto groups add-members oncall --users grace@example.com --dry-run 2>&1
+DRY RUN: would add 1 member(s) to group oncall.
+```
+
+## Roles and permissions
+
+`bronto permissions list` prints the permission names a role can grant:
+
+```console test tty
+$ bronto permissions list
+GROUP     NAME            TYPE   DISPLAY_NAME
+logs      logs_read       READ   Read logs
+logs      logs_write      WRITE  Write logs
+monitors  monitors_read   READ   Read monitors
+monitors  monitors_write  WRITE  Write monitors
+$ bronto roles list
+DISPLAY_NAME  ROLE_TYPE  IS_SYSTEM_ROLE  DESCRIPTION                      ROLE_ID
+Admin         USER       true            Full access to the organization  Admin
+Read only     USER       true            Search and view, no changes      ReadOnly
+```
+
+System roles have readable ids such as `Admin` and `ReadOnly`, and a role also resolves
+by its `display_name`.
+
+`roles update` replaces the whole role, so omitted fields are cleared. Pass
+`display_name` and the exact set of `permissions` the role should have. The CLI refuses an
+update body without them.
+
+```sh
+bronto roles create -f display_name=Viewer -f 'permissions=["logs_read","dashboards_read"]'
+bronto roles update Viewer -f display_name=Viewer -f 'permissions=["logs_read"]'
+```
+
+:::caution
+Don't copy `permissions` from `roles get` output into an update. Reads return the full
+permission catalog, including permissions the role doesn't grant.
+:::
+
+Values passed with `-f` are parsed as JSON, so the `permissions` value above is sent as
+an array.
+
+## API keys
+
+API keys have `bronto api-keys list`, `create`, `update`, and `delete`.
+`list` masks the key values unless you pass `--reveal`. See
+[API Keys on docs.bronto.io](https://docs.bronto.io/Account-Management/API-Keys) for the
+roles a key can have.

@@ -1,0 +1,11 @@
+{
+  "saved_searches": [
+    {
+      "id": "1b8cad4e-2f3a-4b6c-9d7e-8f9a0b1c2d08",
+      "name": "Checkout 5xx",
+      "description": "Server errors from checkout-service in prod",
+      "search_details": {"where": "status >= 500", "from": "0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10", "time_range": "Last 1 hour"},
+      "metadata": {"created_at": 1777890000000, "created_by": "ada@example.com"}
+    }
+  ]
+}

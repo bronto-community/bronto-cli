@@ -1,0 +1,87 @@
+---
+title: Exports
+description: Export matching log events in bulk with bronto exports, wait for the job, and download the result.
+sidebar:
+  order: 9
+---
+
+`bronto search` returns at most 10000 events per call. To pull more, create an export
+job: Bronto runs the query in the background and gives you a file to download. The
+[exports API reference](https://docs.bronto.io/api-reference/exports/overview) describes
+the job on the platform side.
+
+## Create an export
+
+```sh
+bronto exports create -d prod/checkout-service --since 1h --where "status >= 500" --wait
+```
+
+The convenience flags build the request body for you:
+
+| Flag | Meaning |
+| --- | --- |
+| `-d`, `--dataset` | dataset name or UUID |
+| `--since` | relative lookback, for example `1h` |
+| `--from`, `--to` | absolute start and end, RFC 3339 |
+| `--where` | query filter |
+
+For anything they don't cover, pass the body yourself with `-f key=value` or
+`--input body.json`, as with any [resource](/guides/resources/).
+
+Check the request before creating anything:
+
+```console test tty
+$ bronto exports create -d prod/checkout-service --since 1h --where "status >= 500" --dry-run
+{
+  "body": {
+    "search_details": {
+      "from": "0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10",
+      "time_range": "Last 1 hour",
+      "where": "status \u003e= 500"
+    }
+  },
+  "dry_run": true,
+  "method": "POST",
+  "path": "/exports"
+}
+```
+
+The dataset name is already resolved to its id. `\u003e` is a JSON-escaped `>`.
+
+## Wait and download
+
+Without `--wait`, `create` returns as soon as the job is accepted. With `--wait`, it polls
+the job until it's `COMPLETE` or `FAILED`, backing off from 2 seconds to 30 seconds between
+checks. It gives up after `--wait-timeout` (default `15m`) and exits non-zero with
+`export_wait_timeout`. A failed job exits with `export_failed`.
+
+`--download <path>` implies `--wait` and saves the finished export to that path:
+
+```sh
+bronto exports create -d prod/checkout-service --since 6h --where "status >= 500" --download checkout-5xx.json.gz
+```
+
+The download comes from a presigned URL, and the CLI doesn't send your API key to it.
+The file is written as delivered, with `0600` permissions.
+
+To query the export offline, feed it to [`bronto search --local`](/guides/searching/#search-local-files).
+If the file is gzip-compressed, decompress it on the way in:
+
+```sh
+gunzip -c checkout-5xx.json.gz | bronto search --local - "path = '/api/checkout'"
+```
+
+## Manage export jobs
+
+```console test tty
+$ bronto exports list
+BYTES  CREATED_AT  EVENTS  EXPORT_ID                             MODIFIED_AT  ORG_ID                                PROGRESS  SEARCH_DETAILS
+4123   20m ago     13      6b8d0f2a-4c5e-4a7b-9d1f-2a4c6e8b0d14  19m ago      9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e09  100       {"from":"0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10","time_range":"Last 1 hour","where":"status \u003e= 500"}
+```
+
+```sh
+bronto exports get <export-id>
+bronto exports delete <export-id> --yes
+```
+
+Exports can't be updated. Create a new one instead.

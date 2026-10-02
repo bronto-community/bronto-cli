@@ -1,0 +1,231 @@
+---
+title: Managing resources
+description: The shared list, get, create, update, delete pattern for datasets, monitors, dashboards, users, API keys, and every other Bronto resource.
+sidebar:
+  order: 6
+---
+
+import Tape from '~/components/Tape.astro';
+
+Every Bronto resource (datasets, monitors, API keys, and the rest) has a command, and
+they all take the same verbs.
+
+<Tape name="resources" title="Listing, inspecting, and changing resources" />
+
+## The pattern
+
+```sh
+bronto <resource> list
+bronto <resource> get <id-or-name>
+bronto <resource> create -f key=value -f other=value
+bronto <resource> update <id-or-name> -f key=value
+bronto <resource> delete <id-or-name> --yes
+```
+
+For example:
+
+```console test tty
+$ bronto datasets list
+COLLECTION  DATASET           LAST_ACTIVITY  LOG_ID
+prod        checkout-service  2m ago         0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10
+prod        payments-api      2m ago         5e2a9c41-7b3d-4f6a-8c20-9d1e4b5f6a21
+prod        web-frontend      2m ago         8f1d3b7a-2c5e-4a9b-b6d4-1e7f9a3c2b32
+staging     checkout-service  5h ago         c3a8e5d2-9f4b-4e1a-a7c3-6b2d8f1e4c43
+$ bronto datasets get prod/checkout-service
+{
+  "collection": "prod",
+  "dataset": "checkout-service",
+  "log": "checkout-service",
+  "log_id": "0b7c6f2e-1d4a-4c8e-9a51-3f2d8e6b7a10",
+  "metadata": {
+    "created_at": 1776762000000,
+...
+  }
+}
+$ bronto monitors get "High 5xx rate on checkout"
+{
+  "actions": [
+...
+  "comparison_operator": "GREATER_THAN",
+  "description": "More than 5 responses with status \u003e= 500 from checkout-service in 5 minutes",
+  "id": "a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01",
+...
+  "monitor_type": "LOG",
+  "name": "High 5xx rate on checkout",
+  "status": "ALERT",
+  "threshold": 5,
+  "window": "5m"
+}
+```
+
+At a terminal, `list` prints a table of the main columns and `get` prints the whole
+object as JSON.
+
+Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `metrics`, `exports`.
+`collections`, `log-views`, and `permissions` are list-only, and `metrics` is read-only
+(`list` and `get`, plus `top-keys`). The generated
+[command reference](/reference/commands/) lists the exact verbs for each resource.
+
+| Resource | Try | Learn more |
+| --- | --- | --- |
+| datasets, where log events are stored | `bronto datasets list` | [Data Organization](https://docs.bronto.io/Search-and-Visualize/Partitions) |
+| collections, which group datasets (list-only) | `bronto collections list` | [Data Organization](https://docs.bronto.io/Search-and-Visualize/Partitions) |
+| log views (list-only) | `bronto log-views list` | |
+| parsers | `bronto parsers list` | [Custom Parser](https://docs.bronto.io/core-features/custom-parser) |
+| monitors, templates, downtimes | `bronto monitors list` | [Monitors and dashboards](/guides/monitors-and-dashboards/) |
+| dashboards and widgets | `bronto dashboards list` | [Monitors and dashboards](/guides/monitors-and-dashboards/) |
+| saved searches | `bronto saved-searches list` | [Saved Searches](https://docs.bronto.io/Search-and-Visualize/Saved-Searches) |
+| export jobs | `bronto exports list` | [Exports](/guides/exports/) |
+| metrics and their attribute keys | `bronto metrics list` | [Explore Metrics](https://docs.bronto.io/metrics/explore-metrics) |
+| users, groups, roles, permissions | `bronto users list` | [Access management](/guides/access-management/) |
+| API keys | `bronto api-keys list` | [API Keys](https://docs.bronto.io/Account-Management/API-Keys) |
+| webhook integrations | `bronto webhooks list` | [Webhooks](https://docs.bronto.io/integrations/webhooks) |
+| Slack integrations | `bronto slack list` | [Slack](https://docs.bronto.io/integrations/slack) |
+| log forwarding destinations | `bronto forward-configs list` | [Log Forwarding](https://docs.bronto.io/core-features/log-forwarding) |
+| bring-your-own encryption keys | `bronto encryption-keys list` | [BYOK](https://docs.bronto.io/Account-Management/BYOK) |
+| account limits | `bronto limits list` | |
+
+## Names work wherever ids do
+
+Every command that takes an id also takes a unique name:
+
+- Datasets resolve by name, or by `collection/name` when the name exists in more than one
+  collection.
+- Users resolve by email.
+- Roles resolve by id or `display_name`. System roles have readable ids such as `Admin`
+  and `ReadOnly`.
+- Monitors, dashboards, and the rest resolve by `name`. Quote names with spaces.
+
+If a name matches more than one resource, the command fails with exit code 2 and lists the
+matching ids.
+
+## Creating and updating
+
+`create` and `update` build the request body from repeated `-f key=value` flags. A value
+that parses as JSON keeps its type (number, boolean, array, or object). Anything else is
+sent as a string:
+
+```sh
+bronto dashboards create -f name=Overview -f description=Prod
+bronto parsers update <id> -f name=nginx-combined
+bronto groups create -f name=sre
+```
+
+For larger bodies, pass a JSON file with `--input`, or `--input -` to read stdin. `-f` and
+`--input` can't be combined.
+
+```sh
+bronto monitors create --input monitor.json
+./generate-monitor.sh | bronto monitors create --input -
+```
+
+The CLI sends the body unchanged, so use the fields the
+[Bronto API](https://docs.bronto.io/api-reference/introduction) expects for that
+resource. Updates to `monitors`, `widgets`, `datasets`, and `roles` use HTTP PUT. For
+widgets and roles that replaces the whole object, so send every field you want to keep.
+
+## Deleting
+
+`delete` asks for confirmation at a terminal. Without a terminal it can't ask, so it
+fails with `usage_confirmation_required` (exit code 2) unless you pass `--yes`:
+
+```sh
+bronto api-keys delete <id> --yes
+```
+
+## Preview changes with --dry-run
+
+`--dry-run` works on every command that changes something. It changes nothing, but reads
+still run, so names resolve and an unknown name fails the same way it would without
+`--dry-run`.
+
+`create` and `update` print the request they would send as a JSON plan on stdout: method,
+path, and body. `delete` and some action verbs, such as `groups add-members`,
+`monitors mute`, and `users deactivate`, print a one-line `DRY RUN:` note on stderr
+instead. `delete` also skips its confirmation prompt, because nothing is deleted.
+
+```console test tty
+$ bronto dashboards create -f name=Overview -f description=Prod --dry-run
+{
+  "body": {
+    "description": "Prod",
+    "name": "Overview"
+  },
+  "dry_run": true,
+  "method": "POST",
+  "path": "/dashboards"
+}
+$ bronto monitors delete "Payments latency p95" --dry-run 2>&1
+DRY RUN: would delete monitor Payments latency p95.
+```
+
+## Commands beyond CRUD
+
+A few resources have extra verbs:
+
+| Command | What it does | Guide |
+| --- | --- | --- |
+| `bronto monitors events`, `bronto monitors notifications` | recent events and sent notifications | [Monitors](/guides/monitors-and-dashboards/#monitors) |
+| `bronto monitors mute`, `bronto monitors check` | mute a monitor, lint definitions in CI | [Monitors](/guides/monitors-and-dashboards/#monitors) |
+| `bronto dashboards attach-widgets`, `bronto dashboards remove-widget`, `bronto dashboards detach-from-template` | assemble dashboards | [Dashboards](/guides/monitors-and-dashboards/#dashboards-and-widgets) |
+| `bronto widgets attach-widgets`, `bronto widgets remove-widget` | nest widgets | [Dashboards](/guides/monitors-and-dashboards/#dashboards-and-widgets) |
+| `bronto groups members`, `bronto groups add-members`, `bronto groups remove-members` | group membership | [Access management](/guides/access-management/) |
+| `bronto users groups`, `bronto users deactivate`, `bronto users reactivate`, `bronto users resend-invite` | user lifecycle | [Access management](/guides/access-management/) |
+| `bronto datasets parser get`, `bronto datasets parser set`, `bronto datasets parser unset` | assign a parser to a dataset | below |
+| `bronto metrics top-keys` | attribute keys seen on a metric | below |
+
+### Assign a parser to a dataset
+
+`bronto datasets parser` shows or changes which [parser](https://docs.bronto.io/core-features/custom-parser)
+a dataset uses:
+
+```console test tty
+$ bronto datasets parser get prod/checkout-service
+{
+  "parser_id": "8d0f2b4c-6e7a-4c9d-9f3b-4c6e8a0d2f16",
+  "parser_name": "json"
+}
+```
+
+```sh
+bronto datasets parser set prod/checkout-service <parser>
+bronto datasets parser unset prod/checkout-service
+```
+
+### Metric attribute keys
+
+`bronto metrics top-keys <metric>` lists the attribute keys seen on a metric, the
+metrics counterpart of `bronto fields`:
+
+```sh
+bronto metrics top-keys system.cpu.utilization --since 1h
+```
+
+## API keys
+
+`bronto api-keys list` masks key values in every output format, JSON included, so keys
+don't leak into CI logs. Pass `--reveal` to see them in full.
+
+```console test tty
+$ bronto api-keys list
+NAME     API_KEY    CREATED     ID
+docs-ci  bronto_d…  2026-05-04  7c9e1a3b-5d6f-4b8c-8e2a-3b5d7f9c1e15
+```
+
+## Usage
+
+`bronto usage` shows ingestion, search, and export volume over a period (default `7d`):
+
+```console test tty
+$ bronto usage --since 7d
+TIME              EVENTS  VOLUME
+2026-07-19 09:00  41      9.5 kB
+2026-07-19 09:05  39      9.1 kB
+2026-07-19 09:10  40      9.3 kB
+2026-07-19 09:15  38      8.9 kB
+2026-07-19 09:20  52      13.6 kB
+2026-07-19 09:25  34      7.9 kB
+```
+
+For per-dataset numbers, call the API directly with
+`bronto api GET /usage/organizations/logs` (see [the api command](/extend/api/)).

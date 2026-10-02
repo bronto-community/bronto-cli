@@ -1,0 +1,23 @@
+> bronto traces services --since 1h
+SERVICE           SPANS  AVG    MAX
+checkout-service  204    3.95s  30.05s
+payments-api      104    7.71s  30.02s
+web-frontend      76     5.31s  30.05s
+> bronto traces list -s payments-api --errors -n 4 --since 1h
+@TIME                        SERVICE       OPERATION           DURATION  STATUS  TRACE_ID
+2026-07-19 09:24:19.600 UTC  payments-api  provider.authorize  30.01s    ERROR   f7df498a556927026404a9f1e89c38e2
+2026-07-19 09:24:19.599 UTC  payments-api  POST /charge        30.02s    ERROR   f7df498a556927026404a9f1e89c38e2
+2026-07-19 09:24:02.982 UTC  payments-api  provider.authorize  30.00s    ERROR   168a296e219517ed2119957be0ed85c1
+2026-07-19 09:24:02.981 UTC  payments-api  POST /charge        30.01s    ERROR   168a296e219517ed2119957be0ed85c1
+>
+────────────────────────────────────────────────────────────────────────────────
+> bronto traces show 4bf92f3577b34da6a3ce929d0e0e4736
+6 span(s) across 3 service(s), total 30.05s
+web-frontend/GET /checkout             ████████████████████████████████████████ 30.05s ERROR
+  checkout-service/POST /api/checkout  ███████████████████████████████████████· 30.04s ERROR
+    checkout-service/SELECT orders     █······································· 5.00ms
+    checkout-service/POST /charge      ███████████████████████████████████████· 30.02s ERROR
+      payments-api/POST /charge        ███████████████████████████████████████· 30.02s ERROR
+        payments-api/provider.authorize ███████████████████████████████████████· 30.01s ERROR
+>
+────────────────────────────────────────────────────────────────────────────────

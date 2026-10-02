@@ -1,7 +1,7 @@
 // Package traces implements the trace explorer: span model, aggregations,
 // and the waterfall/shape algorithms over Bronto's .traces logset.
 // Field literals and formulas follow v1 exactly (see
-// docs/superpowers/specs/2026-07-07-v1-traces-extraction.md).
+// .design/specs/2026-07-07-v1-traces-extraction.md).
 package traces
 
 import (
