@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 const (
@@ -21,13 +24,21 @@ const (
 // every other request.
 type accessStub struct {
 	method, path, query, body string
+	lists                     map[string]int // GETs per list path
 }
 
 func (s *accessStub) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			if s.lists == nil {
+				s.lists = map[string]int{}
+			}
+			s.lists[r.URL.Path]++
+		}
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/users":
-			_, _ = w.Write([]byte(`{"users":[{"id":"` + aUser + `","email":"alice@example.com"}]}`))
+			_, _ = w.Write([]byte(`{"users":[{"id":"` + aUser + `","email":"alice@example.com"},` +
+				`{"id":"aaaaaaaa-aaaa-aaaa-aaaa-0000000000b0","email":"bob@example.com"}]}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/groups":
 			_, _ = w.Write([]byte(`{"groups":[{"group_id":"` + aGroup + `","name":"oncall","description":"pager"},` +
 				`{"group_id":"` + aGroup2 + `","name":"sre"}]}`))
@@ -218,5 +229,47 @@ func TestPermissionsListFlattensForTables(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Fatalf("out = %q, missing %q", out, want)
 		}
+	}
+}
+
+// Several --users emails resolve against one users list, not one list per
+// email (a 100-member add would otherwise make 100 list requests).
+func TestGroupAddMembersListsUsersOnce(t *testing.T) {
+	var s accessStub
+	if _, _, err := runResource(t, s.handler(), "",
+		"groups", "add-members", aGroup, "--users", "alice@example.com,bob@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if n := s.lists["/users"]; n != 1 {
+		t.Fatalf("GET /users made %d times, want 1", n)
+	}
+	if !strings.Contains(s.body, aUser) || !strings.Contains(s.body, "aaaaaaaa-aaaa-aaaa-aaaa-0000000000b0") {
+		t.Fatalf("body = %s", s.body)
+	}
+}
+
+// A compound --since becomes from_ts/to_ts instead of being rejected.
+func TestMetricTopKeysCompoundSince(t *testing.T) {
+	var s accessStub
+	if _, _, err := runResource(t, s.handler(), "", "metrics", "top-keys", "system.cpu", "--since", "1h30m"); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(s.query, "from_ts=") || !strings.Contains(s.query, "to_ts=") || strings.Contains(s.query, "time_range") {
+		t.Fatalf("query = %s", s.query)
+	}
+}
+
+// The refusal must not suggest round-tripping roles get: reads carry
+// permission objects (and live, the full catalog), so that could grant
+// every permission.
+func TestRoleUpdateHintPointsAtPermissionsList(t *testing.T) {
+	var s accessStub
+	_, _, err := runResource(t, s.handler(), "", "roles", "update", "Admin", "-f", "description=x")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) {
+		t.Fatalf("err = %v, want a clierr.Error", err)
+	}
+	if !strings.Contains(ce.Hint, "bronto permissions list") || strings.Contains(ce.Hint, "roles get") {
+		t.Fatalf("hint = %q", ce.Hint)
 	}
 }

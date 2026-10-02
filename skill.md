@@ -86,7 +86,7 @@ A unique name resolves anywhere an id is accepted (users match by email; dataset
 
 Extras beyond the uniform pattern: `monitors events|mute|check` (`check --input monitor.json` lints definitions — query syntax, window bounds, dataset existence — with non-zero exit for CI), `users deactivate|reactivate|resend-invite|groups`, `groups members|add-members|remove-members` (`add-members <group> --users <email,…> --groups <name,…>`), `monitors notifications <id> [--since 7d]`, `metrics top-keys <metric> [--since 1h]` (attribute keys, like `fields` for a dataset), `datasets parser get|set|unset <dataset> [<parser>]`.
 
-`roles` ids for system roles are readable strings (`Admin`, `ReadOnly`), and a role also resolves by `display_name`. `permissions list` prints the permission names a role's `permissions` array takes (`-f 'permissions=["logs_read","dashboards_read"]'`).
+`roles` ids for system roles are readable strings (`Admin`, `ReadOnly`), and a role also resolves by `display_name`. `roles update` replaces the whole role: always pass `display_name` and the exact `permissions` to grant (omitted fields are cleared; the CLI refuses a body without them). Don't copy permissions from `roles get` — reads return the full catalog. `permissions list` prints the permission names a role's `permissions` array takes (`-f 'permissions=["logs_read","dashboards_read"]'`).
 
 ## Utility commands
 

@@ -64,9 +64,10 @@ type resourceDesc struct {
 
 	// UpdateRequires are body fields update refuses to send without. For
 	// full-replacement PUTs where the API blanks an omitted field or fails
-	// with a 500 instead of a 400 (roles), this catches it client-side with
-	// a hint.
-	UpdateRequires []string
+	// with a 500 instead of a 400 (roles), this catches it client-side.
+	// UpdateRequiresHint tells the user how to build a complete body.
+	UpdateRequires     []string
+	UpdateRequiresHint string
 
 	// SecretKeys are list-row fields holding key material that must be
 	// masked in EVERY output format by default (json/jsonl are the piped/CI
@@ -210,7 +211,12 @@ var resourceRegistry = []resourceDesc{
 	{Name: "roles", Base: "/roles", Singular: "role", UpdateMethod: http.MethodPut,
 		IDKey: "role_id", NameKeys: []string{"display_name"},
 		UpdateRequires: []string{"display_name", "permissions"},
-		Columns:        []string{"display_name", "role_type", "is_system_role", "description", "role_id"}},
+		// Not "start from roles get": reads return permission objects, and
+		// live every role reads back with the full catalog, so round-
+		// tripping a get could grant every permission.
+		UpdateRequiresHint: "Pass the complete role: -f display_name=<name> -f 'permissions=[\"logs_read\",…]' " +
+			"with exactly the permission names to grant (see 'bronto permissions list'). Omitted fields are cleared.",
+		Columns: []string{"display_name", "role_type", "is_system_role", "description", "role_id"}},
 	// GET /permissions is the catalog of permission names a role can grant,
 	// grouped by resource. The human formats flatten it to one row per
 	// permission; json keeps the grouped payload.
@@ -652,7 +658,7 @@ func checkUpdateRequires(desc resourceDesc, body []byte) error {
 	return clierr.New("usage_missing_fields",
 		fmt.Sprintf("%s update replaces the whole %s: the body must include %s",
 			desc.display(), desc.singular(), strings.Join(missing, ", "))).
-		WithHint(fmt.Sprintf("Start from the current one: bronto %s get <id> -o json, edit it, then pass it with --input.", desc.display()))
+		WithHint(desc.UpdateRequiresHint)
 }
 
 func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
@@ -864,7 +870,12 @@ func resolveResourceRef(ctx context.Context, app *App, desc resourceDesc, ref st
 	if err != nil {
 		return "", err
 	}
-	rows := rowsFromPayload(payload, desc.ListRowKeys...)
+	return matchResourceRef(desc, rowsFromPayload(payload, desc.ListRowKeys...), ref)
+}
+
+// matchResourceRef resolves ref against an already-fetched list, so a
+// command resolving many refs of one kind lists it once (resolveKindRefs).
+func matchResourceRef(desc resourceDesc, rows []map[string]any, ref string) (string, error) {
 	var matchIDs, available []string
 	for _, row := range rows {
 		// An exact id always wins: some ids aren't UUIDs (system roles'
@@ -901,6 +912,46 @@ func resolveResourceRef(ctx context.Context, app *App, desc resourceDesc, ref st
 	}
 	return "", clierr.New("resource_not_found",
 		fmt.Sprintf("no %s named %q", desc.singular(), ref)).WithHint(hint)
+}
+
+// resolveKindRefs resolves several refs of one kind, fetching the kind's
+// list at most once: a 100-member groups add-members would otherwise list
+// users 100 times. UUIDs and datasets go through resolveKindRef.
+func resolveKindRefs(ctx context.Context, app *App, kind string, refs []string) ([]string, error) {
+	desc, ok := descByName(kind)
+	if !ok || desc.Name == "datasets" {
+		out := make([]string, 0, len(refs))
+		for _, ref := range refs {
+			id, err := resolveKindRef(ctx, app, kind, ref)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, id)
+		}
+		return out, nil
+	}
+	var rows []map[string]any
+	fetched := false
+	out := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		if uuidRe.MatchString(ref) {
+			out = append(out, ref)
+			continue
+		}
+		if !fetched {
+			payload, err := doJSONRequest(ctx, app, http.MethodGet, desc.Base, nil)
+			if err != nil {
+				return nil, err
+			}
+			rows, fetched = rowsFromPayload(payload, desc.ListRowKeys...), true
+		}
+		id, err := matchResourceRef(desc, rows, ref)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, id)
+	}
+	return out, nil
 }
 
 // resolveKindRef is resolveResourceRef for hand-written extras that know

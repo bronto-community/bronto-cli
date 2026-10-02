@@ -59,11 +59,11 @@ func newGroupMembershipCmd(add bool) *cobra.Command {
 				reg  string
 				typ  string
 			}{{users, "users", "USER"}, {groups, "groups", "GROUP"}} {
-				for _, ref := range kind.refs {
-					mid, err := resolveKindRef(cmd.Context(), app, kind.reg, ref)
-					if err != nil {
-						return err
-					}
+				ids, err := resolveKindRefs(cmd.Context(), app, kind.reg, kind.refs)
+				if err != nil {
+					return err
+				}
+				for _, mid := range ids {
 					members = append(members, member{kind.typ, mid})
 				}
 			}
@@ -210,9 +210,18 @@ func newMetricTopKeysCmd() *cobra.Command {
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeKindRef("metrics"),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			spec, err := resolveRelativeSince(since, "Last 1 hour", "metrics top-keys", "/metrics/{metric_id}/top-keys")
+			// The endpoint takes a relative time_range or from_ts/to_ts, so a
+			// compound --since (1h30m) becomes absolute bounds.
+			spec, err := timerange.Resolve(since, "", "", nil)
 			if err != nil {
 				return err
+			}
+			params := url.Values{}
+			if spec.TimeRange != "" {
+				params.Set("time_range", spec.TimeRange)
+			} else {
+				params.Set("from_ts", strconv.FormatInt(spec.FromTs, 10))
+				params.Set("to_ts", strconv.FormatInt(spec.ToTs, 10))
 			}
 			app, err := NewApp(cmd)
 			if err != nil {
@@ -222,15 +231,14 @@ func newMetricTopKeysCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			rows, err := topKeyRowsAt(cmd.Context(), app, "/metrics/"+url.PathEscape(id)+"/top-keys",
-				url.Values{"time_range": {spec.TimeRange}})
+			rows, err := topKeyRowsAt(cmd.Context(), app, "/metrics/"+url.PathEscape(id)+"/top-keys", params)
 			if err != nil {
 				return err
 			}
 			return printTopKeyRows(app, rows)
 		},
 	}
-	cmd.Flags().StringVar(&since, "since", "1h", "relative lookback (single unit: 30s, 15m, 1h, 2d)")
+	cmd.Flags().StringVar(&since, "since", "1h", "lookback window (e.g. 15m, 1h, 1h30m)")
 	return cmd
 }
 
