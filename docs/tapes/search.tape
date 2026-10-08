@@ -4,8 +4,8 @@ Output search.txt
 Source settings.tape
 # The -x scene picks its fields so its height doesn't depend on the data:
 # live events carry more metadata than the mock's, and an unbounded -x
-# scrolled off screen when recorded against the CI account. 480 px gives a
-# 20-row terminal for the 16-row scene.
+# scrolled off screen when recorded against the CI account. The scene is 16
+# rows; 480 px (20 rows) leaves headroom over the default 17.
 Set Height 480
 Require bronto
 
