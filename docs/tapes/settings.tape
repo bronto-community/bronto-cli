@@ -6,12 +6,13 @@
 # (18-row scene, 480) and search (16 rows, but 480 for headroom, because its
 # long -x command wraps and live data can wrap differently).
 #
-# Keep scenes data-independent where you can (`-x --fields ...`, not a bare
-# `-x`): live recordings run against real events, which can be taller than
-# the mock's. VHS text output reads the buffer, not the screen, so a scene
-# that scrolls just loses its bottom rows in the golden; tapegolden catches
-# that, because a settled scene must end at a prompt, and fails the render
-# with "doesn't end at a prompt".
+# Live recordings run against real events, which can be taller than the
+# mock's: bound what a scene prints where you can (`-x --fields ...` fixes
+# the field count, though -x never truncates values, so a long or multi-line
+# value can still add rows), and leave headroom. VHS text output reads the
+# buffer, not the screen, so a scene that scrolls just loses its bottom rows
+# in the golden; tapegolden catches that, because a settled scene must end
+# at a prompt, and fails the render with "doesn't end at a prompt".
 Set Shell "bash"
 Set FontSize 16
 Set Width 1280

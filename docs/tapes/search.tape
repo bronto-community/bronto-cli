@@ -2,9 +2,10 @@
 Output search.webm
 Output search.txt
 Source settings.tape
-# The -x scene picks its fields so its height doesn't depend on the data:
-# live events carry more metadata than the mock's, and an unbounded -x
-# scrolled off screen when recorded against the CI account. The scene is 16
+# The -x scene picks its fields: live events carry more metadata than the
+# mock's, and a bare -x scrolled off screen when recorded against the CI
+# account. --fields fixes the field count, not the height (-x never
+# truncates values), so the chosen fields are short ones. The scene is 16
 # rows; 480 px (20 rows) leaves headroom over the default 17.
 Set Height 480
 Require bronto
