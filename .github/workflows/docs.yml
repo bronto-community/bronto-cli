@@ -114,13 +114,15 @@ jobs:
 
   # deploy builds with the Vercel CLI and uploads the prebuilt output. The
   # Vercel project has no Git connection, so this is the only deploy path.
-  # Previews: same-repo PRs only (fork PRs get no secrets). Production: push
-  # to main.
+  # Previews: same-repo PRs only (fork PRs get no secrets), and not for runs
+  # Dependabot triggers (they only see Dependabot secrets, so no
+  # VERCEL_TOKEN). Production: push to main.
   deploy:
     needs: docs-check
     if: >-
       github.event_name == 'push' ||
       (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor != 'dependabot[bot]' &&
        github.event.action != 'labeled' && github.event.action != 'unlabeled')
     runs-on: ubuntu-latest
     permissions:
