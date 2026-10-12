@@ -14,6 +14,9 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
@@ -29,9 +32,10 @@ func stubPlugin(t *testing.T, look func(string) (string, error),
 		rec.lookedUp = append(rec.lookedUp, name)
 		return look(name)
 	}
-	runPlugin = func(path string, args []string, stdin io.Reader, stdout, stderr io.Writer) (int, error) {
+	runPlugin = func(path string, args, env []string, stdin io.Reader, stdout, stderr io.Writer) (int, error) {
 		rec.ranPath = path
 		rec.ranArgs = args
+		rec.ranEnv = env
 		return run(path, args, stdin, stdout, stderr)
 	}
 	t.Cleanup(func() { lookPath, runPlugin = origLook, origRun })
@@ -42,6 +46,37 @@ type stubRecorder struct {
 	lookedUp []string
 	ranPath  string
 	ranArgs  []string
+	ranEnv   []string
+}
+
+func TestExecutePassesTraceContextToPlugin(t *testing.T) {
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	t.Cleanup(func() { otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator()) })
+	t.Setenv("TRACEPARENT", "00-11111111111111111111111111111111-2222222222222222-01")
+	rec := stubPlugin(t,
+		func(string) (string, error) { return "/usr/local/bin/bronto-foo", nil },
+		func(string, []string, io.Reader, io.Writer, io.Writer) (int, error) { return 0, nil },
+	)
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    trace.TraceID{0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa},
+		SpanID:     trace.SpanID{0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb},
+		TraceFlags: trace.FlagsSampled,
+	})
+	ctx := trace.ContextWithSpanContext(context.Background(), sc)
+
+	root := NewRootCmd()
+	_ = Execute(ctx, root, []string{"foo"})
+
+	var got []string
+	for _, kv := range rec.ranEnv {
+		if strings.HasPrefix(kv, "TRACEPARENT=") {
+			got = append(got, kv)
+		}
+	}
+	want := "TRACEPARENT=00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01"
+	if len(got) != 1 || got[0] != want {
+		t.Fatalf("plugin TRACEPARENT = %v, want [%s] (the inherited one replaced)", got, want)
+	}
 }
 
 func TestExecuteDispatchesToPluginAndReturnsItsExitCode(t *testing.T) {
@@ -298,7 +333,7 @@ func TestDefaultRunPluginWiresStdioAndReturnsZeroExit(t *testing.T) {
 	path := writeScript(t, "cat\necho err-output 1>&2\nexit 0\n")
 
 	var stdout, stderr bytes.Buffer
-	code, err := defaultRunPlugin(path, nil, bytes.NewBufferString("hello-stdin"), &stdout, &stderr)
+	code, err := defaultRunPlugin(path, nil, nil, bytes.NewBufferString("hello-stdin"), &stdout, &stderr)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -319,7 +354,7 @@ func TestDefaultRunPluginPassesThroughNonzeroExitCode(t *testing.T) {
 	}
 	path := writeScript(t, "exit 7\n")
 
-	code, err := defaultRunPlugin(path, nil, nil, &bytes.Buffer{}, &bytes.Buffer{})
+	code, err := defaultRunPlugin(path, nil, nil, nil, &bytes.Buffer{}, &bytes.Buffer{})
 	if err != nil {
 		t.Fatalf("a plugin exiting non-zero must not be reported as a run error: %v", err)
 	}
@@ -335,7 +370,7 @@ func TestDefaultRunPluginPassesArgs(t *testing.T) {
 	path := writeScript(t, "printf '%s|%s' \"$1\" \"$2\"\n")
 
 	var stdout bytes.Buffer
-	code, err := defaultRunPlugin(path, []string{"foo", "bar"}, nil, &stdout, &bytes.Buffer{})
+	code, err := defaultRunPlugin(path, []string{"foo", "bar"}, nil, nil, &stdout, &bytes.Buffer{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +383,7 @@ func TestDefaultRunPluginPassesArgs(t *testing.T) {
 }
 
 func TestDefaultRunPluginMissingExecutableIsRunError(t *testing.T) {
-	code, err := defaultRunPlugin(filepath.Join(t.TempDir(), "does-not-exist"), nil, nil, &bytes.Buffer{}, &bytes.Buffer{})
+	code, err := defaultRunPlugin(filepath.Join(t.TempDir(), "does-not-exist"), nil, nil, nil, &bytes.Buffer{}, &bytes.Buffer{})
 	if err == nil {
 		t.Fatal("want error for a nonexistent executable")
 	}

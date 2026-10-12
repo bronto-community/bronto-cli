@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -12,8 +13,10 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/telemetry"
 )
 
 // pluginNamePattern restricts the command names that are ever looked up as
@@ -26,15 +29,16 @@ var pluginNamePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 // stub it instead of touching the real filesystem/PATH.
 var lookPath = exec.LookPath
 
-// runPlugin executes the plugin at path with args, wiring stdio through,
-// and reports its exit code. Package-level so tests can stub it. A non-nil
+// runPlugin executes the plugin at path with args and environment env,
+// wiring stdio through, and reports its exit code. Package-level so tests can stub it. A non-nil
 // error means the plugin could not be run at all (as opposed to running and
 // exiting non-zero, which is reported via the returned code with a nil
 // error).
 var runPlugin = defaultRunPlugin
 
-func defaultRunPlugin(path string, args []string, stdin io.Reader, stdout, stderr io.Writer) (int, error) {
+func defaultRunPlugin(path string, args, env []string, stdin io.Reader, stdout, stderr io.Writer) (int, error) {
 	c := exec.Command(path, args...) // #nosec G204 -- executing the user's own bronto-<name> plugin from PATH is the feature
+	c.Env = env
 	c.Stdin = stdin
 	c.Stdout = stdout
 	c.Stderr = stderr
@@ -97,7 +101,10 @@ var reservedTopLevelNames = map[string]bool{
 // pluginNamePattern; or no `bronto-<name>` executable is found on PATH. In
 // all of those cases the caller proceeds with normal cobra execution,
 // which produces whatever error (or success) it always would have.
-func tryPluginDispatch(rootCmd *cobra.Command, argv []string) error {
+//
+// The plugin inherits bronto's environment, with TRACEPARENT/TRACESTATE/
+// BAGGAGE set from ctx so it can join the current trace.
+func tryPluginDispatch(ctx context.Context, rootCmd *cobra.Command, argv []string) error {
 	name, rest, ok := pluginDispatchArgs(argv)
 	if !ok || isKnownTopLevelCommand(rootCmd, name) || !pluginNamePattern.MatchString(name) {
 		return nil
@@ -106,7 +113,9 @@ func tryPluginDispatch(rootCmd *cobra.Command, argv []string) error {
 	if lerr != nil {
 		return nil //nolint:nilerr // no bronto-<name> on PATH means "not a plugin", not an error
 	}
-	code, rerr := runPlugin(path, rest, os.Stdin, os.Stdout, os.Stderr)
+	trace.SpanFromContext(ctx).SetName(rootCmd.Name() + " " + name)
+	env := telemetry.Environ(ctx, os.Environ())
+	code, rerr := runPlugin(path, rest, env, os.Stdin, os.Stdout, os.Stderr)
 	if rerr != nil {
 		return clierr.New("plugin_exec_error", fmt.Sprintf("failed to run plugin %q: %v", path, rerr))
 	}
