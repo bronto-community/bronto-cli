@@ -185,14 +185,20 @@ func Stop(cmd *exec.Cmd, timeout time.Duration) error {
 // — a developer's shell might have BRONTO_PROFILE/BRONTO_BASE_URL/etc set
 // for their own everyday use of the CLI, and letting any of those leak into
 // a "hermetic" subprocess would silently change its behavior out from
-// under the test. BRONTO_CONFIG_DIR/BRONTO_API_KEY/BRONTO_REGION are then
-// (re)injected from the Runner, always winning.
+// under the test. Ambient OTEL_* and trace-context variables (TRACEPARENT,
+// TRACESTATE, BAGGAGE) are stripped for the same reason: they would turn on
+// the CLI's own tracing. BRONTO_CONFIG_DIR/BRONTO_API_KEY/BRONTO_REGION are
+// then (re)injected from the Runner, always winning; tests that want
+// tracing set it through ExtraEnv.
 func (r *Runner) env() []string {
 	env := make([]string, 0, len(os.Environ())+3)
 	for _, kv := range os.Environ() {
 		key, _, _ := strings.Cut(kv, "=")
 		if strings.HasPrefix(key, "BRONTO_") && !strings.HasPrefix(key, "BRONTO_IT_") {
 			continue // stripped: only BRONTO_IT_* passes through unmodified
+		}
+		if strings.HasPrefix(key, "OTEL_") || key == "TRACEPARENT" || key == "TRACESTATE" || key == "BAGGAGE" {
+			continue
 		}
 		env = append(env, kv)
 	}
