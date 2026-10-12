@@ -2,7 +2,7 @@ module github.com/bronto-community/bronto-cli
 
 go 1.26.0
 
-toolchain go1.26.6
+toolchain go1.26.9
 
 require (
 	github.com/creack/pty v1.1.24
