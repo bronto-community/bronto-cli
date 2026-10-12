@@ -37,7 +37,7 @@ func run() int {
 		_ = shutdown(fctx)
 	}()
 	// The root span is renamed to the resolved command path by cli.Execute.
-	tctx, span := telemetry.Tracer().Start(telemetry.ContextFromEnv(ctx), "bronto")
+	tctx, span := telemetry.StartCommand(ctx)
 
 	err := cli.Execute(tctx, cmd, os.Args[1:])
 	code, render := exitStatus(ctx, err)

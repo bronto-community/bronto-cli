@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bronto-community/bronto-cli/internal/api"
+
 	"github.com/spf13/cobra"
 )
 
@@ -313,6 +315,20 @@ func TestEveryCommandIsInventoried(t *testing.T) {
 			if err != nil || cmd.CommandPath() != c {
 				t.Errorf("inventory pattern %s names %q, which is not a command", e.Pattern, c)
 			}
+		}
+	}
+}
+
+// TestEveryInventoriedEndpointHasURLTemplate guards HTTP span naming: every
+// path a command calls must resolve to a URL template, so its client span
+// is named "GET /monitors/{monitorId}" rather than a bare "GET". A failure
+// means a new endpoint is missing from api/openapi.yaml; add it to
+// undocumentedURLTemplates in internal/api.
+func TestEveryInventoriedEndpointHasURLTemplate(t *testing.T) {
+	for _, e := range EndpointInventory() {
+		path := strings.ReplaceAll(e.Pattern, "{*}", "0f0e0d0c")
+		if _, ok := api.URLTemplate(path); !ok {
+			t.Errorf("%s (%s): no URL template matches %q", e.Pattern, e.Command, path)
 		}
 	}
 }

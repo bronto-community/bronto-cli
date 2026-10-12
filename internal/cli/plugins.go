@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/telemetry"
@@ -113,7 +112,7 @@ func tryPluginDispatch(ctx context.Context, rootCmd *cobra.Command, argv []strin
 	if lerr != nil {
 		return nil //nolint:nilerr // no bronto-<name> on PATH means "not a plugin", not an error
 	}
-	trace.SpanFromContext(ctx).SetName(rootCmd.Name() + " " + name)
+	telemetry.SetCommand(ctx, rootCmd.Name()+" "+name)
 	env := telemetry.Environ(ctx, os.Environ())
 	code, rerr := runPlugin(path, rest, env, os.Stdin, os.Stdout, os.Stderr)
 	if rerr != nil {

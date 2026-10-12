@@ -69,11 +69,13 @@ func TestTelemetry_OTLPExportContinuesTraceparent(t *testing.T) {
 	}
 	var sawChild bool
 	for _, s := range spans {
-		if s["parent_span_id"] == root["span_id"] && strings.HasPrefix(fmt.Sprint(s["operation"]), "HTTP ") {
+		// Named "{method} {url.template}", e.g. "GET /logs"; never a bare method
+		// for a path the CLI calls.
+		if s["parent_span_id"] == root["span_id"] && strings.HasPrefix(fmt.Sprint(s["operation"]), "GET /") {
 			sawChild = true
 		}
 	}
 	if !sawChild {
-		t.Errorf("no HTTP client span under the root span: %v", spans)
+		t.Errorf("no templated HTTP client span (\"GET /...\") under the root span: %v", spans)
 	}
 }

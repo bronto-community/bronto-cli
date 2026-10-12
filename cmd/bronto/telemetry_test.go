@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -121,4 +122,34 @@ func TestTelemetryContinuesTraceparent(t *testing.T) {
 	if string(client.GetParentSpanId()) != string(root.GetSpanId()) {
 		t.Errorf("client span is not a child of the root span")
 	}
+	if client.GetName() != "POST /search" {
+		t.Errorf("client span name = %q, want %q", client.GetName(), "POST /search")
+	}
+	rootAttrs, clientAttrs := attrs(root), attrs(client)
+	for k, want := range map[string]string{"bronto.command": "bronto search", "process.executable.name": "bronto"} {
+		if rootAttrs[k] != want {
+			t.Errorf("root span %s = %q, want %q", k, rootAttrs[k], want)
+		}
+	}
+	if rootAttrs["process.pid"] == "" {
+		t.Error("root span has no process.pid")
+	}
+	if clientAttrs["url.template"] != "/search" {
+		t.Errorf("client span url.template = %q, want /search", clientAttrs["url.template"])
+	}
+}
+
+// attrs flattens a span's attributes to strings for comparison.
+func attrs(s *tracepb.Span) map[string]string {
+	m := map[string]string{}
+	for _, a := range s.GetAttributes() {
+		v := a.GetValue()
+		switch {
+		case v.GetStringValue() != "":
+			m[a.GetKey()] = v.GetStringValue()
+		case v.GetIntValue() != 0:
+			m[a.GetKey()] = strconv.FormatInt(v.GetIntValue(), 10)
+		}
+	}
+	return m
 }

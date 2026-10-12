@@ -17,9 +17,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -165,6 +167,39 @@ func handleError(err error) {
 
 // Tracer returns the CLI's tracer from the global provider.
 func Tracer() trace.Tracer { return otel.Tracer(tracerName) }
+
+// CommandKey records the resolved command path on the root span, e.g.
+// "bronto search". It is also the span name (see SetCommand).
+const CommandKey = attribute.Key("bronto.command")
+
+// StartCommand starts the run's root span as a child of the trace context
+// in the environment (see ContextFromEnv). Following the CLI semantic
+// conventions it is an INTERNAL span carrying process.executable.name and
+// process.pid, named after the executable until SetCommand renames it.
+// Command arguments are never recorded: they can hold queries and keys.
+func StartCommand(ctx context.Context) (context.Context, trace.Span) {
+	exe := "bronto"
+	if p, err := os.Executable(); err == nil {
+		exe = filepath.Base(p)
+	}
+	return Tracer().Start(ContextFromEnv(ctx), exe,
+		trace.WithSpanKind(trace.SpanKindInternal),
+		trace.WithAttributes(
+			semconv.ProcessExecutableName(exe),
+			semconv.ProcessPID(os.Getpid()),
+		))
+}
+
+// SetCommand names the root span in ctx after the resolved command path,
+// e.g. "bronto search". This departs from the CLI semantic conventions,
+// which name the span after the executable only: with one span name for
+// every command, trace lists and per-operation views can't tell commands
+// apart. The command tree is fixed, so the name stays low-cardinality.
+func SetCommand(ctx context.Context, path string) {
+	span := trace.SpanFromContext(ctx)
+	span.SetName(path)
+	span.SetAttributes(CommandKey.String(path))
+}
 
 // ContextFromEnv returns ctx carrying the trace context found in the
 // TRACEPARENT / TRACESTATE / BAGGAGE environment variables, if any.

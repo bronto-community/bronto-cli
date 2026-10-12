@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/telemetry"
 	"github.com/bronto-community/bronto-cli/internal/version"
 )
 
@@ -195,7 +195,7 @@ func Execute(ctx context.Context, cmd *cobra.Command, argv []string) error {
 	}
 	c, err := cmd.ExecuteContextC(ctx)
 	if c != nil {
-		trace.SpanFromContext(ctx).SetName(c.CommandPath())
+		telemetry.SetCommand(ctx, c.CommandPath())
 	}
 	return WrapExecuteError(err)
 }
