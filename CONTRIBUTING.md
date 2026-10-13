@@ -42,6 +42,7 @@ To add a new one:
 The docs site (https://bronto-cli.vercel.app) is an [Astro Starlight](https://starlight.astro.build/) project in `docs/`. `docs/AGENTS.md` is the full contributor contract; the short version:
 
 - Hand-written pages live in `docs/src/content/docs/` (guides, configuration, reference pages). The command reference under `docs/src/content/docs/reference/commands/` is generated from the cobra tree: never edit it by hand, run `make docs-reference` and commit the result.
+- Bronto is the product; this is the bronto CLI. In prose write `` `bronto` `` or "the bronto CLI", never bare "bronto" (see "Naming" in `docs/AGENTS.md`). This applies to every document in the repo, not only the docs site.
 - The docs cover *using the CLI*. Platform concepts (datasets, the query language, monitors, API keys) get one sentence and a link to https://docs.bronto.io.
 - Examples that should keep working use a ` ```console test ` block: `$ ` lines are commands, the lines after them are expected stdout, and `...` matches any number of lines. They run against a deterministic mock Bronto org (see "The docs mock world" in `docs/AGENTS.md`). Use ` ```sh ` for illustrative examples with `<placeholders>`. Every `bronto <command>` in either kind must be a real command; the doc-rot guard fails the build otherwise.
 - Every non-CRUD command must be taught somewhere in the hand-written pages (`TestDocsGuideCoverage`). A new subcommand without a docs mention fails CI.

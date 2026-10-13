@@ -1,6 +1,6 @@
 ---
 title: Scripting and agents
-description: Output formats, JSON Lines when piped, the error envelope, exit codes, jq recipes, and how agents should drive bronto.
+description: Output formats, JSON Lines when piped, the error envelope, exit codes, jq recipes, and how agents should drive the bronto CLI.
 sidebar:
   order: 10
 ---
@@ -10,7 +10,7 @@ import Tape from '~/components/Tape.astro';
 `bronto` is meant to be called from shell scripts, CI jobs, and AI agents. Data goes to
 stdout and everything else to stderr, in the formats described on this page.
 
-<Tape name="scripting" title="Piping bronto into jq and back" />
+<Tape name="scripting" title="Piping output from the bronto CLI into jq and back" />
 
 ## Output when piped
 
