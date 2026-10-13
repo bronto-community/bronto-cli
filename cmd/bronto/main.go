@@ -6,11 +6,19 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/bronto-community/bronto-cli/internal/cli"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/telemetry"
+	"github.com/bronto-community/bronto-cli/internal/version"
 	"github.com/mattn/go-isatty"
 )
+
+// telemetryFlushTimeout bounds the span flush on exit, so an unreachable
+// OTLP backend delays the exit by at most this much and never changes the
+// exit code.
+const telemetryFlushTimeout = 3 * time.Second
 
 func main() {
 	os.Exit(run())
@@ -20,8 +28,20 @@ func run() int {
 	cmd := cli.NewRootCmd()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	err := cli.Execute(ctx, cmd, os.Args[1:])
+
+	shutdown := telemetry.Setup(ctx, version.Version)
+	defer func() {
+		// Not the signal context: an interrupted run still flushes its spans.
+		fctx, cancel := context.WithTimeout(context.Background(), telemetryFlushTimeout)
+		defer cancel()
+		_ = shutdown(fctx)
+	}()
+	// The root span is renamed to the resolved command path by cli.Execute.
+	tctx, span := telemetry.StartCommand(ctx)
+
+	err := cli.Execute(tctx, cmd, os.Args[1:])
 	code, render := exitStatus(ctx, err)
+	telemetry.EndCommand(span, code, errorType(ctx, err))
 	if render {
 		machine := !isatty.IsTerminal(os.Stderr.Fd()) && !isatty.IsCygwinTerminal(os.Stderr.Fd())
 		clierr.Render(os.Stderr, err, machine)
@@ -46,4 +66,24 @@ func exitStatus(ctx context.Context, err error) (int, bool) {
 		return 130, false
 	}
 	return clierr.ExitCode(err), true
+}
+
+// errorType names a failed run's error for the root span's error.type
+// attribute: the typed error code where there is one.
+func errorType(ctx context.Context, err error) string {
+	if err == nil {
+		return ""
+	}
+	var pe *cli.PluginExit
+	if errors.As(err, &pe) {
+		return "plugin_exit"
+	}
+	if ctx.Err() != nil || errors.Is(err, context.Canceled) {
+		return "canceled"
+	}
+	var ce *clierr.Error
+	if errors.As(err, &ce) {
+		return ce.Code
+	}
+	return ""
 }

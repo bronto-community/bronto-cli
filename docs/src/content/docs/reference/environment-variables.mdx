@@ -51,6 +51,20 @@ Used by `bronto search --url` and `--open`.
 | `FORCE_COLOR` | Any non-empty value forces color on, even when not writing to a terminal. `NO_COLOR` and `--no-color` win over it. |
 | `TERM` | `TERM=dumb` turns off color unless `FORCE_COLOR` is set. |
 
+## Telemetry
+
+bronto reads the standard OpenTelemetry variables to trace its own runs. Tracing is off unless
+an exporter is configured. See [Telemetry](/configuration/telemetry/).
+
+| Variable | Purpose |
+| --- | --- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Turns on OTLP trace export to this endpoint. `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` does the same. |
+| `OTEL_TRACES_EXPORTER` | `otlp`, `console` (to stderr) or `none`. |
+| `OTEL_SDK_DISABLED` | `true` turns tracing off. |
+| `OTEL_SERVICE_NAME` | `service.name` (default `bronto-cli`). |
+| `BRONTO_TELEMETRY_CAPTURE` | How much of the command line spans record: `default` (sanitized), `none` or `all` (raw, except API keys). |
+| `TRACEPARENT`, `TRACESTATE`, `BAGGAGE` | Trace context to continue. Passed on to API requests and exec plugins. |
+
 ## Install script
 
 These apply to `scripts/install.sh` only, not to the CLI:

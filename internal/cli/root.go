@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/telemetry"
 	"github.com/bronto-community/bronto-cli/internal/version"
 )
 
@@ -185,11 +186,19 @@ func wrapArgsValidators(cmd *cobra.Command) {
 // os.Args[1:], or a test's SetArgs slice) — it is used to recover the
 // attempted command name and its trailing args for plugin dispatch. All
 // entry points — main and tests — should run commands through this.
+//
+// If ctx carries a span (main's root span), it is renamed to the resolved
+// command path, e.g. "bronto search" or "bronto myplug" for a plugin.
 func Execute(ctx context.Context, cmd *cobra.Command, argv []string) error {
-	if err := tryPluginDispatch(cmd, argv); err != nil {
+	if err := tryPluginDispatch(ctx, cmd, argv); err != nil {
 		return err
 	}
-	return WrapExecuteError(cmd.ExecuteContext(ctx))
+	c, err := cmd.ExecuteContextC(ctx)
+	if c != nil {
+		telemetry.SetCommand(ctx, c.CommandPath())
+		recordCommand(ctx, cmd, c, argv)
+	}
+	return WrapExecuteError(err)
 }
 
 // WrapExecuteError wraps cobra required-flag errors that surface from Execute

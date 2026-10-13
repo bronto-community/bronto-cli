@@ -173,7 +173,7 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 	httpClient := api.NewHTTPClient(cfg.APIKey(), version.Version)
 	if debug, _ := cmd.Flags().GetBool("debug"); debug {
 		if tr, ok := httpClient.Transport.(*api.Transport); ok {
-			tr.Base = &api.DebugTransport{Base: http.DefaultTransport, W: cmd.ErrOrStderr()}
+			tr.Base = &api.DebugTransport{Base: tr.Base, W: cmd.ErrOrStderr()}
 		}
 	}
 	if v, ok := cfg.Get("timeout"); ok {

@@ -116,6 +116,12 @@ func computeRetryDelay(resp *http.Response, attempt int) time.Duration {
 	return time.Duration(500*(1<<attempt)) * time.Millisecond
 }
 
+// NewHTTPClient returns the Bronto API client. Its base transport is
+// OpenTelemetry-instrumented, below the retry loop: every attempt gets its
+// own client span and W3C traceparent header. Spans are named "{method}
+// {url.template}" (see SpanName). With tracing off (the default) the spans
+// are no-ops, and traceparent is only sent when the caller passed one in
+// via TRACEPARENT.
 func NewHTTPClient(apiKey, version string) *http.Client {
 	return &http.Client{
 		Timeout:       30 * time.Second,
@@ -124,6 +130,7 @@ func NewHTTPClient(apiKey, version string) *http.Client {
 			APIKey:     apiKey,
 			UserAgent:  "bronto-cli/" + version,
 			MaxRetries: 2,
+			Base:       newTracingTransport(http.DefaultTransport),
 		},
 	}
 }
