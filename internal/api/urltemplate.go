@@ -4,6 +4,7 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -111,19 +112,54 @@ func SpanName(r *http.Request) string {
 }
 
 // newTracingTransport wraps base in otelhttp with SpanName as the span
-// namer, and records url.template on each span.
+// namer, records url.template on each span, and redacts url.full.
 func newTracingTransport(base http.RoundTripper) http.RoundTripper {
 	return otelhttp.NewTransport(urlTemplateTransport{base},
 		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string { return SpanName(r) }))
 }
 
 // urlTemplateTransport runs inside otelhttp, so the request context
-// carries the client span; it adds the url.template attribute to it.
+// carries the client span; it adds the url.template attribute to it and
+// overwrites otelhttp's url.full with RedactURL's form.
 type urlTemplateTransport struct{ base http.RoundTripper }
 
 func (t urlTemplateTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	span := trace.SpanFromContext(r.Context())
+	span.SetAttributes(semconv.URLFull(RedactURL(r.URL)))
 	if tmpl, ok := URLTemplate(r.URL.Path); ok {
-		trace.SpanFromContext(r.Context()).SetAttributes(semconv.URLTemplate(tmpl))
+		span.SetAttributes(semconv.URLTemplate(tmpl))
 	}
 	return t.base.RoundTrip(r)
+}
+
+// RedactURL renders u for the url.full span attribute without userinfo,
+// fragment, or query values: each value becomes "REDACTED" and the keys
+// are kept. otelhttp strips only userinfo, but query values can carry
+// user input (`bronto api -X GET -f where=...`). The semantic conventions
+// ask for sensitive query values to be redacted; all of them are here,
+// since the CLI can't tell which ones are sensitive.
+func RedactURL(u *url.URL) string {
+	if u == nil {
+		return ""
+	}
+	c := *u
+	c.User = nil
+	c.Fragment, c.RawFragment = "", ""
+	if c.RawQuery != "" {
+		var keys []string
+		seen := map[string]bool{}
+		for _, kv := range strings.Split(c.RawQuery, "&") {
+			k, _, _ := strings.Cut(kv, "=")
+			if k, err := url.QueryUnescape(k); err == nil && k != "" && !seen[k] {
+				seen[k] = true
+				keys = append(keys, k)
+			}
+		}
+		q := url.Values{}
+		for _, k := range keys {
+			q.Set(k, "REDACTED")
+		}
+		c.RawQuery = q.Encode()
+	}
+	return c.String()
 }

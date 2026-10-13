@@ -98,29 +98,42 @@ func TestTelemetryContinuesTraceparent(t *testing.T) {
 	if len(col.svc) == 0 || col.svc[0] != "bronto-cli" {
 		t.Errorf("service.name = %v, want bronto-cli", col.svc)
 	}
-	var root, client *tracepb.Span
+	var root, client, apiRoot, apiClient *tracepb.Span
 	for _, s := range col.spans {
 		if hex.EncodeToString(s.GetTraceId()) != parentTraceID {
 			t.Errorf("span %q has trace id %x, want %s", s.GetName(), s.GetTraceId(), parentTraceID)
 		}
-		switch s.GetKind() {
-		case tracepb.Span_SPAN_KIND_CLIENT:
-			client = s
-		case tracepb.Span_SPAN_KIND_INTERNAL:
+		for k, v := range attrs(s) {
+			if strings.Contains(v, "secret-value") {
+				t.Errorf("span %q attribute %s = %q leaks a --field value", s.GetName(), k, v)
+			}
+		}
+		switch s.GetName() {
+		case "bronto search":
 			root = s
+		case "bronto api":
+			apiRoot = s
 		}
 	}
-	if root == nil || client == nil {
-		t.Fatalf("want a root and a client span, got %d spans", len(col.spans))
+	for _, s := range col.spans {
+		if s.GetKind() != tracepb.Span_SPAN_KIND_CLIENT {
+			continue
+		}
+		switch {
+		case root != nil && string(s.GetParentSpanId()) == string(root.GetSpanId()):
+			client = s
+		case apiRoot != nil && string(s.GetParentSpanId()) == string(apiRoot.GetSpanId()):
+			apiClient = s
+		}
+	}
+	if root == nil || client == nil || apiRoot == nil || apiClient == nil {
+		t.Fatalf("want root and client spans for both runs, got %d spans", len(col.spans))
 	}
 	if root.GetName() != "bronto search" {
 		t.Errorf("root span name = %q, want %q", root.GetName(), "bronto search")
 	}
 	if hex.EncodeToString(root.GetParentSpanId()) != parentSpanID {
 		t.Errorf("root span parent = %x, want %s", root.GetParentSpanId(), parentSpanID)
-	}
-	if string(client.GetParentSpanId()) != string(root.GetSpanId()) {
-		t.Errorf("client span is not a child of the root span")
 	}
 	if client.GetName() != "POST /search" {
 		t.Errorf("client span name = %q, want %q", client.GetName(), "POST /search")
@@ -136,6 +149,9 @@ func TestTelemetryContinuesTraceparent(t *testing.T) {
 	}
 	if clientAttrs["url.template"] != "/search" {
 		t.Errorf("client span url.template = %q, want /search", clientAttrs["url.template"])
+	}
+	if got, want := attrs(apiClient)["url.full"], recordingAPI.URL+"/logs?where=REDACTED"; got != want {
+		t.Errorf("api client span url.full = %q, want %q", got, want)
 	}
 }
 

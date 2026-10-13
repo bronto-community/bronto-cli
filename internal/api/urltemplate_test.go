@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -43,5 +44,27 @@ func TestSpanName(t *testing.T) {
 		if got := SpanName(r); got != c.want {
 			t.Errorf("SpanName(%s %s) = %q, want %q", c.method, c.target, got, c.want)
 		}
+	}
+}
+
+func TestRedactURL(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"https://api.eu.bronto.io/monitors/8f3a", "https://api.eu.bronto.io/monitors/8f3a"},
+		{"https://api.eu.bronto.io/search?where=user%3D%22a%40b.c%22&limit=5", "https://api.eu.bronto.io/search?limit=REDACTED&where=REDACTED"},
+		{"https://api.eu.bronto.io/x?a=1&a=2&flag", "https://api.eu.bronto.io/x?a=REDACTED&flag=REDACTED"},
+		{"https://user:secret@api.eu.bronto.io/x?k=v#frag", "https://api.eu.bronto.io/x?k=REDACTED"},
+		{"https://api.eu.bronto.io/x?%zz=1&ok=2", "https://api.eu.bronto.io/x?ok=REDACTED"}, // undecodable key dropped
+	}
+	for _, c := range cases {
+		u, err := url.Parse(c.in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := RedactURL(u); got != c.want {
+			t.Errorf("RedactURL(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+	if got := RedactURL(nil); got != "" {
+		t.Errorf("RedactURL(nil) = %q", got)
 	}
 }

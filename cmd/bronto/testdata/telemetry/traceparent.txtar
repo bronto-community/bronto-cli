@@ -6,3 +6,8 @@ env OTEL_EXPORTER_OTLP_ENDPOINT=$OTLP_URL
 env TRACEPARENT=00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
 exec bronto search x -d 11111111-1111-1111-1111-111111111111 --api-key k --base-url $STUB_URL --since 1h -o jsonl
 ! stderr .
+
+# A GET with --field puts user input in the query string; url.full must not
+# carry it.
+exec bronto api GET /logs -f where=secret-value --api-key k --base-url $STUB_URL
+! stderr .

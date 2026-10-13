@@ -90,6 +90,8 @@ and `OTEL_EXPORTER_OTLP_CERTIFICATE`, plus their `_TRACES_` variants.
 
 ## What's recorded
 
-Spans carry the command path, the process ID and HTTP request details, including the request
-URL, but no command arguments, flag values, or API keys. Only traces are exported. bronto doesn't emit
-OpenTelemetry metrics or logs.
+Spans carry the command path, the process ID and HTTP request details, but no command
+arguments, flag values, or API keys. The request URL is recorded as `url.full` with every
+query-string value replaced by `REDACTED`, so input such as `bronto api GET /logs -f where=…`
+doesn't reach the trace. Only traces are exported. bronto doesn't emit OpenTelemetry metrics
+or logs.
