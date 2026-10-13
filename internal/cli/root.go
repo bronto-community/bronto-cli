@@ -196,6 +196,7 @@ func Execute(ctx context.Context, cmd *cobra.Command, argv []string) error {
 	c, err := cmd.ExecuteContextC(ctx)
 	if c != nil {
 		telemetry.SetCommand(ctx, c.CommandPath())
+		recordCommand(ctx, cmd, c, argv)
 	}
 	return WrapExecuteError(err)
 }

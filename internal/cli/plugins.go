@@ -113,6 +113,7 @@ func tryPluginDispatch(ctx context.Context, rootCmd *cobra.Command, argv []strin
 		return nil //nolint:nilerr // no bronto-<name> on PATH means "not a plugin", not an error
 	}
 	telemetry.SetCommand(ctx, rootCmd.Name()+" "+name)
+	recordPluginCommand(ctx, argv)
 	env := telemetry.Environ(ctx, os.Environ())
 	code, rerr := runPlugin(path, rest, env, os.Stdin, os.Stdout, os.Stderr)
 	if rerr != nil {

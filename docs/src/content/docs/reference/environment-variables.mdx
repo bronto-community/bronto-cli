@@ -62,6 +62,7 @@ an exporter is configured. See [Telemetry](/configuration/telemetry/).
 | `OTEL_TRACES_EXPORTER` | `otlp`, `console` (to stderr) or `none`. |
 | `OTEL_SDK_DISABLED` | `true` turns tracing off. |
 | `OTEL_SERVICE_NAME` | `service.name` (default `bronto-cli`). |
+| `BRONTO_TELEMETRY_CAPTURE` | How much of the command line spans record: `default` (sanitized), `none` or `all` (raw, except API keys). |
 | `TRACEPARENT`, `TRACESTATE`, `BAGGAGE` | Trace context to continue. Passed on to API requests and exec plugins. |
 
 ## Install script

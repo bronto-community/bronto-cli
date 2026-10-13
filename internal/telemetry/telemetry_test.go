@@ -103,3 +103,28 @@ func TestHandleErrorSilentByDefault(t *testing.T) {
 		t.Fatalf("debug handler wrote %q", buf.String())
 	}
 }
+
+func TestCaptureLevel(t *testing.T) {
+	var reported []error
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) { reported = append(reported, err) }))
+	t.Cleanup(func() { otel.SetErrorHandler(otel.ErrorHandlerFunc(handleError)) })
+
+	cases := map[string]Capture{"": CaptureDefault, "default": CaptureDefault, "ALL": CaptureAll, "none": CaptureNone}
+	for v, want := range cases {
+		stubEnv(t, map[string]string{CaptureEnv: v})
+		if got := CaptureLevel(); got != want {
+			t.Errorf("CaptureLevel() with %q = %v, want %v", v, got, want)
+		}
+	}
+	if len(reported) != 0 {
+		t.Errorf("valid values reported errors: %v", reported)
+	}
+	// A typo records less, not more, and says so.
+	stubEnv(t, map[string]string{CaptureEnv: "al"})
+	if got := CaptureLevel(); got != CaptureNone {
+		t.Errorf("CaptureLevel() with a typo = %v, want CaptureNone", got)
+	}
+	if len(reported) != 1 || !strings.Contains(reported[0].Error(), CaptureEnv) {
+		t.Errorf("typo reported %v", reported)
+	}
+}

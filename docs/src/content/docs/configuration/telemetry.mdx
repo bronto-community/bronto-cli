@@ -7,7 +7,8 @@ sidebar:
 
 bronto can trace its own runs with OpenTelemetry. This is off by default, and nothing is
 sent anywhere unless you configure an exporter with the standard `OTEL_*` environment
-variables. bronto has no telemetry flags or config keys of its own.
+variables. The only setting of bronto's own is `BRONTO_TELEMETRY_CAPTURE`, which controls
+[how much of the command line is recorded](#whats-recorded).
 
 ## Turn it on
 
@@ -23,7 +24,8 @@ Each run produces:
 - A root span named after the command, such as `bronto search` or `bronto monitors list`.
   It records `bronto.command` (the same command path), `process.executable.name`,
   `process.pid` and `process.exit.code`, and on failure `error.type`, which holds the
-  [error code](/reference/exit-codes/) (for example `auth_invalid_key`).
+  [error code](/reference/exit-codes/) (for example `auth_invalid_key`). It also records the
+  flags and arguments, sanitized as described in [What's recorded](#whats-recorded).
 - A client span for each HTTP request to the Bronto API, retries included, as children of the
   root span. Each is named after the method and the API route, such as
   `GET /monitors/{monitorId}`, and records the route as `url.template`. A path that doesn't
@@ -81,6 +83,7 @@ bronto reads these:
 | `OTEL_SERVICE_NAME` | Overrides `service.name`, which defaults to `bronto-cli`. |
 | `OTEL_RESOURCE_ATTRIBUTES` | Extra resource attributes, such as `deployment.environment.name=ci`. |
 | `OTEL_TRACES_SAMPLER`, `OTEL_TRACES_SAMPLER_ARG` | Sampler. The default, `parentbased_always_on`, follows the sampled flag in `TRACEPARENT`. |
+| `BRONTO_TELEMETRY_CAPTURE` | How much of the command line the root span records: `default`, `none` or `all`. See [What's recorded](#whats-recorded). |
 | `OTEL_LOG_LEVEL` | Export and configuration errors are silent by default, so they don't mix into stderr output that scripts parse. Set this to any value other than `none` to print them. |
 | `TRACEPARENT`, `TRACESTATE`, `BAGGAGE` | The trace context to continue. |
 
@@ -90,8 +93,31 @@ and `OTEL_EXPORTER_OTLP_CERTIFICATE`, plus their `_TRACES_` variants.
 
 ## What's recorded
 
-Spans carry the command path, the process ID and HTTP request details, but no command
-arguments, flag values, or API keys. The request URL is recorded as `url.full` with every
-query-string value replaced by `REDACTED`, so input such as `bronto api GET /logs -f where=…`
-doesn't reach the trace. Only traces are exported. bronto doesn't emit OpenTelemetry metrics
-or logs.
+Command lines can hold queries, payloads and keys, so the root span records them only in
+sanitized form. `BRONTO_TELEMETRY_CAPTURE` picks the level:
+
+- **`default`**: `bronto.flags` lists the flags that were set, by name. Values go into
+  `bronto.flag.<name>` and positional arguments into `bronto.args` as follows:
+
+  | Kind | Examples | Recorded as |
+  | --- | --- | --- |
+  | Bounded, numeric, names and IDs | `--since`, `--limit`, `--output`, `--dataset`, `--profile`, a resource id | as given |
+  | Queries | the search query, `--where`, `--from-expr` | literals replaced by `?`: `status >= ? AND user.email = ?`. A query bronto can't tokenize becomes `REDACTED`. |
+  | `key=value` pairs | `--field`, `--tag`, `--eq` and the other filter flags | `key=?` |
+  | URLs and API paths | `--base-url`, the path of `bronto api` | without credentials, query values `REDACTED` |
+  | Free text, expressions and local paths | `--message`, `--jq`, `--select`, `--input`, the question for `bronto ask` | flag name only; positional arguments become `REDACTED` |
+
+- **`none`**: only the command path, not even flag names.
+- **`all`**: every value as given, plus the whole argument list as
+  [`process.command_args`](https://opentelemetry.io/docs/specs/semconv/registry/attributes/process/).
+  Use it to debug in an environment you control: queries, payloads and messages are exported
+  verbatim.
+
+At every level, including `all`, the value of `--api-key` is never recorded. An
+unrecognized value records nothing, like `none`, and is reported when `OTEL_LOG_LEVEL` is
+set. For [exec plugins](/extend/plugins/), whose flags bronto doesn't know, the arguments
+are recorded only with `all`.
+
+HTTP client spans record the request URL as `url.full`, with every query-string value
+replaced by `REDACTED`, at every level. Only traces are exported. bronto doesn't emit
+OpenTelemetry metrics or logs.

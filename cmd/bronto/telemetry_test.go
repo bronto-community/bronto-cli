@@ -144,6 +144,18 @@ func TestTelemetryContinuesTraceparent(t *testing.T) {
 			t.Errorf("root span %s = %q, want %q", k, rootAttrs[k], want)
 		}
 	}
+	// Arguments are recorded sanitized: flag names, safe values, the query's
+	// shape. The leak check above covers the api key and the query literal.
+	for k, want := range map[string]string{
+		"bronto.flags":        "api-key,base-url,dataset,output,since",
+		"bronto.flag.since":   "1h",
+		"bronto.flag.dataset": "11111111-1111-1111-1111-111111111111",
+		"bronto.args":         "user = ?",
+	} {
+		if rootAttrs[k] != want {
+			t.Errorf("root span %s = %q, want %q", k, rootAttrs[k], want)
+		}
+	}
 	if rootAttrs["process.pid"] == "" {
 		t.Error("root span has no process.pid")
 	}
@@ -155,7 +167,8 @@ func TestTelemetryContinuesTraceparent(t *testing.T) {
 	}
 }
 
-// attrs flattens a span's attributes to strings for comparison.
+// attrs flattens a span's attributes to strings for comparison; string
+// arrays are joined with commas.
 func attrs(s *tracepb.Span) map[string]string {
 	m := map[string]string{}
 	for _, a := range s.GetAttributes() {
@@ -165,6 +178,12 @@ func attrs(s *tracepb.Span) map[string]string {
 			m[a.GetKey()] = v.GetStringValue()
 		case v.GetIntValue() != 0:
 			m[a.GetKey()] = strconv.FormatInt(v.GetIntValue(), 10)
+		case v.GetArrayValue() != nil:
+			var vs []string
+			for _, e := range v.GetArrayValue().GetValues() {
+				vs = append(vs, e.GetStringValue())
+			}
+			m[a.GetKey()] = strings.Join(vs, ",")
 		}
 	}
 	return m

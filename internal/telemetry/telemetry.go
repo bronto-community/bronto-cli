@@ -176,7 +176,8 @@ const CommandKey = attribute.Key("bronto.command")
 // in the environment (see ContextFromEnv). Following the CLI semantic
 // conventions it is an INTERNAL span carrying process.executable.name and
 // process.pid, named after the executable until SetCommand renames it.
-// Command arguments are never recorded: they can hold queries and keys.
+// Arguments are added later, sanitized per CaptureLevel (see the cli
+// package); they can hold queries and keys.
 func StartCommand(ctx context.Context) (context.Context, trace.Span) {
 	exe := "bronto"
 	if p, err := os.Executable(); err == nil {
@@ -199,6 +200,41 @@ func SetCommand(ctx context.Context, path string) {
 	span := trace.SpanFromContext(ctx)
 	span.SetName(path)
 	span.SetAttributes(CommandKey.String(path))
+}
+
+// Capture says how much of the command line the root span records, set by
+// BRONTO_TELEMETRY_CAPTURE.
+type Capture int
+
+const (
+	// CaptureDefault records flag names, values that are safe as given,
+	// and sanitized forms of queries, key=value pairs and URLs.
+	CaptureDefault Capture = iota
+	// CaptureNone records only the command path.
+	CaptureNone
+	// CaptureAll also records raw values, including free text, and the
+	// full argument list as process.command_args. API keys stay redacted.
+	CaptureAll
+)
+
+// CaptureEnv is the environment variable that selects the Capture level.
+const CaptureEnv = "BRONTO_TELEMETRY_CAPTURE"
+
+// CaptureLevel reads CaptureEnv. An unrecognized value is reported through
+// the OTel error handler and falls back to CaptureNone: a typo must not
+// record more than the user asked for.
+func CaptureLevel() Capture {
+	switch v := strings.ToLower(strings.TrimSpace(Getenv(CaptureEnv))); v {
+	case "", "default":
+		return CaptureDefault
+	case "none":
+		return CaptureNone
+	case "all":
+		return CaptureAll
+	default:
+		otel.Handle(fmt.Errorf("telemetry: unsupported %s %q (supported: default, none, all); recording no arguments", CaptureEnv, v))
+		return CaptureNone
+	}
 }
 
 // ContextFromEnv returns ctx carrying the trace context found in the
