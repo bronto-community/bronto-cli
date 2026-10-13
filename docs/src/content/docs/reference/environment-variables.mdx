@@ -1,6 +1,6 @@
 ---
 title: Environment variables
-description: Every environment variable bronto reads, what it overrides, and its matching config key.
+description: Every environment variable the bronto CLI reads, what it overrides, and its matching config key.
 sidebar:
   order: 2
 ---
@@ -35,7 +35,7 @@ Used by `bronto search --url` and `--open`.
 | `BRONTO_APP_URL` | `app_url` | Web app base URL. Defaults to the region's web app. |
 | `BRONTO_ORG_ID` | `org_id` | Organization id for links. Defaults to the active org reported by the API. |
 
-## bronto ask
+## `bronto ask`
 
 | Variable | Config key | Purpose |
 | --- | --- | --- |
@@ -53,7 +53,7 @@ Used by `bronto search --url` and `--open`.
 
 ## Telemetry
 
-bronto reads the standard OpenTelemetry variables to trace its own runs. Tracing is off unless
+`bronto` reads the standard OpenTelemetry variables to trace its own runs. Tracing is off unless
 an exporter is configured. See [Telemetry](/configuration/telemetry/).
 
 | Variable | Purpose |
