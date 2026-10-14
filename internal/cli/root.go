@@ -35,7 +35,7 @@ func NewRootCmd() *cobra.Command {
 	})
 
 	pf := cmd.PersistentFlags()
-	pf.String("api-key", "", "Bronto management API key (prefer the BRONTO_API_KEY env var)")
+	pf.String("api-key", "", "Bronto API key (prefer the BRONTO_API_KEY env var)")
 	pf.String("profile", "", "named profile to use")
 	pf.String("region", "", "Bronto region: eu or us")
 	pf.String("base-url", "", "override the API base URL")
@@ -47,8 +47,8 @@ func NewRootCmd() *cobra.Command {
 	pf.BoolP("raw-output", "r", false, "with --jq, print string results without JSON quotes (like jq -r); other values stay compact JSON")
 	pf.StringSlice("fields", nil, "select specific fields (comma-separated); use '?' to list available field names")
 	pf.Int("timeout", 0, "HTTP timeout in seconds (config: timeout, env: BRONTO_TIMEOUT)")
-	pf.Int("max-retries", 2, "retries for idempotent requests on 429/5xx (config: max_retries, env: BRONTO_MAX_RETRIES)")
-	pf.Bool("debug", false, "print API requests and responses on stderr, with the API key redacted")
+	pf.Int("max-retries", 2, "retries for idempotent requests on 429, 502, 503, and 504 (config: max_retries, env: BRONTO_MAX_RETRIES)")
+	pf.Bool("debug", false, "print API requests and responses on stderr, with API keys and other secrets redacted")
 	pf.Bool("dry-run", false, "print mutating API calls instead of executing them (reads still run)")
 	// Completion for the global (persistent) flags — one registration covers
 	// every subcommand. --fields needs a -d on the line; it no-ops otherwise.

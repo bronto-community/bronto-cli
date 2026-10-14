@@ -165,7 +165,7 @@ it isn't, you get one line of JSON:
 | `2` | usage or config error (bad flags, bad arguments, missing dataset) |
 | `3` | auth error (missing, invalid, or under-privileged key) |
 | `4` | not found |
-| `5` | rate limited or timed out, safe to retry |
+| `5` | rate limited or timed out: retry reads; after a timed-out write, check whether it landed first |
 
 [Exit codes](/cli/reference/exit-codes) maps every error code to its exit status.
 
@@ -179,7 +179,9 @@ it isn't, you get one line of JSON:
 - Destructive commands refuse to run without a terminal unless you pass `--yes`
   (`usage_confirmation_required`, exit code 2).
 - `--debug` traces each API request and response on stderr: method, URL, status, latency,
-  and truncated bodies. The API key is never printed.
+  and truncated bodies. The API key header is never printed, and secret fields in bodies,
+  such as the keys `api-keys list` returns, show as `REDACTED`. Treat the trace as
+  sensitive anyway: bodies can contain log data.
 - `--quiet` suppresses notices on stderr, so only data and errors remain.
 - `--timeout <seconds>` and `--max-retries <n>` tune the HTTP client. Retries apply to
   idempotent requests that get a 429, 502, 503, or 504.

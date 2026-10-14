@@ -87,8 +87,9 @@ Sandboxes and locked-down runners often have no keychain and a read-only home di
 - Make destructive steps explicit with `--yes`. Without it, `delete` refuses to run
   outside a terminal.
 - Run mutating steps with `--dry-run` in pull-request jobs and for real on the main branch.
-- Branch on [exit codes](/cli/reference/exit-codes). `5` means rate limited or timed out and
-  is safe to retry.
+- Branch on [exit codes](/cli/reference/exit-codes). `5` means rate limited or timed out.
+  Retrying is safe for reads; a timed-out write may already have landed, so check before
+  you retry it.
 - Add `--quiet` to keep logs to data and errors, and `--debug` when a step fails and you
   need to see the requests.
 - `bronto api-keys list` masks key values even in JSON, so it's safe to print in logs.

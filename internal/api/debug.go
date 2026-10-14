@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -16,8 +18,10 @@ const debugBodyCap = 2048
 // DebugTransport wraps a RoundTripper and traces every request/response to
 // W (typically stderr): method, URL, status, duration, and truncated
 // bodies. Headers are never printed, so the API key cannot leak into the
-// trace. Install as Transport.Base (INSIDE the retry loop) so each retry
-// attempt traces individually.
+// trace, and secret-bearing body fields are redacted (redactBody): API
+// responses carry key material, e.g. GET /api-keys returns every key.
+// Install as Transport.Base (INSIDE the retry loop) so each retry attempt
+// traces individually.
 type DebugTransport struct {
 	Base http.RoundTripper
 	W    io.Writer
@@ -41,8 +45,9 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	_, _ = fmt.Fprintf(d.W, "* %s %s\n", req.Method, req.URL.Redacted())
+	keyAPI := isAPIKeysPath(req.URL.Path)
 	if len(reqBody) > 0 {
-		_, _ = fmt.Fprintf(d.W, "* > %s\n", truncateBody(reqBody))
+		_, _ = fmt.Fprintf(d.W, "* > %s\n", redactBody(truncateBody(reqBody), keyAPI))
 	}
 	if err != nil {
 		_, _ = fmt.Fprintf(d.W, "* ! %v (%s)\n", err, elapsed)
@@ -58,7 +63,7 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			io.Closer
 		}{io.MultiReader(bytes.NewReader(peek), rest), rest}
 		if len(peek) > 0 {
-			_, _ = fmt.Fprintf(d.W, "* < %s\n", truncateBody(peek))
+			_, _ = fmt.Fprintf(d.W, "* < %s\n", redactBody(truncateBody(peek), keyAPI))
 		}
 	}
 	return resp, nil
@@ -69,4 +74,33 @@ func truncateBody(b []byte) string {
 		return string(b[:debugBodyCap]) + "…(truncated)"
 	}
 	return string(b)
+}
+
+// secretField matches a JSON string member whose name holds secrets
+// (api_key, *_secret, *password, *private_key, or any name ending in
+// "token"; case-insensitive, so accessToken too), in
+// raw (possibly truncated, so not always parseable) body text. The value
+// may be cut off by the body cap, so a missing closing quote still
+// matches up to the end of the text.
+var secretField = regexp.MustCompile(`"((?i:(?:[a-z0-9_]*_)?(?:api_key|secret|password|private_key)|[a-z0-9_]*token))"(\s*:\s*)"(?:[^"\\]|\\.)*"?`)
+
+// keyField matches a "key" member. It is redacted only on /api-keys,
+// where it holds key material; elsewhere "key" names a log field (top
+// keys, fields), which a debug trace should show.
+var keyField = regexp.MustCompile(`"(key)"(\s*:\s*)"(?:[^"\\]|\\.)*"?`)
+
+// isAPIKeysPath reports whether path addresses the API keys resource,
+// with any base_url path prefix (/proxy/api-keys) and any key id after it.
+func isAPIKeysPath(path string) bool {
+	return strings.Contains(path+"/", "/api-keys/")
+}
+
+// redactBody replaces the values of secret-bearing JSON string members
+// with "REDACTED". keyAPI also redacts "key" (true for /api-keys paths).
+func redactBody(body string, keyAPI bool) string {
+	body = secretField.ReplaceAllString(body, `"$1"$2"REDACTED"`)
+	if keyAPI {
+		body = keyField.ReplaceAllString(body, `"$1"$2"REDACTED"`)
+	}
+	return body
 }
