@@ -2,37 +2,95 @@
 # (internal/tools/docgen, `make docs-reference`).
 #
 # Key: command path without the leading "bronto" (e.g. "datasets parser").
-# Value: a docs.bronto.io page explaining the platform concept behind it.
+# Values, both optional:
+#   docs: a docs.bronto.io page explaining the platform concept behind it
+#   api:  the docs.bronto.io API reference page for the main endpoint it
+#         calls (for a resource, the list operation)
 # Only list pages that exist — verify with `curl -sI <url>` (HTTP 200).
-# Subcommands without an entry inherit nothing; they get the link only
+# Subcommands without an entry inherit nothing; they get the links only
 # if they are listed here themselves.
-search: https://docs.bronto.io/query-syntax/search-syntax
-tail: https://docs.bronto.io/Search-and-Visualize/Log-Search
-context: https://docs.bronto.io/api-reference/context/overview
-fields: https://docs.bronto.io/Search-and-Visualize/Log-Search
-query: https://docs.bronto.io/query-syntax/search-syntax
-traces: https://docs.bronto.io/tracing/explore-traces
-send: https://docs.bronto.io/getting-started/quick-ingestion
-usage: https://docs.bronto.io/api-reference/usage/overview
-api: https://docs.bronto.io/api-reference/introduction
-auth: https://docs.bronto.io/Account-Management/API-Keys
-login: https://docs.bronto.io/Account-Management/API-Keys
-api-keys: https://docs.bronto.io/Account-Management/API-Keys
-collections: https://docs.bronto.io/Search-and-Visualize/Partitions
-datasets: https://docs.bronto.io/Search-and-Visualize/Partitions
-datasets parser: https://docs.bronto.io/core-features/custom-parser
-parsers: https://docs.bronto.io/core-features/custom-parser
-monitors: https://docs.bronto.io/core-features/monitors
-dashboards: https://docs.bronto.io/Search-and-Visualize/Dashboards
-widgets: https://docs.bronto.io/Search-and-Visualize/Log-Visualization
-saved-searches: https://docs.bronto.io/Search-and-Visualize/Saved-Searches
-exports: https://docs.bronto.io/api-reference/exports/overview
-metrics: https://docs.bronto.io/metrics/explore-metrics
-users: https://docs.bronto.io/Account-Management/User-Management
-groups: https://docs.bronto.io/Account-Management/Access-Control
-roles: https://docs.bronto.io/Account-Management/Access-Control
-permissions: https://docs.bronto.io/Account-Management/Access-Control
-encryption-keys: https://docs.bronto.io/Account-Management/BYOK
-forward-configs: https://docs.bronto.io/core-features/log-forwarding
-slack: https://docs.bronto.io/integrations/slack
-webhooks: https://docs.bronto.io/integrations/webhooks
+search:
+  docs: https://docs.bronto.io/query-syntax/search-syntax
+  api: https://docs.bronto.io/api-reference/search/execute-a-query
+tail:
+  docs: https://docs.bronto.io/Search-and-Visualize/Log-Search
+  api: https://docs.bronto.io/api-reference/live-tail/initiate-a-live-tail-job
+context:
+  docs: https://docs.bronto.io/api-reference/context/overview
+  api: https://docs.bronto.io/api-reference/context/retrieve-contextual-information-for-a-given-sequence-and-log
+fields:
+  docs: https://docs.bronto.io/Search-and-Visualize/Log-Search
+  api: https://docs.bronto.io/api-reference/top-keys/retrieve-top-keys-for-logs
+query:
+  docs: https://docs.bronto.io/query-syntax/search-syntax
+traces:
+  docs: https://docs.bronto.io/tracing/explore-traces
+send:
+  docs: https://docs.bronto.io/getting-started/quick-ingestion
+usage:
+  docs: https://docs.bronto.io/api-reference/usage/overview
+api:
+  docs: https://docs.bronto.io/api-reference/introduction
+  api: https://docs.bronto.io/api-reference/introduction
+auth:
+  docs: https://docs.bronto.io/Account-Management/API-Keys
+login:
+  docs: https://docs.bronto.io/Account-Management/API-Keys
+api-keys:
+  docs: https://docs.bronto.io/Account-Management/API-Keys
+  api: https://docs.bronto.io/api-reference/api-keys/retrieve-a-list-of-api-keys
+collections:
+  docs: https://docs.bronto.io/Search-and-Visualize/Partitions
+  api: https://docs.bronto.io/api-reference/collections/retrieve-a-list-of-collections
+datasets:
+  docs: https://docs.bronto.io/Search-and-Visualize/Partitions
+  api: https://docs.bronto.io/api-reference/datasets/retrieve-a-list-of-datasets
+datasets parser:
+  docs: https://docs.bronto.io/core-features/custom-parser
+parsers:
+  docs: https://docs.bronto.io/core-features/custom-parser
+monitors:
+  docs: https://docs.bronto.io/core-features/monitors
+  api: https://docs.bronto.io/api-reference/monitors/retrieve-monitors
+dashboards:
+  docs: https://docs.bronto.io/Search-and-Visualize/Dashboards
+  api: https://docs.bronto.io/api-reference/dashboards/get-all-dashboards-for-an-organisation
+widgets:
+  docs: https://docs.bronto.io/Search-and-Visualize/Log-Visualization
+  api: https://docs.bronto.io/api-reference/widgets/retrieve-all-the-widgets
+saved-searches:
+  docs: https://docs.bronto.io/Search-and-Visualize/Saved-Searches
+exports:
+  docs: https://docs.bronto.io/api-reference/exports/overview
+  api: https://docs.bronto.io/api-reference/exports/retrieve-a-list-of-exports
+metrics:
+  docs: https://docs.bronto.io/metrics/explore-metrics
+  api: https://docs.bronto.io/api-reference/metrics/retrieve-the-list-of-metrics-metadata-sent-to-bronto
+users:
+  docs: https://docs.bronto.io/Account-Management/User-Management
+  api: https://docs.bronto.io/api-reference/users/retrieve-a-list-of-users
+groups:
+  docs: https://docs.bronto.io/Account-Management/Access-Control
+  api: https://docs.bronto.io/api-reference/groups/list-all-user-groups-in-the-organization
+roles:
+  docs: https://docs.bronto.io/Account-Management/Access-Control
+  api: https://docs.bronto.io/api-reference/roles/retrieve-a-list-of-roles
+permissions:
+  docs: https://docs.bronto.io/Account-Management/Access-Control
+  api: https://docs.bronto.io/api-reference/permissions/retrieve-permissions
+encryption-keys:
+  docs: https://docs.bronto.io/Account-Management/BYOK
+  api: https://docs.bronto.io/api-reference/encryption-keys/retrieve-a-list-of-encryption-keys
+forward-configs:
+  docs: https://docs.bronto.io/core-features/log-forwarding
+  api: https://docs.bronto.io/api-reference/forward/retrieve-forward-configs
+slack:
+  docs: https://docs.bronto.io/integrations/slack
+  api: https://docs.bronto.io/api-reference/integrations/get-all-slack-integration-resources-for-an-organisation
+webhooks:
+  docs: https://docs.bronto.io/integrations/webhooks
+  api: https://docs.bronto.io/api-reference/integrations/get-all-webhook-integration-resources-for-an-organisation
+limits:
+  api: https://docs.bronto.io/api-reference/limits/retrieve-limits
+log-views:
+  api: https://docs.bronto.io/api-reference/logs/retrieve-a-list-of-log-views
