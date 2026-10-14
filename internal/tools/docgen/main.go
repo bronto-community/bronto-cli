@@ -16,8 +16,9 @@
 // like "user" would also rewrite ordinary words, differently per machine.)
 //
 // "Learn more" links come from a hand-maintained YAML map (command path
-// without the leading "bronto" -> docs.bronto.io URL). An entry naming a
-// command that does not exist fails the run, so the map cannot rot.
+// without the leading "bronto" -> a docs.bronto.io concept page and API
+// reference page). An entry naming a command that does not exist fails
+// the run, so the map cannot rot.
 //
 // Usage (from the repo root):
 //
@@ -76,11 +77,11 @@ func run(outDir, linksFile string) error {
 	root.InitDefaultVersionFlag()
 	root.InitDefaultCompletionCmd()
 
-	learnMore, err := loadLinks(linksFile, root)
+	links, err := loadLinks(linksFile, root)
 	if err != nil {
 		return err
 	}
-	g := &gen{root: root, links: learnMore, norm: newNormalizer()}
+	g := &gen{root: root, links: links, norm: newNormalizer()}
 
 	if err := os.MkdirAll(outDir, 0o755); err != nil { //nolint:gosec // committed docs directory, world-readable by design
 		return err
@@ -181,23 +182,53 @@ func relPath(c *cobra.Command) string {
 	return strings.TrimPrefix(strings.TrimPrefix(c.CommandPath(), c.Root().Name()), " ")
 }
 
-func loadLinks(file string, root *cobra.Command) (map[string]string, error) {
+// learnMore is one command's entry in reference-links.yaml.
+type learnMore struct {
+	Docs string `yaml:"docs"` // platform concept page
+	API  string `yaml:"api"`  // API reference page for the main endpoint
+}
+
+func loadLinks(file string, root *cobra.Command) (map[string]learnMore, error) {
 	data, err := os.ReadFile(file) //nolint:gosec // path comes from the -links flag of a dev tool
 	if err != nil {
 		return nil, err
 	}
-	links := map[string]string{}
-	if err := yaml.Unmarshal(data, &links); err != nil {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("%s: %w", file, err)
+	}
+	links := map[string]learnMore{}
+	if err := doc.Decode(&links); err != nil {
 		return nil, fmt.Errorf("%s: %w", file, err)
 	}
 	var bad []string
+	if len(doc.Content) == 1 {
+		// Unknown keys under a command (a typo like "apy:") would
+		// silently drop the link.
+		for i := 1; i < len(doc.Content[0].Content); i += 2 {
+			entry := doc.Content[0].Content[i]
+			for j := 0; j < len(entry.Content); j += 2 {
+				if key := entry.Content[j].Value; key != "docs" && key != "api" {
+					bad = append(bad, fmt.Sprintf("%q: unknown key %q (want docs or api)", doc.Content[0].Content[i-1].Value, key))
+				}
+			}
+		}
+	}
 	for k, v := range links {
 		c, rest, err := root.Find(strings.Fields(k))
 		if err != nil || c == root || len(rest) > 0 || relPath(c) != k || !c.IsAvailableCommand() {
 			bad = append(bad, fmt.Sprintf("%q is not a documented command", k))
 		}
-		if !strings.HasPrefix(v, "https://docs.bronto.io/") {
-			bad = append(bad, fmt.Sprintf("%q: link %q must be a https://docs.bronto.io/ URL", k, v))
+		if v.Docs == "" && v.API == "" {
+			bad = append(bad, fmt.Sprintf("%q: needs a docs or api link", k))
+		}
+		for _, u := range []string{v.Docs, v.API} {
+			if u != "" && !strings.HasPrefix(u, "https://docs.bronto.io/") {
+				bad = append(bad, fmt.Sprintf("%q: link %q must be a https://docs.bronto.io/ URL", k, u))
+			}
+		}
+		if v.API != "" && !strings.HasPrefix(v.API, "https://docs.bronto.io/api-reference/") {
+			bad = append(bad, fmt.Sprintf("%q: api link %q must be under https://docs.bronto.io/api-reference/", k, v.API))
 		}
 	}
 	if len(bad) > 0 {
@@ -246,7 +277,7 @@ func (n *normalizer) s(v string) string {
 
 type gen struct {
 	root  *cobra.Command
-	links map[string]string
+	links map[string]learnMore
 	norm  *normalizer
 }
 
@@ -338,9 +369,15 @@ func (g *gen) commandBody(b *bytes.Buffer, c *cobra.Command) {
 	}
 	writeProse(b, g.norm.s(desc))
 
-	if url, ok := g.links[relPath(c)]; ok {
-		fmt.Fprintf(b, "<Tip>\nThe Bronto docs explain the platform concept behind this command: [%s](%s)\n</Tip>\n\n",
-			strings.TrimPrefix(url, "https://"), url)
+	if l, ok := g.links[relPath(c)]; ok {
+		b.WriteString("<Tip>\n")
+		if l.Docs != "" {
+			fmt.Fprintf(b, "- **Platform docs:** [%s](%s)\n", strings.TrimPrefix(l.Docs, "https://"), l.Docs)
+		}
+		if l.API != "" {
+			fmt.Fprintf(b, "- **API reference:** [%s](%s)\n", strings.TrimPrefix(l.API, "https://"), l.API)
+		}
+		b.WriteString("</Tip>\n\n")
 	}
 
 	b.WriteString("```sh\n")

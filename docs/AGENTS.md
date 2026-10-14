@@ -155,6 +155,15 @@ link works on the dev site too. Add at
 least one "Learn more on docs.bronto.io" link per guide where a platform
 concept is involved. Check that the target page exists.
 
+When a page covers a resource or an API feature, also link the matching
+API reference page (`https://docs.bronto.io/api-reference/...`; for a
+resource, its list operation). Platform concept and API links in the
+generated command reference come from `docs/reference-links.yaml`, which
+takes a `docs:` and an `api:` URL per command.
+
+The bronto CLI is open source and community-supported. Pages that tell
+readers where to get help point to GitHub issues, not to Bronto support.
+
 ## Commands
 
 ```sh

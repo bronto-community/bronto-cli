@@ -6,7 +6,8 @@ description: Run one-shot queries with bronto search, build filters with flags, 
 `bronto search` runs one query and exits. The query is a Bronto WHERE expression, the
 same language the web app's search bar uses. The
 [search syntax page](https://docs.bronto.io/query-syntax/search-syntax) on docs.bronto.io
-documents it in full.
+documents it in full. Under the hood, `bronto search` calls the
+[search API](https://docs.bronto.io/api-reference/search/execute-a-query).
 
 <Frame caption="Narrowing 502s in checkout-service">
   <video src="/cli/tapes/search.webm" poster="/cli/tapes/search.png" aria-label="Narrowing 502s in checkout-service" autoPlay muted loop playsInline controls />
