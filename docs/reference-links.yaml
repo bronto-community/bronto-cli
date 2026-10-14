@@ -29,7 +29,6 @@ send:
   docs: https://docs.bronto.io/getting-started/quick-ingestion
 usage:
   docs: https://docs.bronto.io/api-reference/usage/overview
-  api: https://docs.bronto.io/api-reference/usage/get-usage-for-log-id
 api:
   docs: https://docs.bronto.io/api-reference/introduction
   api: https://docs.bronto.io/api-reference/introduction
