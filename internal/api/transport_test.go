@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -29,7 +30,7 @@ func TestTransportSetsHeaders(t *testing.T) {
 	if gotKey != "test-key" {
 		t.Fatalf("api key header = %q", gotKey)
 	}
-	if gotUA != "bronto-cli/1.2.3" {
+	if want := "bronto-cli/1.2.3 (" + runtime.GOOS + "; " + runtime.GOARCH + ")"; gotUA != want {
 		t.Fatalf("user agent = %q", gotUA)
 	}
 }

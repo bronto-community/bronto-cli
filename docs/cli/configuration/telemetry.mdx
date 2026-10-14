@@ -8,6 +8,11 @@ sent anywhere unless you configure an exporter with the standard `OTEL_*` enviro
 variables. The only setting specific to the CLI is `BRONTO_TELEMETRY_CAPTURE`, which controls
 [how much of the command line is recorded](#whats-recorded).
 
+Separately from tracing, every request the CLI sends to Bronto identifies the client in its
+`User-Agent` header: `bronto-cli/<version> (<os>; <arch>)`, for example
+`bronto-cli/0.7.0 (darwin; arm64)`. It carries no other information about you or your
+machine.
+
 ## Turn it on
 
 Point `bronto` at an OTLP endpoint:
