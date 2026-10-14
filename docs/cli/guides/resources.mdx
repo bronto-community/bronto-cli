@@ -65,24 +65,24 @@ Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `
 (`list` and `get`, plus `top-keys`). The generated
 [command reference](/cli/reference/commands) lists the exact verbs for each resource.
 
-| Resource | Try | Learn more |
-| --- | --- | --- |
-| datasets, where log events are stored | `bronto datasets list` | [Data Organization](https://docs.bronto.io/Search-and-Visualize/Partitions) |
-| collections, which group datasets (list-only) | `bronto collections list` | [Data Organization](https://docs.bronto.io/Search-and-Visualize/Partitions) |
-| log views (list-only) | `bronto log-views list` | |
-| parsers | `bronto parsers list` | [Custom Parser](https://docs.bronto.io/core-features/custom-parser) |
-| monitors, templates, downtimes | `bronto monitors list` | [Monitors and dashboards](/cli/guides/monitors-and-dashboards) |
-| dashboards and widgets | `bronto dashboards list` | [Monitors and dashboards](/cli/guides/monitors-and-dashboards) |
-| saved searches | `bronto saved-searches list` | [Saved Searches](https://docs.bronto.io/Search-and-Visualize/Saved-Searches) |
-| export jobs | `bronto exports list` | [Exports](/cli/guides/exports) |
-| metrics and their attribute keys | `bronto metrics list` | [Explore Metrics](https://docs.bronto.io/metrics/explore-metrics) |
-| users, groups, roles, permissions | `bronto users list` | [Access management](/cli/guides/access-management) |
-| API keys | `bronto api-keys list` | [API Keys](https://docs.bronto.io/Account-Management/API-Keys) |
-| webhook integrations | `bronto webhooks list` | [Webhooks](https://docs.bronto.io/integrations/webhooks) |
-| Slack integrations | `bronto slack list` | [Slack](https://docs.bronto.io/integrations/slack) |
-| log forwarding destinations | `bronto forward-configs list` | [Log Forwarding](https://docs.bronto.io/core-features/log-forwarding) |
-| bring-your-own encryption keys | `bronto encryption-keys list` | [BYOK](https://docs.bronto.io/Account-Management/BYOK) |
-| account limits | `bronto limits list` | |
+| Resource | Try | Platform docs | API reference |
+| --- | --- | --- | --- |
+| datasets, where log events are stored | `bronto datasets list` | [Data Organization](https://docs.bronto.io/Search-and-Visualize/Partitions) | [Datasets](https://docs.bronto.io/api-reference/datasets/retrieve-a-list-of-datasets) |
+| collections, which group datasets (list-only) | `bronto collections list` | [Data Organization](https://docs.bronto.io/Search-and-Visualize/Partitions) | [Collections](https://docs.bronto.io/api-reference/collections/retrieve-a-list-of-collections) |
+| log views (list-only) | `bronto log-views list` |  | [Logs](https://docs.bronto.io/api-reference/logs/retrieve-a-list-of-log-views) |
+| parsers | `bronto parsers list` | [Custom Parser](https://docs.bronto.io/core-features/custom-parser) |  |
+| monitors, templates, downtimes ([guide](/cli/guides/monitors-and-dashboards)) | `bronto monitors list` | [Monitors](https://docs.bronto.io/core-features/monitors) | [Monitors](https://docs.bronto.io/api-reference/monitors/retrieve-monitors) |
+| dashboards and widgets ([guide](/cli/guides/monitors-and-dashboards)) | `bronto dashboards list` | [Dashboards](https://docs.bronto.io/Search-and-Visualize/Dashboards) | [Dashboards](https://docs.bronto.io/api-reference/dashboards/get-all-dashboards-for-an-organisation) |
+| saved searches | `bronto saved-searches list` | [Saved Searches](https://docs.bronto.io/Search-and-Visualize/Saved-Searches) |  |
+| export jobs ([guide](/cli/guides/exports)) | `bronto exports list` |  | [Exports](https://docs.bronto.io/api-reference/exports/retrieve-a-list-of-exports) |
+| metrics and their attribute keys | `bronto metrics list` | [Explore Metrics](https://docs.bronto.io/metrics/explore-metrics) | [Metrics](https://docs.bronto.io/api-reference/metrics/retrieve-the-list-of-metrics-metadata-sent-to-bronto) |
+| users, groups, roles, permissions ([guide](/cli/guides/access-management)) | `bronto users list` | [User Management](https://docs.bronto.io/Account-Management/User-Management) | [Users](https://docs.bronto.io/api-reference/users/retrieve-a-list-of-users) |
+| API keys | `bronto api-keys list` | [API Keys](https://docs.bronto.io/Account-Management/API-Keys) | [API keys](https://docs.bronto.io/api-reference/api-keys/retrieve-a-list-of-api-keys) |
+| webhook integrations | `bronto webhooks list` | [Webhooks](https://docs.bronto.io/integrations/webhooks) | [Integrations](https://docs.bronto.io/api-reference/integrations/get-all-webhook-integration-resources-for-an-organisation) |
+| Slack integrations | `bronto slack list` | [Slack](https://docs.bronto.io/integrations/slack) | [Integrations](https://docs.bronto.io/api-reference/integrations/get-all-slack-integration-resources-for-an-organisation) |
+| log forwarding destinations | `bronto forward-configs list` | [Log Forwarding](https://docs.bronto.io/core-features/log-forwarding) | [Forward](https://docs.bronto.io/api-reference/forward/retrieve-forward-configs) |
+| bring-your-own encryption keys | `bronto encryption-keys list` | [BYOK](https://docs.bronto.io/Account-Management/BYOK) | [Encryption keys](https://docs.bronto.io/api-reference/encryption-keys/retrieve-a-list-of-encryption-keys) |
+| account limits | `bronto limits list` |  | [Limits](https://docs.bronto.io/api-reference/limits/retrieve-limits) |
 
 ## Names work wherever ids do
 
