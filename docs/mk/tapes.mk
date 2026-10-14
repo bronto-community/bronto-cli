@@ -6,7 +6,7 @@
 
 .PHONY: docs-snippets docs-snippets-print docs-tapes docs-tapes-check docs-tapes-live
 
-# docs-snippets runs every ```console test block in docs/src/content/docs
+# docs-snippets runs every ```console block in docs/cli
 # against the mock (internal/tools/docsnippets). Failures name file:line,
 # the command, and a diff.
 docs-snippets:
@@ -18,7 +18,7 @@ docs-snippets-print:
 	DOCS_SNIPPETS_PRINT=1 go test -count=1 -run TestDocSnippets ./internal/tools/docsnippets/
 
 # docs-tapes renders every docs/tapes/*.tape against the mock and updates
-# docs/public/tapes/<name>.{webm,png} and docs/tapes/golden/<name>.txt.
+# docs/cli/tapes/<name>.{webm,png} and docs/tapes/golden/<name>.txt.
 # TAPES="quickstart search" renders a subset.
 docs-tapes:
 	docs/tapes/record.sh $(TAPES)
@@ -34,7 +34,7 @@ docs-tapes-check:
 	@docs/tapes/record.sh --check $(TAPES) || { \
 		echo ""; \
 		echo "docs-tapes-check: a tape's output no longer matches its golden."; \
-		echo "Fix: run 'make docs-tapes' and commit docs/tapes/golden/ and docs/public/tapes/."; \
+		echo "Fix: run 'make docs-tapes' and commit docs/tapes/golden/ and docs/cli/tapes/."; \
 		exit 1; }
 
 # docs-tapes-live re-records the videos against the live CI test account

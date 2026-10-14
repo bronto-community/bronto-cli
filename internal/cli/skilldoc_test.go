@@ -22,7 +22,7 @@ var skillDocFiles = []string{"skill.md", "README.md", "llms.txt"}
 // which the guards skip — it is derived from the command tree, so it is
 // correct by construction and checked by `make docs-reference-check`.
 const (
-	docsContentDir   = "docs/src/content/docs"
+	docsContentDir   = "docs/cli"
 	docsReferenceDir = docsContentDir + "/reference/commands"
 )
 
@@ -77,7 +77,7 @@ const ignoreMarker = "skilldoc:ignore"
 
 // TestSkillDocCommandsAreReal is the mechanical doc-rot guard: it scans
 // each file in skillDocFiles, plus every hand-written docs-site page
-// (handWrittenDocFiles: docs/src/content/docs/**/*.{md,mdx} minus the
+// (handWrittenDocFiles: docs/cli/**/*.{md,mdx} minus the
 // generated reference), for backtick code spans — both inline `...`
 // and fenced ``` blocks (one span per line) — that start with "bronto ",
 // and asserts the first token after "bronto" is either:
@@ -352,7 +352,8 @@ func brontoCodeSpans(doc string) []codeSpan {
 func TestBrontoCodeSpansExtraction(t *testing.T) {
 	doc := strings.Join([]string{
 		"Run `bronto ping` or `$ bronto version`.",
-		"```console test",
+		"{/* test: tty */}",
+		"```console",
 		"$ bronto search 'status >= 500' --since 1h",
 		"bronto output line that is not a command",
 		"$ echo not-bronto",

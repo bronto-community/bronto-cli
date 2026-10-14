@@ -142,17 +142,17 @@ func newRunner(t *testing.T) *Runner {
 	}
 }
 
-// TestDocSnippets runs every ```console test block in the docs site
+// TestDocSnippets runs every ```console block in the docs site
 // against the mock. DOCS_SNIPPETS_PRINT=1 prints each block with the
 // actual output filled in, ready to paste back into the page.
 func TestDocSnippets(t *testing.T) {
-	root := filepath.Join(repoRoot(t), "docs", "src", "content", "docs")
+	root := filepath.Join(repoRoot(t), "docs", "cli")
 	snippets, err := Extract(root)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(snippets) == 0 {
-		t.Logf("no ```console test blocks under %s yet", root)
+		t.Logf("no ```console blocks under %s yet", root)
 		return
 	}
 	r := newRunner(t)
@@ -200,17 +200,18 @@ func TestMatch(t *testing.T) {
 
 func TestParse(t *testing.T) {
 	doc := "intro\n" +
-		"```console test\n" +
+		"```console\n" +
 		"$ echo a \\\n" +
 		"  b\n" +
 		"a b\n" +
 		"$ true\n" +
 		"```\n" +
 		"```sh\n$ not a test\n```\n" +
-		"  ```console test tty exit=2\n" +
+		"  {/* test: tty exit=2 */}\n" +
+		"  ```console\n" +
 		"  $ exit 2\n" +
 		"  ```\n" +
-		"````console test\n$ echo '```'\n```\n````\n"
+		"````console\n$ echo '```'\n```\n````\n"
 	snips, err := Parse("doc.md", []byte(doc))
 	if err != nil {
 		t.Fatal(err)
@@ -228,16 +229,16 @@ func TestParse(t *testing.T) {
 	if snips[0].TTY {
 		t.Error("snippet 0 has no tty meta word but parsed as TTY")
 	}
-	if got := Format(snips[1], nil); !strings.Contains(got, "```console test tty exit=2\n") {
-		t.Errorf("Format must keep the tty and exit meta words, got:\n%s", got)
+	if got := Format(snips[1], nil); !strings.Contains(got, "{/* test: tty exit=2 */}\n```console\n") {
+		t.Errorf("Format must keep the tty and exit options, got:\n%s", got)
 	}
 	if s := snips[2]; len(s.Commands) != 1 || len(s.Commands[0].Want) != 1 || s.Commands[0].Want[0] != "```" {
 		t.Errorf("snippet 2 (4-backtick fence) = %+v", s)
 	}
-	if _, err := Parse("bad.md", []byte("```console test\noutput first\n$ true\n```\n")); err == nil {
+	if _, err := Parse("bad.md", []byte("```console\noutput first\n$ true\n```\n")); err == nil {
 		t.Error("output before the first command must be an error")
 	}
-	if _, err := Parse("bad.md", []byte("```console test\n$ true\n")); err == nil {
+	if _, err := Parse("bad.md", []byte("```console\n$ true\n")); err == nil {
 		t.Error("an unterminated block must be an error")
 	}
 }

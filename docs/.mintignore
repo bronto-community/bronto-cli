@@ -1,0 +1,11 @@
+# Only docs.json, cli/ and logo/ make up the site. Everything else in docs/
+# is tooling: contributor notes, VHS sources and goldens, mock fixtures.
+# Patterns are anchored with a leading slash: a bare "tapes/" would also
+# drop cli/tapes/, the rendered videos the pages embed.
+/AGENTS.md
+/CLAUDE.md
+/coverage-allowlist.txt
+/reference-links.yaml
+/mk/
+/tapes/
+/testdata/

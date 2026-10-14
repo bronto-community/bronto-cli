@@ -1,37 +1,41 @@
 # bronto CLI docs
 
-Source of https://bronto-cli.vercel.app, built with
-[Astro Starlight](https://starlight.astro.build).
+The bronto CLI documentation, written for [Mintlify](https://mintlify.com).
+A Mintlify dev site deploys this directory from `main`. Releases are copied
+into the official docs at https://docs.bronto.io/cli with
+`scripts/sync-official-docs.sh`.
 
 Read [AGENTS.md](./AGENTS.md) before you write or change pages. It covers the
-layout, who owns which files, code block conventions (tested `console test`
-snippets), VHS recordings, and the docs mock world.
+layout, who owns which files, components, code block conventions (tested
+`console` snippets), VHS recordings, and the docs mock world.
 
 ## Local development
 
 Requires the Node version in [`.nvmrc`](./.nvmrc).
 
 ```sh
-make docs-dev       # dev server on http://localhost:4321
-make docs-build     # production build into docs/dist (fails on broken links)
+make docs-dev       # local preview on http://localhost:3000
+make docs-validate  # strict build + link and anchor check
 make docs-check     # everything CI runs for docs
 ```
 
-## Site shell
+## Layout
 
-| File | Purpose |
+| Path | Purpose |
 | --- | --- |
-| `astro.config.mjs` | Starlight config: sidebar, plugins, `~` import alias |
-| `ec.config.mjs` | Expressive Code: "tested" label, console copy button copies commands only |
-| `src/styles/custom.css` | Bronto theme colors |
-| `src/components/Tape.astro` | VHS video embed |
-| `src/components/SocialIcons.astro` | Header link to docs.bronto.io |
-| `src/components/routeData.ts` | Sidebar label for the generated command reference |
+| `docs.json` | Dev-site config: theme, logos, and the CLI tab via `"$ref"` |
+| `cli/` | The pages, recordings, and `navigation.json`. This folder is what gets copied to docs.bronto.io. |
+| `.mintignore` | Keeps the tooling below out of the site |
+| `tapes/`, `testdata/`, `mk/` | VHS sources and goldens, docs mock fixtures, make fragments |
 
-## Deployment
+## Publishing to docs.bronto.io
 
-`.github/workflows/docs.yml` builds the site on every pull request and push
-to `main`. It deploys a preview for same-repo pull requests (the URL is posted
-as a PR comment) and deploys to production on push to `main`. The Vercel
-project (`bronto-cli`, team `brontoio`) has no Git connection; all deploys
-come from that workflow.
+The official docs `docs.json` references `cli/navigation.json` once. For each
+release, from a local checkout of the official docs:
+
+```sh
+scripts/sync-official-docs.sh --ref v1.2.3 <path-to-official-docs-checkout>
+```
+
+The script replaces `cli/` there and prints a commit message. Commit, open a
+pull request in that repository, and check its Mintlify preview.

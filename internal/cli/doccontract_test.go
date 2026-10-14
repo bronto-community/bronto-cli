@@ -42,7 +42,7 @@ func verbExceptionsSentence() string {
 
 // TestDocsStateResourceVerbExceptions welds the resource-pattern paragraph
 // in the user-facing docs to the registry: skill.md and the docs site's
-// managing-resources guide (docs/src/content/docs/guides/resources.mdx)
+// managing-resources guide (docs/cli/guides/resources.mdx)
 // must contain the generated exceptions sentence verbatim. (README.md was
 // slimmed to a quickstart that links to the guide, so it no longer carries
 // the resource-pattern paragraph.) The 2026-07-23 audit
@@ -56,7 +56,7 @@ func TestDocsStateResourceVerbExceptions(t *testing.T) {
 		t.Fatal("runtime.Caller failed")
 	}
 	repoRoot := filepath.Join(filepath.Dir(thisFile), "..", "..")
-	for _, docFile := range []string{"skill.md", "docs/src/content/docs/guides/resources.mdx"} {
+	for _, docFile := range []string{"skill.md", "docs/cli/guides/resources.mdx"} {
 		data, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(docFile)))
 		if err != nil {
 			t.Errorf("reading %s: %v\nThis page must exist and state the resource verb exceptions. Paste this sentence (generated from resourceRegistry) into its resource-pattern paragraph:\n%s", docFile, err, want)

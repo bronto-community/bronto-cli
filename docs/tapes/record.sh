@@ -5,8 +5,8 @@
 #
 # DOCS_TARGET=mock (default) runs the tapes against the deterministic docs
 # mock server (internal/tools/docsmock) and writes:
-#   docs/public/tapes/<name>.webm   the video the docs embed
-#   docs/public/tapes/<name>.png    a poster frame (the tape's Screenshot)
+#   docs/cli/tapes/<name>.webm   the video the docs embed
+#   docs/cli/tapes/<name>.png    a poster frame (the tape's Screenshot)
 #   docs/tapes/golden/<name>.txt    the settled screens as text (see
 #                                   internal/tools/tapegolden)
 #
@@ -34,7 +34,7 @@ set -euo pipefail
 
 repo=$(cd "$(dirname "$0")/../.." && pwd)
 tapes_dir="$repo/docs/tapes"
-out_dir="$repo/docs/public/tapes"
+out_dir="$repo/docs/cli/tapes"
 golden_dir="$tapes_dir/golden"
 target=${DOCS_TARGET:-mock}
 check=0
@@ -199,7 +199,7 @@ for name in "${args[@]}"; do
     mkdir -p "$golden_dir"
     cp "$work/render/$name.golden.txt" "$golden_dir/$name.txt"
   fi
-  printf 'record.sh: wrote docs/public/tapes/%s.webm (%s bytes)\n' "$name" "$(wc -c <"$out_dir/$name.webm" | tr -d ' ')" >&2
+  printf 'record.sh: wrote docs/cli/tapes/%s.webm (%s bytes)\n' "$name" "$(wc -c <"$out_dir/$name.webm" | tr -d ' ')" >&2
 done
 
 if [ -n "$mock_pid" ] && grep -q 'unhandled' "$work/mock.log"; then
