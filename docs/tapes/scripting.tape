@@ -2,6 +2,7 @@
 Output scripting.webm
 Output scripting.txt
 Source settings.tape
+Set Height 480
 Require bronto
 Require jq
 

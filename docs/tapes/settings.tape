@@ -1,23 +1,23 @@
 # Shared look for every docs tape. Each tape does `Source settings.tape`
 # right after its Output lines; docs/tapes/record.sh renders them.
 #
-# Height 420 gives a 17-row terminal (about 20 px per row). A tape that
-# needs more sets its own `Set Height` right after `Source`: resources
-# (18-row scene, 480) and search (16 rows, but 480 for headroom, because its
-# long -x command wraps and live data can wrap differently).
+# FontSize 24 at Width 1600 with Padding 32 gives a 100-column terminal.
+# The pages show the videos about 700 px wide, so 100 columns keeps the
+# text readable; table output (at most 99 columns) fits on one line, and
+# only the longest commands wrap. Keep new output under 100 columns, for
+# example with --fields.
 #
-# Live recordings run against real events, which can be taller than the
-# mock's: bound what a scene prints where you can (`-x --fields ...` fixes
-# the field count, though -x never truncates values, so a long or multi-line
-# value can still add rows), and leave headroom. VHS text output reads the
-# buffer, not the screen, so a scene that scrolls just loses its bottom rows
-# in the golden; tapegolden catches that, because a settled scene must end
-# at a prompt, and fails the render with "doesn't end at a prompt".
+# Height 560 gives about 16 rows (about 29 px per row, plus the padding and
+# window bar). Each tape that needs a different height sets `Set Height`
+# right after `Source`, sized to its tallest scene plus a spare row, so the
+# videos don't carry empty space. Live recordings (search, tail) get more
+# headroom: real events can wrap differently from the mock's.
+#
 Set Shell "bash"
-Set FontSize 16
-Set Width 1280
-Set Height 420
-Set Padding 24
+Set FontSize 24
+Set Width 1600
+Set Height 560
+Set Padding 32
 Set Theme "Catppuccin Mocha"
 Set WindowBar Colorful
 Set TypingSpeed 40ms
