@@ -5,7 +5,7 @@ description: Use when querying Bronto logs/traces, sending events, or managing B
 
 # bronto-cli
 
-Command-line client for the [Bronto](https://bronto.io) observability platform. This file is a short orientation — `bronto --help` and `bronto <command> --help` are the source of truth for exact flags. Task guides live at https://bronto-cli.vercel.app.
+Command-line client for the [Bronto](https://bronto.io) observability platform. This file is a short orientation — `bronto --help` and `bronto <command> --help` are the source of truth for exact flags. Task guides live at https://bronto-cli-dev.mintlify.site/cli.
 
 ## Auth quickstart
 

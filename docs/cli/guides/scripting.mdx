@@ -203,10 +203,12 @@ In CI, set `BRONTO_API_KEY` directly. See [CI/CD](/cli/guides/ci-cd).
   repository is a short guide for agents such as Claude Code. It covers the main commands,
   the output contract, and the exit codes. Point your agent at it, or drop it into
   your agent's skills directory.
-- [`llms.txt`](https://github.com/bronto-community/bronto-cli/blob/main/llms.txt) is a
-  20-line summary. This site also publishes
-  [`llms.txt`](https://bronto-cli.vercel.app/llms.txt) and
-  [`llms-full.txt`](https://bronto-cli.vercel.app/llms-full.txt).
+- [`llms.txt`](https://github.com/bronto-community/bronto-cli/blob/main/llms.txt) in the
+  repository is a 20-line summary of the CLI.
+- Every page of these docs is also available as Markdown: add `.md` to its URL, or use
+  the page menu next to the title to copy it or open it in an AI assistant. The docs
+  site serves `/llms.txt`, an index of all pages, and `/llms-full.txt`, every page in
+  one file.
 - `bronto --help` and `bronto <command> --help` always match the installed binary.
 - `bronto ask` without `--yes` prints a query plan as JSON when piped, so an agent can
   review a generated query before running it. See [Ask](/cli/guides/ask).

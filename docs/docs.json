@@ -31,6 +31,9 @@
     "indexing": "navigable",
     "metatags": { "robots": "noindex" }
   },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude", "mcp", "cursor", "vscode"]
+  },
   "navbar": {
     "links": [
       { "label": "Bronto docs", "href": "https://docs.bronto.io" },
