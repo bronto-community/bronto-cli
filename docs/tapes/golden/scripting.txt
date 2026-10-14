@@ -1,7 +1,7 @@
 > bronto search "status >= 500" -d prod/checkout-service --since 1h -o json | jq length
 13
-> bronto search "status >= 500" -d prod/checkout-service --select host -o jsonl --jq .host -r | sort | uniq -c | sed 's/
-^ *//'
+> bronto search "status >= 500" -d prod/checkout-service --select host -o jsonl --jq .host -r | sort
+ | uniq -c | sed 's/^ *//'
 3 web-1
 6 web-2
 4 web-3
@@ -11,9 +11,10 @@
 >
 ────────────────────────────────────────────────────────────────────────────────
 > bronto search "status >= 500" -d checkout-service; echo "exit code: $?"
-Error: 2 datasets are named "checkout-service": prod/checkout-service, staging/checkout-service (usage_ambiguous_dataset
-)
-Hint: Qualify it as <collection>/<name> — e.g. -d prod/checkout-service — or pass the UUID from 'bronto datasets list'.
+Error: 2 datasets are named "checkout-service": prod/checkout-service, staging/checkout-service (usa
+ge_ambiguous_dataset)
+Hint: Qualify it as <collection>/<name> — e.g. -d prod/checkout-service — or pass the UUID from 'bro
+nto datasets list'.
 exit code: 2
 >
 ────────────────────────────────────────────────────────────────────────────────
