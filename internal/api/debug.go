@@ -45,7 +45,7 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	_, _ = fmt.Fprintf(d.W, "* %s %s\n", req.Method, req.URL.Redacted())
-	keyAPI := strings.HasPrefix(req.URL.Path, "/api-keys")
+	keyAPI := isAPIKeysPath(req.URL.Path)
 	if len(reqBody) > 0 {
 		_, _ = fmt.Fprintf(d.W, "* > %s\n", redactBody(truncateBody(reqBody), keyAPI))
 	}
@@ -76,16 +76,24 @@ func truncateBody(b []byte) string {
 	return string(b)
 }
 
-// secretField matches a JSON string member whose name holds secrets, in
+// secretField matches a JSON string member whose name holds secrets
+// (api_key, *_secret, *password, *private_key, or any name ending in
+// "token"; case-insensitive, so accessToken too), in
 // raw (possibly truncated, so not always parseable) body text. The value
 // may be cut off by the body cap, so a missing closing quote still
 // matches up to the end of the text.
-var secretField = regexp.MustCompile(`"((?:[A-Za-z_]*_)?(?:api_key|secret|password|token|private_key))"(\s*:\s*)"(?:[^"\\]|\\.)*"?`)
+var secretField = regexp.MustCompile(`"((?i:(?:[a-z0-9_]*_)?(?:api_key|secret|password|private_key)|[a-z0-9_]*token))"(\s*:\s*)"(?:[^"\\]|\\.)*"?`)
 
 // keyField matches a "key" member. It is redacted only on /api-keys,
 // where it holds key material; elsewhere "key" names a log field (top
 // keys, fields), which a debug trace should show.
 var keyField = regexp.MustCompile(`"(key)"(\s*:\s*)"(?:[^"\\]|\\.)*"?`)
+
+// isAPIKeysPath reports whether path addresses the API keys resource,
+// with any base_url path prefix (/proxy/api-keys) and any key id after it.
+func isAPIKeysPath(path string) bool {
+	return strings.Contains(path+"/", "/api-keys/")
+}
 
 // redactBody replaces the values of secret-bearing JSON string members
 // with "REDACTED". keyAPI also redacts "key" (true for /api-keys paths).

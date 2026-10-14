@@ -79,6 +79,8 @@ func TestRedactBody(t *testing.T) {
 		{"value cut off by the body cap", `{"name":"ci","api_key":"bronto_abc`, false, `{"name":"ci","api_key":"REDACTED"`},
 		{"key on /api-keys", `{"key":"bronto_abc123"}`, true, `{"key":"REDACTED"}`},
 		{"key elsewhere is a field name", `[{"key":"status","count":3}]`, false, `[{"key":"status","count":3}]`},
+		{"any token suffix, any case", `{"oauth2_token":"a","bearertoken":"b","accessToken":"c","API_KEY":"d"}`, false,
+			`{"oauth2_token":"REDACTED","bearertoken":"REDACTED","accessToken":"REDACTED","API_KEY":"REDACTED"}`},
 		{"lookalike names stay", `{"token_count":"5","keys":"a","secretary":"b"}`, false, `{"token_count":"5","keys":"a","secretary":"b"}`},
 		{"non-string values stay", `{"api_key":null}`, false, `{"api_key":null}`},
 	}
@@ -109,5 +111,16 @@ func TestDebugTransportRedactsKeyMaterial(t *testing.T) {
 	}
 	if out := trace.String(); strings.Contains(out, "bronto_live_key") || !strings.Contains(out, `"api_key":"REDACTED"`) {
 		t.Fatalf("key material in the debug trace: %s", out)
+	}
+}
+
+func TestIsAPIKeysPath(t *testing.T) {
+	for path, want := range map[string]bool{
+		"/api-keys": true, "/api-keys/123": true, "/proxy/api-keys": true, "/proxy/api-keys/123": true,
+		"/logs": false, "/api-keys-legacy": false, "/top-keys": false,
+	} {
+		if got := isAPIKeysPath(path); got != want {
+			t.Errorf("isAPIKeysPath(%q) = %v, want %v", path, got, want)
+		}
 	}
 }
