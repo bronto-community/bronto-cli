@@ -63,7 +63,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the architecture map, test and lint
 
 The bronto CLI doesn't phone home: it sends no analytics or usage data to Bronto or the maintainers. By default the only network calls it makes are the ones you ask for, to the Bronto API and ingestion endpoints you've configured.
 
-You can opt in to OpenTelemetry tracing of the CLI's own runs. It is off unless you set the standard `OTEL_*` variables, and spans go only to the OTLP endpoint you configure, with command arguments sanitized. See [Telemetry](https://bronto-cli.vercel.app/configuration/telemetry/).
+You can opt in to OpenTelemetry tracing of the CLI's own runs. It is off unless you set the standard `OTEL_*` variables, and spans go only to the exporter those variables select. By default, argument values are sanitized before they're recorded; `BRONTO_TELEMETRY_CAPTURE` can turn that off or record nothing. See [Telemetry](https://bronto-cli.vercel.app/configuration/telemetry/).
 
 ## License
 
