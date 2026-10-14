@@ -7,7 +7,7 @@ Source settings.tape
 # account. --fields fixes the field count, not the height (-x never
 # truncates values), so the chosen fields are short ones. The scene is 16
 # rows; 480 px (20 rows) leaves headroom over the default 17.
-Set Height 480
+Set Height 640
 Require bronto
 
 Type "bronto fields -d prod/checkout-service status"

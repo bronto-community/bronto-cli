@@ -4,7 +4,7 @@ Output resources.txt
 Source settings.tape
 # The dry-run scene is 18 rows tall (the mute plan prints as indented JSON);
 # 480 px gives a 20-row terminal.
-Set Height 480
+Set Height 660
 Require bronto
 
 Type "bronto monitors list"

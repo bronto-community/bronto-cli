@@ -4,6 +4,7 @@
 Output tail.webm
 Output tail.txt
 Source settings.tape
+Set Height 600
 Require bronto
 
 Type "bronto tail -d prod/checkout-service --interval 1s --fields @time,@status,host,message"
