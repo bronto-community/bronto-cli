@@ -1,0 +1,48 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "bronto CLI (dev)",
+  "description": "Development build of the bronto CLI docs. The published docs are at https://docs.bronto.io/cli.",
+  "colors": {
+    "primary": "#F4C430",
+    "light": "#F4C430",
+    "dark": "#F4C430"
+  },
+  "logo": {
+    "dark": "/logo/bronto_white.png",
+    "light": "/logo/bronto_black.png",
+    "href": "/cli"
+  },
+  "favicon": "/logo/favicon.png",
+  "fonts": {
+    "heading": { "family": "Inter" },
+    "body": { "family": "Inter" }
+  },
+  "background": {
+    "color": { "dark": "#282828", "light": "#ffffff" }
+  },
+  "styling": {
+    "codeblocks": "dark"
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "seo": {
+    "indexing": "navigable",
+    "metatags": { "robots": "noindex" }
+  },
+  "navbar": {
+    "links": [
+      { "label": "Bronto docs", "href": "https://docs.bronto.io" },
+      { "label": "GitHub", "href": "https://github.com/bronto-community/bronto-cli" }
+    ]
+  },
+  "redirects": [
+    { "source": "/", "destination": "/cli" }
+  ],
+  "navigation": {
+    "tabs": [
+      { "$ref": "cli/navigation.json" }
+    ]
+  }
+}

@@ -196,7 +196,7 @@ func docsMentionedCommands(t *testing.T, root *cobra.Command, repoRoot string) m
 // docs site: every top-level command, and every subcommand that is not a
 // uniform resource verb (list/get/create/update/delete), must appear as a
 // `bronto <path>` code span (inline, fenced, or "$ "-prompted) in at least
-// one hand-written page under docs/src/content/docs/ (the generated
+// one hand-written page under docs/cli/ (the generated
 // reference does not count — it documents everything by construction).
 //
 // Deliberate exceptions live in docs/coverage-allowlist.txt with a reason;
@@ -219,7 +219,7 @@ func TestDocsGuideCoverage(t *testing.T) {
 		missing = append(missing, fmt.Sprintf("  bronto %-32s -> e.g. %s", p, guideHint(p)))
 	}
 	if len(missing) > 0 {
-		t.Errorf("%d command(s) are not taught in any hand-written docs page (docs/src/content/docs/**, excluding the generated reference/commands/):\n%s\n\n"+
+		t.Errorf("%d command(s) are not taught in any hand-written docs page (docs/cli/**, excluding the generated reference/commands/):\n%s\n\n"+
 			"Fix: show each one as a `bronto <command> ...` code span in the guide where a user would look for it.\n"+
 			"If a command genuinely needs no guide, add it to %s as '<command path>  # reason'.",
 			len(missing), strings.Join(missing, "\n"), docsCoverageAllowlist)
@@ -264,7 +264,7 @@ func TestDocsCoverageAllowlist(t *testing.T) {
 func TestDocsReferenceComplete(t *testing.T) {
 	root := docsRootCmd()
 	refDir := filepath.Join(docsRepoRoot(t), filepath.FromSlash(docsReferenceDir))
-	for _, f := range []string{"index.md", "global-flags.md"} {
+	for _, f := range []string{"index.mdx", "global-flags.mdx", "navigation.json"} {
 		if _, err := os.Stat(filepath.Join(refDir, f)); err != nil {
 			t.Errorf("generated reference is missing %s — run 'make docs-reference'", f)
 		}
@@ -278,9 +278,9 @@ func TestDocsReferenceComplete(t *testing.T) {
 		}
 		page, ok := pages[top.Name()]
 		if !ok {
-			data, err := os.ReadFile(filepath.Join(refDir, top.Name()+".md"))
+			data, err := os.ReadFile(filepath.Join(refDir, top.Name()+".mdx"))
 			if err != nil {
-				problems = append(problems, fmt.Sprintf("  no page %s.md for %q", top.Name(), top.CommandPath()))
+				problems = append(problems, fmt.Sprintf("  no page %s.mdx for %q", top.Name(), top.CommandPath()))
 				pages[top.Name()] = ""
 				continue
 			}
@@ -292,19 +292,19 @@ func TestDocsReferenceComplete(t *testing.T) {
 		}
 		if c == top {
 			if !strings.Contains(page, fmt.Sprintf("title: %q", c.CommandPath())) {
-				problems = append(problems, fmt.Sprintf("  %s.md does not have title %q", top.Name(), c.CommandPath()))
+				problems = append(problems, fmt.Sprintf("  %s.mdx does not have title %q", top.Name(), c.CommandPath()))
 			}
 			continue
 		}
 		if !strings.Contains(page, "\n## "+c.CommandPath()+"\n") {
-			problems = append(problems, fmt.Sprintf("  %s.md has no section for %q", top.Name(), c.CommandPath()))
+			problems = append(problems, fmt.Sprintf("  %s.mdx has no section for %q", top.Name(), c.CommandPath()))
 		}
 	}
 	// Pages for commands that no longer exist.
 	entries, _ := os.ReadDir(refDir)
 	for _, e := range entries {
-		name := strings.TrimSuffix(e.Name(), ".md")
-		if name == "index" || name == "global-flags" || !strings.HasSuffix(e.Name(), ".md") {
+		name := strings.TrimSuffix(e.Name(), ".mdx")
+		if name == "index" || name == "global-flags" || !strings.HasSuffix(e.Name(), ".mdx") {
 			continue
 		}
 		if _, ok := pages[name]; !ok {

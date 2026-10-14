@@ -1,5 +1,5 @@
 # Re-records the docs' VHS videos against the live CI test account and
-# opens a PR with the new docs/public/tapes/*.{webm,png}. The text goldens
+# opens a PR with the new docs/cli/tapes/*.{webm,png}. The text goldens
 # (docs/tapes/golden/) stay mock-based and are NOT touched: CI's
 # docs-tapes-check compares them against a mock run, and a live account's
 # data is not deterministic.
@@ -83,8 +83,8 @@ jobs:
         with:
           name: docs-tapes
           path: |
-            docs/public/tapes/*.webm
-            docs/public/tapes/*.png
+            docs/cli/tapes/*.webm
+            docs/cli/tapes/*.png
           if-no-files-found: error
           retention-days: 7
 
@@ -109,7 +109,7 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: docs-tapes
-          path: docs/public/tapes
+          path: docs/cli/tapes
 
       - name: Open or update the PR
         env:
@@ -118,14 +118,14 @@ jobs:
           RUN_ID: ${{ github.run_id }}
         run: |
           branch=docs/live-tapes
-          if git diff --quiet -- docs/public/tapes && [ -z "$(git ls-files --others -- docs/public/tapes)" ]; then
+          if git diff --quiet -- docs/cli/tapes && [ -z "$(git ls-files --others -- docs/cli/tapes)" ]; then
             echo "::notice::Recorded videos are identical to $BASE; nothing to do."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$branch"
-          git add -- docs/public/tapes/*.webm docs/public/tapes/*.png
+          git add -- docs/cli/tapes/*.webm docs/cli/tapes/*.png
           git commit -m "docs: re-record videos against the live CI account" \
             -m "Recorded by the docs-record workflow (run ${RUN_ID}). Text goldens are unchanged; they stay mock-based."
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${branch}"

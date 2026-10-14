@@ -1,17 +1,18 @@
-# Docs site shell (docs/, Astro Starlight). Included by the top-level Makefile.
+# Docs site shell (docs/, Mintlify). Included by the top-level Makefile.
 
-.PHONY: docs-install docs-build docs-dev
+.PHONY: docs-install docs-validate docs-dev
 
-# docs-install installs the exact locked dependencies.
+# docs-install installs the exact locked dependencies (the mint CLI).
 docs-install:
 	npm --prefix docs ci
 
-# docs-build builds the static site into docs/dist. starlight-links-validator
-# fails the build on broken internal links.
-docs-build: docs-install
-	npm --prefix docs run build
+# docs-validate builds the site in strict mode (fails on MDX errors and
+# docs.json problems) and checks internal links and their #anchors.
+docs-validate: docs-install
+	cd docs && npx --no-install mint validate
+	cd docs && npx --no-install mint broken-links --check-anchors
 
-# docs-dev runs the dev server with live reload (http://localhost:4321).
+# docs-dev runs the local preview with live reload (http://localhost:3000).
 docs-dev:
 	@test -d docs/node_modules || npm --prefix docs ci
-	npm --prefix docs run dev
+	cd docs && npx --no-install mint dev

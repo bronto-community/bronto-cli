@@ -1,11 +1,11 @@
 # Generated command reference + docs coverage gates (owner: generator).
 # Included by the top-level Makefile via `-include docs/mk/*.mk`.
 
-DOCS_REFERENCE_DIR := docs/src/content/docs/reference/commands
+DOCS_REFERENCE_DIR := docs/cli/reference/commands
 
 .PHONY: docs-reference docs-reference-check docs-coverage
 
-# docs-reference regenerates docs/src/content/docs/reference/commands/ from
+# docs-reference regenerates docs/cli/reference/commands/ from
 # the cobra command tree (internal/tools/docgen). Commit the result.
 docs-reference:
 	go run ./internal/tools/docgen -out $(DOCS_REFERENCE_DIR) -links docs/reference-links.yaml

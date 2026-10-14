@@ -1,5 +1,5 @@
 // Package docsnippets runs the docs' tested shell snippets: every
-// ```console test fenced block under docs/src/content/docs is extracted,
+// ```console fenced block under docs/cli is extracted,
 // each "$ " command runs through sh -c against the docs mock server
 // (internal/tools/docsmock/mock) with the bronto binary built from this
 // repo, and its stdout is compared with the lines that follow it.
@@ -13,12 +13,15 @@
 //     that is exactly "..." matches any number of lines (zero or more)
 //   - a command with no expected lines only has to exit with the expected
 //     code
-//   - "test exit=N" in the fence meta expects exit code N for every
-//     command in the block (default 0)
-//   - "test tty" in the fence meta runs every command with stdout on a
-//     pseudo-terminal, so bronto behaves as it does for a reader typing at
-//     a terminal (table output by default, TTY-only hints); without it
-//     stdout is a pipe and bronto prints its machine (JSON/JSONL) defaults
+//   - options go in an MDX comment on the line directly above the fence,
+//     {/* test: tty exit=2 */}, because Mintlify shows any words after the
+//     fence's language as the block's title
+//   - "exit=N" expects exit code N for every command in the block
+//     (default 0)
+//   - "tty" runs every command with stdout on a pseudo-terminal, so bronto
+//     behaves as it does for a reader typing at a terminal (table output
+//     by default, TTY-only hints); without it stdout is a pipe and bronto
+//     prints its machine (JSON/JSONL) defaults
 //
 // The machinery lives here (non-test code) so its own tests can drive it
 // against fixture markdown; TestDocSnippets is the real entry point.
@@ -41,12 +44,12 @@ import (
 	"time"
 )
 
-// Snippet is one ```console test block.
+// Snippet is one ```console block.
 type Snippet struct {
 	File     string // path as given to Extract's root, joined with the relative path
 	Line     int    // 1-based line of the opening fence
-	ExitCode int    // expected exit code for every command (test exit=N)
-	TTY      bool   // run commands with stdout on a pseudo-terminal (test tty)
+	ExitCode int    // expected exit code for every command (exit=N)
+	TTY      bool   // run commands with stdout on a pseudo-terminal (tty)
 	Commands []Command
 }
 
@@ -61,12 +64,14 @@ type Command struct {
 func (s Snippet) Name() string { return fmt.Sprintf("%s:%d", s.File, s.Line) }
 
 var (
-	fenceOpen = regexp.MustCompile("^([ \t]*)(`{3,}|~{3,})[ \t]*console(?:[ \t]+(.*))?$")
-	exitMeta  = regexp.MustCompile(`(?:^|\s)exit=(\d+)(?:\s|$)`)
+	fenceOpen = regexp.MustCompile("^([ \t]*)(`{3,}|~{3,})[ \t]*console(?:[ \t].*)?$")
+	// testOpts is the options comment, {/* test: tty exit=2 */}.
+	testOpts = regexp.MustCompile(`^[ \t]*\{/\*[ \t]*test:(.*?)\*/\}[ \t]*$`)
+	exitMeta = regexp.MustCompile(`(?:^|\s)exit=(\d+)(?:\s|$)`)
 )
 
 // Extract walks root for .md and .mdx files and returns every
-// ```console test block, in path order. A missing root yields no
+// ```console block, in path order. A missing root yields no
 // snippets (the docs may not exist yet), not an error.
 func Extract(root string) ([]Snippet, error) {
 	var files []string
@@ -101,7 +106,7 @@ func Extract(root string) ([]Snippet, error) {
 	return out, nil
 }
 
-// Parse extracts the ```console test blocks from one markdown document.
+// Parse extracts the ```console blocks from one markdown document.
 func Parse(name string, doc []byte) ([]Snippet, error) {
 	var out []Snippet
 	sc := bufio.NewScanner(bytes.NewReader(doc))
@@ -111,16 +116,22 @@ func Parse(name string, doc []byte) ([]Snippet, error) {
 	var indent, fence string
 	var body []string
 	var bodyStart int
+	var prev string // the line before the current one, for the options comment
 	for sc.Scan() {
 		lineNo++
 		line := sc.Text()
 		if cur == nil {
 			m := fenceOpen.FindStringSubmatch(line)
-			if m == nil || !hasWord(m[3], "test") {
+			opts := ""
+			if om := testOpts.FindStringSubmatch(prev); om != nil {
+				opts = om[1]
+			}
+			prev = line
+			if m == nil {
 				continue
 			}
-			cur = &Snippet{File: name, Line: lineNo, TTY: hasWord(m[3], "tty")}
-			if em := exitMeta.FindStringSubmatch(m[3]); em != nil {
+			cur = &Snippet{File: name, Line: lineNo, TTY: hasWord(opts, "tty")}
+			if em := exitMeta.FindStringSubmatch(opts); em != nil {
 				cur.ExitCode, _ = strconv.Atoi(em[1])
 			}
 			indent, fence, body, bodyStart = m[1], m[2], nil, lineNo+1
@@ -134,7 +145,7 @@ func Parse(name string, doc []byte) ([]Snippet, error) {
 			}
 			cur.Commands = cmds
 			out = append(out, *cur)
-			cur = nil
+			cur, prev = nil, line
 			continue
 		}
 		body = append(body, strings.TrimPrefix(line, indent))
@@ -143,7 +154,7 @@ func Parse(name string, doc []byte) ([]Snippet, error) {
 		return nil, err
 	}
 	if cur != nil {
-		return nil, fmt.Errorf("%s:%d: unterminated ```console test block", name, cur.Line)
+		return nil, fmt.Errorf("%s:%d: unterminated ```console block", name, cur.Line)
 	}
 	return out, nil
 }
@@ -171,14 +182,14 @@ func parseBody(name string, firstLine int, body []string) ([]Command, error) {
 			cmds = append(cmds, c)
 		case len(cmds) == 0:
 			if strings.TrimSpace(line) != "" {
-				return nil, fmt.Errorf("%s:%d: output before the first \"$ \" command in a console test block", name, firstLine+i)
+				return nil, fmt.Errorf("%s:%d: output before the first \"$ \" command in a console block", name, firstLine+i)
 			}
 		default:
 			cmds[len(cmds)-1].Want = append(cmds[len(cmds)-1].Want, line)
 		}
 	}
 	if len(cmds) == 0 {
-		return nil, fmt.Errorf("%s:%d: console test block without a \"$ \" command", name, firstLine-1)
+		return nil, fmt.Errorf("%s:%d: console block without a \"$ \" command", name, firstLine-1)
 	}
 	return cmds, nil
 }
@@ -415,18 +426,23 @@ func (r *Runner) exec(c Command, env []string, dir string, timeout time.Duration
 	return res
 }
 
-// Format renders results as a ready-to-paste ```console test block (used
-// by DOCS_SNIPPETS_PRINT=1 to fill in expected outputs).
+// Format renders results as a ready-to-paste ```console block, with its
+// options comment (used by DOCS_SNIPPETS_PRINT=1 to fill in expected
+// outputs).
 func Format(s Snippet, results []Result) string {
 	var b strings.Builder
-	meta := "console test"
+	var opts []string
 	if s.TTY {
-		meta += " tty"
+		opts = append(opts, "tty")
 	}
 	if s.ExitCode != 0 {
-		meta += fmt.Sprintf(" exit=%d", s.ExitCode)
+		opts = append(opts, fmt.Sprintf("exit=%d", s.ExitCode))
 	}
-	fmt.Fprintf(&b, "--- %s\n```%s\n", s.Name(), meta)
+	fmt.Fprintf(&b, "--- %s\n", s.Name())
+	if len(opts) > 0 {
+		fmt.Fprintf(&b, "{/* test: %s */}\n", strings.Join(opts, " "))
+	}
+	b.WriteString("```console\n")
 	for _, r := range results {
 		fmt.Fprintf(&b, "$ %s\n", r.Command.Cmd)
 		for _, l := range normalize(strings.Split(strings.TrimRight(r.Stdout, "\n"), "\n")) {

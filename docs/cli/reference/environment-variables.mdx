@@ -1,0 +1,73 @@
+---
+title: Environment variables
+description: Every environment variable the bronto CLI reads, what it overrides, and its matching config key.
+---
+
+Environment variables override config files and are overridden by command-line flags.
+See [precedence](/cli/configuration/config-files#precedence).
+
+## Credentials and endpoints
+
+| Variable | Config key | Flag | Purpose |
+| --- | --- | --- | --- |
+| `BRONTO_API_KEY` | none (never read from files) | `--api-key` | API key. When set, the keychain isn't consulted. |
+| `BRONTO_REGION` | `region` | `--region` | `eu` (default) or `us`. Must be a lowercase slug. |
+| `BRONTO_BASE_URL` | `base_url` | `--base-url` | Full REST API base URL. Overrides the region-derived `https://api.<region>.bronto.io`. |
+| `BRONTO_INGEST_URL` | `ingest_url` | `--ingest-url` on `bronto send` | Ingestion endpoint. Overrides `https://ingestion.<region>.bronto.io`. |
+| `BRONTO_PROFILE` | `profile` | `--profile` | Named profile to use. |
+| `BRONTO_CONFIG_DIR` | | | Parent directory of `bronto/config.toml`, the fallback credentials file, and REPL history. Defaults to the OS user config directory. |
+
+## HTTP behavior
+
+| Variable | Config key | Flag | Purpose |
+| --- | --- | --- | --- |
+| `BRONTO_TIMEOUT` | `timeout` | `--timeout` | HTTP timeout in seconds (default 30). |
+| `BRONTO_MAX_RETRIES` | `max_retries` | `--max-retries` | Retries for idempotent requests on 429, 502, 503, and 504 (default 2). |
+
+## Web app links
+
+Used by `bronto search --url` and `--open`.
+
+| Variable | Config key | Purpose |
+| --- | --- | --- |
+| `BRONTO_APP_URL` | `app_url` | Web app base URL. Defaults to the region's web app. |
+| `BRONTO_ORG_ID` | `org_id` | Organization id for links. Defaults to the active org reported by the API. |
+
+## `bronto ask`
+
+| Variable | Config key | Purpose |
+| --- | --- | --- |
+| `BRONTO_ASK_URL` | `ask_url` | OpenAI-compatible chat-completions URL. |
+| `BRONTO_ASK_MODEL` | `ask_model` | Model name (default `gpt-4o-mini`). |
+| `BRONTO_ASK_API_KEY` | none (env only) | Key for the ask endpoint, sent as a bearer token. |
+
+## Output
+
+| Variable | Purpose |
+| --- | --- |
+| `NO_COLOR` | Any non-empty value turns off color. `--no-color` does the same. |
+| `FORCE_COLOR` | Any non-empty value forces color on, even when not writing to a terminal. `NO_COLOR` and `--no-color` win over it. |
+| `TERM` | `TERM=dumb` turns off color unless `FORCE_COLOR` is set. |
+
+## Telemetry
+
+`bronto` reads the standard OpenTelemetry variables to trace its own runs. Tracing is off unless
+an exporter is configured. See [Telemetry](/cli/configuration/telemetry).
+
+| Variable | Purpose |
+| --- | --- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Turns on OTLP trace export to this endpoint. `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` does the same. |
+| `OTEL_TRACES_EXPORTER` | `otlp`, `console` (to stderr) or `none`. |
+| `OTEL_SDK_DISABLED` | `true` turns tracing off. |
+| `OTEL_SERVICE_NAME` | `service.name` (default `bronto-cli`). |
+| `BRONTO_TELEMETRY_CAPTURE` | How much of the command line spans record: `default` (sanitized), `none` or `all` (raw, except API keys). |
+| `TRACEPARENT`, `TRACESTATE`, `BAGGAGE` | Trace context to continue. Passed on to API requests and exec plugins. |
+
+## Install script
+
+These apply to `scripts/install.sh` only, not to the CLI:
+
+| Variable | Purpose |
+| --- | --- |
+| `VERSION` | Release tag to install, for example `v0.1.0`. Defaults to the latest release. |
+| `BINDIR` | Install directory. Defaults to `/usr/local/bin`. |

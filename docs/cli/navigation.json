@@ -1,0 +1,61 @@
+{
+  "tab": "CLI",
+  "groups": [
+    {
+      "group": "Start here",
+      "pages": [
+        "cli/index",
+        "cli/getting-started/install",
+        "cli/getting-started/authentication",
+        "cli/getting-started/quickstart"
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "cli/guides/searching",
+        "cli/guides/live-tail",
+        "cli/guides/traces",
+        "cli/guides/ask",
+        "cli/guides/sending-data",
+        "cli/guides/resources",
+        "cli/guides/monitors-and-dashboards",
+        "cli/guides/access-management",
+        "cli/guides/exports",
+        "cli/guides/scripting",
+        "cli/guides/ci-cd"
+      ]
+    },
+    {
+      "group": "Configuration",
+      "pages": [
+        "cli/configuration/config-files",
+        "cli/configuration/environments",
+        "cli/configuration/shell-completion",
+        "cli/configuration/telemetry"
+      ]
+    },
+    {
+      "group": "Extend",
+      "pages": [
+        "cli/extend/plugins",
+        "cli/extend/api"
+      ]
+    },
+    {
+      "group": "Help",
+      "pages": [
+        "cli/troubleshooting"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": [
+        "cli/reference/exit-codes",
+        "cli/reference/environment-variables",
+        "cli/reference/output-formats",
+        { "$ref": "reference/commands/navigation.json" }
+      ]
+    }
+  ]
+}

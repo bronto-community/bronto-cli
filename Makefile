@@ -99,9 +99,9 @@ vuln:
 mutation:
 	scripts/mutation.sh
 
-# Docs site (docs/, Astro Starlight). Each docs concern contributes its
+# Docs site (docs/, Mintlify). Each docs concern contributes its
 # targets through a fragment in docs/mk/; docs-check is what CI runs.
 -include docs/mk/*.mk
 
 .PHONY: docs-check
-docs-check: docs-reference-check docs-coverage docs-snippets docs-tapes-check docs-build
+docs-check: docs-reference-check docs-coverage docs-snippets docs-tapes-check docs-validate
