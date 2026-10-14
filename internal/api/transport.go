@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -128,11 +129,19 @@ func NewHTTPClient(apiKey, version string) *http.Client {
 		CheckRedirect: refuseCrossHostRedirect,
 		Transport: &Transport{
 			APIKey:     apiKey,
-			UserAgent:  "bronto-cli/" + version,
+			UserAgent:  UserAgent(version),
 			MaxRetries: 2,
 			Base:       newTracingTransport(http.DefaultTransport),
 		},
 	}
+}
+
+// UserAgent is the User-Agent the CLI sends to Bronto, for example
+// "bronto-cli/0.7.0 (darwin; arm64)". The backend tells CLI traffic apart
+// by the "bronto-cli/" prefix; the comment names the platform the binary
+// was built for.
+func UserAgent(version string) string {
+	return fmt.Sprintf("bronto-cli/%s (%s; %s)", version, runtime.GOOS, runtime.GOARCH)
 }
 
 // refuseCrossHostRedirect stops the client before it follows a redirect to
