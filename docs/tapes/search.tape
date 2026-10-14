@@ -6,7 +6,8 @@ Source settings.tape
 # mock's, and a bare -x scrolled off screen when recorded against the CI
 # account. --fields fixes the field count, not the height (-x never
 # truncates values), so the chosen fields are short ones. The scene is 16
-# rows; 480 px (20 rows) leaves headroom over the default 17.
+# rows, including the wrapped -x command; 640 px (18 rows) leaves headroom
+# over the 560 px (16-row) default for live data that wraps differently.
 Set Height 640
 Require bronto
 

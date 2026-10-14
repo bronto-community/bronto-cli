@@ -3,7 +3,7 @@ Output resources.webm
 Output resources.txt
 Source settings.tape
 # The dry-run scene is 18 rows tall (the mute plan prints as indented JSON);
-# 480 px gives a 20-row terminal.
+# 660 px gives 19 rows at the shared font size, one spare.
 Set Height 660
 Require bronto
 

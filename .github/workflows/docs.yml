@@ -78,7 +78,14 @@ jobs:
           curl -fsSL -o /tmp/ttyd "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VERSION}/ttyd.x86_64"
           echo "${TTYD_SHA256}  /tmp/ttyd" | sha256sum -c -
           sudo install -m 0755 /tmp/ttyd /usr/local/bin/ttyd
-          go install "github.com/charmbracelet/vhs@${VHS_VERSION}"
+          # sum.golang.org intermittently drops HTTP/2 streams ("stream
+          # error ... INTERNAL_ERROR"); retry the module download.
+          for attempt in 1 2 3 4; do
+            go install "github.com/charmbracelet/vhs@${VHS_VERSION}" && break
+            [ "$attempt" = 4 ] && exit 1
+            echo "go install failed (attempt $attempt), retrying in $((attempt * 10))s" >&2
+            sleep $((attempt * 10))
+          done
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
           "$(go env GOPATH)/bin/vhs" --version
           ttyd --version
