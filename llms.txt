@@ -30,5 +30,5 @@ bronto send -d app -m 'hello world'
 
 - Agent usage guide: ./skill.md
 - Full reference: `bronto --help` and `bronto <command> --help`
-- CLI docs: https://bronto-cli.vercel.app
+- CLI docs: https://bronto-cli-dev.mintlify.site/cli
 - Platform docs: https://docs.bronto.io

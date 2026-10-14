@@ -21,7 +21,7 @@ or
 curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | sh
 ```
 
-The [install guide](https://bronto-cli.vercel.app/getting-started/install/) covers `go install`, Docker images, `.deb`/`.rpm` packages, release archives, and signature verification.
+The [install guide](https://bronto-cli-dev.mintlify.site/cli/getting-started/install) covers `go install`, Docker images, `.deb`/`.rpm` packages, release archives, and signature verification.
 
 ## Quickstart
 
@@ -33,18 +33,18 @@ bronto search "status >= 500" -d <dataset> --since 1h
 bronto search "status >= 500" -d <dataset> --since 1h | jq .   # JSONL when piped
 ```
 
-The [quickstart](https://bronto-cli.vercel.app/getting-started/quickstart/) walks through these steps in more detail.
+The [quickstart](https://bronto-cli-dev.mintlify.site/cli/getting-started/quickstart) walks through these steps in more detail.
 
 ## Documentation
 
-The full documentation is at **https://bronto-cli.vercel.app**:
+The full documentation is at **https://bronto-cli-dev.mintlify.site/cli**:
 
-- [Authentication](https://bronto-cli.vercel.app/getting-started/authentication/): API keys, regions, profiles
-- [Searching](https://bronto-cli.vercel.app/guides/searching/), [live tail](https://bronto-cli.vercel.app/guides/live-tail/), and [traces](https://bronto-cli.vercel.app/guides/traces/)
-- [Managing resources](https://bronto-cli.vercel.app/guides/resources/): the shared `list | get | create | update | delete` pattern
-- [Scripting and agents](https://bronto-cli.vercel.app/guides/scripting/) and [CI/CD](https://bronto-cli.vercel.app/guides/ci-cd/)
-- [Configuration](https://bronto-cli.vercel.app/configuration/config-files/) and [troubleshooting](https://bronto-cli.vercel.app/troubleshooting/)
-- [Command reference](https://bronto-cli.vercel.app/reference/commands/), generated from the CLI
+- [Authentication](https://bronto-cli-dev.mintlify.site/cli/getting-started/authentication): API keys, regions, profiles
+- [Searching](https://bronto-cli-dev.mintlify.site/cli/guides/searching), [live tail](https://bronto-cli-dev.mintlify.site/cli/guides/live-tail), and [traces](https://bronto-cli-dev.mintlify.site/cli/guides/traces)
+- [Managing resources](https://bronto-cli-dev.mintlify.site/cli/guides/resources): the shared `list | get | create | update | delete` pattern
+- [Scripting and agents](https://bronto-cli-dev.mintlify.site/cli/guides/scripting) and [CI/CD](https://bronto-cli-dev.mintlify.site/cli/guides/ci-cd)
+- [Configuration](https://bronto-cli-dev.mintlify.site/cli/configuration/config-files) and [troubleshooting](https://bronto-cli-dev.mintlify.site/cli/troubleshooting)
+- [Command reference](https://bronto-cli-dev.mintlify.site/cli/reference/commands), generated from the CLI
 
 For agents, [`skill.md`](./skill.md) is a short orientation and [`llms.txt`](./llms.txt) a 20-line summary. `bronto --help` and `bronto <command> --help` always match the installed binary. Platform concepts (datasets, the query language, monitors) are documented at [docs.bronto.io](https://docs.bronto.io).
 
@@ -63,7 +63,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the architecture map, test and lint
 
 The bronto CLI doesn't phone home: it sends no analytics or usage data to Bronto or the maintainers. By default the only network calls it makes are the ones you ask for, to the Bronto API and ingestion endpoints you've configured.
 
-You can opt in to OpenTelemetry tracing of the CLI's own runs. It is off unless you set the standard `OTEL_*` variables, and spans go only to the exporter those variables select. By default, argument values are sanitized before they're recorded; `BRONTO_TELEMETRY_CAPTURE` can turn that off or record nothing. See [Telemetry](https://bronto-cli.vercel.app/configuration/telemetry/).
+You can opt in to OpenTelemetry tracing of the CLI's own runs. It is off unless you set the standard `OTEL_*` variables, and spans go only to the exporter those variables select. By default, argument values are sanitized before they're recorded; `BRONTO_TELEMETRY_CAPTURE` can turn that off or record nothing. See [Telemetry](https://bronto-cli-dev.mintlify.site/cli/configuration/telemetry).
 
 ## License
 
