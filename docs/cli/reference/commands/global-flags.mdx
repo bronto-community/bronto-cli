@@ -10,13 +10,13 @@ These flags are defined on the root `bronto` command and are accepted by every s
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--api-key` |  | string |  | Bronto management API key (prefer the BRONTO\_API\_KEY env var) |
+| `--api-key` |  | string |  | Bronto API key (prefer the BRONTO\_API\_KEY env var) |
 | `--base-url` |  | string |  | override the API base URL |
-| `--debug` |  | bool |  | print API requests and responses on stderr, with the API key redacted |
+| `--debug` |  | bool |  | print API requests and responses on stderr, with API keys and other secrets redacted |
 | `--dry-run` |  | bool |  | print mutating API calls instead of executing them (reads still run) |
 | `--fields` |  | strings |  | select specific fields (comma-separated); use '?' to list available field names |
 | `--jq` |  | string |  | jq expression applied to json/jsonl output (each result prints on its own line); values that fail the expression are skipped |
-| `--max-retries` |  | int | `2` | retries for idempotent requests on 429/5xx (config: max\_retries, env: BRONTO\_MAX\_RETRIES) |
+| `--max-retries` |  | int | `2` | retries for idempotent requests on 429, 502, 503, and 504 (config: max\_retries, env: BRONTO\_MAX\_RETRIES) |
 | `--no-color` |  | bool |  | disable color output |
 | `--output` | `-o` | string |  | output format: table\|json\|jsonl\|raw\|csv |
 | `--profile` |  | string |  | named profile to use |

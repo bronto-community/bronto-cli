@@ -32,7 +32,7 @@ The default `search` table promotes the most informative parsed fields into colu
 
 `-d`/`--dataset` accepts a dataset **name** or UUID everywhere; a name duplicated across collections is qualified as `collection/name` (e.g. `-d prod/api-logs`). With one dataset in the account it is auto-picked; with several, the error lists them.
 
-Agent-critical flags (global): `--dry-run` stops any mutating call — reads still run. Every mutating verb (`create`/`update`/`delete` and action verbs like `groups add-members`, `monitors mute`, `users deactivate`) prints the request as a plan document on stdout (`{"dry_run":true,"method":"POST","path":"/monitors","body":{…}}`), with names resolved to ids in `path`. `--debug` traces requests/responses on stderr (API key never printed). `--timeout <s>` and `--max-retries <n>` tune the HTTP client.
+Agent-critical flags (global): `--dry-run` stops any mutating call — reads still run. Every mutating verb (`create`/`update`/`delete` and action verbs like `groups add-members`, `monitors mute`, `users deactivate`) prints the request as a plan document on stdout (`{"dry_run":true,"method":"POST","path":"/monitors","body":{…}}`), with names resolved to ids in `path`. `--debug` traces requests/responses on stderr (API key header never printed; secret body fields redacted). `--timeout <s>` and `--max-retries <n>` tune the HTTP client.
 
 ## Offline mode
 

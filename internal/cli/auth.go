@@ -117,7 +117,7 @@ func acquireKey(cmd *cobra.Command, keyStdin bool) (string, error) {
 		}
 		key = strings.TrimSpace(string(b))
 	case stdoutIsTTY() && stdinIsTTY():
-		_, _ = fmt.Fprint(cmd.ErrOrStderr(), "Bronto management API key: ")
+		_, _ = fmt.Fprint(cmd.ErrOrStderr(), "Bronto API key: ")
 		b, err := readPassword(int(os.Stdin.Fd()))
 		_, _ = fmt.Fprintln(cmd.ErrOrStderr())
 		if err != nil {

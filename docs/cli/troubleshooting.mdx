@@ -131,7 +131,8 @@ instead.
 ## See what the CLI is doing
 
 - `--debug` prints every request and response on stderr: method, URL, status, latency, and
-  truncated bodies. The API key never appears.
+  truncated bodies. The API key header never appears, and secret fields in bodies show as
+  `REDACTED`. Bodies can still contain log data, so check a trace before you share it.
 - `--dry-run` prints mutating requests instead of sending them.
 
 Still stuck? Search or open an issue on

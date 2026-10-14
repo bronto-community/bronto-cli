@@ -9,8 +9,10 @@ collector; [Ingest Data into Bronto](https://docs.bronto.io/ingest-data/overview
 the options, and [Quick Ingest](https://docs.bronto.io/getting-started/quick-ingestion)
 covers the same HTTP API that `send` uses.
 
-An ingestion-only API key is enough for `send`. Every other command needs a management
-key (see [Authentication](/cli/getting-started/authentication#which-key-you-need)).
+An ingestion-only API key is enough for `send`. Every other command that calls the Bronto
+API needs a management key; local commands such as `bronto version` or
+`bronto search --local` need none (see
+[Authentication](/cli/getting-started/authentication#which-key-you-need)).
 
 ## One event
 
