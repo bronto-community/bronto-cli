@@ -178,7 +178,13 @@ func TestRenderWaterfallAlignsEscapedLabels(t *testing.T) {
 	if strings.Contains(buf.String(), "\x1b") {
 		t.Fatalf("raw ESC printed: %q", buf.String())
 	}
-	col := func(l string) int { return utf8.RuneCountInString(l[:strings.Index(l, "█")]) }
+	col := func(l string) int {
+		before, _, ok := strings.Cut(l, "█")
+		if !ok {
+			t.Fatalf("no bar in %q", l)
+		}
+		return utf8.RuneCountInString(before)
+	}
 	if col(lines[0]) != col(lines[1]) {
 		t.Fatalf("bars misaligned:\n%s\n%s", lines[0], lines[1])
 	}
