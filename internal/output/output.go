@@ -14,6 +14,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
+
 	"github.com/itchyny/gojq"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
@@ -146,7 +148,7 @@ func cellValue(v any) string {
 		}
 	case map[string]any, []any, []map[string]any, []string:
 		// Nested structures as compact JSON, not Go's map[k:v] syntax.
-		if b, err := json.Marshal(v); err == nil {
+		if b, err := marshalJSON(v); err == nil {
 			return string(b)
 		}
 	}
@@ -188,8 +190,9 @@ func (p *Printer) cell(row map[string]any, col string) string {
 // printFieldUnion implements "--fields ?" for PrintRows: the sorted union
 // of every row's keys, one per line, in place of the data.
 func (p *Printer) printFieldUnion(rows []map[string]any) error {
+	// Keys come from API data, so escape them like table cells.
 	for _, n := range unionKeys(rows) {
-		if _, err := fmt.Fprintln(p.w, n); err != nil {
+		if _, err := fmt.Fprintln(p.w, termsafe.Line(n)); err != nil {
 			return err
 		}
 	}
@@ -212,7 +215,7 @@ func (p *Printer) printNewFields(row map[string]any) error {
 	sort.Strings(keys)
 	for _, k := range keys {
 		p.seenFields[k] = struct{}{}
-		if _, err := fmt.Fprintln(p.w, k); err != nil {
+		if _, err := fmt.Fprintln(p.w, termsafe.Line(k)); err != nil {
 			return err
 		}
 	}
@@ -243,7 +246,7 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 			}
 			return nil
 		}
-		enc := json.NewEncoder(p.w)
+		enc := newEncoder(p.w)
 		enc.SetIndent("", "  ")
 		return enc.Encode(filtered)
 	case FormatJSONL, FormatRaw:
@@ -277,14 +280,19 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 			return nil
 		}
 		tw := tabwriter.NewWriter(p.w, 2, 4, 2, ' ', tabwriter.StripEscape)
-		_, _ = fmt.Fprintln(tw, strings.ToUpper(strings.Join(columns, "\t")))
+		header := make([]string, len(columns))
+		for i, c := range columns {
+			// Columns can come from the data's own keys.
+			header[i] = strings.ToUpper(termsafe.Line(c))
+		}
+		_, _ = fmt.Fprintln(tw, strings.Join(header, "\t"))
 		// NB: must be the raw \xff byte — string(rune(0xff)) would UTF-8
 		// encode to two bytes tabwriter does not recognize.
 		esc := string([]byte{tabwriter.Escape})
 		for _, r := range rows {
 			vals := make([]string, len(columns))
 			for i, c := range columns {
-				v := truncateCell(p.cell(r, c))
+				v := truncateCell(termsafe.Line(p.cell(r, c)))
 				if p.colorize != nil {
 					if pre := p.colorize(c, v); pre != "" {
 						v = esc + pre + esc + v + esc + "\x1b[0m" + esc
@@ -308,7 +316,7 @@ func (p *Printer) PrintRow(columns []string, row map[string]any) error {
 			_, err := fmt.Fprintln(p.w, raw)
 			return err
 		}
-		return json.NewEncoder(p.w).Encode(row)
+		return newEncoder(p.w).Encode(row)
 	case FormatJSONL:
 		r := row
 		if len(p.fields) > 0 {
@@ -317,7 +325,7 @@ func (p *Printer) PrintRow(columns []string, row map[string]any) error {
 		if p.jq != nil {
 			return runJQ(p.w, p.jq, r, p.rawOutput)
 		}
-		return json.NewEncoder(p.w).Encode(r)
+		return newEncoder(p.w).Encode(r)
 	default:
 		return clierr.New("internal_output_misuse",
 			fmt.Sprintf("PrintRow requires a streaming format, got %q", p.format))
@@ -399,6 +407,74 @@ func unionKeys(rows []map[string]any) []string {
 	return names
 }
 
+// newEncoder is json.NewEncoder without HTML escaping: & < > in data
+// (URLs, queries) must print as-is, not as \u0026 \u003c \u003e.
+func newEncoder(w io.Writer) *json.Encoder {
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	return enc
+}
+
+// marshalJSON is json.Marshal without HTML escaping and without the
+// encoder's trailing newline.
+func marshalJSON(v any) ([]byte, error) {
+	var b strings.Builder
+	if err := newEncoder(&b).Encode(v); err != nil {
+		return nil, err
+	}
+	return []byte(strings.TrimSuffix(b.String(), "\n")), nil
+}
+
+// printJSONAsCSV renders a PrintJSON document as CSV: an object is one
+// row, an array of objects one row each, with the --fields columns or else
+// the sorted union of keys as the header. Nested values are compact JSON
+// cells. A document with no object rows (a scalar, an array of scalars)
+// has no columns, so it is a usage error rather than silent JSON.
+func (p *Printer) printJSONAsCSV(v any) error {
+	var rows []map[string]any
+	switch t := v.(type) {
+	case map[string]any:
+		rows = []map[string]any{t}
+	case []map[string]any:
+		rows = t
+	case []any:
+		for _, item := range t {
+			m, ok := item.(map[string]any)
+			if !ok {
+				rows = nil
+				break
+			}
+			rows = append(rows, m)
+		}
+		if len(t) == 0 {
+			rows = []map[string]any{}
+		}
+	}
+	if rows == nil {
+		return clierr.New("usage_invalid_output_format", "this output has no columns to render as csv").
+			WithHint("Use -o json or -o jsonl.")
+	}
+	columns := p.fields
+	if len(columns) == 0 {
+		columns = unionKeys(rows)
+	}
+	cw := csv.NewWriter(p.w)
+	if err := cw.Write(columns); err != nil {
+		return err
+	}
+	for _, r := range rows {
+		rec := make([]string, len(columns))
+		for i, c := range columns {
+			rec[i] = p.cell(r, c)
+		}
+		if err := cw.Write(rec); err != nil {
+			return err
+		}
+	}
+	cw.Flush()
+	return cw.Error()
+}
+
 func (p *Printer) PrintJSON(v any) error {
 	if p.listFields {
 		for _, n := range jsonFieldUnion(v) {
@@ -414,8 +490,14 @@ func (p *Printer) PrintJSON(v any) error {
 	if p.jq != nil {
 		return runJQ(p.w, p.jq, v, p.rawOutput)
 	}
-	enc := json.NewEncoder(p.w)
-	if p.format == FormatTable { // human context: pretty-print
+	if p.format == FormatCSV {
+		return p.printJSONAsCSV(v)
+	}
+	// Pretty-print for humans and for -o json, matching what PrintRows
+	// does for lists; jsonl/raw stay one compact line (raw has no @raw
+	// line to print here, so it falls back to compact JSON like PrintRow).
+	enc := newEncoder(p.w)
+	if p.format == FormatTable || p.format == FormatJSON {
 		enc.SetIndent("", "  ")
 	}
 	return enc.Encode(v)
@@ -478,12 +560,12 @@ func (p *Printer) PrintExpanded(rows []map[string]any, priority []string, dimKey
 		}
 		tw := tabwriter.NewWriter(p.w, 2, 4, 2, ' ', 0)
 		for _, k := range expandedKeyOrder(r, priority) {
-			name := k
+			name := termsafe.Line(k)
 			if dimKeys {
 				// uniform per-key overhead keeps tabwriter alignment intact
-				name = "\x1b[2m" + k + "\x1b[0m"
+				name = "\x1b[2m" + name + "\x1b[0m"
 			}
-			_, _ = fmt.Fprintf(tw, "%s\t%s\n", name, cell(r, k))
+			_, _ = fmt.Fprintf(tw, "%s\t%s\n", name, termsafe.Line(cell(r, k)))
 		}
 		if err := tw.Flush(); err != nil {
 			return err

@@ -106,6 +106,15 @@ func newSearchCmd() *cobra.Command {
 						"--local evaluates the query offline: dataset, time-range, select, and group flags do not apply").
 						WithHint("Filter on your own fields in the query, e.g. bronto search --local dump.jsonl \"status >= 500\".")
 				}
+				// Server-only views and ordering: --local keeps file order
+				// and prints matching events, nothing else.
+				for _, name := range []string{"histogram", "patterns", "url", "open", "order-by", "oldest-first", "saved"} {
+					if cmd.Flags().Changed(name) {
+						return clierr.New("usage_invalid_flags",
+							"--"+name+" needs a server search and doesn't apply to --local").
+							WithHint("Drop --" + name + "; --local prints the matching lines in file order.")
+					}
+				}
 				if limit < 1 || limit > 10000 {
 					return clierr.New("usage_invalid_limit",
 						fmt.Sprintf("limit must be between 1 and 10000, got %d", limit))
@@ -142,6 +151,14 @@ func newSearchCmd() *cobra.Command {
 			}
 			if showPatterns && !cmd.Flags().Changed("limit") {
 				limit = 2000 // clustering wants a real sample, not the default page
+			}
+			if explainOnly {
+				// The plan is one JSON document; it has no rows for csv.
+				if f, ferr := app.DetectFormat(false); ferr == nil && f == output.FormatCSV {
+					return clierr.New("usage_invalid_flags",
+						"--explain-only prints a JSON document and cannot be rendered as csv").
+						WithHint("Drop -o csv, or pass -o json.")
+				}
 			}
 			if limit < 1 || limit > 10000 {
 				return clierr.New("usage_invalid_limit",
@@ -185,8 +202,14 @@ func newSearchCmd() *cobra.Command {
 				_, err := fmt.Fprintln(app.Stdout, where)
 				return err
 			}
+			// The API requires select on every search, explain-only and
+			// grouped ones included (400 "should contain property select").
 			effSelect := selects
-			if len(effSelect) == 0 && len(groups) == 0 && !explainOnly {
+			switch {
+			case len(effSelect) > 0:
+			case len(groups) > 0:
+				effSelect = []string{"count(*)"} // same default as tail -g
+			default:
 				// "*" makes the API populate the parsed KVs (message_kvs)
 				// in events; without it only @raw comes back and the human
 				// table has nothing to promote. "@raw" must stay explicit:
@@ -208,18 +231,16 @@ func newSearchCmd() *cobra.Command {
 				}
 				return browserOpen(u)
 			}
+			// Always explicit: the live API defaults to oldest first.
+			mostRecentFirst := !oldestFirst
 			req := bronto.SearchRequest{
 				From: ids, FromExpr: expr, Time: spec, Where: where,
 				Select: effSelect, Groups: groups, Limit: limit, Slices: slices,
-				OrderBy: orderBy, ExplainOnly: explainOnly,
+				MostRecentFirst: &mostRecentFirst, OrderBy: orderBy, ExplainOnly: explainOnly,
 			}
 			if histogram {
 				client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
 				return runHistogram(cmd.Context(), app, client, req, slices)
-			}
-			if oldestFirst {
-				mrf := false
-				req.MostRecentFirst = &mrf
 			}
 			client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
 			resp, err := client.Search(cmd.Context(), req)
@@ -360,7 +381,7 @@ func printEvents(app *App, events []map[string]any, view eventView) error {
 				ref = fmt.Sprintf("%q", ref)
 			}
 			_, _ = fmt.Fprintf(app.Stderr,
-				"%s. %s available — 'bronto fields -d %s' lists them; '--select <field,...>' picks columns; '-x' expands a row.\n",
+				"%s. %s available — 'bronto fields -d %s' lists them; '--select <field>' picks a column (repeatable); '-x' expands a row.\n",
 				countNoun(len(rows), "result"), countNoun(teachableFieldCount(rows), "field"), ref)
 		}
 		return nil
@@ -548,20 +569,11 @@ var browserOpen = func(u string) error {
 	return c.Start()
 }
 
-// printPatterns clusters the fetched events' raw lines into templates.
+// printPatterns clusters the fetched events' messages into templates.
 func printPatterns(app *App, events []map[string]any) error {
 	lines := make([]string, 0, len(events))
 	for _, ev := range events {
-		line := ""
-		if v, ok := ev["@raw"]; ok && v != nil {
-			line = fmt.Sprint(v)
-		}
-		if line == "" {
-			if v, ok := ev["message"]; ok && v != nil {
-				line = fmt.Sprint(v)
-			}
-		}
-		if line != "" {
+		if line := patternLine(ev); line != "" {
 			lines = append(lines, line)
 		}
 	}
@@ -582,6 +594,23 @@ func printPatterns(app *App, events []map[string]any) error {
 		_, _ = fmt.Fprintf(app.Stderr, "%d pattern(s) from %d event(s)\n", len(rows), len(lines))
 	}
 	return p.PrintRows([]string{"count", "pattern"}, rows)
+}
+
+// patternLine is the text --patterns clusters for one event: the parsed
+// message field when there is one, else the raw line. Clustering @raw of
+// a JSON log groups by key layout and buries the message among ids and
+// timestamps, so the message wins whenever the parser extracted one.
+func patternLine(ev map[string]any) string {
+	kvs, _ := ev["message_kvs"].(map[string]any)
+	for _, v := range []any{kvs["message"], ev["message_kvs.message"], ev["message"], ev["@raw"]} {
+		if v == nil {
+			continue
+		}
+		if s := fmt.Sprint(v); s != "" {
+			return s
+		}
+	}
+	return ""
 }
 
 // enrichQueryError attaches a local parse diagnosis (caret included) to a

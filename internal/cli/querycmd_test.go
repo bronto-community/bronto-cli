@@ -61,8 +61,10 @@ func TestQueryCheckJSON(t *testing.T) {
 	}
 
 	// No warnings is an empty array, not null.
+	// -o json is pretty-printed, so compare compacted.
 	out, _, err = runQueryCheck(t, "", "slow", "-o", "json")
-	if err != nil || strings.TrimSpace(out) != `{"fields":[],"valid":true,"warnings":[]}` {
+	var compact bytes.Buffer
+	if err != nil || json.Compact(&compact, []byte(out)) != nil || compact.String() != `{"fields":[],"valid":true,"warnings":[]}` {
 		t.Fatalf("out = %q, err = %v", out, err)
 	}
 }

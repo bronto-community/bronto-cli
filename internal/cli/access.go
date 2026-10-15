@@ -84,8 +84,8 @@ func newGroupMembershipCmd(add bool) *cobra.Command {
 	}
 	cmd.Flags().StringSliceVar(&users, "users", nil, "users to "+verb+", by id or email (comma-separated or repeated)")
 	cmd.Flags().StringSliceVar(&groups, "groups", nil, "groups to "+verb+", by id or name (comma-separated or repeated)")
-	_ = cmd.RegisterFlagCompletionFunc("users", completeKindFlag("users"))
-	_ = cmd.RegisterFlagCompletionFunc("groups", completeKindFlag("groups"))
+	_ = cmd.RegisterFlagCompletionFunc("users", completeKindListFlag("users"))
+	_ = cmd.RegisterFlagCompletionFunc("groups", completeKindListFlag("groups"))
 	return cmd
 }
 

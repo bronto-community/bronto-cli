@@ -2,13 +2,17 @@ package api
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
 )
 
 // debugBodyCap bounds how much of a request/response body the debug trace
@@ -33,7 +37,7 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	var reqBody []byte
 	if req.Body != nil && req.GetBody != nil {
 		if rc, err := req.GetBody(); err == nil {
-			reqBody, _ = io.ReadAll(io.LimitReader(rc, debugBodyCap+1))
+			reqBody = readDebugBody(rc, req.Header.Get("Content-Encoding"))
 			_ = rc.Close()
 		}
 	}
@@ -44,10 +48,10 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	_, _ = fmt.Fprintf(d.W, "* %s %s\n", req.Method, req.URL.Redacted())
+	_, _ = fmt.Fprintf(d.W, "* %s %s\n", req.Method, debugURL(req.URL))
 	keyAPI := isAPIKeysPath(req.URL.Path)
 	if len(reqBody) > 0 {
-		_, _ = fmt.Fprintf(d.W, "* > %s\n", redactBody(truncateBody(reqBody), keyAPI))
+		_, _ = fmt.Fprintf(d.W, "* > %s\n", termsafe.Text(redactBody(truncateBody(reqBody), keyAPI)))
 	}
 	if err != nil {
 		_, _ = fmt.Fprintf(d.W, "* ! %v (%s)\n", err, elapsed)
@@ -63,10 +67,58 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			io.Closer
 		}{io.MultiReader(bytes.NewReader(peek), rest), rest}
 		if len(peek) > 0 {
-			_, _ = fmt.Fprintf(d.W, "* < %s\n", redactBody(truncateBody(peek), keyAPI))
+			_, _ = fmt.Fprintf(d.W, "* < %s\n", termsafe.Text(redactBody(truncateBody(peek), keyAPI)))
 		}
 	}
 	return resp, nil
+}
+
+// readDebugBody reads up to debugBodyCap+1 bytes of a request body for the
+// trace. A gzip body (bronto send compresses by default) is decompressed
+// so the trace shows the events rather than binary noise; if that fails,
+// a placeholder says what was sent.
+func readDebugBody(r io.Reader, encoding string) []byte {
+	if !strings.EqualFold(encoding, "gzip") {
+		b, _ := io.ReadAll(io.LimitReader(r, debugBodyCap+1))
+		return b
+	}
+	raw, _ := io.ReadAll(r)
+	zr, err := gzip.NewReader(bytes.NewReader(raw))
+	if err == nil {
+		b, err := io.ReadAll(io.LimitReader(zr, debugBodyCap+1))
+		if err == nil || len(b) > debugBodyCap {
+			return b
+		}
+	}
+	return []byte(fmt.Sprintf("<gzip body, %d bytes>", len(raw)))
+}
+
+// secretQueryKey matches query parameter names whose values are secrets:
+// anything mentioning a token, key, secret, password, signature or
+// credential (token=, api_key=, X-Amz-Signature=, sig=, …).
+var secretQueryKey = regexp.MustCompile(`(?i)token|key|secret|passw|signature|^sig$|credential|auth`)
+
+// debugURL renders u for the trace with the userinfo password and the
+// values of secret-looking query parameters replaced. Unlike RedactURL
+// (telemetry, which drops every query value), other parameters stay
+// readable: seeing limit=10 or the where clause is the point of --debug.
+func debugURL(u *url.URL) string {
+	c := *u
+	if c.RawQuery != "" {
+		parts := strings.Split(c.RawQuery, "&")
+		for i, kv := range parts {
+			k, _, hasVal := strings.Cut(kv, "=")
+			name, err := url.QueryUnescape(k)
+			if err != nil {
+				name = k
+			}
+			if hasVal && secretQueryKey.MatchString(name) {
+				parts[i] = k + "=REDACTED"
+			}
+		}
+		c.RawQuery = strings.Join(parts, "&")
+	}
+	return c.Redacted()
 }
 
 func truncateBody(b []byte) string {

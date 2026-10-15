@@ -59,3 +59,23 @@ func TestExitStatusPluginExitPassesCodeThroughUnrendered(t *testing.T) {
 		t.Fatalf("exitStatus(live, PluginExit{7}) = (%d, %v), want (7, false)", code, render)
 	}
 }
+
+// TestExitStatusShutdownErrorRendersAfterInterrupt pins that a failure in
+// the clean-up after Ctrl-C (send's final flush) is reported with its own
+// exit code, not swallowed into a silent 130.
+func TestExitStatusShutdownErrorRendersAfterInterrupt(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := &cli.ShutdownError{Err: clierr.New("network_error", "connection refused")}
+	code, render := exitStatus(ctx, err)
+	if code != 1 || !render {
+		t.Fatalf("exitStatus(canceled, ShutdownError) = (%d, %v), want (1, true)", code, render)
+	}
+	if got := errorType(ctx, err); got != "network_error" {
+		t.Fatalf("errorType = %q, want network_error", got)
+	}
+	// A plain cancellation error is still the silent 130.
+	if code, render := exitStatus(ctx, context.Canceled); code != 130 || render {
+		t.Fatalf("exitStatus(canceled, context.Canceled) = (%d, %v), want (130, false)", code, render)
+	}
+}

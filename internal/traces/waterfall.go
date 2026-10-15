@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
 )
 
 const (
@@ -15,6 +17,10 @@ const (
 	ansiGreen = "\x1b[32m"
 	ansiCyan  = "\x1b[36m"
 )
+
+// MinBarWidth is the narrowest --bar-width the CLI accepts. The renderers
+// clamp anything below 1 themselves, but a bar that narrow shows nothing.
+const MinBarWidth = 10
 
 // BuildTree indexes spans into a parent->children map and finds roots.
 // A span is a root when its parent is absent from THIS batch — which
@@ -88,6 +94,9 @@ func TraceBounds(spans []Span) (start, end, total int64) {
 // RenderBar draws a span's position on the trace axis. Unlike v1, bars are
 // clamped into [0,width] so pathological offsets cannot overflow the column.
 func RenderBar(s Span, traceStart, total int64, width int, color bool) string {
+	if width < 1 {
+		width = 1
+	}
 	if total < 1 {
 		total = 1
 	}
@@ -182,7 +191,8 @@ func RenderWaterfall(w io.Writer, spans []Span, width int, color bool) {
 	maxLabel := 0
 	for _, s := range spans {
 		services[s.Service] = true
-		if l := utf8.RuneCountInString(s.Service) + utf8.RuneCountInString(s.Name) + 1; l > maxLabel {
+		// Measure the escaped label: that is what gets printed.
+		if l := utf8.RuneCountInString(termsafe.Line(s.Service + "/" + s.Name)); l > maxLabel {
 			maxLabel = l
 		}
 	}
@@ -196,7 +206,7 @@ func RenderWaterfall(w io.Writer, spans []Span, width int, color bool) {
 
 	for _, f := range dfsOrder(spans) {
 		indent := strings.Repeat("  ", f.depth)
-		labelPlain := f.span.Service + "/" + f.span.Name
+		labelPlain := termsafe.Line(f.span.Service + "/" + f.span.Name)
 		full := indent + labelPlain
 		padded := padTo(full, nameCol)
 		if utf8.RuneCountInString(padded) == utf8.RuneCountInString(full) {
@@ -212,7 +222,7 @@ func RenderWaterfall(w io.Writer, spans []Span, width int, color bool) {
 				status = " ERROR"
 			}
 		case f.span.Status != "" && !strings.HasSuffix(strings.ToUpper(f.span.Status), "UNSET"):
-			st := strings.TrimPrefix(f.span.Status, "STATUS_CODE_")
+			st := termsafe.Line(strings.TrimPrefix(f.span.Status, "STATUS_CODE_"))
 			if color {
 				status = " " + ansiDim + st + ansiReset
 			} else {

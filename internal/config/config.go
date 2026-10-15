@@ -5,13 +5,12 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
-
-	toml "github.com/pelletier/go-toml/v2"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
@@ -37,11 +36,16 @@ type LoadOptions struct {
 	Getenv        func(string) string
 	WorkDir       string
 	UserConfigDir string // parent dir; config lives at <dir>/bronto/config.toml
+	// Lenient skips value validation (region) so `bronto config` can still
+	// show and repair a file holding an invalid value.
+	Lenient bool
 }
 
 type Config struct {
-	values  map[string]Value
-	profile string
+	values        map[string]Value
+	profile       string
+	projectFile   string
+	profileInFile bool
 }
 
 var envKeys = map[string]string{
@@ -104,6 +108,7 @@ func Load(opts LoadOptions) (*Config, error) {
 		return nil, err
 	}
 	if proj != nil {
+		c.projectFile = projPath
 		if _, has := proj["api_key"]; has {
 			return nil, clierr.New("config_secret_in_project_file",
 				fmt.Sprintf("refusing to read api_key from %s", projPath)).
@@ -121,7 +126,9 @@ func Load(opts LoadOptions) (*Config, error) {
 	if uf != nil {
 		set("profile", uf.DefaultProfile, SourceUser)
 		c.profile = c.values["profile"].Val
-		if p, ok := uf.Profiles[c.profile]; ok {
+		p, ok := uf.Profiles[c.profile]
+		c.profileInFile = ok
+		if ok {
 			if _, has := p["api_key"]; has {
 				return nil, clierr.New("config_secret_in_config_file",
 					"refusing to read api_key from the user config file").
@@ -145,12 +152,73 @@ func Load(opts LoadOptions) (*Config, error) {
 	// came from. base_url/ingest_url are exempt: they are only settable
 	// from trusted sources (flags/env/user config) and are full URLs by
 	// design. 2026-07-23 audit, HIGH.
-	if v, ok := c.values["region"]; ok {
+	if v, ok := c.values["region"]; ok && !opts.Lenient {
 		if err := validateRegion(v.Val); err != nil {
 			return nil, err
 		}
 	}
+	// A malformed base_url would otherwise surface as a retryable
+	// network_error on the first request (or, with a query string, as a
+	// silently mangled path), so reject it as the config error it is.
+	for _, k := range []string{"base_url", "ingest_url"} {
+		if v, ok := c.values[k]; ok && !opts.Lenient {
+			if err := validateURLSetting(k, v.Val); err != nil {
+				return nil, err
+			}
+		}
+	}
 	return c, nil
+}
+
+// validateURLSetting checks a URL-valued setting: absolute http(s) with a
+// host. base_url also may not carry a query or fragment, since request
+// paths are appended to it ("…/pfx?x=1" + "/logs" is not a URL anyone
+// means).
+func validateURLSetting(key, val string) error {
+	u, err := url.Parse(val)
+	switch {
+	case err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "":
+		return clierr.New("config_invalid_url", fmt.Sprintf("%s must be an http(s) URL, got %q", key, RedactURLString(val))).
+			WithHint("Example: https://api.eu.bronto.io")
+	case key == "base_url" && (u.RawQuery != "" || u.Fragment != "" || u.ForceQuery):
+		return clierr.New("config_invalid_url", fmt.Sprintf("base_url can't have a query string or fragment, got %q", RedactURLString(val))).
+			WithHint("Use only scheme, host and an optional path prefix, e.g. https://example.com/bronto")
+	}
+	return nil
+}
+
+// RedactURLString masks the password of a URL's userinfo
+// ("https://user:xxxxx@host"), for printing a configured URL. Values that
+// don't parse are returned unchanged.
+func RedactURLString(s string) string {
+	u, err := url.Parse(s)
+	if err == nil {
+		if u.User == nil {
+			return s
+		}
+		return u.Redacted()
+	}
+	// Malformed ("https://u:pw@host:bad", a bad %-escape): url.Parse
+	// finds no userinfo, so mask everything between the scheme and the
+	// last '@' before any query or fragment by hand. A value without a
+	// "user:password@" part (an ordinary setting) is returned unchanged.
+	prefix, rest := "", s
+	if i := strings.Index(s, "://"); i >= 0 {
+		prefix, rest = s[:i+3], s[i+3:]
+	}
+	auth := rest
+	if j := strings.IndexAny(rest, "?#"); j >= 0 {
+		auth = rest[:j]
+	}
+	at := strings.LastIndex(auth, "@")
+	if at < 0 {
+		return s
+	}
+	user, _, hasPassword := strings.Cut(auth[:at], ":")
+	if !hasPassword {
+		return s
+	}
+	return prefix + user + ":xxxxx" + rest[at:]
 }
 
 // regionPattern is a conservative slug: lowercase alphanumerics and
@@ -163,7 +231,7 @@ func validateRegion(r string) error {
 	if !regionPattern.MatchString(r) {
 		return clierr.New("config_invalid_region",
 			fmt.Sprintf("invalid region %q", r)).
-			WithHint("Region must be a slug like 'eu' or 'us' (lowercase letters, digits, dashes). Use base_url for a custom endpoint.")
+			WithHint("Region must be a slug like 'eu' or 'us' (lowercase letters, digits, dashes), e.g. 'bronto config set region eu'. Use base_url for a custom endpoint.")
 	}
 	return nil
 }
@@ -184,11 +252,11 @@ func loadUserFile(dir string, getenv func(string) string) (*userFile, error) {
 	if err != nil {
 		return nil, nil //nolint:nilerr // absent user config file is fine
 	}
-	var uf userFile
-	if err := toml.Unmarshal(b, &uf); err != nil {
+	uf, err := parseUserFile(b)
+	if err != nil {
 		return nil, clierr.New("config_parse_error", fmt.Sprintf("cannot parse %s: %v", path, err))
 	}
-	return &uf, nil
+	return uf, nil
 }
 
 // HasProfile reports whether the user config file has a [profiles.<name>]
@@ -243,6 +311,13 @@ func (c *Config) Values() map[string]Value {
 	}
 	return out
 }
+
+// ProfileConfigured reports whether the user config file has a section
+// for the selected profile.
+func (c *Config) ProfileConfigured() bool { return c.profileInFile }
+
+// ProjectFile is the path of the .bronto.toml that was read, or "".
+func (c *Config) ProjectFile() string { return c.projectFile }
 
 func (c *Config) APIKey() string  { return c.values["api_key"].Val }
 func (c *Config) Profile() string { return c.values["profile"].Val }

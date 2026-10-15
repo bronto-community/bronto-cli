@@ -62,6 +62,17 @@ func Resolve(since, from, to string, now func() time.Time) (Spec, error) {
 					fmt.Sprintf("--to is not RFC3339: %q", to))
 			}
 		}
+		// The API rejects an inverted range with a bare 400; catch it
+		// here so it is a usage error with the values echoed back.
+		if fromT.After(toT) {
+			end := "--to " + to
+			if to == "" {
+				end = "now (no --to given)"
+			}
+			return Spec{}, clierr.New("usage_invalid_time_flags",
+				fmt.Sprintf("--from %s is after %s", from, end)).
+				WithHint("--from is the start of the range and must not be later than --to.")
+		}
 		return Spec{FromTs: fromT.UnixMilli(), ToTs: toT.UnixMilli()}, nil
 	}
 	return Spec{}, nil

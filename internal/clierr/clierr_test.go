@@ -133,3 +133,13 @@ func TestRenderMachineEnvelopeIncludesHint(t *testing.T) {
 		t.Fatalf("hintless error must omit the field: %s", buf.String())
 	}
 }
+
+// Error messages can quote API bodies: the human renderer escapes
+// controls, the JSON envelope is already escaped by encoding/json.
+func TestRenderHumanEscapesControls(t *testing.T) {
+	var buf bytes.Buffer
+	Render(&buf, New("api_error", "Bronto API returned 400: \x1b]0;x\a").WithHint("try\x1b[2J"), false)
+	if strings.ContainsAny(buf.String(), "\x1b\a") || !strings.Contains(buf.String(), `\x1b]0;x\x07`) {
+		t.Fatalf("got %q", buf.String())
+	}
+}

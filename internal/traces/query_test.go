@@ -52,3 +52,16 @@ func TestQuoteEscapesSingleQuotes(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestMinDurationClause(t *testing.T) {
+	if got := MinDurationClause(0); got != "" {
+		t.Fatalf("0 ms must add no clause, got %q", got)
+	}
+	if got := MinDurationClause(-1); got != "" {
+		t.Fatalf("negative ms must add no clause, got %q", got)
+	}
+	// "at least" in the flag help: the boundary value itself matches.
+	if got := MinDurationClause(1.5); got != "$span.duration_nano >= 1500000" {
+		t.Fatalf("clause = %q", got)
+	}
+}

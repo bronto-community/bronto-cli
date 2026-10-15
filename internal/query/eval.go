@@ -15,9 +15,15 @@ import (
 // written as literals (regexes, LIKE patterns, free-text terms) are
 // compiled once at construction.
 type Matcher struct {
-	node Node
-	res  map[string]*regexp.Regexp
+	node     Node
+	res      map[string]*regexp.Regexp
+	fallback string
 }
+
+// SetFieldFallbackPrefix makes a field absent from the event resolve to
+// prefix+field instead, e.g. status → message_kvs.status for events
+// dumped by bronto search -o jsonl. An exact key always wins.
+func (m *Matcher) SetFieldFallbackPrefix(prefix string) { m.fallback = prefix }
 
 // NewMatcher compiles the pattern literals reachable from n. An invalid
 // regex is reported here, not at match time.
@@ -169,8 +175,18 @@ func negate(v tri) tri {
 	return triUnknown
 }
 
+// lookup returns field's value, falling back to the prefixed name (see
+// SetFieldFallbackPrefix) when the event has no such key.
+func (m *Matcher) lookup(ev map[string]any, field string) (any, bool) {
+	v, ok := ev[field]
+	if !ok && m.fallback != "" {
+		v, ok = ev[m.fallback+field]
+	}
+	return v, ok
+}
+
 func (m *Matcher) compare(c Compare, ev map[string]any) tri {
-	v, ok := ev[c.Field]
+	v, ok := m.lookup(ev, c.Field)
 	present := ok && v != nil
 	switch c.Op {
 	case "IS NULL":
@@ -187,7 +203,7 @@ func (m *Matcher) compare(c Compare, ev map[string]any) tri {
 	if c.Op == "IN" || c.Op == "NOT IN" {
 		res := triFalse
 		for _, lit := range c.Values {
-			rv, ok := resolve(lit, ev)
+			rv, ok := m.resolve(lit, ev)
 			if !ok {
 				res = triUnknown
 				continue
@@ -202,7 +218,7 @@ func (m *Matcher) compare(c Compare, ev map[string]any) tri {
 		}
 		return res
 	}
-	rv, ok := resolve(c.Value, ev)
+	rv, ok := m.resolve(c.Value, ev)
 	if !ok {
 		return triUnknown
 	}
@@ -259,10 +275,10 @@ func (m *Matcher) matchPattern(c Compare, s, pattern string) (tri, error) {
 // resolve returns the comparable value of a literal: an attribute
 // reference reads the event (ok=false when absent), a number stays a
 // float64, and a string sheds its quotes.
-func resolve(l Literal, ev map[string]any) (any, bool) {
+func (m *Matcher) resolve(l Literal, ev map[string]any) (any, bool) {
 	switch {
 	case l.IsAttr:
-		v, ok := ev[l.Text()]
+		v, ok := m.lookup(ev, l.Text())
 		return v, ok && v != nil
 	case l.IsNum:
 		// The literal as written, not l.Num: a float64 would round

@@ -21,7 +21,7 @@ func newConfigCmd() *cobra.Command {
 		Short: "List all config values and where each one comes from",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			app, err := NewApp(cmd)
+			app, err := newApp(cmd, appOptions{lenientConfig: true, allowNewProfile: true})
 			if err != nil {
 				return err
 			}
@@ -38,6 +38,7 @@ func newConfigCmd() *cobra.Command {
 				if k == "api_key" && val != "" {
 					val = maskSecret(val) // never print full secrets
 				}
+				val = config.RedactURLString(val) // a password in a URL's userinfo
 				rows = append(rows, map[string]any{"key": k, "value": val, "source": string(v.Source)})
 			}
 			p, err := app.Printer(false)
@@ -54,7 +55,7 @@ func newConfigCmd() *cobra.Command {
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeConfigKeys,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := NewApp(cmd)
+			app, err := newApp(cmd, appOptions{lenientConfig: true, allowNewProfile: true})
 			if err != nil {
 				return err
 			}
@@ -66,6 +67,7 @@ func newConfigCmd() *cobra.Command {
 			if args[0] == "api_key" && val != "" {
 				val = maskSecret(val) // never print the full secret; use 'bronto auth token' for scripting
 			}
+			val = config.RedactURLString(val) // a password in a URL's userinfo
 			_, _ = fmt.Fprintln(app.Stdout, val)
 			return nil
 		},
@@ -77,7 +79,7 @@ func newConfigCmd() *cobra.Command {
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: completeConfigKeys,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := NewApp(cmd)
+			app, err := newApp(cmd, appOptions{lenientConfig: true, allowNewProfile: true})
 			if err != nil {
 				return err
 			}
@@ -88,7 +90,7 @@ func newConfigCmd() *cobra.Command {
 			if err := config.SetUserValue(dir, app.Config.Profile(), args[0], args[1]); err != nil {
 				return err
 			}
-			_, _ = fmt.Fprintf(app.Stderr, "Set %s in profile %q\n", args[0], profileOrDefault(app.Config.Profile()))
+			app.Notef("Set %s in profile %q\n", args[0], profileOrDefault(app.Config.Profile()))
 			return nil
 		},
 	}

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
 )
 
 type Error struct {
@@ -78,9 +80,10 @@ func Render(w io.Writer, err error, machineMode bool) {
 		_, _ = fmt.Fprintln(w, string(b))
 		return
 	}
-	_, _ = fmt.Fprintf(w, "Error: %s (%s)\n", ce.Message, ce.Code)
+	// Messages can quote API error bodies, which are not ours to trust.
+	_, _ = fmt.Fprintf(w, "Error: %s (%s)\n", termsafe.Text(ce.Message), ce.Code)
 	if ce.Hint != "" {
-		_, _ = fmt.Fprintf(w, "Hint: %s\n", ce.Hint)
+		_, _ = fmt.Fprintf(w, "Hint: %s\n", termsafe.Text(ce.Hint))
 	}
 	if ce.DocsURL != "" {
 		_, _ = fmt.Fprintf(w, "Docs: %s\n", ce.DocsURL)

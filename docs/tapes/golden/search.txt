@@ -12,7 +12,7 @@ COUNT  GROUP  STAT      VALUE
 > bronto search "status >= 500" -d prod/checkout-service --since 1h --patterns
 1 pattern(s) from 13 event(s)
 COUNT  PATTERN
-13     <*> failed: payments-api timed out after <*>
+13     payment failed: payments-api timed out after <num>
 > bronto search "status >= 500" -d prod/checkout-service --since 1h -n 1 -x --fields @time,host,stat
 us,path,duration_ms,trace_id,message
 Execution time: 12 ms

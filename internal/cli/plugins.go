@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -177,7 +178,7 @@ func newPluginsListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return p.PrintRows([]string{"name", "path"}, discoverPlugins(os.Getenv("PATH")))
+			return p.PrintRows([]string{"name", "path"}, discoverPlugins(cmd.Root(), os.Getenv("PATH")))
 		},
 	}
 }
@@ -185,8 +186,10 @@ func newPluginsListCmd() *cobra.Command {
 // discoverPlugins scans the directories in pathEnv (a PATH-style, OS list
 // separator-delimited string) for executable files named "bronto-*",
 // mirroring shell PATH-lookup semantics: the first match for a given
-// plugin name wins, later duplicates on PATH are ignored.
-func discoverPlugins(pathEnv string) []map[string]any {
+// plugin name wins, later duplicates on PATH are ignored. Names dispatch
+// would never run (built-ins, aliases, reserved names, anything outside
+// pluginNamePattern) are left out, so the list matches what works.
+func discoverPlugins(rootCmd *cobra.Command, pathEnv string) []map[string]any {
 	seen := map[string]bool{}
 	var rows []map[string]any
 	for _, dir := range filepath.SplitList(pathEnv) {
@@ -202,7 +205,10 @@ func discoverPlugins(pathEnv string) []map[string]any {
 				continue
 			}
 			name := strings.TrimPrefix(e.Name(), "bronto-")
-			if name == "" || seen[name] {
+			if runtime.GOOS == "windows" {
+				name = strings.TrimSuffix(strings.ToLower(name), ".exe")
+			}
+			if seen[name] || !pluginNamePattern.MatchString(name) || isKnownTopLevelCommand(rootCmd, name) {
 				continue
 			}
 			info, err := e.Info()

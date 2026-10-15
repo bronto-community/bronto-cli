@@ -22,6 +22,9 @@ func newContextCmd() *cobra.Command {
 			"  bronto context --sequence 42 -d <dataset> --timestamp 1711535140632 --direction before",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := validatePositive("limit", limit); err != nil {
+				return err
+			}
 			switch direction {
 			case "before", "after", "both":
 			default:

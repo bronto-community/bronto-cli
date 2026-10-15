@@ -269,13 +269,19 @@ func runAskPlan(ctx context.Context, app *App, plan askPlan) error {
 	if err != nil || spec.TimeRange == "" {
 		spec = timerange.Spec{TimeRange: "Last 15 minutes"}
 	}
+	// The API rejects a search without select, grouped ones included.
 	effSelect := plan.Select
-	if len(effSelect) == 0 && len(plan.GroupBy) == 0 {
+	if len(effSelect) == 0 {
 		effSelect = []string{"@time", "@raw"}
+		if len(plan.GroupBy) > 0 {
+			effSelect = []string{"count(*)"}
+		}
 	}
+	// The API defaults to oldest first; show the newest, like search.
+	mrf := true
 	req := bronto.SearchRequest{
 		From: ids, FromExpr: expr, Time: spec, Where: plan.Query,
-		Select: effSelect, Groups: plan.GroupBy, Limit: 100,
+		Select: effSelect, Groups: plan.GroupBy, Limit: 100, MostRecentFirst: &mrf,
 	}
 	client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
 	resp, err := client.Search(ctx, req)

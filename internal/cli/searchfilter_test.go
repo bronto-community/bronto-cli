@@ -45,8 +45,12 @@ func TestQuoteFilterValue(t *testing.T) {
 		{"=", "1000", "1000"},
 		{">", "1000", "1000"},
 		{">", "12.5", "12.5"},
-		{"=", "true", "true"},
-		{"=", "false", "false"},
+		{"=", "true", "'true'"}, // the server compares booleans as strings
+		{"=", "false", "'false'"},
+		{"=", "-3", "-3"},
+		{"=", "NaN", "'NaN'"},
+		{"=", "1e5", "'1e5'"},
+		{"=", "0x10", "'0x10'"},
 		{"~", "err.*", "'err.*'"},      // regex always quoted
 		{"~", "500", "'500'"},          // regex quoted even when numeric-looking
 		{"=", "O'Brien", "'O''Brien'"}, // SQL-style escaping

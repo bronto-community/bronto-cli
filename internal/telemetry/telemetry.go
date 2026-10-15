@@ -232,7 +232,7 @@ func CaptureLevel() Capture {
 	case "all":
 		return CaptureAll
 	default:
-		otel.Handle(fmt.Errorf("telemetry: unsupported %s %q (supported: default, none, all); recording no arguments", CaptureEnv, v))
+		otel.Handle(fmt.Errorf("unsupported %s %q (supported: default, none, all); recording no arguments", CaptureEnv, v))
 		return CaptureNone
 	}
 }

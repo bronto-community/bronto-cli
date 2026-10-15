@@ -8,11 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"slices"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -82,6 +84,11 @@ type resourceDesc struct {
 	// default, so verbatim keys land in build logs). When set, `list` gains
 	// a --reveal flag to opt back into full values.
 	SecretKeys []string
+
+	// CreateNotice is printed on stderr (unless --quiet) after a
+	// successful create: api-keys warns that the response is the only
+	// time the full key is shown.
+	CreateNotice string
 }
 
 func (d resourceDesc) nameKeys() []string {
@@ -167,9 +174,12 @@ var resourceRegistry = []resourceDesc{
 	{Name: "monitors", Base: "/monitors", UpdateMethod: http.MethodPut,
 		CreateFields: monitorExampleFields, UpdateFields: monitorExampleFields,
 		Columns: []string{"name", "window", "threshold", "created", "id"}},
+	// No widget count column: list rows carry an empty widget_ids even
+	// when get shows attached widgets (live-verified 2026-10-15), so the
+	// count always read 0. PATCH takes one of name or layout (spec oneOf;
+	// live it ignores a description and 400s without either).
 	{Name: "dashboards", Base: "/dashboards",
-		Columns:       []string{"name", "description", "widgets_count", "created", "id"},
-		ListTransform: dashboardListRows},
+		Columns: []string{"name", "description", "created", "id"}},
 	// updateWidget is PUT (204, no body) and a full replacement: the API
 	// rejects a create or update without both `name` and `type` (live-
 	// verified 2026-10-01). PATCH /widgets/{id} exists but takes exactly
@@ -180,21 +190,39 @@ var resourceRegistry = []resourceDesc{
 		CreateFields: []string{"name=<name>", "type=<type>"},
 		UpdateFields: []string{"name=<name>", "type=<type>"},
 		Columns:      []string{"name", "type", "description", "id"}},
+	// Live (2026-10-15) create and update both refuse a body without
+	// name, log_ids and search_details (a 500 without log_ids), so the
+	// examples pass all three.
 	{Name: "saved-searches", Base: "/saved-searches", Singular: "saved search",
+		CreateFields: savedSearchExampleFields, UpdateFields: savedSearchExampleFields,
 		Columns: []string{"name", "description", "created", "id"}},
 	// The vendored spec has no GET /parsers/{parser_id}: only patch and
-	// delete are documented for a single parser.
+	// delete are documented for a single parser. The create fields are the
+	// ones the live API names in its 400s (log_id, then a description of 8+
+	// characters).
 	{Name: "parsers", Base: "/parsers", NoGet: true,
+		CreateFields: []string{"name=<name>", "log_id=<dataset-id>", "type=GROK",
+			"pattern=<pattern>", "description=<description>"},
 		Columns: []string{"name", "description", "type", "enabled", "created", "id"}},
 	{Name: "api-keys", Base: "/api-keys", Singular: "API key", NoGet: true,
 		// Key material is masked in every format by default (SecretKeys);
 		// --reveal opts back in. Full keys were rendering into terminals,
 		// scrollback, and — via the json/jsonl piped default — build logs.
-		SecretKeys:   []string{"api_key", "key"},
+		SecretKeys: []string{"api_key", "key"},
+		// List rows carry only the key's public id part: create's
+		// response is the one place the full <id>.<secret> key appears.
+		CreateNotice: "Store this API key now: its secret part is shown only once, at creation.",
 		CreateFields: []string{"name=<name>", `roles=["IngestionApi"]`},
 		Columns:      []string{"name", "api_key", "created", "id"}},
 	{Name: "datasets", Base: "/logs", CreatePath: "/datasets", UpdateMethod: http.MethodPut,
+		IDKey:        "log_id",
 		CreateFields: []string{"collection=<collection>", "dataset=<dataset>"},
+		// PUT /logs/{id} is undocumented; live (2026-10-15) it renames with
+		// collection and dataset and answers 400 or 500 without both.
+		UpdateFields:   []string{"collection=<collection>", "dataset=<dataset>"},
+		UpdateRequires: []string{"collection", "dataset"},
+		UpdateRequiresHint: "Pass both: -f collection=<collection> -f dataset=<dataset> " +
+			"(the current values for whichever you keep).",
 		// The raw /logs rows are unreadable as a table (duplicate name
 		// fields, a metadata blob with epoch floats); curate the human
 		// view and derive LAST_ACTIVITY from metadata.last_heartbeat_at.
@@ -235,19 +263,33 @@ var resourceRegistry = []resourceDesc{
 	{Name: "templates", AttachTo: "monitors", Base: "/monitors/templates",
 		Singular: "monitor template", UpdateMethod: http.MethodPut,
 		// Only create requires this_template_tags (an object there, an
-		// array on update), so update leaves it out.
-		CreateFields: append(slices.Clip(templateExampleFields), "this_template_tags=<json>"),
-		UpdateFields: templateExampleFields,
+		// array on update), so update leaves it out. Create types threshold
+		// as a string (live: a number fails with "input don't match type
+		// STRING"); update types it as a number.
+		CreateFields: append(templateExampleFields("threshold=\"1000\""), "this_template_tags=<json>"),
+		UpdateFields: templateExampleFields("threshold=1000"),
 		Columns:      []string{"name", "description", "monitor_type", "window", "threshold", "id"}},
+	// Create and update need one of the spec's oneOf variants: name,
+	// description, from (monitor ids) and a static_time_range or
+	// dynamic_time_range. Live rows carry downtime_id, though the spec's
+	// Downtime schema says id (2026-10-15).
 	{Name: "downtimes", AttachTo: "monitors", Base: "/monitors/downtimes",
-		Singular: "downtime", UpdateMethod: http.MethodPut, NoGet: true},
+		Singular: "downtime", UpdateMethod: http.MethodPut, NoGet: true,
+		IDKey:        "downtime_id",
+		CreateFields: downtimeExampleFields, UpdateFields: downtimeExampleFields},
 	{Name: "users", Base: "/users", Singular: "user",
 		Columns:       []string{"email", "first_name", "last_name", "last_login", "id"},
 		NameKeys:      []string{"email"},
 		ListTransform: userListRows,
 		CreateFields:  []string{"email=<email>", "first_name=<first-name>", "last_name=<last-name>", `roles=["ReadOnly"]`},
 		UpdateFields:  []string{`roles=["Standard"]`}},
+	// updateGroup is a PATCH that replaces the group: live (2026-10-15)
+	// an omitted name or description is blanked, so update requires both.
 	{Name: "groups", Base: "/groups", Singular: "group",
+		UpdateFields:   []string{"name=<name>", "description=<description>"},
+		UpdateRequires: []string{"name", "description"},
+		UpdateRequiresHint: "Pass both: -f name=<name> -f description=<description> " +
+			"(the current value for whichever you keep, see 'bronto groups get'). An omitted field is cleared.",
 		Columns: []string{"name", "description", "created_at", "group_id"}, IDKey: "group_id"},
 	// System roles have readable, non-UUID ids ("Admin", "ReadOnly"), so a
 	// role resolves by display_name or by its exact role_id. updateRole is a
@@ -292,11 +334,20 @@ var (
 		"time_window=PER_MONTH", "unit=BYTES", "value=<bytes>"}
 	forwardConfigExampleFields = []string{"name=<name>", "all_logs=true", "compression=GZIP",
 		`destination={"destination_type":"S3","bucket":"<bucket>"}`}
-	slackExampleFields    = []string{"name=<name>", "workspace_id=<workspace-id>", `channels=["<channel>"]`}
-	templateExampleFields = []string{"name=<name>", "window=Last 20 minutes", "threshold=1000",
-		"comparison_operator=ABOVE", "metric=<json>"}
-	roleExampleFields = []string{"display_name=<name>", `permissions=["logs_read"]`}
+	slackExampleFields       = []string{"name=<name>", "workspace_id=<workspace-id>", `channels=["<channel>"]`}
+	roleExampleFields        = []string{"display_name=<name>", `permissions=["logs_read"]`}
+	savedSearchExampleFields = []string{"name=<name>", `log_ids=["<dataset-id>"]`,
+		`search_details={"from":"<dataset-id>","where":"","time_range":"Last 15 minutes"}`}
+	downtimeExampleFields = []string{"name=<name>", "description=<description>", `from=["<monitor-id>"]`,
+		`static_time_range={"from":<start-ms>,"to":<end-ms>}`}
 )
+
+// templateExampleFields are a monitor template's create/update fields
+// around threshold, whose JSON type differs between the two.
+func templateExampleFields(threshold string) []string {
+	return []string{"name=<name>", "window=Last 20 minutes", threshold,
+		"comparison_operator=ABOVE", "metric=<json>"}
+}
 
 // exampleFieldArgs renders fields as -f arguments for an Example line,
 // single-quoting values the shell would split or expand (and <json>
@@ -339,23 +390,15 @@ func doJSONRequest(ctx context.Context, app *App, method, path string, body []by
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	resp, err := app.HTTPClient.Do(req)
-	if err != nil {
-		return nil, bronto.ClassifyTransportError(ctx, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-	respBody, err := io.ReadAll(resp.Body)
+	resp, err := api.Do(app.HTTPClient, req)
 	if err != nil {
 		return nil, err
 	}
-	if apiErr := api.ErrorFromStatus(resp.StatusCode, respBody); apiErr != nil {
-		return nil, apiErr
-	}
-	if len(respBody) == 0 {
+	if len(resp.Body) == 0 {
 		return nil, nil
 	}
 	var doc any
-	if err := bronto.DecodeJSON(respBody, &doc); err != nil {
+	if err := bronto.DecodeJSON(resp.Body, &doc); err != nil {
 		return nil, err
 	}
 	return doc, nil
@@ -412,7 +455,14 @@ func resourceRequestBody(cmd *cobra.Command, input string, fields []string) ([]b
 		return nil, clierr.New("usage_missing_body", "provide --input <file|-> or at least one -f key=value").
 			WithHint("Example: --input body.json, or -f name=x -f limit=10")
 	case input != "":
-		return readBodyInput(cmd, input)
+		body, err := readBodyInput(cmd, input)
+		if err != nil {
+			return nil, err
+		}
+		if err := validateJSONBody(body, input); err != nil {
+			return nil, err
+		}
+		return body, nil
 	default:
 		obj, err := parseFieldArgs(fields)
 		if err != nil {
@@ -599,10 +649,20 @@ func printResourceList(cmd *cobra.Command, app *App, desc resourceDesc, payload 
 			maskSecretRows(rows, desc.SecretKeys)
 		}
 	}
-	if format == output.FormatTable || format == output.FormatCSV {
-		rows = resourceListPolish(rows, format)
-		if desc.ListTransform != nil {
-			rows = desc.ListTransform(rows, format)
+	switch {
+	case format == output.FormatTable || format == output.FormatCSV:
+		rows = humanListRows(desc, rows, format)
+	case app.ListFieldsOnly:
+		// json/jsonl stay raw, but `--fields ?` must list every name
+		// --fields can select there: the raw keys plus the derived ones.
+		rows = append(rows, humanListRows(desc, cloneRows(rows), output.FormatCSV)...)
+	case len(app.FieldFilter) > 0:
+		// A derived column (last_activity, created, ...) named in
+		// --fields adds the derived values to json/jsonl rows, with csv's
+		// machine-friendly absolute timestamps, instead of printing {}.
+		human := humanListRows(desc, cloneRows(rows), output.FormatCSV)
+		if needsDerivedFields(app.FieldFilter, rows, human) {
+			rows = withDerivedFields(desc, rows)
 		}
 	}
 	p, err := app.PrinterFor(format)
@@ -610,6 +670,76 @@ func printResourceList(cmd *cobra.Command, app *App, desc resourceDesc, payload 
 		return err
 	}
 	return p.PrintRows(columnsFor(desc, rows), rows)
+}
+
+// humanListRows applies the table/csv presentation passes for desc's list:
+// the generic resourceListPolish, then the resource's ListTransform.
+func humanListRows(desc resourceDesc, rows []map[string]any, format output.Format) []map[string]any {
+	rows = resourceListPolish(rows, format)
+	if desc.ListTransform != nil {
+		rows = desc.ListTransform(rows, format)
+	}
+	return rows
+}
+
+// cloneRows shallow-copies each row so the presentation passes, which
+// rewrite values in place, leave the raw rows untouched.
+func cloneRows(rows []map[string]any) []map[string]any {
+	out := make([]map[string]any, len(rows))
+	for i, r := range rows {
+		out[i] = maps.Clone(r)
+	}
+	return out
+}
+
+// withDerivedFields adds the human view's derived keys to the raw rows
+// without losing raw values: each raw row is transformed on its own, and
+// every row it yields (permissions expand one group into one row per
+// permission) is merged over a copy of that raw row. Raw keys keep their
+// raw values; only keys the raw row lacks come from the human row.
+func withDerivedFields(desc resourceDesc, rows []map[string]any) []map[string]any {
+	out := make([]map[string]any, 0, len(rows))
+	for _, raw := range rows {
+		human := humanListRows(desc, []map[string]any{maps.Clone(raw)}, output.FormatCSV)
+		if len(human) == 0 {
+			out = append(out, raw)
+			continue
+		}
+		for _, h := range human {
+			merged := maps.Clone(raw)
+			for k, v := range h {
+				if _, ok := merged[k]; !ok {
+					merged[k] = v
+				}
+			}
+			out = append(out, merged)
+		}
+	}
+	return out
+}
+
+// needsDerivedFields reports whether some --fields name (or its top-level
+// segment, for dotted paths) appears only in the human rows, never in the
+// raw ones.
+func needsDerivedFields(fields []string, raw, human []map[string]any) bool {
+	has := func(rows []map[string]any, f string) bool {
+		top, _, _ := strings.Cut(f, ".")
+		for _, r := range rows {
+			if _, ok := r[f]; ok {
+				return true
+			}
+			if _, ok := r[top]; ok {
+				return true
+			}
+		}
+		return false
+	}
+	for _, f := range fields {
+		if !has(raw, f) && has(human, f) {
+			return true
+		}
+	}
+	return false
 }
 
 // maskSecretRows masks the given secret-bearing keys in every row using the
@@ -681,7 +811,13 @@ func newResourceCreateCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return p.PrintJSON(payload)
+			if err := p.PrintJSON(payload); err != nil {
+				return err
+			}
+			if desc.CreateNotice != "" && !isDryRunPlan(payload) {
+				app.Notef("%s\n", desc.CreateNotice)
+			}
+			return nil
 		},
 	}
 	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil, "request body field as key=value; values parse as JSON when possible (repeatable)")
@@ -776,8 +912,18 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// Resolve before confirming: a typo'd name fails as not-found
+			// (exit 4) instead of prompting first, and the prompt can show
+			// which id a name resolved to.
+			id, err := resolveResourceRef(cmd.Context(), app, desc, args[0])
+			if err != nil {
+				return err
+			}
 			if !app.DryRun {
 				prompt := fmt.Sprintf("Delete %s %s?", desc.singular(), args[0])
+				if id != args[0] {
+					prompt = fmt.Sprintf("Delete %s %s (%s)?", desc.singular(), args[0], id)
+				}
 				if err := confirmDestructive(cmd, app, prompt, yes); err != nil {
 					if errors.Is(err, errAborted) {
 						_, _ = fmt.Fprintln(app.Stderr, "Aborted.")
@@ -785,10 +931,6 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 					}
 					return err
 				}
-			}
-			id, err := resolveResourceRef(cmd.Context(), app, desc, args[0])
-			if err != nil {
-				return err
 			}
 			payload, err := doJSONRequest(cmd.Context(), app, http.MethodDelete, desc.idBase()+"/"+url.PathEscape(id), nil)
 			if err != nil {
@@ -829,7 +971,9 @@ func newMonitorEventsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			rows := rowsFromPayload(payload)
+			// The payload also carries groups_history: without the key,
+			// rowsFromPayload saw two arrays and printed one row of blobs.
+			rows := rowsFromPayload(payload, "monitor_events")
 			p, rows, err := humanRows(app, rows, eventTimeRows)
 			if err != nil {
 				return err
@@ -846,17 +990,22 @@ func newMonitorMuteCmd() *cobra.Command {
 		Use:   "mute <id>",
 		Short: "Mute or unmute a monitor",
 		Example: "  bronto monitors mute <id>\n" +
-			"  bronto monitors mute <id> --until 1710958395538\n" +
+			"  bronto monitors mute <id> --until <epoch-ms>\n" +
 			"  bronto monitors mute <id> --unmute",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeKindRef("monitors"),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// The live status endpoint takes mute_until: -1 mutes forever,
+			// 0 unmutes, a future epoch-millis timestamp mutes until then.
+			// Anything else would print "Muted" while unmuting or muting
+			// into the past, so refuse it before any request.
+			if err := checkMuteFlags(until, unmute, cmd.Flags().Changed("until"), time.Now()); err != nil {
+				return err
+			}
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
 			}
-			// The live status endpoint takes mute_until: -1 mutes forever,
-			// 0 unmutes, a future epoch-millis timestamp mutes until then.
 			muteUntil := until
 			if unmute {
 				muteUntil = 0
@@ -889,6 +1038,37 @@ func newMonitorMuteCmd() *cobra.Command {
 	return cmd
 }
 
+// checkMuteFlags validates monitors mute's flags: --unmute takes no
+// --until, and --until is -1 or a future epoch-millis timestamp.
+func checkMuteFlags(until int64, unmute, untilSet bool, now time.Time) error {
+	if unmute {
+		if untilSet {
+			return clierr.New("usage_conflicting_flags", "--unmute and --until are mutually exclusive")
+		}
+		return nil
+	}
+	if until == -1 || until > now.UnixMilli() {
+		return nil
+	}
+	hint := "Pass a future Unix timestamp in milliseconds, or -1 to mute indefinitely."
+	if until == 0 {
+		hint = "To unmute, pass --unmute. " + hint
+	} else if until > 0 && until < 1e11 && until*1000 > now.UnixMilli() {
+		// Below 1e11 an epoch-ms value is 1973; an expired ms value must
+		// not be told its units are wrong.
+		hint = "That looks like seconds: --until takes milliseconds. " + hint
+	}
+	return clierr.New("usage_invalid_flags",
+		fmt.Sprintf("--until %d is not in the future", until)).WithHint(hint)
+}
+
+// userActionDone is each users verb-action's confirmation, past tense.
+var userActionDone = map[string]string{
+	"deactivate":    "Deactivated",
+	"reactivate":    "Reactivated",
+	"resend-invite": "Resent the invitation to",
+}
+
 // newUserActionCmd builds one of the users verb-actions (deactivate,
 // reactivate, resend-invite): POST /users/{id}/<action> with no body.
 func newUserActionCmd(action, short string) *cobra.Command {
@@ -915,7 +1095,7 @@ func newUserActionCmd(action, short string) *cobra.Command {
 			if isDryRunPlan(payload) {
 				return printDryRunPlan(app, payload)
 			}
-			_, _ = fmt.Fprintf(app.Stderr, "%s: user %s.\n", short, args[0])
+			app.Notef("%s user %s.\n", userActionDone[action], args[0])
 			return nil
 		},
 	}
@@ -984,7 +1164,9 @@ func matchResourceRef(desc resourceDesc, rows []map[string]any, ref string) (str
 		}
 		for _, key := range desc.nameKeys() {
 			if v, _ := row[key].(string); v != "" {
-				if v == ref {
+				// Emails are case-insensitive in practice (ADA@x is ada@x);
+				// every other name matches exactly.
+				if v == ref || (key == "email" && strings.EqualFold(v, ref)) {
 					matchIDs = append(matchIDs, desc.rowID(row))
 				}
 				available = append(available, v)
@@ -1000,17 +1182,24 @@ func matchResourceRef(desc resourceDesc, rows []map[string]any, ref string) (str
 		return matchIDs[0], nil
 	case 0:
 	default:
-		return "", clierr.New("usage_ambiguous_"+strings.ReplaceAll(desc.singular(), " ", "_"),
-			fmt.Sprintf("%d %s are named %q", len(matchIDs), desc.Name, ref)).
+		return "", clierr.New(ambiguousCode(desc),
+			fmt.Sprintf("%d %s are named %q", len(matchIDs), desc.plural(), ref)).
 			WithHint("Pass the id instead: " + capList(matchIDs))
 	}
 	hint := fmt.Sprintf("Run 'bronto %s list' to see ids and names.", desc.display())
 	if len(available) > 0 {
 		sort.Strings(available)
+		available = slices.Compact(available)
 		hint = fmt.Sprintf("This account has: %s.", capList(available))
 	}
 	return "", clierr.New("resource_not_found",
 		fmt.Sprintf("no %s named %q", desc.singular(), ref)).WithHint(hint)
+}
+
+// ambiguousCode is the lower_snake usage_ambiguous_<kind> error code for
+// desc, e.g. usage_ambiguous_api_key for "API key".
+func ambiguousCode(desc resourceDesc) string {
+	return "usage_ambiguous_" + strings.ReplaceAll(strings.ToLower(desc.singular()), " ", "_")
 }
 
 // resolveKindRefs resolves several refs of one kind, fetching the kind's

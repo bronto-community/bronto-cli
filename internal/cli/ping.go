@@ -1,8 +1,8 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -10,6 +10,7 @@ import (
 
 	"github.com/bronto-community/bronto-cli/internal/api"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/config"
 )
 
 func newPingCmd() *cobra.Command {
@@ -27,22 +28,23 @@ func newPingCmd() *cobra.Command {
 				return clierr.New("auth_missing_key", "no API key configured").
 					WithHint("Set BRONTO_API_KEY or pass --api-key.")
 			}
+			// shown is the base URL for output: a password in its userinfo
+			// is masked, as url.Error does in network errors.
+			shown := config.RedactURLString(app.Config.BaseURL())
 			start := time.Now()
 			req, err := http.NewRequestWithContext(cmd.Context(), http.MethodGet,
 				app.Config.BaseURL()+"/logs", nil)
 			if err != nil {
 				return err
 			}
-			resp, err := app.HTTPClient.Do(req)
-			if err != nil {
-				return clierr.New("network_error", fmt.Sprintf("cannot reach %s: %v", app.Config.BaseURL(), err)).
-					WithRetryable().
-					WithHint("Check your network and the API base URL / region.")
-			}
-			defer func() { _ = resp.Body.Close() }()
-			body, _ := io.ReadAll(resp.Body)
-			if apiErr := api.ErrorFromStatus(resp.StatusCode, body); apiErr != nil {
-				return apiErr
+			if _, err := api.Do(app.HTTPClient, req); err != nil {
+				// Name the base URL on transport failures: "cannot reach"
+				// is the question ping exists to answer.
+				var ce *clierr.Error
+				if errors.As(err, &ce) && (ce.Code == "network_error" || ce.Code == "timeout") {
+					ce.Message = fmt.Sprintf("cannot reach %s: %s", shown, ce.Message)
+				}
+				return err
 			}
 			latency := time.Since(start).Milliseconds()
 			p, err := app.Printer(false)
@@ -50,11 +52,11 @@ func newPingCmd() *cobra.Command {
 				return err
 			}
 			if app.StdoutIsTTY && app.OutputFlag == "" {
-				_, _ = fmt.Fprintf(app.Stdout, "OK — %s (%dms)\n", app.Config.BaseURL(), latency)
+				_, _ = fmt.Fprintf(app.Stdout, "OK — %s (%dms)\n", shown, latency)
 				return nil
 			}
 			return p.PrintJSON(map[string]any{
-				"status": "ok", "base_url": app.Config.BaseURL(), "latency_ms": latency,
+				"status": "ok", "base_url": shown, "latency_ms": latency,
 			})
 		},
 	}

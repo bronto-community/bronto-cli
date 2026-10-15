@@ -43,12 +43,14 @@ func TestExpansionListSmoke(t *testing.T) {
 
 // TestGroupsCRUD: create -> list -> get -> update (PATCH) -> delete, the
 // full generic-factory path over a wave-3 resource with a per-ID GET.
+// updateGroup replaces name and description (an omitted one is blanked),
+// so the update sends both and the read-back checks both.
 func TestGroupsCRUD(t *testing.T) {
 	key := skipIfNoCreds(t)
 	r := NewRunner(t, key)
 	name := resourceName("group")
 
-	created := mustRunJSONObject(t, r, "groups", "create", "-f", "name="+name)
+	created := mustRunJSONObject(t, r, "groups", "create", "-f", "name="+name, "-f", "description=created by CI")
 	id := resourceID(created, "group_id")
 	if id == "" {
 		t.Fatalf("groups create response missing id: %+v", created)
@@ -94,7 +96,30 @@ func TestGroupsCRUD(t *testing.T) {
 		return true, nil
 	})
 
-	mustRunJSONObject(t, r, "groups", "update", id, "-f", "name="+name+"-updated")
+	// A partial body is refused client-side: it would blank the other field.
+	res, err := r.Run(t.Context(), "", "groups", "update", id, "-f", "description=partial")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.ExitCode != 2 || !strings.Contains(res.Stderr, "usage_missing_fields") {
+		t.Fatalf("partial groups update: exit %d, want 2 with usage_missing_fields\nstderr: %s", res.ExitCode, res.Stderr)
+	}
+
+	mustRunJSONObject(t, r, "groups", "update", id, "-f", "name="+name+"-updated", "-f", "description=updated by CI")
+	PollUntil(t, 30*time.Second, 2*time.Second, func() (bool, error) {
+		res, err := r.Run(t.Context(), "", "groups", "get", id, "-o", "json")
+		if err != nil {
+			return false, err
+		}
+		var got map[string]any
+		if err := json.Unmarshal([]byte(res.Stdout), &got); err != nil {
+			return false, fmt.Errorf("groups get did not parse: %w\noutput: %s", err, res.Stdout)
+		}
+		if got["name"] != name+"-updated" || got["description"] != "updated by CI" {
+			return false, fmt.Errorf("groups get after update = name %q, description %q", got["name"], got["description"])
+		}
+		return true, nil
+	})
 	mustExitZero(t, r, "groups", "members", id)
 	mustExitZero(t, r, "groups", "delete", id, "--yes")
 }

@@ -379,3 +379,90 @@ func parseEventTime(v any) (int64, bool) {
 	}
 	return 0, false
 }
+
+// TestQuery_SearchOrdering asserts search returns newest events first by
+// default and oldest first with --oldest-first. The live API defaults to
+// ascending when most_recent_first is absent, so the CLI must send it.
+func TestQuery_SearchOrdering(t *testing.T) {
+	key := skipIfNoCreds(t)
+	_, marker := seededData(t)
+	r := NewRunner(t, key)
+	logID := seededLogID(t)
+
+	times := func(extra ...string) []int64 {
+		t.Helper()
+		args := searchMarkerArgs(logID, marker, append([]string{"-o", "json", "-n", "50"}, extra...)...)
+		var out []int64
+		for _, row := range mustRunJSONArray(t, r, args...) {
+			ms, ok := parseEventTime(row["@time"])
+			if !ok {
+				t.Fatalf("row without a parseable @time: %+v", row)
+			}
+			out = append(out, ms)
+		}
+		if len(out) == 0 {
+			t.Fatal("search returned no rows for the seeded marker")
+		}
+		return out
+	}
+	// The seed spaces its events one second apart; without at least two
+	// distinct times every direction check below would pass vacuously.
+	distinct := func(ts []int64) bool {
+		for _, v := range ts[1:] {
+			if v != ts[0] {
+				return true
+			}
+		}
+		return false
+	}
+	newest := times()
+	if !distinct(newest) {
+		t.Fatalf("need at least two distinct @time values to check ordering, got %v", newest)
+	}
+	for i := 1; i < len(newest); i++ {
+		if newest[i] > newest[i-1] {
+			t.Fatalf("default order is not newest first: %v", newest)
+		}
+	}
+	oldest := times("--oldest-first")
+	for i := 1; i < len(oldest); i++ {
+		if oldest[i] < oldest[i-1] {
+			t.Fatalf("--oldest-first order is not ascending: %v", oldest)
+		}
+	}
+	if !distinct(oldest) {
+		t.Fatalf("need at least two distinct @time values to check ordering, got %v", oldest)
+	}
+	if newest[0] <= oldest[0] {
+		t.Fatalf("default first event (%d) is not newer than --oldest-first's (%d)", newest[0], oldest[0])
+	}
+}
+
+// TestQuery_GroupByWithoutSelect asserts `search -g <field>` works with no
+// --select: the API rejects a search without select, so the CLI defaults
+// to count(*).
+func TestQuery_GroupByWithoutSelect(t *testing.T) {
+	key := skipIfNoCreds(t)
+	_, marker := seededData(t)
+	r := NewRunner(t, key)
+	logID := seededLogID(t)
+
+	rows := mustRunJSONArray(t, r, searchArgs(logID, fmt.Sprintf("ci_marker = '%s'", marker), "-g", "level", "-o", "json")...)
+	if len(rows) == 0 {
+		t.Fatal("grouped search returned no rows for the seeded marker")
+	}
+}
+
+// TestQuery_ExplainOnly asserts --explain-only returns a query plan; it
+// used to send no select and fail with a 400.
+func TestQuery_ExplainOnly(t *testing.T) {
+	key := skipIfNoCreds(t)
+	r := NewRunner(t, key)
+	logID := seededLogID(t)
+
+	res := mustExitZero(t, r, searchArgs(logID, "", "--explain-only", "-o", "json")...)
+	var plan map[string]any
+	if err := json.Unmarshal([]byte(res.Stdout), &plan); err != nil || len(plan) == 0 {
+		t.Fatalf("explain output is not a non-empty JSON object (err %v): %s", err, res.Stdout)
+	}
+}

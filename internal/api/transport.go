@@ -150,8 +150,9 @@ func UserAgent(version string) string {
 // net/http does NOT strip on cross-domain redirects (its stripping only
 // covers Authorization/Cookie/etc. set on the original request), so a
 // redirect to an attacker host would otherwise carry the key. Same-host
-// redirects (the only kind Bronto's API issues) still follow normally.
-// 2026-07-23 audit.
+// redirects (the only kind Bronto's API issues) still follow normally,
+// unless they downgrade https to http: that would send the key in
+// cleartext. 2026-07-23 audit.
 func refuseCrossHostRedirect(req *http.Request, via []*http.Request) error {
 	if len(via) == 0 {
 		return nil
@@ -159,6 +160,10 @@ func refuseCrossHostRedirect(req *http.Request, via []*http.Request) error {
 	if req.URL.Host != via[0].URL.Host {
 		return fmt.Errorf("refusing to follow cross-host redirect to %q (would leak the API key); "+
 			"if this endpoint is legitimate, set base_url to it directly", req.URL.Host)
+	}
+	if via[0].URL.Scheme == "https" && req.URL.Scheme != "https" {
+		return fmt.Errorf("refusing to follow redirect from https to %s://%s (would send the API key in cleartext)",
+			req.URL.Scheme, req.URL.Host)
 	}
 	if len(via) >= 10 {
 		return fmt.Errorf("stopped after 10 redirects")

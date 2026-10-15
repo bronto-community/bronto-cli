@@ -308,7 +308,7 @@ func TestDiscoverPluginsFirstMatchOnPATHWins(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	rows := discoverPlugins(dir1 + string(os.PathListSeparator) + dir2)
+	rows := discoverPlugins(NewRootCmd(), dir1+string(os.PathListSeparator)+dir2)
 	if len(rows) != 1 || rows[0]["path"] != filepath.Join(dir1, "bronto-dup") {
 		t.Fatalf("rows = %+v", rows)
 	}
@@ -417,5 +417,23 @@ func TestIsKnownTopLevelCommandMatchesAliases(t *testing.T) {
 	}
 	if !isKnownTopLevelCommand(root, "help") {
 		t.Error("reserved name must be known even when absent from Commands()")
+	}
+}
+
+// plugins list shows only what dispatch can run: built-ins win and names
+// must match pluginNamePattern.
+func TestDiscoverPluginsSkipsUnrunnableNames(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("posix exec-bit semantics assumed")
+	}
+	dir := t.TempDir()
+	for _, n := range []string{"ok-1", "search", "version", "help", "Upper", "a.b", "a_b", "-x"} {
+		if err := os.WriteFile(filepath.Join(dir, "bronto-"+n), []byte("#!/bin/sh\n"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rows := discoverPlugins(NewRootCmd(), dir)
+	if len(rows) != 1 || rows[0]["name"] != "ok-1" {
+		t.Fatalf("rows = %+v", rows)
 	}
 }

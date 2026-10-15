@@ -64,7 +64,10 @@ default  env         bronto_d…  eu      https://api.eu.bronto.io  ok
 
 `bronto auth status` prints one row: the active profile, where the key came from
 (`flag`, `env`, or `keychain`), the masked key, region, base URL, and whether the API
-accepted the key. If the check fails, it exits non-zero, so you can gate a script on it:
+accepted the key. If the check fails, it exits non-zero, so you can gate a script on it.
+A missing or rejected key exits with code 3 (`auth_status_not_ok`). If the API can't be
+reached or returns a server error, the exit code is that error's instead, for example 5
+for `timeout`, so an outage isn't mistaken for a bad key:
 
 ```sh
 bronto auth status >/dev/null && ./deploy.sh

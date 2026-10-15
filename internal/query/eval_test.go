@@ -80,6 +80,27 @@ func TestMatcherAbsentAndNullFields(t *testing.T) {
 	}
 }
 
+func TestMatcherFieldFallbackPrefix(t *testing.T) {
+	ev := map[string]any{"message_kvs.status": "502", "level": "info", "message_kvs.level": "error"}
+	for q, want := range map[string]bool{
+		"status = 502":      true,  // falls back to message_kvs.status
+		"level = 'info'":    true,  // exact key wins over the fallback
+		"level = 'error'":   false, // ...so the prefixed value is not consulted
+		"missing = 'x'":     false,
+		"NOT missing = 'x'": false, // a missing field is NULL, as on the server
+		"level != 'error'":  true,  // exact key wins for != too
+	} {
+		m := mustMatcher(t, q)
+		m.SetFieldFallbackPrefix("message_kvs.")
+		if got := m.Match(ev); got != want {
+			t.Errorf("%q = %v, want %v", q, got, want)
+		}
+	}
+	if mustMatcher(t, "status = 502").Match(ev) {
+		t.Error("without a prefix, message_kvs.status must not answer for status")
+	}
+}
+
 func TestMatcherStringlyNumbers(t *testing.T) {
 	// numbers arriving as strings (common in parsed logs) compare numerically
 	ev := map[string]any{"status": "502"}

@@ -24,9 +24,9 @@ bronto send -d checkout-service --collection staging -m 'deploy finished'
 
 `-d`/`--dataset` is required and names the destination dataset. `--collection` names its
 collection. If either doesn't exist yet, Bronto creates it when the first event arrives
-(see [Data Organization](https://docs.bronto.io/Search-and-Visualize/Partitions)). Unlike
-the read commands, `send` doesn't look the name up, so pass the collection with
-`--collection` rather than as `collection/name`.
+(see [Data Organization](https://docs.bronto.io/Search-and-Visualize/Partitions)). As in
+the read commands, `-d collection/name` works too: `-d staging/checkout-service` is the
+same as `-d checkout-service --collection staging`. `send` doesn't look the name up.
 
 Add tags with `--tag key=value`, repeatable:
 
@@ -53,6 +53,10 @@ Lines are batched. A batch is sent when it reaches `--batch-size` events (defaul
 `--batch-bytes` (default 1 MiB), and a partial batch is flushed at least every
 `--flush-interval` (default `1s`, minimum `100ms`), so `tail -f` output shows up promptly.
 Request bodies are gzip-compressed unless you pass `--no-gzip`.
+
+On Ctrl-C or SIGTERM, `send` flushes the pending batch, waiting up to 5 seconds, and exits
+with code `130`. If that last batch fails, `send` reports the error and exits with its
+code instead.
 
 <Warning>
 If a batch fails, `send` stops with an error, and the events in that batch are lost.

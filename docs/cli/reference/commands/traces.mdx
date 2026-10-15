@@ -153,7 +153,7 @@ bronto traces shape [flags]
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
 | `--any-span` |  | bool |  | sample by any matching span, not just entries |
-| `--bar-width` |  | int | `50` | waterfall bar width in characters |
+| `--bar-width` |  | int | `50` | waterfall bar width in characters (min 10) |
 | `--entry` |  | bool | `true` | sample by entry (server) spans |
 | `--errors` |  | bool |  | only error spans/traces |
 | `--min-duration-ms` |  | float |  | only entry spans at least this many milliseconds long |
@@ -185,7 +185,7 @@ bronto traces show <trace-id> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--bar-width` |  | int | `40` | waterfall bar width in characters |
+| `--bar-width` |  | int | `40` | waterfall bar width in characters (min 10) |
 | `--limit` | `-n` | int | `500` | max spans to fetch |
 | `--since` |  | string |  | relative lookback (default 1h) |
 
