@@ -14,6 +14,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
+
 	"github.com/itchyny/gojq"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
@@ -277,14 +279,19 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 			return nil
 		}
 		tw := tabwriter.NewWriter(p.w, 2, 4, 2, ' ', tabwriter.StripEscape)
-		_, _ = fmt.Fprintln(tw, strings.ToUpper(strings.Join(columns, "\t")))
+		header := make([]string, len(columns))
+		for i, c := range columns {
+			// Columns can come from the data's own keys.
+			header[i] = strings.ToUpper(termsafe.Line(c))
+		}
+		_, _ = fmt.Fprintln(tw, strings.Join(header, "\t"))
 		// NB: must be the raw \xff byte — string(rune(0xff)) would UTF-8
 		// encode to two bytes tabwriter does not recognize.
 		esc := string([]byte{tabwriter.Escape})
 		for _, r := range rows {
 			vals := make([]string, len(columns))
 			for i, c := range columns {
-				v := truncateCell(p.cell(r, c))
+				v := truncateCell(termsafe.Line(p.cell(r, c)))
 				if p.colorize != nil {
 					if pre := p.colorize(c, v); pre != "" {
 						v = esc + pre + esc + v + esc + "\x1b[0m" + esc
@@ -478,12 +485,12 @@ func (p *Printer) PrintExpanded(rows []map[string]any, priority []string, dimKey
 		}
 		tw := tabwriter.NewWriter(p.w, 2, 4, 2, ' ', 0)
 		for _, k := range expandedKeyOrder(r, priority) {
-			name := k
+			name := termsafe.Line(k)
 			if dimKeys {
 				// uniform per-key overhead keeps tabwriter alignment intact
-				name = "\x1b[2m" + k + "\x1b[0m"
+				name = "\x1b[2m" + name + "\x1b[0m"
 			}
-			_, _ = fmt.Fprintf(tw, "%s\t%s\n", name, cell(r, k))
+			_, _ = fmt.Fprintf(tw, "%s\t%s\n", name, termsafe.Line(cell(r, k)))
 		}
 		if err := tw.Flush(); err != nil {
 			return err

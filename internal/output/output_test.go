@@ -594,3 +594,29 @@ func TestPrintExpandedEmptyNotice(t *testing.T) {
 		t.Fatalf("stdout=%q notice=%q", buf.String(), note.String())
 	}
 }
+
+// API data must not reach a terminal as live escape sequences; json/csv
+// stay byte-exact.
+func TestTableEscapesControlCharacters(t *testing.T) {
+	evil := []map[string]any{{"name": "ok\x1b]0;PWNED\a\x1b[2J", "multi\nline": "a\tb"}}
+	for _, render := range []func(*Printer) error{
+		func(p *Printer) error { return p.PrintRows([]string{"name", "multi\nline"}, evil) },
+		func(p *Printer) error { return p.PrintExpanded(evil, nil, false) },
+	} {
+		var buf bytes.Buffer
+		if err := render(NewPrinter(&buf, FormatTable)); err != nil {
+			t.Fatal(err)
+		}
+		out := buf.String()
+		if strings.ContainsAny(out, "\x1b\a") || !strings.Contains(out, `ok\x1b]0;PWNED\x07\x1b[2J`) || !strings.Contains(out, `a\tb`) {
+			t.Fatalf("control characters not escaped: %q", out)
+		}
+	}
+	var buf bytes.Buffer
+	if err := NewPrinter(&buf, FormatCSV).PrintRows([]string{"name"}, evil); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "ok\x1b]0;PWNED\a\x1b[2J") {
+		t.Fatalf("csv must stay byte-exact: %q", buf.String())
+	}
+}

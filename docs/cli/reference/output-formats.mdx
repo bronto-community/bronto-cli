@@ -37,6 +37,20 @@ Some views render their own layout at a terminal instead of a table: the expande
 (`search -x`), `--histogram`, `--patterns`, live `tail` aggregates, and the `traces show`
 and `traces shape` waterfalls.
 
+## Control characters
+
+Log lines, resource names and API error messages can contain terminal escape sequences,
+for example from a crafted user agent that ended up in a log. The table format, the views
+above, `tail` lines and error messages print control characters as visible escapes such
+as `\x1b` and `\r`, so they can't change your terminal's title, clear the screen or plant
+hidden links. Newlines and tabs are kept in `tail` lines and become `\n` and `\t` in table
+cells.
+
+`json`, `jsonl`, `csv` and `raw` keep values byte-exact. JSON escapes control characters
+itself. A CSV cell can start with `=`, `+`, `-` or `@`, which spreadsheet apps read as a
+formula, so check the data before you open search results from untrusted sources in a
+spreadsheet.
+
 ## --fields
 
 `--fields a,b,c` keeps only the named keys in `json`, `jsonl`, and `csv`, and picks the

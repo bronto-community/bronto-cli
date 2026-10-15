@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
 )
 
 const (
@@ -196,7 +198,7 @@ func RenderWaterfall(w io.Writer, spans []Span, width int, color bool) {
 
 	for _, f := range dfsOrder(spans) {
 		indent := strings.Repeat("  ", f.depth)
-		labelPlain := f.span.Service + "/" + f.span.Name
+		labelPlain := termsafe.Line(f.span.Service + "/" + f.span.Name)
 		full := indent + labelPlain
 		padded := padTo(full, nameCol)
 		if utf8.RuneCountInString(padded) == utf8.RuneCountInString(full) {
@@ -212,7 +214,7 @@ func RenderWaterfall(w io.Writer, spans []Span, width int, color bool) {
 				status = " ERROR"
 			}
 		case f.span.Status != "" && !strings.HasSuffix(strings.ToUpper(f.span.Status), "UNSET"):
-			st := strings.TrimPrefix(f.span.Status, "STATUS_CODE_")
+			st := termsafe.Line(strings.TrimPrefix(f.span.Status, "STATUS_CODE_"))
 			if color {
 				status = " " + ansiDim + st + ansiReset
 			} else {

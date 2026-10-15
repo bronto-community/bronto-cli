@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
 )
 
 const (
@@ -418,7 +420,7 @@ func RenderShape(w io.Writer, buckets map[string]*ShapeBucket, tracesUsed, total
 		f := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		b := f.b
-		label := truncateTo(strings.Repeat("  ", f.depth)+b.Service+"/"+b.Name, nameCol)
+		label := truncateTo(strings.Repeat("  ", f.depth)+termsafe.Line(b.Service+"/"+b.Name), nameCol)
 		presence := fmt.Sprintf("%d", b.NTraces())
 		if b.NTraces() < tracesUsed {
 			presence = fmt.Sprintf("%d/%d", b.NTraces(), tracesUsed)

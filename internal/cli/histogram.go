@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
+
 	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/output"
 )
@@ -47,7 +49,7 @@ func renderHistogram(buckets []map[string]any, color bool) string {
 	var sb strings.Builder
 	for _, b := range buckets {
 		n, _ := b["count"].(float64)
-		label := fmt.Sprint(b["time"])
+		label := termsafe.Line(fmt.Sprint(b["time"]))
 		if ts, ok := numericValue(b["timestamp"]); ok && ts > 0 {
 			layout := "15:04"
 			if multiDay {
