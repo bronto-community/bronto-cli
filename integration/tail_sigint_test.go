@@ -13,13 +13,12 @@ import (
 // see Start's doc comment) after the process has had a few seconds to
 // settle into its poll loop, and the process must exit cleanly.
 //
-// "Cleanly" here means exit code 0, not the signal-aborted 130 exit
-// cmd/bronto/main.go's exitStatus maps a canceled root context to:
-// tail.go's poll loop explicitly returns nil (not ctx.Err()) when
-// cmd.Context().Done() fires, specifically so an operator hitting Ctrl-C
-// gets a clean exit rather than an error-shaped one. This test is what
-// makes Start/Stop non-dead code: nothing else in this package used them
-// before.
+// "Cleanly" means a prompt exit with code 130 (128+SIGINT) and no error
+// message, the contract docs/cli/reference/exit-codes.mdx documents for
+// an interrupted command: tail returns the context error and
+// cmd/bronto/main.go's exitStatus maps it to a silent 130. This test is
+// what makes Start/Stop non-dead code: nothing else in this package used
+// them before.
 func TestTail_SIGINTCleanExit(t *testing.T) {
 	key := skipIfNoCreds(t)
 	r := NewRunner(t, key)
@@ -33,8 +32,8 @@ func TestTail_SIGINTCleanExit(t *testing.T) {
 		t.Fatalf("tail did not exit cleanly after SIGINT: %v\nstdout: %s\nstderr: %s",
 			err, stdout.String(), stderr.String())
 	}
-	if code := cmd.ProcessState.ExitCode(); code != 0 {
-		t.Fatalf("tail exited %d after SIGINT, want 0 (clean exit)\nstdout: %s\nstderr: %s",
+	if code := cmd.ProcessState.ExitCode(); code != 130 {
+		t.Fatalf("tail exited %d after SIGINT, want 130\nstdout: %s\nstderr: %s",
 			code, stdout.String(), stderr.String())
 	}
 
