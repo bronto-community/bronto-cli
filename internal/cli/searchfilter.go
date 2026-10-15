@@ -3,8 +3,8 @@ package cli
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -189,22 +189,24 @@ func unknownFieldError(name string, index []string) error {
 }
 
 // quoteFilterValue renders a value for the query language. Regex operators
-// (~ !~) always take a quoted string; otherwise a value that parses as a
-// number or bool is left bare and everything else is single-quoted (SQL-style
-// doubled-quote escaping). This value-shape heuristic beats trusting the
-// field's declared type, which is "string" even for numeric attributes.
+// (~ !~) always take a quoted string; otherwise a plain decimal number is
+// left bare and everything else is single-quoted (SQL-style doubled-quote
+// escaping). This value-shape heuristic beats trusting the field's declared
+// type, which is "string" even for numeric attributes. Booleans are quoted:
+// the server reads a bare true as a field name, and compares boolean fields
+// as the strings 'true'/'false' (live-verified 2026-10-15). So are NaN, Inf
+// and hex or exponent forms, which ParseFloat accepts but the server doesn't.
 func quoteFilterValue(op, value string) string {
 	if op == "~" || op == "!~" {
 		return quoteString(value)
 	}
-	if _, err := strconv.ParseFloat(value, 64); err == nil {
-		return value
-	}
-	if value == "true" || value == "false" {
+	if plainNumberRe.MatchString(value) {
 		return value
 	}
 	return quoteString(value)
 }
+
+var plainNumberRe = regexp.MustCompile(`^-?[0-9]+(\.[0-9]+)?$`)
 
 func quoteString(v string) string {
 	return "'" + strings.ReplaceAll(v, "'", "''") + "'"

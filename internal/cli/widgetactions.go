@@ -28,7 +28,8 @@ func singularKind(kind string) string {
 }
 
 // newAttachWidgetsCmd builds "<kind> attach-widgets <parent> --widget-ids …":
-// POST /<kind>/{id}/widgets with {"widget_ids": [...]} (204).
+// POST /<kind>/{id}/widgets with {"widget_ids": [...]} (204). Each widget
+// resolves by id or unique name, like the parent.
 func newAttachWidgetsCmd(kind string) *cobra.Command {
 	var widgetIDs []string
 	sing := singularKind(kind)
@@ -52,7 +53,11 @@ func newAttachWidgetsCmd(kind string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			body, err := json.Marshal(map[string][]string{"widget_ids": widgetIDs})
+			ids, err := resolveKindRefs(cmd.Context(), app, "widgets", widgetIDs)
+			if err != nil {
+				return err
+			}
+			body, err := json.Marshal(map[string][]string{"widget_ids": ids})
 			if err != nil {
 				return err
 			}
@@ -68,7 +73,8 @@ func newAttachWidgetsCmd(kind string) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringSliceVar(&widgetIDs, "widget-ids", nil, "widget IDs to attach (comma-separated or repeated)")
+	cmd.Flags().StringSliceVar(&widgetIDs, "widget-ids", nil, "widget IDs or names to attach (comma-separated or repeated)")
+	_ = cmd.RegisterFlagCompletionFunc("widget-ids", completeKindFlag("widgets"))
 	return cmd
 }
 
@@ -87,14 +93,15 @@ func completeRemoveWidget(kind string) compFunc {
 	}
 }
 
-// newRemoveWidgetCmd builds "<kind> remove-widget <parent> <widget-id>":
-// DELETE /<kind>/{id}/widgets/{widgetId} (204).
+// newRemoveWidgetCmd builds "<kind> remove-widget <parent> <widget>":
+// DELETE /<kind>/{id}/widgets/{widgetId} (204). The widget resolves by id
+// or unique name, matching what completion offers.
 func newRemoveWidgetCmd(kind string) *cobra.Command {
 	sing := singularKind(kind)
 	return &cobra.Command{
-		Use:               "remove-widget <" + sing + "> <widget-id>",
+		Use:               "remove-widget <" + sing + "> <widget>",
 		Short:             "Remove a widget from a " + sing,
-		Example:           "  bronto " + kind + " remove-widget <" + sing + "> <widget-id>",
+		Example:           "  bronto " + kind + " remove-widget <" + sing + "> <widget>",
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: completeRemoveWidget(kind),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -106,7 +113,10 @@ func newRemoveWidgetCmd(kind string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			widgetID := args[1]
+			widgetID, err := resolveKindRef(cmd.Context(), app, "widgets", args[1])
+			if err != nil {
+				return err
+			}
 			payload, err := doJSONRequest(cmd.Context(), app, http.MethodDelete,
 				"/"+kind+"/"+url.PathEscape(id)+"/widgets/"+url.PathEscape(widgetID), nil)
 			if err != nil {
@@ -115,7 +125,7 @@ func newRemoveWidgetCmd(kind string) *cobra.Command {
 			if isDryRunPlan(payload) {
 				return printDryRunPlan(app, payload)
 			}
-			app.Notef("Removed widget %s from %s %s.\n", widgetID, sing, args[0])
+			app.Notef("Removed widget %s from %s %s.\n", args[1], sing, args[0])
 			return nil
 		},
 	}

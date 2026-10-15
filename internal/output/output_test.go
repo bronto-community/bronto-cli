@@ -224,6 +224,24 @@ func TestPrintJSONAppliesFieldFilter(t *testing.T) {
 	}
 }
 
+// get-style documents print pretty under -o json, like lists do; jsonl
+// and raw keep one compact line per document.
+func TestPrintJSONPrettyOnlyForJSON(t *testing.T) {
+	for format, want := range map[Format]string{
+		FormatJSON:  "{\n  \"a\": 1\n}\n",
+		FormatJSONL: "{\"a\":1}\n",
+		FormatRaw:   "{\"a\":1}\n",
+	} {
+		var buf bytes.Buffer
+		if err := NewPrinter(&buf, format).PrintJSON(map[string]any{"a": 1}); err != nil {
+			t.Fatal(err)
+		}
+		if buf.String() != want {
+			t.Errorf("%s: got %q, want %q", format, buf.String(), want)
+		}
+	}
+}
+
 func TestCompileJQInvalidExpressionIsUsageError(t *testing.T) {
 	if _, err := CompileJQ("this is not jq {{{"); err == nil {
 		t.Fatal("want error for invalid jq expression")
@@ -653,5 +671,46 @@ func TestJSONOutputDoesNotEscapeHTML(t *testing.T) {
 	}
 	if buf.String() != "\"a < b && c > d\"\n" {
 		t.Errorf("jq output = %q", buf.String())
+	}
+}
+
+// API data must not reach a terminal as live escape sequences; json/csv
+// stay byte-exact.
+func TestTableEscapesControlCharacters(t *testing.T) {
+	evil := []map[string]any{{"name": "ok\x1b]0;PWNED\a\x1b[2J", "multi\nline": "a\tb"}}
+	for _, render := range []func(*Printer) error{
+		func(p *Printer) error { return p.PrintRows([]string{"name", "multi\nline"}, evil) },
+		func(p *Printer) error { return p.PrintExpanded(evil, nil, false) },
+	} {
+		var buf bytes.Buffer
+		if err := render(NewPrinter(&buf, FormatTable)); err != nil {
+			t.Fatal(err)
+		}
+		out := buf.String()
+		if strings.ContainsAny(out, "\x1b\a") || !strings.Contains(out, `ok\x1b]0;PWNED\x07\x1b[2J`) || !strings.Contains(out, `a\tb`) {
+			t.Fatalf("control characters not escaped: %q", out)
+		}
+	}
+	var buf bytes.Buffer
+	if err := NewPrinter(&buf, FormatCSV).PrintRows([]string{"name"}, evil); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "ok\x1b]0;PWNED\a\x1b[2J") {
+		t.Fatalf("csv must stay byte-exact: %q", buf.String())
+	}
+}
+
+func TestFieldDiscoveryEscapesKeys(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetListFields(true)
+	if err := p.PrintRows(nil, []map[string]any{{"k\x1b]0;x\a": 1}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.PrintRow(nil, map[string]any{"s\x1b[2J": 1}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.ContainsAny(buf.String(), "\x1b\a") {
+		t.Fatalf("got %q", buf.String())
 	}
 }

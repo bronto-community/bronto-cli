@@ -7,7 +7,7 @@ Source settings.tape
 Set Height 660
 Require bronto
 
-Type "bronto monitors list"
+Type "bronto monitors list --fields name,window,threshold,status"
 Sleep 300ms
 Enter
 Wait

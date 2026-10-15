@@ -30,7 +30,8 @@ bronto errors prod/checkout-service   # runs the plugin (skilldoc:ignore: not a 
   untouched.
 
 `bronto plugins list` shows the plugins it finds on your `PATH`, as a `NAME` and `PATH`
-table. With the script above installed, it lists `errors` and the script's path:
+table. It leaves out executables that dispatch would never run: names that clash with a
+built-in command, or that use characters other than lowercase letters, digits, and dashes. With the script above installed, it lists `errors` and the script's path:
 
 {/* test: tty */}
 ```console

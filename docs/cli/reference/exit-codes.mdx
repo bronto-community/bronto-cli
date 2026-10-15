@@ -73,6 +73,7 @@ Every code `bronto` emits is listed below. Scripts should match on `code`.
 | `usage_ambiguous_<kind>` | 2 | a name matches several resources of that kind, for example `usage_ambiguous_monitor` or `usage_ambiguous_api_key`; pass the id instead |
 | `usage_unknown_field`, `usage_ambiguous_field` | 2 | a filter flag names a field that doesn't exist or matches several |
 | `usage_invalid_query` | 2 | the WHERE expression doesn't parse |
+| `usage_invalid_dataset` | 2 | `bronto send -d` isn't `<dataset>` or `<collection>/<dataset>` |
 | `usage_confirmation_required` | 2 | a destructive command ran without a terminal and without `--yes` |
 | `usage_invalid_args` | 2 | wrong number of arguments, or an unknown command or subcommand |
 | `usage_invalid_flag`, `usage_invalid_flags` | 2 | unknown flag, or flags that can't be combined |

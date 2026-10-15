@@ -101,7 +101,7 @@ func runAuthLogin(cmd *cobra.Command, keyStdin bool) error {
 	if fallback {
 		where = "credentials file"
 	}
-	_, _ = fmt.Fprintf(app.Stderr, "Logged in — profile %q, region %s. Key stored in the %s.\n", profile, region, where)
+	app.Notef("Logged in — profile %q, region %s. Key stored in the %s.\n", profile, region, where)
 	return nil
 }
 
@@ -342,7 +342,7 @@ func newAuthSwitchCmd() *cobra.Command {
 			if err := config.SetDefaultProfile(dir, profile); err != nil {
 				return err
 			}
-			_, _ = fmt.Fprintf(app.Stderr, "Switched default profile to %q.\n", profile)
+			app.Notef("Switched default profile to %q.\n", profile)
 			return nil
 		},
 	}
@@ -373,7 +373,7 @@ func newAuthLogoutCmd() *cobra.Command {
 			if err := secrets.Delete(profile); err != nil {
 				return err
 			}
-			_, _ = fmt.Fprintf(app.Stderr, "Logged out — removed credentials for profile %q.\n", profile)
+			app.Notef("Logged out — removed credentials for profile %q.\n", profile)
 			return nil
 		},
 	}

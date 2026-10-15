@@ -24,9 +24,9 @@ bronto send -d checkout-service --collection staging -m 'deploy finished'
 
 `-d`/`--dataset` is required and names the destination dataset. `--collection` names its
 collection. If either doesn't exist yet, Bronto creates it when the first event arrives
-(see [Data Organization](https://docs.bronto.io/Search-and-Visualize/Partitions)). Unlike
-the read commands, `send` doesn't look the name up, so pass the collection with
-`--collection` rather than as `collection/name`.
+(see [Data Organization](https://docs.bronto.io/Search-and-Visualize/Partitions)). As in
+the read commands, `-d collection/name` works too: `-d staging/checkout-service` is the
+same as `-d checkout-service --collection staging`. `send` doesn't look the name up.
 
 Add tags with `--tag key=value`, repeatable:
 

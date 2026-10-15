@@ -47,7 +47,8 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 #### Examples
 
 ```sh
-bronto parsers create -f name=<name>
+bronto parsers create -f name=<name> -f log_id=<dataset-id> -f type=GROK \
+    -f pattern=<pattern> -f description=<description>
 bronto parsers create --input body.json
 ```
 
