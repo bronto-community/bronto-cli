@@ -4,14 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
-	"io"
-	"net"
 	"net/http"
 	"net/url"
 
 	"github.com/bronto-community/bronto-cli/internal/api"
-	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 type Client struct {
@@ -58,42 +54,15 @@ func (c *Client) GetJSON(ctx context.Context, path string, params url.Values, ou
 	return c.do(req, out)
 }
 
-// ClassifyTransportError maps a failed round trip to the CLI's typed
-// errors: context cancellation passes through unwrapped (callers detect
-// ctx state), timeouts become a retryable "timeout" with the
-// BRONTO_TIMEOUT hint, everything else a retryable network_error. Every
-// management-API request path must use this so `bronto monitors list`
-// fails exactly as helpfully as `bronto search`.
-func ClassifyTransportError(ctx context.Context, err error) error {
-	if ctx.Err() != nil {
-		return err
-	}
-	var ne net.Error
-	if errors.As(err, &ne) && ne.Timeout() {
-		return clierr.New("timeout", "request timed out: "+err.Error()).WithRetryable().
-			WithHint("Increase the timeout via BRONTO_TIMEOUT or 'bronto config set timeout <seconds>'.")
-	}
-	return clierr.New("network_error", err.Error()).WithRetryable().
-		WithHint("Check your network and the API base URL / region.")
-}
-
 func (c *Client) do(req *http.Request, out any) error {
-	resp, err := c.http.Do(req)
-	if err != nil {
-		return ClassifyTransportError(req.Context(), err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-	body, err := io.ReadAll(resp.Body)
+	resp, err := api.Do(c.http, req)
 	if err != nil {
 		return err
 	}
-	if apiErr := api.ErrorFromStatus(resp.StatusCode, body); apiErr != nil {
-		return apiErr
-	}
-	if out == nil || len(body) == 0 {
+	if out == nil || len(resp.Body) == 0 {
 		return nil
 	}
-	return DecodeJSON(body, out)
+	return DecodeJSON(resp.Body, out)
 }
 
 // DecodeJSON unmarshals API payloads with json.Number preserved: Bronto

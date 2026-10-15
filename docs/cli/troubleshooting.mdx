@@ -131,8 +131,10 @@ instead.
 ## See what the CLI is doing
 
 - `--debug` prints every request and response on stderr: method, URL, status, latency, and
-  truncated bodies. The API key header never appears, and secret fields in bodies show as
-  `REDACTED`. Bodies can still contain log data, so check a trace before you share it.
+  truncated bodies. The API key header never appears, and secret fields in bodies and
+  secret-looking query parameters (`token=`, `api_key=`, signatures) show as `REDACTED`.
+  Gzip-compressed request bodies (`bronto send` compresses by default) are shown
+  decompressed. Bodies can still contain log data, so check a trace before you share it.
 - `--dry-run` prints mutating requests instead of sending them.
 
 ## Get help

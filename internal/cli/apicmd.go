@@ -112,20 +112,12 @@ func newAPICmd() *cobra.Command {
 			if body != nil {
 				req.Header.Set("Content-Type", contentType)
 			}
-			resp, err := app.HTTPClient.Do(req)
-			if err != nil {
-				return clierr.New("network_error", err.Error()).WithRetryable().
-					WithHint("Check your network and the API base URL / region.")
-			}
-			defer func() { _ = resp.Body.Close() }()
-			respBody, err := io.ReadAll(resp.Body)
+			resp, err := api.Do(app.HTTPClient, req)
 			if err != nil {
 				return err
 			}
-			if apiErr := api.ErrorFromStatus(resp.StatusCode, respBody); apiErr != nil {
-				return apiErr
-			}
-			if len(respBody) == 0 {
+			respBody := resp.Body
+			if len(respBody) == 0 { // e.g. 204 No Content, HEAD
 				return nil
 			}
 			var doc any

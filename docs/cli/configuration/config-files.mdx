@@ -59,6 +59,28 @@ bronto config set timeout 60 --profile staging
 
 Use `--profile <name>` to write to a profile other than the active one.
 
+Most commands refuse a profile that has neither a section in the user config file nor a
+stored key, and exit with `profile_not_found` (exit 4), so a typo such as `--profile p2x`
+doesn't quietly fall back to the default region. `bronto auth login`, `bronto config`
+commands, and any command given a key through `--api-key` or `BRONTO_API_KEY` accept a new
+profile name.
+
+`config set` only accepts the keys in the table below, and checks the value before
+writing it: a typo such as `timout`, `timeout abc` or `region EU` fails with an exit code
+of 2 and leaves the file unchanged. If the file already holds an invalid value (for
+example from a hand edit), other commands fail with `config_invalid_timeout`,
+`config_invalid_max_retries` or `config_invalid_region`, but `bronto config list`, `get`
+and `set` still work, so you can repair it:
+
+```sh
+bronto config set timeout 30
+```
+
+`config set` changes only the line for that key. Comments and keys the CLI doesn't use stay
+as they are. If the file uses TOML syntax the line edit can't handle safely, such as
+inline tables, the CLI rewrites the whole file instead: every key is kept, but comments
+are lost.
+
 ## Settings
 
 | Key | Env variable | Default | Purpose |
@@ -93,7 +115,8 @@ The file is `bronto/config.toml` inside your OS's user config directory:
 Set `BRONTO_CONFIG_DIR` to use a different parent directory. The REPL history and the
 fallback credentials file live in the same `bronto/` directory.
 
-The file holds a default profile name and one section per profile:
+The file holds a default profile name and one section per profile. Values can be strings
+or plain numbers (`timeout = 60`), here and in a project file:
 
 ```toml
 default_profile = "prod"
@@ -135,6 +158,16 @@ output = "json"
 
 A project file can set `profile`, `region`, `output`, `default_dataset`, `timeout`, and
 `max_retries`. Nothing else is read from it.
+
+A `profile` in a project file switches commands to that profile's stored key and
+`base_url`, which may point at a different account than you expect. Each command that uses
+it says so on stderr, unless you pass `--quiet`:
+
+```text
+Using profile "prod" from /home/me/src/checkout/.bronto.toml.
+```
+
+`--profile` and `BRONTO_PROFILE` take precedence over the project file.
 
 <Warning>
 **Why project files are restricted**

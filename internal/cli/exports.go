@@ -3,15 +3,20 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/bronto-community/bronto-cli/internal/api"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
@@ -322,40 +327,155 @@ func exportWaitTimeoutErr(id, lastStatus string, timeout time.Duration) *clierr.
 }
 
 // downloadExport GETs a completed export's (presigned) location URL and
-// streams the response to path. It uses a FRESH plain *http.Client rather
-// than app.HTTPClient: app.HTTPClient's Transport unconditionally injects
-// the X-BRONTO-API-KEY header, but the presigned URL is not a Bronto API
+// streams the response to path. It uses its own *http.Client rather than
+// app.HTTPClient: app.HTTPClient's Transport unconditionally injects the
+// X-BRONTO-API-KEY header, but the presigned URL is not a Bronto API
 // endpoint — sending our API key to it would be wrong (and most presigned
 // URL schemes reject unexpected auth headers/signatures outright).
+//
+// The app timeout bounds connecting, waiting for the response headers and
+// each gap between body reads, not the whole transfer, so a large export
+// still downloads while a server that stops sending fails as "timeout".
+// The bytes go to a temp file next to path that is renamed into place only
+// once the whole body arrived, so a failed download never leaves a
+// truncated file behind (or clobbers an existing one).
 func downloadExport(ctx context.Context, app *App, location, path string) error {
+	if err := checkDownloadURL(app.Config.BaseURL(), location); err != nil {
+		return err
+	}
 	if !app.Quiet {
 		_, _ = fmt.Fprintf(app.Stderr, "Downloading export to %s...\n", path)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, location, nil)
+	idle := app.HTTPClient.Timeout
+	dlCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	req, err := http.NewRequestWithContext(dlCtx, http.MethodGet, location, nil)
 	if err != nil {
 		return err
 	}
-	client := &http.Client{}
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.ResponseHeaderTimeout = idle
+	client := &http.Client{
+		Transport: tr,
+		CheckRedirect: func(r *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return fmt.Errorf("stopped after 10 redirects")
+			}
+			return checkDownloadURL(app.Config.BaseURL(), r.URL.String())
+		},
+	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return clierr.New("network_error", err.Error()).WithRetryable().
-			WithHint("Check your network; the download URL may also have expired.")
+		return downloadNetErr(api.ClassifyTransportError(ctx, err))
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return clierr.New("export_download_failed", fmt.Sprintf("download returned HTTP %d", resp.StatusCode))
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600) // #nosec G304 -- path is the user's own --download destination
+
+	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*.part")
 	if err != nil {
 		return err
 	}
-	defer func() { _ = f.Close() }()
-	n, err := io.Copy(f, resp.Body)
+	done := false
+	defer func() {
+		if !done {
+			_ = tmp.Close()
+			_ = os.Remove(tmp.Name())
+		}
+	}()
+	body := newStallReader(resp.Body, idle, cancel)
+	defer body.stop()
+	n, err := io.Copy(tmp, body)
 	if err != nil {
+		switch {
+		case body.stalled.Load():
+			return clierr.New("timeout",
+				fmt.Sprintf("export download stalled: no data for %s", idle)).WithRetryable().
+				WithHint("Increase the timeout via BRONTO_TIMEOUT or 'bronto config set timeout <seconds>'.")
+		case body.readErr != nil:
+			return downloadNetErr(api.ClassifyTransportError(ctx, body.readErr))
+		default:
+			return fmt.Errorf("writing %s: %w", path, err)
+		}
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("writing %s: %w", path, err)
+	}
+	if err := os.Rename(tmp.Name(), path); err != nil {
 		return err
 	}
+	done = true
 	if !app.Quiet {
 		_, _ = fmt.Fprintf(app.Stderr, "Downloaded %d bytes to %s.\n", n, path)
 	}
 	return nil
+}
+
+// checkDownloadURL refuses a plain-http export location (or redirect)
+// unless the API itself is served over http, as with a local or dev
+// backend: the presigned URL is a bearer credential for the data.
+func checkDownloadURL(baseURL, location string) error {
+	u, err := url.Parse(location)
+	if err != nil {
+		return clierr.New("export_download_failed", fmt.Sprintf("invalid download URL: %v", err))
+	}
+	switch {
+	case u.Scheme == "https":
+		return nil
+	case u.Scheme == "http" && strings.HasPrefix(baseURL, "http://"):
+		return nil
+	}
+	return clierr.New("export_download_insecure",
+		fmt.Sprintf("refusing to download the export over %q (want https)", u.Scheme+"://"+u.Host)).
+		WithHint("Fetch the location from 'bronto exports get <id>' yourself if you trust it.")
+}
+
+// downloadNetErr swaps the API-oriented hint for one about the presigned
+// URL on a network failure. Other errors pass through.
+func downloadNetErr(err error) error {
+	var ce *clierr.Error
+	if errors.As(err, &ce) && ce.Code == "network_error" {
+		ce.Hint = "Check your network; the download URL may also have expired."
+	}
+	return err
+}
+
+// stallReader wraps a response body and calls cancel when no Read returns
+// data for idle (zero disables the check). It remembers the first read
+// error, so the caller can tell a failed download from a failed write.
+type stallReader struct {
+	r       io.Reader
+	idle    time.Duration
+	timer   *time.Timer
+	stalled atomic.Bool
+	readErr error
+}
+
+func newStallReader(r io.Reader, idle time.Duration, cancel context.CancelFunc) *stallReader {
+	s := &stallReader{r: r, idle: idle}
+	if idle > 0 {
+		s.timer = time.AfterFunc(idle, func() {
+			s.stalled.Store(true)
+			cancel()
+		})
+	}
+	return s
+}
+
+func (s *stallReader) Read(p []byte) (int, error) {
+	n, err := s.r.Read(p)
+	if n > 0 && s.timer != nil {
+		s.timer.Reset(s.idle)
+	}
+	if err != nil && err != io.EOF && s.readErr == nil {
+		s.readErr = err
+	}
+	return n, err
+}
+
+func (s *stallReader) stop() {
+	if s.timer != nil {
+		s.timer.Stop()
+	}
 }

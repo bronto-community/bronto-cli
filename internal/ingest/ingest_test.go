@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -180,5 +181,30 @@ func TestBatcher(t *testing.T) {
 	bb.Add(map[string]any{"message": "aaaaaaaaaaaaaaa"}) // ~30 bytes encoded
 	if full := bb.Add(map[string]any{"message": "b"}); !full {
 		t.Fatal("byte cap must trigger")
+	}
+}
+
+// Ingestion failures classify like every other request (api.Fetch): a
+// server that never answers is a retryable timeout (exit 5), not a generic
+// network_error, and a network failure keeps the ingestion-specific hint.
+func TestSendTimeoutAndNetworkErrorsAreTyped(t *testing.T) {
+	hang := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		// Drain the body first: only then does net/http watch the
+		// connection and cancel r.Context() when the client gives up.
+		_, _ = io.Copy(io.Discard, r.Body)
+		<-r.Context().Done()
+	}))
+	defer hang.Close()
+	s := &Sender{HTTP: &http.Client{Timeout: 100 * time.Millisecond}, URL: hang.URL}
+	err := s.Send(context.Background(), []map[string]any{{"message": "x"}})
+	if clierr.ExitCode(err) != 5 {
+		t.Fatalf("hanging server: want timeout exit 5, got %v", err)
+	}
+
+	s = &Sender{HTTP: &http.Client{}, URL: "http://127.0.0.1:1"}
+	err = s.Send(context.Background(), []map[string]any{{"message": "x"}})
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "network_error" || !strings.Contains(ce.Hint, "ingestion URL") {
+		t.Fatalf("unreachable: got %#v", err)
 	}
 }
