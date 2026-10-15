@@ -125,9 +125,6 @@ func (a *Aggregator) Operations(ctx context.Context, service string, errorsOnly 
 		})
 }
 
-// threeWayRows runs count/avg/max over the same grouping, unions the keys
-// (count is the ranking ground truth; missing entries default to 0), and
-// returns rows sorted by span count descending.
 // countAvgMax fetches the count, avg, and max span-duration aggregations
 // for one grouping — the shared head of threeWayRows and Attributes.
 func (a *Aggregator) countAvgMax(ctx context.Context, groups []string, where string, limit int) (counts, avgs, maxes map[string]aggEntry, err error) {
@@ -143,17 +140,34 @@ func (a *Aggregator) countAvgMax(ctx context.Context, groups []string, where str
 	return counts, avgs, maxes, nil
 }
 
+// threeWayRows runs count/avg/max over the same grouping and merges them
+// with mergeThreeWay.
 func (a *Aggregator) threeWayRows(ctx context.Context, groups []string, where string, limit int, keyCols func([]string) map[string]any) ([]map[string]any, error) {
 	counts, avgs, maxes, err := a.countAvgMax(ctx, groups, where, limit)
 	if err != nil {
 		return nil, err
 	}
-	keys := unionKeys(counts, avgs, maxes)
+	return mergeThreeWay(counts, avgs, maxes, limit, keyCols), nil
+}
+
+// mergeThreeWay joins the count/avg/max results onto the count's groups,
+// sorted by span count descending and trimmed to limit (0 = no limit).
+// The API returns only the first select of a grouped query, so the three
+// are separate requests, each with its own top-limit ranking taken at a
+// slightly different instant: avg and max can name groups the count did
+// not return. Count is the ground truth, so those groups are dropped
+// rather than shown as spans=0 rows beyond the limit; a group missing
+// from avg or max shows 0 for it.
+func mergeThreeWay(counts, avgs, maxes map[string]aggEntry, limit int, keyCols func([]string) map[string]any) []map[string]any {
+	keys := unionKeys(counts) // sorted: ties keep a deterministic order
 	rows := make([]map[string]any, 0, len(keys))
 	for _, k := range keys {
-		vals := entryVals(k, counts, avgs, maxes)
-		row := keyCols(vals)
-		row["spans"] = int64(counts[k].V)
+		n := int64(counts[k].V)
+		if n <= 0 {
+			continue
+		}
+		row := keyCols(entryVals(k, counts, avgs, maxes))
+		row["spans"] = n
 		row["avg_ns"] = int64(avgs[k].V)
 		row["max_ns"] = int64(maxes[k].V)
 		row["avg"] = FormatDurationNS(int64(avgs[k].V))
@@ -163,7 +177,10 @@ func (a *Aggregator) threeWayRows(ctx context.Context, groups []string, where st
 	sort.SliceStable(rows, func(i, j int) bool {
 		return rows[i]["spans"].(int64) > rows[j]["spans"].(int64)
 	})
-	return rows, nil
+	if limit > 0 && len(rows) > limit {
+		rows = rows[:limit]
+	}
+	return rows
 }
 
 type AttrOptions struct {
@@ -253,6 +270,9 @@ func (a *Aggregator) Attributes(ctx context.Context, opts AttrOptions) ([]map[st
 			row[name] = labelGroupValue(vals[i])
 		}
 		n := int64(entry.V)
+		if n <= 0 {
+			continue // see mergeThreeWay: count is the ground truth
+		}
 		row["spans"] = n
 		if errCounts != nil {
 			errN := int64(errCounts[key].V)

@@ -186,7 +186,13 @@ func (m *Matcher) lookup(ev map[string]any, field string) (any, bool) {
 }
 
 func (m *Matcher) compare(c Compare, ev map[string]any) tri {
-	v, ok := m.lookup(ev, c.Field)
+	var v any
+	var ok bool
+	if c.Left != nil {
+		v, ok = m.resolve(*c.Left, ev) // a constant: always present
+	} else {
+		v, ok = m.lookup(ev, c.Field)
+	}
 	present := ok && v != nil
 	switch c.Op {
 	case "IS NULL":

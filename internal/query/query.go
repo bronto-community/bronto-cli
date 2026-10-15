@@ -17,11 +17,18 @@
 //	           | operand ["NOT"] ("LIKE" | "ILIKE" | "REGEXP" | "RLIKE") value
 //	           | operand "IS" ["NOT"] "NULL"
 //	           | "EXISTS" field | "EXISTS" "(" field ")"
-//	operand  := field | "LOWER" "(" field ")"
+//	operand   := field | "LOWER" "(" field ")" | number | 'string' | "(" operand ")"
 //	op        := = | != | <> | >= | <= | > | < | ~ | !~ | ~* | !~*
-//	field     := [@$]?ident(.ident)* | "double-quoted name"
+//	field     := [$]?ident(.ident)* | @raw | "double-quoted name"
 //	value     := number | 'string' | field
 //	freetext  := bareword | number | 'string' | "string"
+//
+// A literal operand is a constant, not a field: 'status' = 200 compares
+// the text "status" with 200 and matches nothing, while 'a' = 'a' matches
+// everything. Of the @-prefixed barewords only @raw names a field (the
+// server answers 400 for @status, @time, …, though EXISTS @x and a lone
+// @x free-text term are accepted); a double-quoted "@name" is an ordinary
+// attribute.
 //
 // Single quotes delimit strings and double quotes delimit attribute
 // names; either quote is escaped by doubling it (backslash is literal).
@@ -57,7 +64,8 @@ type Not struct{ X Node }
 // != and RLIKE becomes REGEXP.
 type Compare struct {
 	Field  string
-	Lower  bool // the field was wrapped in LOWER(...)
+	Left   *Literal // a constant operand ('x' = 1, 200 = status) instead of Field
+	Lower  bool     // the field was wrapped in LOWER(...)
 	Op     string
 	Value  Literal   // unused by IN and IS [NOT] NULL
 	Values []Literal // IN / NOT IN list
@@ -92,7 +100,9 @@ func (b Binary) fields(m map[string]bool) { b.Left.fields(m); b.Right.fields(m) 
 func (n Not) fields(m map[string]bool)    { n.X.fields(m) }
 func (FreeText) fields(map[string]bool)   {}
 func (c Compare) fields(m map[string]bool) {
-	m[c.Field] = true
+	if c.Left == nil {
+		m[c.Field] = true
+	}
 	for _, v := range append([]Literal{c.Value}, c.Values...) {
 		if v.IsAttr {
 			m[v.Text()] = true
@@ -127,17 +137,31 @@ func Warnings(n Node) []string {
 		case Not:
 			walk(t.X)
 		case Compare:
+			lhs := t.Field
+			if t.Left != nil {
+				lhs = t.Left.Raw
+				if t.Left.IsString {
+					out = append(out, fmt.Sprintf(
+						"%s in `%s %s` is a string, not the attribute %q — the comparison is constant; write %s to compare the attribute",
+						t.Left.Raw, t.Left.Raw, t.Op, t.Left.Text(), quoteField(t.Left.Text())))
+				}
+			}
 			for _, v := range append([]Literal{t.Value}, t.Values...) {
 				if v.IsAttr {
 					out = append(out, fmt.Sprintf(
 						"%s in `%s %s` names the attribute %q, not a string — write '%s' to compare against the text",
-						v.Raw, t.Field, t.Op, v.Text(), strings.ReplaceAll(v.Text(), "'", "''")))
+						v.Raw, lhs, t.Op, v.Text(), strings.ReplaceAll(v.Text(), "'", "''")))
 				}
 			}
 		}
 	}
 	walk(n)
 	return out
+}
+
+// quoteField writes name as a double-quoted attribute reference.
+func quoteField(name string) string {
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
 // ParseError carries a byte position and span into the original input so
@@ -376,6 +400,14 @@ func (p *parser) startsPredicate(k int) bool {
 
 func (p *parser) parsePrimary() (Node, error) {
 	t := p.cur()
+	if t.kind == "lparen" || t.kind == "num" || (t.kind == "str" && t.text[0] == '\'') {
+		// A parenthesized or literal operand: (status) = 500, 200 = status,
+		// 'a' = 'a'. Otherwise the same tokens open a group or a free-text
+		// term, handled below.
+		if n, ok, err := p.tryLiteralPredicate(); ok || err != nil {
+			return n, err
+		}
+	}
 	switch t.kind {
 	case "lparen":
 		p.advance()
@@ -397,6 +429,9 @@ func (p *parser) parsePrimary() (Node, error) {
 			if f.kind != "ident" && (f.kind != "str" || f.text[0] != '"') {
 				return nil, &ParseError{Pos: f.pos, Len: max(len(f.text), 1), Msg: "expected a field name inside LOWER(...)"}
 			}
+			if err := checkSystemField(f); err != nil {
+				return nil, err
+			}
 			p.advance()
 			if p.cur().kind != "rparen" {
 				c := p.cur()
@@ -417,8 +452,14 @@ func (p *parser) parsePrimary() (Node, error) {
 			}
 		}
 		if p.startsPredicate(1) {
+			if err := checkSystemField(t); err != nil {
+				return nil, err
+			}
 			p.advance()
 			return p.parsePredicate(t.text, false)
+		}
+		if t.text == "@" { // the server rejects a lone @ even as a search term
+			return nil, checkSystemField(t)
 		}
 		if kw(t) == "NULL" {
 			return nil, &ParseError{Pos: t.pos, Len: len(t.text),
@@ -440,6 +481,88 @@ func (p *parser) parsePrimary() (Node, error) {
 		return nil, &ParseError{Pos: t.pos, Len: len(t.text),
 			Msg: fmt.Sprintf("unexpected %q — expected a field name, a search term, or '('", t.text)}
 	}
+}
+
+// tryLiteralPredicate parses a predicate whose operand is a literal or
+// is parenthesized, reporting ok=false — with the cursor restored — when
+// the tokens are not one, so the caller can read them as a group or a
+// free-text term instead.
+func (p *parser) tryLiteralPredicate() (n Node, ok bool, err error) {
+	start := p.i
+	field, lower, left, isOperand := p.operand(0)
+	if !isOperand || !p.startsPredicate(0) {
+		p.i = start
+		return nil, false, nil
+	}
+	if left != nil {
+		n, err := p.parsePredicate("", false)
+		if c, isCompare := n.(Compare); isCompare {
+			c.Left = left
+			n = c
+		}
+		return n, true, err
+	}
+	n, err = p.parsePredicate(field, lower)
+	return n, true, err
+}
+
+// operand reads one predicate operand at the cursor without reporting
+// errors: a field (checked against the system-field rule), LOWER(field),
+// a number or 'string' (returned as left), or any of these wrapped in
+// parentheses. ok is false when the tokens are not an operand.
+func (p *parser) operand(depth int) (field string, lower bool, left *Literal, ok bool) {
+	t := p.cur()
+	switch {
+	case t.kind == "lparen" && depth < 256:
+		p.advance()
+		field, lower, left, ok = p.operand(depth + 1)
+		if !ok || p.cur().kind != "rparen" {
+			return "", false, nil, false
+		}
+		p.advance()
+		return field, lower, left, true
+	case t.kind == "num":
+		p.advance()
+		f, _ := strconv.ParseFloat(t.text, 64)
+		return "", false, &Literal{Raw: t.text, Num: f, IsNum: true}, true
+	case t.kind == "str" && t.text[0] == '\'':
+		p.advance()
+		return "", false, &Literal{Raw: t.text, IsString: true}, true
+	case t.kind == "str":
+		p.advance()
+		return unquote(t.text), false, nil, true
+	case t.kind == "ident" && kw(t) == "LOWER" && p.peek(1).kind == "lparen":
+		f := p.peek(2)
+		if (f.kind != "ident" && (f.kind != "str" || f.text[0] != '"')) || p.peek(3).kind != "rparen" ||
+			checkSystemField(f) != nil {
+			return "", false, nil, false
+		}
+		p.i += 4
+		return unquote(f.text), true, nil, true
+	case t.kind == "ident" && kw(t) != "NULL" && kw(t) != "EXISTS" && checkSystemField(t) == nil:
+		p.advance()
+		return t.text, false, nil, true
+	}
+	return "", false, nil, false
+}
+
+// checkSystemField rejects an @-prefixed bareword other than @raw: the
+// server answers 400 for @status, @time, @sequence, …, even though those
+// appear as keys in search results.
+func checkSystemField(t token) *ParseError {
+	if t.kind != "ident" || !strings.HasPrefix(t.text, "@") || t.text == "@raw" {
+		return nil
+	}
+	msg := fmt.Sprintf("%s is not a queryable field — @raw is the only @-field a query can reference", t.text)
+	switch t.text {
+	case "@":
+		msg = "expected a field name after @"
+	case "@time", "@timestamp":
+		msg += "; filter time with --since, --from, and --to"
+	default:
+		msg += fmt.Sprintf(`; quote the name (%s) for an attribute literally called that`, quoteField(t.text))
+	}
+	return &ParseError{Pos: t.pos, Len: len(t.text), Msg: msg}
 }
 
 // existsOperand reads the field after an EXISTS at the cursor — written
@@ -563,6 +686,9 @@ func (p *parser) parseValue(after string) (Literal, error) {
 		if kw(val) == "NULL" {
 			return Literal{}, &ParseError{Pos: val.pos, Len: len(val.text),
 				Msg: "compare with NULL using IS NULL or IS NOT NULL"}
+		}
+		if err := checkSystemField(val); err != nil {
+			return Literal{}, err
 		}
 		p.advance()
 		return Literal{Raw: val.text, IsAttr: true}, nil

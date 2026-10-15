@@ -931,3 +931,20 @@ func TestResourcesGuideListsPutUpdates(t *testing.T) {
 		t.Fatalf("resources.mdx lists PUT updates %v, the registry has %v", documented, want)
 	}
 }
+
+// TestUsersListShowsStatus: a deactivation must be confirmable from the
+// table, so users list carries the row's status (ACTIVE, DEACTIVATED, …).
+func TestUsersListShowsStatus(t *testing.T) {
+	out, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"users":[
+			{"id":"u1","email":"ada@example.com","first_name":"Ada","last_name":"L","status":"ACTIVE"},
+			{"id":"u2","email":"bob@example.com","first_name":"Bob","last_name":"B","status":"DEACTIVATED"}]}`))
+	}, "", "users", "list", "-o", "table")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	if len(lines) != 3 || !strings.Contains(lines[0], "STATUS") || !strings.Contains(lines[2], "DEACTIVATED") {
+		t.Fatalf("table = %q", out)
+	}
+}

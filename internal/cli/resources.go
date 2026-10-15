@@ -40,6 +40,12 @@ type resourceDesc struct {
 	UpdateMethod string // "PATCH" (default) or "PUT"
 
 	ListRowKeys []string // payload keys to try for the list rows array; nil = auto
+
+	// ListLimit is the largest page the list endpoint serves, sent as
+	// ?limit= because its default page is smaller. The endpoints that take
+	// a limit have no cursor or offset, so a full page means rows may be
+	// missing: list warns, and name resolution says so on a miss.
+	ListLimit int
 	Columns     []string // table/csv columns; nil = auto via bronto.EventColumns
 
 	// ListTransform, if set, enriches list rows for the human formats
@@ -115,6 +121,21 @@ func (d resourceDesc) display() string {
 		return d.AttachTo + " " + d.Name
 	}
 	return d.Name
+}
+
+// listPath is the GET path for the full list: Base, plus ?limit= when
+// the endpoint pages (see ListLimit).
+func (d resourceDesc) listPath() string {
+	if d.ListLimit > 0 {
+		return fmt.Sprintf("%s?limit=%d", d.Base, d.ListLimit)
+	}
+	return d.Base
+}
+
+// listTruncated reports whether a list came back as a full page of an
+// endpoint that cannot page further, so rows beyond it may exist.
+func (d resourceDesc) listTruncated(rows []map[string]any) bool {
+	return d.ListLimit > 0 && len(rows) >= d.ListLimit
 }
 
 func (d resourceDesc) idBase() string {
@@ -247,7 +268,11 @@ var resourceRegistry = []resourceDesc{
 		NameKeys:     []string{"category"},
 		CreateFields: limitExampleFields, UpdateFields: limitExampleFields,
 		Columns: []string{"category", "description", "value", "unit", "created", "id"}},
+	// The list defaults to 50 keys and serves at most 100 (live: limit=101
+	// answers 400), with no cursor; the rows key is encryption_keys, though
+	// the spec says keys.
 	{Name: "encryption-keys", Base: "/encryption-keys", Singular: "encryption key",
+		ListLimit:    100,
 		CreateFields: []string{"name=<name>", "provider=AWS_KMS", `aws_kms={"alias_arn":"<alias-arn>"}`}},
 	// No per-ID GET documented for these three; update is full-body PUT.
 	{Name: "forward-configs", Base: "/forward-configs", Singular: "forward config",
@@ -278,7 +303,7 @@ var resourceRegistry = []resourceDesc{
 		IDKey:        "downtime_id",
 		CreateFields: downtimeExampleFields, UpdateFields: downtimeExampleFields},
 	{Name: "users", Base: "/users", Singular: "user",
-		Columns:       []string{"email", "first_name", "last_name", "last_login", "id"},
+		Columns:       []string{"email", "first_name", "last_name", "status", "last_login", "id"},
 		NameKeys:      []string{"email"},
 		ListTransform: userListRows,
 		CreateFields:  []string{"email=<email>", "first_name=<first-name>", "last_name=<last-name>", `roles=["ReadOnly"]`},
@@ -620,9 +645,13 @@ func newResourceListCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, desc.Base, nil)
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, desc.listPath(), nil)
 			if err != nil {
 				return err
+			}
+			if rows := rowsFromPayload(payload, desc.ListRowKeys...); desc.listTruncated(rows) {
+				app.Notef("Warning: the API returned its maximum of %d %s and cannot page further; any beyond them are not shown.\n",
+					desc.ListLimit, desc.plural())
 			}
 			return printResourceList(cmd, app, desc, payload)
 		},
@@ -1145,7 +1174,7 @@ func resolveResourceRef(ctx context.Context, app *App, desc resourceDesc, ref st
 	if desc.Name == "datasets" {
 		return resolveDatasetRef(ctx, app, ref)
 	}
-	payload, err := doJSONRequest(ctx, app, http.MethodGet, desc.Base, nil)
+	payload, err := doJSONRequest(ctx, app, http.MethodGet, desc.listPath(), nil)
 	if err != nil {
 		return "", err
 	}
@@ -1192,6 +1221,10 @@ func matchResourceRef(desc resourceDesc, rows []map[string]any, ref string) (str
 		available = slices.Compact(available)
 		hint = fmt.Sprintf("This account has: %s.", capList(available))
 	}
+	if desc.listTruncated(rows) {
+		hint += fmt.Sprintf(" Only the first %d %s could be searched (the API's maximum); pass the id instead.",
+			desc.ListLimit, desc.plural())
+	}
 	return "", clierr.New("resource_not_found",
 		fmt.Sprintf("no %s named %q", desc.singular(), ref)).WithHint(hint)
 }
@@ -1227,7 +1260,7 @@ func resolveKindRefs(ctx context.Context, app *App, kind string, refs []string) 
 			continue
 		}
 		if !fetched {
-			payload, err := doJSONRequest(ctx, app, http.MethodGet, desc.Base, nil)
+			payload, err := doJSONRequest(ctx, app, http.MethodGet, desc.listPath(), nil)
 			if err != nil {
 				return nil, err
 			}
