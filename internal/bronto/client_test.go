@@ -148,3 +148,20 @@ func TestGetJSON(t *testing.T) {
 		t.Fatalf("out=%v err=%v", out, err)
 	}
 }
+
+// A json.Decoder stops after the first value; DecodeJSON must not, or
+// `-f window=20 minutes` becomes the number 20.
+func TestDecodeJSONRejectsTrailingData(t *testing.T) {
+	for _, in := range []string{"20 minutes", "2024-01-01", "1.0.0", "true-story", `{"a":1}{"b":2}`, "123 apples"} {
+		var v any
+		if err := DecodeJSON([]byte(in), &v); err == nil {
+			t.Errorf("DecodeJSON(%q) = %v, want an error", in, v)
+		}
+	}
+	for _, in := range []string{"20", " true ", "{\"a\":1}\n", `"x"`, "4367602734065516544"} {
+		var v any
+		if err := DecodeJSON([]byte(in), &v); err != nil {
+			t.Errorf("DecodeJSON(%q): %v", in, err)
+		}
+	}
+}
