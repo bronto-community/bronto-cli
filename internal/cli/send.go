@@ -238,7 +238,9 @@ func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSiz
 						WithHint("Lines longer than 1 MiB cannot be sent; the events flushed before the error were delivered.")
 				}
 				summary()
-				return nil
+				// nil on a normal EOF; the cancellation (exit 130) when an
+				// interrupt arrived during the final flush.
+				return cmd.Context().Err()
 			}
 			if strings.TrimSpace(line) == "" {
 				continue

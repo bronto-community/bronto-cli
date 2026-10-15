@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -232,5 +233,57 @@ func TestSendInterruptFlushFailureIsReported(t *testing.T) {
 	}
 	if !strings.Contains(stderr, "Sent 0 event(s) in 0 batch(es) before the interrupt; the last batch was not delivered.") {
 		t.Fatalf("stderr = %q", stderr)
+	}
+}
+
+// An interrupt during the EOF flush: the first request is cut off, the
+// detached retry delivers the batch, and the run still exits 130.
+func TestSendInterruptDuringEOFFlushExits130(t *testing.T) {
+	started := make(chan struct{})
+	var once sync.Once
+	var calls atomic.Int32
+	var body atomic.Value
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		if calls.Add(1) == 1 {
+			once.Do(func() { close(started) })
+			<-r.Context().Done() // hold the first request until the client gives up
+			return
+		}
+		body.Store(string(b))
+	}))
+	defer srv.Close()
+
+	pr, pw := io.Pipe()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetIn(pr)
+	root.SetArgs([]string{"send", "-d", "app", "--no-gzip", "--flush-interval", "1h",
+		"--ingest-url", srv.URL, "--api-key", "k"})
+	done := make(chan error, 1)
+	go func() { done <- root.ExecuteContext(ctx) }()
+	if _, err := pw.Write([]byte("eof-line\n")); err != nil {
+		t.Fatal(err)
+	}
+	_ = pw.Close() // EOF: the final flush starts
+	select {
+	case <-started:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the EOF flush never reached the server")
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("want the cancellation (exit 130), got %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("send did not stop")
+	}
+	if got, _ := body.Load().(string); !strings.Contains(got, "eof-line") {
+		t.Fatalf("the detached retry did not deliver the batch: %q", got)
 	}
 }

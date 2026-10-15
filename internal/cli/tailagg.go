@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -151,10 +152,10 @@ func aggregateRows(resp *bronto.SearchResponse, selects, groups []string) []map[
 	var rows []map[string]any
 	byGroup := map[string]map[string]any{}
 	for _, r := range resp.GroupRows() {
-		key := fmt.Sprint(r["group"])
+		key, label := groupIdentity(r, groups)
 		row, ok := byGroup[key]
 		if !ok {
-			row = map[string]any{"group": key}
+			row = map[string]any{"group": label}
 			for _, sel := range selects {
 				row[sel] = nil
 			}
@@ -182,6 +183,26 @@ func aggregateRows(resp *bronto.SearchResponse, selects, groups []string) []map[
 		}
 	}
 	return rows
+}
+
+// groupIdentity returns the pivot key and display label of a group row.
+// Rows carry "group" in the live string shape; object-shaped groups are
+// flattened into their fields by GroupRows, so the identity comes from the
+// requested grouping fields instead. The key JSON-encodes the values, so
+// ("a, b") and ("a", "b") stay distinct.
+func groupIdentity(r map[string]any, groups []string) (key, label string) {
+	if g, ok := r["group"]; ok {
+		s := fmt.Sprint(g)
+		return s, s
+	}
+	vals := make([]any, len(groups))
+	labels := make([]string, len(groups))
+	for i, f := range groups {
+		vals[i] = r[f]
+		labels[i] = fmt.Sprint(r[f])
+	}
+	b, _ := json.Marshal(vals)
+	return string(b), strings.Join(labels, ", ")
 }
 
 func hasAnyKey(m map[string]any, keys []string) bool {

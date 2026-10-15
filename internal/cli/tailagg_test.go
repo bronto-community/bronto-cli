@@ -237,3 +237,23 @@ func TestAggregateRowsTotalsWithoutGroups(t *testing.T) {
 		t.Fatalf("empty response: %+v", rows)
 	}
 }
+
+// Object-shaped groups are flattened by GroupRows and carry no "group"
+// key; they must still pivot into one row per group.
+func TestAggregateRowsObjectGroups(t *testing.T) {
+	resp := &bronto.SearchResponse{Groups: []map[string]any{
+		{"group": map[string]any{"host": "web-1", "path": "/a"}, "stat": "count(*)", "value": json.Number("3")},
+		{"group": map[string]any{"host": "web-2", "path": "/a"}, "stat": "count(*)", "value": json.Number("5")},
+		{"group": map[string]any{"host": "web-1", "path": "/a"}, "stat": "max(ms)", "value": json.Number("7")},
+	}}
+	rows := aggregateRows(resp, []string{"count(*)", "max(ms)"}, []string{"host", "path"})
+	if len(rows) != 2 {
+		t.Fatalf("want two groups, got %+v", rows)
+	}
+	if rows[0]["group"] != "web-1, /a" || rows[0]["count(*)"] != 3.0 || rows[0]["max(ms)"] != 7.0 {
+		t.Fatalf("row 0 = %+v", rows[0])
+	}
+	if rows[1]["group"] != "web-2, /a" || rows[1]["count(*)"] != 5.0 {
+		t.Fatalf("row 1 = %+v", rows[1])
+	}
+}
