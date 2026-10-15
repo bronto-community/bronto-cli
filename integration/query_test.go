@@ -292,7 +292,8 @@ func TestQuery_CheckMatchesServerGrammar(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if check.ExitCode != 0 || !strings.Contains(check.Stdout, `"valid":true`) {
+			var verdict struct{ Valid bool }
+			if check.ExitCode != 0 || json.Unmarshal([]byte(check.Stdout), &verdict) != nil || !verdict.Valid {
 				t.Errorf("query check rejected a server-valid query (exit %d)\nstdout: %s\nstderr: %s",
 					check.ExitCode, check.Stdout, check.Stderr)
 			}
