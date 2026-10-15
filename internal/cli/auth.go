@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -62,7 +63,7 @@ func newAuthLoginRunner(use, short string) *cobra.Command {
 }
 
 func runAuthLogin(cmd *cobra.Command, keyStdin bool) error {
-	app, err := NewApp(cmd)
+	app, err := newApp(cmd, appOptions{allowNewProfile: true})
 	if err != nil {
 		return err
 	}
@@ -168,70 +169,87 @@ func regionCandidates(cfg *config.Config, regionFlag, baseURLFlag string) []regi
 }
 
 // detectRegion probes each candidate base URL with the given key via GET
-// /logs and returns the first that accepts it. Each probe gets its own
-// bounded 5s context so an unreachable host can't hang the command.
+// /logs and returns the first that accepts it. Each probe is bounded to 5s
+// so an unreachable host can't hang the command.
 //
-// If no candidate ever produced an HTTP response (every attempt failed at
-// the network layer — DNS, connection refused, timeout, ...), the failure
-// says nothing about the key itself: it's a network_error (retryable, exit
-// 1). Only once at least one candidate answered — even with a rejection
-// like 401/403 — do we conclude the key was checked and rejected:
-// auth_invalid_key (exit 3).
+// Only a 401/403 says anything about the key. If every candidate rejected
+// it that way, the key is invalid: auth_invalid_key (exit 3). If any
+// candidate failed for another reason (DNS, timeout, 5xx, 429, ...) the
+// key may well belong to that region, so that typed error is returned
+// instead (network_error, timeout, api_server_error, ...), keeping its
+// exit code and retryability.
 func detectRegion(ctx context.Context, cfg *config.Config, key, regionFlag, baseURLFlag string) (region, baseURL string, err error) {
 	if regionFlag != "" && regionFlag != "eu" && regionFlag != "us" {
 		return "", "", clierr.New("usage_invalid_region",
 			fmt.Sprintf("--region must be \"eu\" or \"us\", got %q", regionFlag))
 	}
-	var lastErr error
-	var sawResponse bool
-	for _, c := range regionCandidates(cfg, regionFlag, baseURLFlag) {
-		apiErr, netErr := probeRegion(ctx, c, key)
-		if netErr != nil {
-			lastErr = netErr
-			continue
+	return pickRegion(ctx, regionCandidates(cfg, regionFlag, baseURLFlag), key)
+}
+
+// pickRegion is detectRegion's probe loop over explicit candidates.
+func pickRegion(ctx context.Context, cands []regionCandidate, key string) (region, baseURL string, err error) {
+	var lastAuthErr, otherErr error
+	var otherRegion string
+	for _, c := range cands {
+		err := probeRegion(ctx, c, key)
+		switch {
+		case err == nil:
+			return c.region, c.baseURL, nil
+		case isAuthRejection(err):
+			lastAuthErr = err
+		default:
+			otherErr, otherRegion = err, c.region
 		}
-		sawResponse = true
-		if apiErr != nil {
-			lastErr = apiErr
-			continue
+	}
+	if otherErr != nil {
+		var ce *clierr.Error
+		if !errors.As(otherErr, &ce) {
+			return "", "", otherErr // context cancellation: pass through
 		}
-		return c.region, c.baseURL, nil
+		where := otherRegion
+		if where == "" {
+			where = "the --base-url"
+		}
+		out := *ce
+		out.Message = fmt.Sprintf("could not verify the key against %s: %s", where, ce.Message)
+		if ce.Code == "network_error" {
+			out.Hint = "Check your network connection and the --base-url / --region."
+		}
+		return "", "", &out
 	}
 	msg := "the key was not accepted in any region"
-	if lastErr != nil {
-		msg = fmt.Sprintf("%s (%v)", msg, lastErr)
-	}
-	if !sawResponse {
-		return "", "", clierr.New("network_error", msg).WithRetryable().
-			WithHint("Check your network connection and the --base-url / --region.")
+	if lastAuthErr != nil {
+		msg = fmt.Sprintf("%s (%v)", msg, lastAuthErr)
 	}
 	return "", "", clierr.New("auth_invalid_key", msg).
 		WithHint("You are likely using an ingestion key. This CLI needs a management key (Settings → API Keys in the Bronto UI).").
 		WithDocs("https://docs.bronto.io/api-reference/api-keys/overview")
 }
 
-// probeRegion issues one bounded GET /logs against a single candidate.
-// netErr is a network-layer failure (no HTTP response at all was
-// received); apiErr is a non-2xx HTTP response translated to a typed
-// error. At most one of the two is non-nil.
-func probeRegion(ctx context.Context, c regionCandidate, key string) (apiErr, netErr error) {
-	probeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
+// isAuthRejection reports whether err is the API rejecting the key itself
+// (401/403), as opposed to a network, server or rate-limit failure.
+func isAuthRejection(err error) bool {
+	var ce *clierr.Error
+	return errors.As(err, &ce) && (ce.Code == "auth_invalid_key" || ce.Code == "auth_insufficient_role")
+}
+
+// probeTimeout bounds each detectRegion probe. A variable so tests can
+// shorten it.
+var probeTimeout = 5 * time.Second
+
+// probeRegion issues one bounded GET /logs against a single candidate and
+// returns the typed error from api.Do (nil when the key is accepted). The
+// bound is the client timeout rather than a context deadline so that a
+// slow host classifies as "timeout" like any other request.
+func probeRegion(ctx context.Context, c regionCandidate, key string) error {
 	client := api.NewHTTPClient(key, version.Version)
-	req, err := http.NewRequestWithContext(probeCtx, http.MethodGet, c.baseURL+"/logs", nil)
+	client.Timeout = probeTimeout
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/logs", nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	body, _ := io.ReadAll(resp.Body)
-	if ae := api.ErrorFromStatus(resp.StatusCode, body); ae != nil {
-		return ae, nil
-	}
-	return nil, nil
+	_, err = api.Do(client, req)
+	return err
 }
 
 func newAuthStatusCmd() *cobra.Command {
@@ -252,9 +270,14 @@ func newAuthStatusCmd() *cobra.Command {
 			maskedKey := maskSecret(key)
 
 			status := "no key"
+			// liveErr is a failure of the live check that is NOT about the
+			// key (network, timeout, 5xx, 429): it is returned as-is so the
+			// exit code says what actually went wrong, instead of sending
+			// the user to 'bronto auth login' for an outage.
+			var liveErr error
 			switch {
 			case key != "":
-				status = checkLiveStatus(cmd.Context(), app)
+				status, liveErr = checkLiveStatus(cmd.Context(), app)
 			case app.SecretLookupErr != nil:
 				// A genuine credential-lookup failure (e.g. a corrupt
 				// credentials file) is not the same as "nothing configured"
@@ -272,7 +295,7 @@ func newAuthStatusCmd() *cobra.Command {
 				"key_source": source,
 				"key":        maskedKey,
 				"region":     region,
-				"base_url":   app.Config.BaseURL(),
+				"base_url":   config.RedactURLString(app.Config.BaseURL()),
 				"status":     status,
 			}
 			p, err := app.Printer(false)
@@ -289,6 +312,9 @@ func newAuthStatusCmd() *cobra.Command {
 			// only sets the exit code (quiet keeps stderr clean of the
 			// duplicate message in machine pipelines — the envelope is
 			// still emitted for parity with every other failure).
+			if liveErr != nil {
+				return liveErr
+			}
 			if status != "ok" {
 				return clierr.New("auth_status_not_ok",
 					fmt.Sprintf("credential check failed: %s", status)).
@@ -299,21 +325,22 @@ func newAuthStatusCmd() *cobra.Command {
 	}
 }
 
-func checkLiveStatus(ctx context.Context, app *App) string {
+// checkLiveStatus probes GET /logs with the resolved key. status is the
+// text for the status cell ("ok" or the failure). err is non-nil only for
+// failures unrelated to the key itself; a 401/403 is reported through
+// status alone and becomes auth_status_not_ok in the caller.
+func checkLiveStatus(ctx context.Context, app *App) (status string, err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, app.Config.BaseURL()+"/logs", nil)
 	if err != nil {
-		return fmt.Sprintf("error: %v", err)
+		return fmt.Sprintf("error: %v", err), nil
 	}
-	resp, err := app.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Sprintf("error: %v", err)
+	if _, err := api.Do(app.HTTPClient, req); err != nil {
+		if isAuthRejection(err) {
+			return err.Error(), nil
+		}
+		return "error: " + err.Error(), err
 	}
-	defer func() { _ = resp.Body.Close() }()
-	body, _ := io.ReadAll(resp.Body)
-	if apiErr := api.ErrorFromStatus(resp.StatusCode, body); apiErr != nil {
-		return apiErr.Error()
-	}
-	return "ok"
+	return "ok", nil
 }
 
 func newAuthSwitchCmd() *cobra.Command {
@@ -322,7 +349,9 @@ func newAuthSwitchCmd() *cobra.Command {
 		Short: "Set the default profile",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := NewApp(cmd)
+			// allowNewProfile: switching away from a missing profile must
+			// work. The target profile is checked below.
+			app, err := newApp(cmd, appOptions{allowNewProfile: true})
 			if err != nil {
 				return err
 			}
@@ -365,7 +394,7 @@ func newAuthLogoutCmd() *cobra.Command {
 		Short: "Remove the stored API key for a profile",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			app, err := NewApp(cmd)
+			app, err := newApp(cmd, appOptions{allowNewProfile: true}) // logout is idempotent
 			if err != nil {
 				return err
 			}

@@ -4,8 +4,6 @@ import (
 	"os"
 	"path/filepath"
 
-	toml "github.com/pelletier/go-toml/v2"
-
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
@@ -22,8 +20,8 @@ func loadProjectFile(dir string) (map[string]string, string, error) {
 	for {
 		path := filepath.Join(dir, ".bronto.toml")
 		if b, err := os.ReadFile(path); err == nil { // #nosec G304 -- .bronto.toml discovered in the user's own working tree
-			var m map[string]string
-			if err := toml.Unmarshal(b, &m); err != nil {
+			m, err := parseProjectFile(b)
+			if err != nil {
 				return nil, path, clierr.New("config_parse_error", "cannot parse "+path+": "+err.Error())
 			}
 			return m, path, nil

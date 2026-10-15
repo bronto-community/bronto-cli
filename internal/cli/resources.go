@@ -390,23 +390,15 @@ func doJSONRequest(ctx context.Context, app *App, method, path string, body []by
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	resp, err := app.HTTPClient.Do(req)
-	if err != nil {
-		return nil, bronto.ClassifyTransportError(ctx, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-	respBody, err := io.ReadAll(resp.Body)
+	resp, err := api.Do(app.HTTPClient, req)
 	if err != nil {
 		return nil, err
 	}
-	if apiErr := api.ErrorFromStatus(resp.StatusCode, respBody); apiErr != nil {
-		return nil, apiErr
-	}
-	if len(respBody) == 0 {
+	if len(resp.Body) == 0 {
 		return nil, nil
 	}
 	var doc any
-	if err := bronto.DecodeJSON(respBody, &doc); err != nil {
+	if err := bronto.DecodeJSON(resp.Body, &doc); err != nil {
 		return nil, err
 	}
 	return doc, nil

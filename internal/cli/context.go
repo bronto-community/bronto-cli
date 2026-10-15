@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/itchyny/gojq"
@@ -66,7 +65,24 @@ type App struct {
 	DryRun bool
 }
 
-func NewApp(cmd *cobra.Command) (*App, error) {
+// NewApp builds the App for a command, failing on invalid configuration.
+func NewApp(cmd *cobra.Command) (*App, error) { return newApp(cmd, appOptions{}) }
+
+// appOptions tunes newApp for the few commands that must run on a broken
+// configuration.
+type appOptions struct {
+	// lenientConfig ignores invalid region/timeout/max_retries/output
+	// values (falling back to defaults) instead of failing. `bronto config`
+	// uses it: it is how a user inspects and repairs those values, so it
+	// must not be locked out by them.
+	lenientConfig bool
+	// allowNewProfile accepts a profile that has neither a stored key nor
+	// a config section yet: auth login and config set create one, config
+	// list/get only inspect, and auth logout is idempotent.
+	allowNewProfile bool
+}
+
+func newApp(cmd *cobra.Command, opts appOptions) (*App, error) {
 	flags := map[string]string{}
 	for _, name := range []string{"api-key", "profile", "region", "base-url", "output", "timeout", "max-retries"} {
 		if f := cmd.Flags().Lookup(name); f != nil && f.Changed {
@@ -78,7 +94,7 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 			flags[key] = f.Value.String()
 		}
 	}
-	cfg, err := config.Load(config.LoadOptions{Flags: flags})
+	cfg, err := config.Load(config.LoadOptions{Flags: flags, Lenient: opts.lenientConfig})
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +109,15 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 					"Warning: OS keychain unavailable — using the credentials file fallback.")
 			}
 		case errors.Is(err, secrets.ErrNotFound):
-			// nothing stored under this profile; not an error.
+			// Nothing stored under this profile. That's fine for the
+			// default profile, but a named profile with no key and no
+			// config section is almost always a typo (--profile p2x), and
+			// running on would silently use the default region instead.
+			if v, ok := cfg.Get("profile"); ok && v.Val != "default" && !opts.allowNewProfile &&
+				!cfg.ProfileConfigured() {
+				return nil, clierr.New("profile_not_found", fmt.Sprintf("no profile named %q", v.Val)).
+					WithHint(fmt.Sprintf("Run 'bronto auth login --profile %s' to create it, or check the spelling.", v.Val))
+			}
 		default:
 			// A genuine lookup error (e.g. a corrupt credentials file):
 			// treat it as "no stored key" so the command still runs (an
@@ -111,6 +135,9 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 	outFlag := ""
 	if v, ok := cfg.Get("output"); ok {
 		outFlag = v.Val
+		if _, ferr := output.ParseFormat(outFlag); ferr != nil && opts.lenientConfig {
+			outFlag = ""
+		}
 	}
 	var fieldFilter []string
 	listFieldsOnly := false
@@ -177,25 +204,27 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 		}
 	}
 	if v, ok := cfg.Get("timeout"); ok {
-		secs, err := strconv.Atoi(v.Val)
-		if err != nil || secs <= 0 {
-			return nil, clierr.New("config_invalid_timeout",
-				fmt.Sprintf("timeout must be a positive integer (seconds), got %q", v.Val))
+		secs, err := config.ParseTimeout(v)
+		switch {
+		case err == nil:
+			httpClient.Timeout = time.Duration(secs) * time.Second
+		case !opts.lenientConfig:
+			return nil, err
 		}
-		httpClient.Timeout = time.Duration(secs) * time.Second
 	}
 	if v, ok := cfg.Get("max_retries"); ok {
-		n, err := strconv.Atoi(v.Val)
-		if err != nil || n < 0 {
-			return nil, clierr.New("config_invalid_max_retries",
-				fmt.Sprintf("max_retries must be a non-negative integer, got %q", v.Val))
-		}
-		if tr, ok := httpClient.Transport.(*api.Transport); ok {
-			tr.MaxRetries = n
+		n, err := config.ParseMaxRetries(v)
+		switch {
+		case err == nil:
+			if tr, ok := httpClient.Transport.(*api.Transport); ok {
+				tr.MaxRetries = n
+			}
+		case !opts.lenientConfig:
+			return nil, err
 		}
 	}
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
-	return &App{
+	app := &App{
 		DryRun:          dryRun,
 		Config:          cfg,
 		Stdout:          cmd.OutOrStdout(),
@@ -210,7 +239,14 @@ func NewApp(cmd *cobra.Command) (*App, error) {
 		RawOutput:       rawOutput,
 		SecretLookupErr: secretLookupErr,
 		Color:           output.ColorEnabled(noColor, ttyNow, os.Getenv),
-	}, nil
+	}
+	// A .bronto.toml can pick the profile, which brings that profile's key
+	// and base_url along (possibly production). Say so every time, so a
+	// command never runs against another account unnoticed.
+	if v, ok := cfg.Get("profile"); ok && v.Source == config.SourceProject {
+		app.Notef("Using profile %q from %s.\n", v.Val, cfg.ProjectFile())
+	}
+	return app, nil
 }
 
 // Notef prints a non-data confirmation ("Deleted widget x.") to stderr

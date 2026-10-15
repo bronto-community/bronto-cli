@@ -62,7 +62,11 @@ bronto exports create -d prod/checkout-service --since 6h --where "status >= 500
 
 The download comes from a presigned URL, and the CLI doesn't send your API key to it.
 The file is written as delivered, with `0600` permissions: NDJSON, one event per line,
-compressed with [zstd](https://facebook.github.io/zstd/).
+compressed with [zstd](https://facebook.github.io/zstd/). The URL must use `https`, unless
+your `base_url` is plain `http` (a local or dev instance). The file appears at the path
+only once the download is complete: if the transfer fails, an existing file is left
+untouched and no partial file remains. The `timeout` setting limits how long the server
+may go without sending data, not the length of the whole download.
 
 To query the export offline, decompress it on the way into
 [`bronto search --local`](/cli/guides/searching#search-local-files):

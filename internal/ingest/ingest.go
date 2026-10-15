@@ -7,8 +7,8 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -104,19 +104,20 @@ func (s *Sender) Send(ctx context.Context, events []map[string]any) error {
 	if s.Tags != "" {
 		req.Header.Set("x-bronto-tags", s.Tags)
 	}
-	resp, err := s.HTTP.Do(req)
+	resp, err := api.Fetch(s.HTTP, req)
 	if err != nil {
-		return clierr.New("network_error", err.Error()).WithRetryable().
-			WithHint("Check your network and the ingestion URL / region.")
+		var ce *clierr.Error
+		if errors.As(err, &ce) && ce.Code == "network_error" {
+			ce.Hint = "Check your network and the ingestion URL / region."
+		}
+		return err
 	}
-	defer func() { _ = resp.Body.Close() }()
-	respBody, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode == http.StatusRequestEntityTooLarge {
 		return clierr.New("payload_too_large",
 			fmt.Sprintf("ingestion rejected a %d-byte batch (10 MB cap)", len(body))).
 			WithHint("Reduce --batch-size.")
 	}
-	return errOrNil(api.ErrorFromStatus(resp.StatusCode, respBody))
+	return errOrNil(api.ErrorFromStatus(resp.StatusCode, resp.Body))
 }
 
 // errOrNil avoids returning a non-nil interface holding a nil *clierr.Error.
