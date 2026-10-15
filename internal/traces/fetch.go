@@ -2,7 +2,6 @@ package traces
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/bronto-community/bronto-cli/internal/bronto"
@@ -24,9 +23,7 @@ func (a *Aggregator) ListSpans(ctx context.Context, opts ListOptions) ([]map[str
 	if opts.Operation != "" {
 		clauses = append(clauses, "$span.name = "+Quote(opts.Operation))
 	}
-	if opts.MinDurationMS > 0 {
-		clauses = append(clauses, fmt.Sprintf("$span.duration_nano > %d", int64(opts.MinDurationMS*1e6)))
-	}
+	clauses = append(clauses, MinDurationClause(opts.MinDurationMS))
 	if opts.ErrorsOnly {
 		clauses = append(clauses, ErrorsClause)
 	}

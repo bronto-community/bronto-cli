@@ -31,6 +31,15 @@ func validatePositive(name string, v int) error {
 	return nil
 }
 
+// validateBarWidth rejects a --bar-width too narrow to draw a waterfall.
+func validateBarWidth(w int) error {
+	if w < traces.MinBarWidth {
+		return clierr.New("usage_invalid_flag",
+			fmt.Sprintf("--bar-width must be at least %d, got %d", traces.MinBarWidth, w))
+	}
+	return nil
+}
+
 // tracesAgg builds the shared App + Aggregator pair.
 func tracesAgg(cmd *cobra.Command, since, defaultSince string) (*App, *traces.Aggregator, error) {
 	app, err := NewApp(cmd)
@@ -193,6 +202,9 @@ func newTracesListCmd() *cobra.Command {
 			"  bronto traces list --min-duration-ms 500 -n 20",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := validatePositive("limit", limit); err != nil {
+				return err
+			}
 			app, agg, err := tracesAgg(cmd, since, "15m")
 			if err != nil {
 				return err
@@ -235,6 +247,9 @@ func newTracesShowCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
+			if err := validateBarWidth(barWidth); err != nil {
+				return err
+			}
 			app, agg, err := tracesAgg(cmd, since, "1h")
 			if err != nil {
 				return err
@@ -278,7 +293,7 @@ func newTracesShowCmd() *cobra.Command {
 	f := cmd.Flags()
 	f.StringVar(&since, "since", "", "relative lookback (default 1h)")
 	f.IntVarP(&limit, "limit", "n", 500, "max spans to fetch")
-	f.IntVar(&barWidth, "bar-width", 40, "waterfall bar width in characters")
+	f.IntVar(&barWidth, "bar-width", 40, "waterfall bar width in characters (min 10)")
 	return cmd
 }
 
@@ -346,6 +361,9 @@ func newTracesShapeCmd() *cobra.Command {
 				return err
 			}
 			if err := validatePositive("min-traces", minTraces); err != nil {
+				return err
+			}
+			if err := validateBarWidth(barWidth); err != nil {
 				return err
 			}
 			app, agg, err := tracesAgg(cmd, since, "1h")
@@ -430,7 +448,7 @@ func newTracesShapeCmd() *cobra.Command {
 	f.IntVar(&sample, "sample", 30, "number of traces to sample")
 	f.IntVar(&minTraces, "min-traces", 1, "drop buckets present in fewer than this many traces")
 	f.StringVar(&since, "since", "", "relative lookback (default 1h)")
-	f.IntVar(&barWidth, "bar-width", 50, "waterfall bar width in characters")
+	f.IntVar(&barWidth, "bar-width", 50, "waterfall bar width in characters (min 10)")
 	return cmd
 }
 
@@ -455,9 +473,7 @@ func shapeSampleWhere(entry bool, service, operation string, errorsOnly bool, mi
 	if errorsOnly {
 		clauses = append(clauses, traces.ErrorsClause)
 	}
-	if minDurationMS > 0 {
-		clauses = append(clauses, fmt.Sprintf("$span.duration_nano > %d", int64(minDurationMS*1e6)))
-	}
+	clauses = append(clauses, traces.MinDurationClause(minDurationMS))
 	if rawWhere != "" {
 		clauses = append(clauses, "("+rawWhere+")")
 	}

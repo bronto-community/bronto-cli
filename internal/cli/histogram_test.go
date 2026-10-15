@@ -3,6 +3,7 @@ package cli
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestHistogramBuckets(t *testing.T) {
@@ -46,5 +47,27 @@ func TestRenderHistogram(t *testing.T) {
 	}
 	if !strings.Contains(renderHistogram(buckets, true), "\x1b[36m") {
 		t.Fatal("color mode must colorize bars")
+	}
+}
+
+// TestRenderHistogramMultiDaySameDayOfMonth pins the multi-day check on
+// whole dates: Sep 15 -> Oct 15 has the same Day() but spans a month.
+func TestRenderHistogramMultiDaySameDayOfMonth(t *testing.T) {
+	sep := time.Date(2026, 9, 15, 10, 0, 0, 0, time.UTC).UnixMilli()
+	oct := time.Date(2026, 10, 15, 10, 0, 0, 0, time.UTC).UnixMilli()
+	buckets := []map[string]any{
+		{"time": "a", "timestamp": sep, "count": 1.0},
+		{"time": "b", "timestamp": oct, "count": 2.0},
+	}
+	out := renderHistogram(buckets, false)
+	if !strings.Contains(out, "09-15 10:00") || !strings.Contains(out, "10-15 10:00") {
+		t.Fatalf("labels must carry the date:\n%s", out)
+	}
+	sameDay := []map[string]any{
+		{"time": "a", "timestamp": sep, "count": 1.0},
+		{"time": "b", "timestamp": sep + 3600_000, "count": 2.0},
+	}
+	if out := renderHistogram(sameDay, false); strings.Contains(out, "09-15") {
+		t.Fatalf("a single-day range keeps time-only labels:\n%s", out)
 	}
 }

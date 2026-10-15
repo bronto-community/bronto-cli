@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"hash/fnv"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -83,14 +85,18 @@ func TestTailInvalidRegexIsUsageError(t *testing.T) {
 	}
 }
 
+// TestTailFollowStopsOnContextCancel pins the interrupt contract: tail
+// stops promptly and returns the cancellation error, which main maps to
+// exit 130 without an error message.
 func TestTailFollowStopsOnContextCancel(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"events":[]}`))
 	}))
 	defer srv.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	time.AfterFunc(300*time.Millisecond, cancel)
 	root := NewRootCmd()
 	root.SetOut(&bytes.Buffer{})
 	root.SetErr(&bytes.Buffer{})
@@ -100,8 +106,8 @@ func TestTailFollowStopsOnContextCancel(t *testing.T) {
 	go func() { done <- root.ExecuteContext(ctx) }()
 	select {
 	case err := <-done:
-		if err != nil {
-			t.Fatalf("cancelled tail must exit clean: %v", err)
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("cancelled tail must return context.Canceled, got %v", err)
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("tail did not stop on context cancellation")
@@ -345,6 +351,84 @@ func TestColorIndexInRangeForHighBitHashes(t *testing.T) {
 		if i < 0 || i >= len(originColors) {
 			t.Errorf("colorIndex(%#x) = %d, out of range [0,%d)", sum, i, len(originColors))
 		}
+	}
+}
+
+func TestTailRejectsBadLimitAndWindow(t *testing.T) {
+	for _, tc := range []struct {
+		args []string
+		code string
+	}{
+		{[]string{"-n", "0"}, "usage_invalid_limit"},
+		{[]string{"-n", "-1"}, "usage_invalid_limit"},
+		{[]string{"-n", "20000"}, "usage_invalid_limit"},
+		{[]string{"--window", "1x"}, "usage_invalid_window"},
+		{[]string{"--window", "1h30m"}, "usage_invalid_window"},
+		{[]string{"--window", "0s"}, "usage_invalid_window"},
+		{[]string{"--window", "00m"}, "usage_invalid_window"},
+	} {
+		root := NewRootCmd()
+		root.SetOut(&bytes.Buffer{})
+		root.SetErr(&bytes.Buffer{})
+		// An unreachable base URL: validation must fail before any request.
+		root.SetArgs(append([]string{"tail", "--no-follow", "-d", "11111111-1111-1111-1111-111111111111",
+			"--api-key", "k", "--base-url", "http://127.0.0.1:0"}, tc.args...))
+		err := root.Execute()
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != tc.code {
+			t.Fatalf("%v: want %s, got %v", tc.args, tc.code, err)
+		}
+		if strings.Contains(ce.Message, "--since") || strings.Contains(ce.Hint, "1h30m") {
+			t.Fatalf("%v: error must not point at --since or compound durations: %q / %q", tc.args, ce.Message, ce.Hint)
+		}
+	}
+}
+
+func TestTailWindowSpec(t *testing.T) {
+	spec, err := tailWindowSpec("5m")
+	if err != nil || spec.TimeRange != "Last 5 minutes" {
+		t.Fatalf("spec = %+v, err = %v", spec, err)
+	}
+}
+
+// TestTailNoFollowNoBannerAndLimitWarning pins two stderr behaviors: a
+// one-shot --no-follow run doesn't announce "Ctrl-C to stop", and a poll
+// that returns exactly --limit events warns that some were not shown.
+func TestTailNoFollowNoBannerAndLimitWarning(t *testing.T) {
+	var body []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		_, _ = w.Write([]byte(`{"events":[
+			{"@sequence":1,"@raw":"a","@time":"t1"},
+			{"@sequence":2,"@raw":"b","@time":"t2"}
+		]}`))
+	}))
+	defer srv.Close()
+
+	run := func(limit string) string {
+		root := NewRootCmd()
+		var errb bytes.Buffer
+		root.SetOut(&bytes.Buffer{})
+		root.SetErr(&errb)
+		root.SetArgs([]string{"tail", "--no-follow", "-n", limit, "-d", "11111111-1111-1111-1111-111111111111",
+			"--base-url", srv.URL, "--api-key", "k"})
+		if err := root.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		return errb.String()
+	}
+	stderr := run("2")
+	if strings.Contains(stderr, "Ctrl-C") {
+		t.Fatalf("--no-follow must not print the follow banner: %q", stderr)
+	}
+	if !strings.Contains(stderr, "Warning: a poll returned 2 events") {
+		t.Fatalf("full poll must warn: %q", stderr)
+	}
+	if !strings.Contains(string(body), `"limit":2`) {
+		t.Fatalf("request body = %s", body)
+	}
+	if stderr := run("3"); strings.Contains(stderr, "Warning") {
+		t.Fatalf("a poll under the limit must not warn: %q", stderr)
 	}
 }
 

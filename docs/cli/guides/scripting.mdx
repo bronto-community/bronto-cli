@@ -166,6 +166,7 @@ it isn't, you get one line of JSON:
 | `3` | auth error (missing, invalid, or under-privileged key) |
 | `4` | not found |
 | `5` | rate limited or timed out: retry reads; after a timed-out write, check whether it landed first |
+| `130` | interrupted by Ctrl-C or SIGTERM |
 
 [Exit codes](/cli/reference/exit-codes) maps every error code to its exit status.
 

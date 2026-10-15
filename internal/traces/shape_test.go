@@ -249,6 +249,16 @@ func TestRenderShapeTable(t *testing.T) {
 	}
 }
 
+func TestRenderShapeBarNonPositiveWidth(t *testing.T) {
+	b := &ShapeBucket{Offsets: []int64{20, 40}, Durations: []int64{20, 20},
+		TraceIDs: map[string]bool{"t1": true, "t2": true}}
+	for _, w := range []int{0, -1} {
+		if bar := RenderShapeBar(b, 100, w, false); len([]rune(bar)) != 1 {
+			t.Fatalf("width %d: bar = %q, want one cell", w, bar)
+		}
+	}
+}
+
 // A label that only fits once its escapes are counted must not be
 // truncated to the minimum column.
 func TestRenderShapeSizesEscapedLabels(t *testing.T) {

@@ -284,6 +284,9 @@ func sortedBuckets(buckets map[string]*ShapeBucket, less func(a, b *ShapeBucket)
 // spread band, · = outside. Band clamped into [0,width]; avg segment
 // truncated by the loop bound (extraction §4.8).
 func RenderShapeBar(b *ShapeBucket, axisEnd int64, width int, color bool) string {
+	if width < 1 {
+		width = 1
+	}
 	span := axisEnd
 	if span < 1 {
 		span = 1

@@ -44,7 +44,9 @@ func renderHistogram(buckets []map[string]any, color bool) string {
 	if len(buckets) > 1 {
 		first, _ := numericValue(buckets[0]["timestamp"])
 		last, _ := numericValue(buckets[len(buckets)-1]["timestamp"])
-		multiDay = time.UnixMilli(int64(last)).UTC().Day() != time.UnixMilli(int64(first)).UTC().Day()
+		// Compare whole dates: Day() alone matches Sep 15 and Oct 15.
+		day := func(ms float64) time.Time { return time.UnixMilli(int64(ms)).UTC().Truncate(24 * time.Hour) }
+		multiDay = !day(first).Equal(day(last))
 	}
 	var sb strings.Builder
 	for _, b := range buckets {

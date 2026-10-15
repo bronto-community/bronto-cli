@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -45,13 +46,14 @@ func runTailAggregate(ctx context.Context, app *App, client *bronto.Client,
 			return err
 		}
 	}
-	if human && !app.Quiet {
+	if human && !app.Quiet && !noFollow {
 		_, _ = fmt.Fprintf(app.Stderr, "Live aggregate over %s (every %s, Ctrl-C to stop).\n",
 			strings.ToLower(spec.TimeRange), interval)
 	}
 
 	history := map[string][]float64{}
 	lastLines := 0
+	warnedMissing := false
 	for {
 		req := bronto.SearchRequest{
 			From: ids, FromExpr: expr, Time: spec, Where: where,
@@ -60,15 +62,23 @@ func runTailAggregate(ctx context.Context, app *App, client *bronto.Client,
 		resp, err := client.Search(ctx, req)
 		if err != nil {
 			if ctx.Err() != nil {
-				return nil //nolint:nilerr // SIGINT: clean exit by contract
+				return ctx.Err() // SIGINT mid-request: main exits 130 without an error message
 			}
 			return err
 		}
 		rows := aggregateRows(resp, selects, groups)
+		if missing := missingSelects(rows, selects); len(missing) > 0 && !warnedMissing && !app.Quiet {
+			warnedMissing = true
+			_, _ = fmt.Fprintf(app.Stderr, "Warning: the API returned no values for %s; they show as - (null in JSON Lines).\n",
+				strings.Join(missing, ", "))
+		}
 		now := time.Now()
 		for _, r := range rows {
 			key, _ := r["group"].(string)
-			v, _ := r[selects[0]].(float64)
+			v, ok := r[selects[0]].(float64)
+			if !ok {
+				v = math.NaN() // no value: a gap in the trend
+			}
 			history[key] = append(history[key], v)
 			if h := history[key]; len(h) > trendLen {
 				history[key] = h[len(h)-trendLen:]
@@ -95,7 +105,7 @@ func runTailAggregate(ctx context.Context, app *App, client *bronto.Client,
 		}
 		select {
 		case <-ctx.Done():
-			return nil
+			return ctx.Err()
 		case <-time.After(interval):
 		}
 	}
@@ -115,51 +125,163 @@ func formatAggValue(v float64) string {
 	return strconv.FormatFloat(v, 'f', 2, 64)
 }
 
-// aggregateRows normalizes group/aggregate responses into printable rows.
+// aggregateRows normalizes group/aggregate responses into printable rows,
+// one per group with a column per select. Grouped responses carry one
+// entry per (group, stat) pair, so they are pivoted on the stat; a select
+// the response has no value for stays nil. Without groups the totals are
+// the single row: result then holds a time series, one row per bucket.
 func aggregateRows(resp *bronto.SearchResponse, selects, groups []string) []map[string]any {
-	var src []map[string]any
-	if len(groups) > 0 {
-		src = resp.GroupRows()
-	} else {
-		src = resp.SelectedRows()
-	}
-	rows := make([]map[string]any, 0, len(src))
-	for _, r := range src {
-		row := map[string]any{}
-		if g, ok := r["group"]; ok {
-			row["group"] = fmt.Sprint(g)
-		} else if len(groups) == 0 {
-			row["group"] = "total"
-		}
-		for _, sel := range selects {
-			v := r[sel]
-			if v == nil {
-				v = r["value"] // groups rows carry the value here
+	if len(groups) == 0 {
+		src := resp.Totals
+		if !hasAnyKey(src, selects) {
+			rows := resp.SelectedRows()
+			if len(rows) == 0 {
+				return nil
 			}
-			row[sel] = toNumber(v)
+			src = rows[0]
 		}
-		rows = append(rows, row)
+		row := map[string]any{"group": "total"}
+		for _, sel := range selects {
+			row[sel] = numberOrNil(src[sel])
+		}
+		return []map[string]any{row}
+	}
+
+	isSelect := map[string]bool{}
+	for _, sel := range selects {
+		isSelect[sel] = true
+	}
+	var rows []map[string]any
+	byGroup := map[string]map[string]any{}
+	for _, r := range resp.GroupRows() {
+		key, label := groupIdentity(r, groups)
+		row, ok := byGroup[key]
+		if !ok {
+			row = map[string]any{"group": label}
+			for _, sel := range selects {
+				row[sel] = nil
+			}
+			byGroup[key] = row
+			rows = append(rows, row)
+		}
+		stat, hasStat := r["stat"].(string)
+		switch {
+		case hasStat && isSelect[stat]:
+			row[stat] = numberOrNil(r["value"])
+		case hasStat && len(selects) == 1:
+			// The API spelled the one stat differently; it can only be this select.
+			row[selects[0]] = numberOrNil(r["value"])
+		case hasStat:
+			// A stat that matches no select: leave every column alone.
+		default:
+			for _, sel := range selects {
+				if v, ok := r[sel]; ok {
+					row[sel] = numberOrNil(v)
+				}
+			}
+			if len(selects) == 1 && row[selects[0]] == nil {
+				row[selects[0]] = numberOrNil(r["value"])
+			}
+		}
 	}
 	return rows
 }
 
-var sparkChars = []rune("▁▂▃▄▅▆▇█")
+// groupIdentity returns the pivot key and display label of a group row.
+// Rows carry "group" in the live string shape; object-shaped groups are
+// flattened into their fields by GroupRows, so the identity comes from the
+// requested grouping fields instead. The key JSON-encodes the values, so
+// ("a, b") and ("a", "b") stay distinct.
+func groupIdentity(r map[string]any, groups []string) (key, label string) {
+	if g, ok := r["group"]; ok {
+		s := fmt.Sprint(g)
+		return s, s
+	}
+	vals := make([]any, len(groups))
+	labels := make([]string, len(groups))
+	for i, f := range groups {
+		vals[i] = r[f]
+		labels[i] = fmt.Sprint(r[f])
+	}
+	b, _ := json.Marshal(vals)
+	return string(b), strings.Join(labels, ", ")
+}
 
-// sparkline renders vals scaled to their own max.
-func sparkline(vals []float64) string {
-	var max float64
-	for _, v := range vals {
-		if v > max {
-			max = v
+func hasAnyKey(m map[string]any, keys []string) bool {
+	for _, k := range keys {
+		if _, ok := m[k]; ok {
+			return true
 		}
 	}
-	if max == 0 {
-		return strings.Repeat("▁", len(vals))
+	return false
+}
+
+// numberOrNil converts an aggregate value to float64, keeping a missing
+// value nil so it prints as "-" (table) or null (JSONL), not as 0.
+func numberOrNil(v any) any {
+	if v == nil {
+		return nil
 	}
+	return toNumber(v)
+}
+
+// missingSelects lists the selects that no row has a value for.
+func missingSelects(rows []map[string]any, selects []string) []string {
+	if len(rows) == 0 {
+		return nil
+	}
+	var missing []string
+	for _, sel := range selects {
+		found := false
+		for _, r := range rows {
+			if r[sel] != nil {
+				found = true
+				break
+			}
+		}
+		if !found {
+			missing = append(missing, sel)
+		}
+	}
+	return missing
+}
+
+var sparkChars = []rune("▁▂▃▄▅▆▇█")
+
+// sparkline renders vals scaled over their own [min, max] range, with the
+// floor at zero unless a value is negative. A flat series renders as the
+// highest block if it is above zero and the lowest otherwise; NaN/Inf
+// values render as a gap.
+func sparkline(vals []float64) string {
+	lo, hi := math.Inf(1), math.Inf(-1)
+	for _, v := range vals {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			continue
+		}
+		lo = math.Min(lo, v)
+		hi = math.Max(hi, v)
+	}
+	// A series that has always been above zero keeps zero as its floor,
+	// so steady traffic does not render as a flat line at the bottom.
+	if lo > 0 {
+		lo = 0
+	}
+	top := len(sparkChars) - 1
 	var sb strings.Builder
 	for _, v := range vals {
-		idx := int(v / max * float64(len(sparkChars)-1))
-		sb.WriteRune(sparkChars[idx])
+		switch {
+		case math.IsNaN(v) || math.IsInf(v, 0):
+			sb.WriteRune(' ')
+		case hi <= lo:
+			if v <= 0 {
+				sb.WriteRune(sparkChars[0])
+			} else {
+				sb.WriteRune(sparkChars[top])
+			}
+		default:
+			idx := int((v - lo) / (hi - lo) * float64(top))
+			sb.WriteRune(sparkChars[max(0, min(idx, top))])
+		}
 	}
 	return sb.String()
 }
@@ -182,6 +304,10 @@ func renderAggFrame(rows []map[string]any, selects, groups []string, now time.Ti
 		vals := make([]string, 0, len(selects)+2)
 		vals = append(vals, termsafe.Line(fmt.Sprint(r["group"])))
 		for _, s := range selects {
+			if r[s] == nil {
+				vals = append(vals, "-")
+				continue
+			}
 			vals = append(vals, formatAggValue(toNumber(r[s])))
 		}
 		vals = append(vals, fmt.Sprint(r["trend"]))
