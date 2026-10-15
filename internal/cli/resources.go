@@ -616,11 +616,11 @@ func printResourceList(cmd *cobra.Command, app *App, desc resourceDesc, payload 
 		rows = append(rows, humanListRows(desc, cloneRows(rows), output.FormatCSV)...)
 	case len(app.FieldFilter) > 0:
 		// A derived column (last_activity, created, ...) named in
-		// --fields switches json/jsonl to the human rows, with csv's
+		// --fields adds the derived values to json/jsonl rows, with csv's
 		// machine-friendly absolute timestamps, instead of printing {}.
 		human := humanListRows(desc, cloneRows(rows), output.FormatCSV)
 		if needsDerivedFields(app.FieldFilter, rows, human) {
-			rows = human
+			rows = withDerivedFields(desc, rows)
 		}
 	}
 	p, err := app.PrinterFor(format)
@@ -646,6 +646,32 @@ func cloneRows(rows []map[string]any) []map[string]any {
 	out := make([]map[string]any, len(rows))
 	for i, r := range rows {
 		out[i] = maps.Clone(r)
+	}
+	return out
+}
+
+// withDerivedFields adds the human view's derived keys to the raw rows
+// without losing raw values: each raw row is transformed on its own, and
+// every row it yields (permissions expand one group into one row per
+// permission) is merged over a copy of that raw row. Raw keys keep their
+// raw values; only keys the raw row lacks come from the human row.
+func withDerivedFields(desc resourceDesc, rows []map[string]any) []map[string]any {
+	out := make([]map[string]any, 0, len(rows))
+	for _, raw := range rows {
+		human := humanListRows(desc, []map[string]any{maps.Clone(raw)}, output.FormatCSV)
+		if len(human) == 0 {
+			out = append(out, raw)
+			continue
+		}
+		for _, h := range human {
+			merged := maps.Clone(raw)
+			for k, v := range h {
+				if _, ok := merged[k]; !ok {
+					merged[k] = v
+				}
+			}
+			out = append(out, merged)
+		}
 	}
 	return out
 }

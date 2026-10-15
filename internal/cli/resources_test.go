@@ -702,3 +702,33 @@ func TestSingleRecordCSV(t *testing.T) {
 		t.Fatalf("get -o csv = %q", out)
 	}
 }
+
+// TestResourceListRawAndDerivedFieldsTogether pins that selecting a
+// derived field keeps the other requested raw fields, including for
+// transforms that expand one raw row into several (permissions: one group
+// into one row per permission).
+func TestResourceListRawAndDerivedFieldsTogether(t *testing.T) {
+	catalog := `{"resources":[{"group_name":"Monitors","permissions":[{"name":"monitors:read"},{"name":"monitors:write"}]}]}`
+	out, _, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(catalog))
+	}, "", "permissions", "list", "-o", "jsonl", "--fields", "group_name,group,name")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"group":"Monitors","group_name":"Monitors","name":"monitors:read"}` + "\n" +
+		`{"group":"Monitors","group_name":"Monitors","name":"monitors:write"}` + "\n"
+	if out != want {
+		t.Fatalf("out = %q, want %q", out, want)
+	}
+
+	list := `[{"dataset":"web","updated_at":1777890000000,"metadata":{"last_heartbeat_at":1784452890000}}]`
+	out, _, err = runResource(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(list))
+	}, "", "datasets", "list", "-o", "jsonl", "--fields", "dataset,updated_at,last_activity")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, `"updated_at":1777890000000`) || !strings.Contains(out, `"last_activity":"2026-`) {
+		t.Fatalf("raw value lost next to its derived column: %q", out)
+	}
+}

@@ -127,6 +127,29 @@ func TestBareGroupPrintsHelp(t *testing.T) {
 	}
 }
 
+// TestLeafHelpKeepsUsageLine pins that hiding the usage line for help-only
+// groups doesn't leak into their runnable descendants (cobra inherits
+// usage templates), nor into root.
+func TestLeafHelpKeepsUsageLine(t *testing.T) {
+	for argv, want := range map[string]string{
+		"monitors get --help":            "\n  bronto monitors get <id> [flags]",
+		"monitors downtimes list --help": "\n  bronto monitors downtimes list [flags]",
+		"--help":                         "\n  bronto [flags]",
+	} {
+		root := NewRootCmd()
+		var out bytes.Buffer
+		root.SetOut(&out)
+		root.SetErr(&bytes.Buffer{})
+		root.SetArgs(strings.Fields(argv))
+		if err := root.Execute(); err != nil {
+			t.Fatalf("%s: %v", argv, err)
+		}
+		if !strings.Contains(out.String(), "Usage:"+want) {
+			t.Errorf("%s: usage line %q missing from %q", argv, want, out.String())
+		}
+	}
+}
+
 // TestFlagGroupErrorsAreUsageErrors pins that cobra's flag-group errors
 // (mutually exclusive, required together, one required) exit 2 like
 // required-flag errors do, instead of unknown_error exit 1.

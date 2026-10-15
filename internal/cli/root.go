@@ -125,6 +125,10 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	rejectUnknownSubcommands(cmd)
+	// Set once on root and inherited by every command: help-only groups
+	// skip the "bronto <group> [flags]" usage line, everything else keeps
+	// its invocation syntax.
+	cmd.SetUsageTemplate(strings.Replace(cmd.UsageTemplate(), runnableUsageLine, helpAwareUsageLine, 1))
 	wrapArgsValidators(cmd)
 	applyCompletions(cmd)
 	// Root keeps subcommand-name completion (it's a group), plus a completer
@@ -141,8 +145,14 @@ func NewRootCmd() *cobra.Command {
 const HelpOnlyGroupAnnotation = "bronto_help_only_group"
 
 // runnableUsageLine is the usage-template fragment cobra prints only for
-// runnable commands.
-const runnableUsageLine = "{{if .Runnable}}\n  {{.UseLine}}{{end}}"
+// runnable commands; helpAwareUsageLine also skips it for help-only groups,
+// which are runnable to cobra but do nothing on their own.
+const (
+	runnableUsageLine  = "{{if .Runnable}}\n  {{.UseLine}}{{end}}"
+	helpAwareUsageLine = "{{if and .Runnable (not (isHelpOnlyGroup .))}}\n  {{.UseLine}}{{end}}"
+)
+
+func init() { cobra.AddTemplateFunc("isHelpOnlyGroup", IsHelpOnlyGroup) }
 
 // IsHelpOnlyGroup reports whether c is a group whose own Run only prints
 // help: a group without a default action.
@@ -167,9 +177,6 @@ func rejectUnknownSubcommands(cmd *cobra.Command) {
 			cmd.Annotations = map[string]string{}
 		}
 		cmd.Annotations[HelpOnlyGroupAnnotation] = "true"
-		// Keep the help unchanged: no "bronto <group> [flags]" usage line
-		// for a group that does nothing on its own.
-		cmd.SetUsageTemplate(strings.Replace(cmd.UsageTemplate(), runnableUsageLine, "", 1))
 	}
 	for _, sub := range cmd.Commands() {
 		rejectUnknownSubcommands(sub)
