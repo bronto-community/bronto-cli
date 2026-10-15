@@ -125,6 +125,24 @@ tags:
       matching the
 
       given search criteria.
+  - name: metrics
+    description: >
+      Metrics are numeric time series ingested into Bronto, for example from
+      OpenTelemetry collectors or SDKs. The Metrics endpoints return the
+      metadata Bronto stores for each ingested metric, such as its name, type,
+      unit and aggregation temporality, along with the keys and values received
+      for it. They don't return datapoints. To query metric data, use the
+      Timeseries API.
+  - name: metric-definitions
+    description: >
+      Metric definitions are saved sets of queries and formulas that can be
+      attached to widgets, monitors and SLOs. To compute a time series from a
+      metric definition, use the Timeseries API.
+  - name: timeseries
+    description: >
+      The Timeseries API computes time series and aggregations over log, trace
+      and metric data. Use it to query the values of an ingested metric or to
+      evaluate a metric definition.
 paths:
   /api-keys:
     get:
@@ -1025,6 +1043,8 @@ paths:
                 timezone:
                   type: string
                 filter_null_groups:
+                  type: string
+                hour_only_date_column:
                   type: string
               additionalProperties: false
         required: true
@@ -7801,7 +7821,7 @@ paths:
     get:
       tags:
         - metrics
-      summary: Retrieve the metadata of a metric ingested by
+      summary: Retrieve the metadata of an ingested metric
       operationId: getMetricMeta
       parameters:
         - name: metric_id
@@ -7811,7 +7831,7 @@ paths:
           schema:
             type: string
             format: uuid
-          example: 41521f35-1b06-41f0-9cdc-9a938b5739d1
+          example: b013a07d-aa13-47c1-9c74-635e42b22cbb
       responses:
         '200':
           description: Metric definition retrieved successfully
@@ -7827,7 +7847,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MetricMeta'
         '404':
-          description: Not Found - The metric definition is not found
+          description: Not Found - The metric is not found
           content:
             application/json:
               schema:
@@ -7842,12 +7862,38 @@ paths:
     get:
       tags:
         - metrics
-      summary: Retrieve the list of keys received for a given metric
+      summary: Retrieve the top keys and sample values for a metric
+      description: >
+        Returns the keys (attributes) received for a metric within a time
+        window,
+
+        together with each key's data type and a sample of the values seen for
+        it.
+
+        Use this to discover which dimensions you can filter or group a metric
+        by.
+
+
+        Set the time window in one of two ways:
+
+
+        - `time_range`, a relative range such as `last 20 minutes`, **or**
+
+        - `from_ts` and `to_ts` together, as an absolute range in Unix
+        milliseconds.
+
+
+        If no time window is provided, the most recent keys and values are
+        returned.
+
+        The response is an object keyed by key name. Values are a sample, not an
+
+        exhaustive list.
       operationId: getTopKeysForMetric
       parameters:
         - name: metric_id
           in: path
-          description: The ID of the metric to fetch the keys for
+          description: The unique identifier (UUID) of the metric.
           required: true
           schema:
             type: string
@@ -7868,6 +7914,7 @@ paths:
             incompatible with `time_range`.
           schema:
             type: integer
+            format: int64
           example: 1709251200000
         - name: to_ts
           in: query
@@ -7877,6 +7924,7 @@ paths:
             incompatible with `time_range`.
           schema:
             type: integer
+            format: int64
           example: 1711390455601
       responses:
         '200':
@@ -7894,6 +7942,29 @@ paths:
                 type: object
                 additionalProperties:
                   $ref: '#/components/schemas/TopKeysPerLogOrMetric'
+                example:
+                  Resource:service.name:
+                    type: STRING
+                    field_type: ATTRIBUTE
+                    values:
+                      checkout:
+                        value: checkout
+                      payments:
+                        value: payments
+                  Resource:host.name:
+                    type: STRING
+                    field_type: ATTRIBUTE
+                    values:
+                      ip-10-0-1-23:
+                        value: ip-10-0-1-23
+                  cpu:
+                    type: NUMBER
+                    field_type: ATTRIBUTE
+                    values:
+                      '0':
+                        value: '0'
+                      '1':
+                        value: '1'
         '404':
           description: >-
             Not Found - The metric keys were not found, review the metric id or
@@ -8601,6 +8672,8 @@ components:
             timezone:
               type: string
             filter_null_groups:
+              type: string
+            hour_only_date_column:
               type: string
           additionalProperties: false
     Organization:
@@ -11723,6 +11796,21 @@ components:
             dimension.
           items:
             $ref: '#/components/schemas/QueryDefinition'
+        aux:
+          type: object
+          description: >
+            Additional monitor configuration, as when creating a monitor.
+            Setting `seasonality_enabled` to
+
+            `"true"` also returns the preview with the seasonal pattern of the
+            metric taken out, as
+
+            `seasonal_timeseries`, and reports in `seasonality` whether that
+            could be done. Other keys are
+
+            ignored.
+          example:
+            seasonality_enabled: 'true'
         from_ts:
           type: integer
           description: >
@@ -11793,6 +11881,8 @@ components:
             exactly one entry.
           items:
             $ref: '#/components/schemas/AnomalyPreviewSeries'
+        seasonality:
+          $ref: '#/components/schemas/AnomalyPreviewSeasonality'
       description: >
         A previewed anomaly detection monitor, evaluated window by window over
         the requested range.
@@ -12710,6 +12800,201 @@ components:
             between subscription billings. For example, interval_frq=month and
             interval_count=3 bills every 3 months.
           example: 3
+    KeyCatalogueResponse:
+      type: object
+      properties:
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              telemetry:
+                type: string
+                enum:
+                  - LOGS
+                  - METRICS
+              dataset_id:
+                type: string
+                description: Logs only.
+              name:
+                type: string
+                description: Logs only. The dataset name.
+              services:
+                type: array
+                description: Metrics only. The services that report these metrics.
+                items:
+                  type: string
+              last_seen:
+                type: integer
+                description: Unix ms.
+                format: int64
+              field_count:
+                type: integer
+                description: >-
+                  Keys observed (logs) or metrics (metrics), including when
+                  fields are not returned.
+              fields_complete:
+                type: boolean
+                description: >-
+                  Logs only. False when the key reader truncated the list;
+                  absent when unknown.
+              from_ts:
+                type: integer
+                description: Logs only. Start of the observation window, unix ms.
+                format: int64
+              to_ts:
+                type: integer
+                description: Logs only. End of the observation window, unix ms.
+                format: int64
+              ranking:
+                type: object
+                properties:
+                  timestamp:
+                    type: integer
+                    format: int64
+                  offered_keys:
+                    type: integer
+                  ranked_keys:
+                    type: integer
+                  proposed_metrics:
+                    type: integer
+                description: Summary requests only. Counts from the latest stored ranking.
+              fields:
+                type: array
+                description: Detail requests only.
+                items:
+                  required:
+                    - key
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                      description: The field name (logs) or metric name (metrics).
+                    statistics:
+                      type: object
+                      additionalProperties: true
+                      description: >-
+                        Logs only. Type, cardinality, frequency and event count
+                        from top keys; no sample values.
+                    metric:
+                      type: object
+                      additionalProperties: true
+                      description: >-
+                        Metrics only. Name, unit, type and description from the
+                        metric's metadata.
+                    services:
+                      type: array
+                      items:
+                        type: string
+                    attributes:
+                      type: array
+                      description: Metrics only. The metric's attribute keys.
+                      items:
+                        type: string
+                    last_seen:
+                      type: integer
+                      format: int64
+                    ranking:
+                      type: object
+                      additionalProperties: true
+                      description: >-
+                        Absent when the key is not ranked. Score, rank,
+                        classification, signal and axis.
+                    ranked_at:
+                      type: integer
+                      description: When the ranking was made, unix ms.
+                      format: int64
+              metrics:
+                type: array
+                description: >-
+                  Detail requests only. Metrics the model proposed for this
+                  source.
+                items:
+                  type: object
+                  properties:
+                    proposal:
+                      type: object
+                      additionalProperties: true
+                      description: >-
+                        The proposed metric definition, its signal and, if taken
+                        from a panel or monitor, its source.
+                    ranked_at:
+                      type: integer
+                      format: int64
+            description: A log dataset, or the metrics reported by one set of services.
+      description: >
+        Every key observed in the selected sources, with the model's stored
+        ranking where one exists. Fields left at their default value are
+        omitted, so an empty result is {}.
+    KeyOverrides:
+      type: object
+      properties:
+        source:
+          type: string
+          description: dataset:<log id>, services:<comma-separated service names>, or org.
+          example: dataset:550e8400-e29b-41d4-a716-446655440000
+        keys:
+          type: array
+          items:
+            required:
+              - key
+            type: object
+            properties:
+              key:
+                type: string
+              rank:
+                minimum: 1
+                type: integer
+                description: Not for org.
+              hidden:
+                type: boolean
+                description: Not for org.
+              classification:
+                type: string
+                example: CLASSIFICATION_ATTRIBUTE
+              signal:
+                type: string
+                example: SIGNAL_LATENCY
+              axis:
+                type: string
+                example: AXIS_TOPOLOGY
+              description:
+                type: string
+              context:
+                type: string
+                description: When to use the key, and what to watch for.
+              convention:
+                type: string
+                description: An OpenTelemetry attribute or metric name.
+              uses:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - KEY_USE_GROUP_BY
+                    - KEY_USE_FILTER
+                    - KEY_USE_MEASURE
+                    - KEY_USE_IGNORE
+              value_type:
+                type: string
+                enum:
+                  - NUMBER
+                  - STRING
+                  - BOOLEAN
+              format:
+                type: string
+                example: uuid
+        metadata:
+          type: object
+          additionalProperties: true
+          description: >-
+            Who created and last changed these definitions, and when. Set by the
+            server.
+          readOnly: true
+      description: >
+        Your definitions for the keys in one source: a dataset, a set of
+        services, or the whole organisation. Saving replaces all of them. Empty
+        fields are left out of responses.
     TopKeys:
       type: object
       additionalProperties:
@@ -13713,7 +13998,7 @@ components:
               type: object
               additionalProperties:
                 $ref: '#/components/schemas/UsageItem'
-              description: Usage information per trace ID for the time range.
+              description: Usage information per service name for the time range.
           description: Summary of total usage for the time range.
         timeseries:
           type: array
@@ -13741,6 +14026,7 @@ components:
                 type: object
                 additionalProperties:
                   $ref: '#/components/schemas/UsageItem'
+                description: Usage information per service name for this time slice.
     UsageByTraceIdByUserId:
       type: object
       properties:
@@ -13767,7 +14053,7 @@ components:
               type: object
               additionalProperties:
                 $ref: '#/components/schemas/UsageItemByUserId'
-              description: Usage information per trace ID for the time range.
+              description: Usage information per service name and user for the time range.
           description: Summary of total usage for the time range.
         timeseries:
           type: array
@@ -13795,6 +14081,9 @@ components:
                 type: object
                 additionalProperties:
                   $ref: '#/components/schemas/UsageItemByUserId'
+                description: >-
+                  Usage information per service name and user for this time
+                  slice.
     UsageByDatasetTypeByUserId:
       type: object
       properties:
@@ -16099,6 +16388,158 @@ components:
         that isn't expressible as an additional condition on top of total_query)
         — when it isn't, derivable is false and reason explains why, and the
         caller should let the user supply bad_query manually instead.
+    SuggestSloThresholdRequest:
+      required:
+        - indicator
+        - window
+      type: object
+      properties:
+        indicator:
+          $ref: '#/components/schemas/SloIndicator'
+        window:
+          $ref: '#/components/schemas/SloWindow'
+      description: >-
+        Suggests a target threshold for an SLI, based on its recent historical
+        performance and traffic volume
+    SuggestSloThresholdResponse:
+      required:
+        - derivable
+        - total_requests
+      type: object
+      properties:
+        derivable:
+          type: boolean
+          description: >-
+            Whether a target could be suggested from the indicator's recent
+            history.
+        suggested_target:
+          type: number
+          description: >-
+            The suggested target, following the Google SRE "nines" ladder capped
+            by observed history and traffic volume. Only present when derivable
+            is true.
+          format: double
+          example: 99.9
+        reason:
+          type: string
+          description: >-
+            Why a target could not be suggested. Only present when derivable is
+            false.
+          example: >-
+            No historical data is available for this indicator over the
+            requested window.
+        total_requests:
+          type: integer
+          description: >-
+            The total number of requests observed over the historical lookback
+            window, used to cap the suggestion so low-traffic indicators aren't
+            given an unachievably strict target.
+          format: int64
+        warnings:
+          type: array
+          description: >-
+            Non-fatal caveats about the suggested target, present even when
+            derivable is true. For example, the suggestion may have been capped
+            below the observed history because traffic volume is too low to
+            statistically support it.
+          items:
+            type: string
+      description: >-
+        The result of attempting to suggest a target threshold from the
+        indicator's recent historical performance. Suggestion is not always
+        possible (e.g. no historical data, or too little traffic for a
+        meaningful percentage target) — when it isn't, derivable is false and
+        reason explains why, and the caller should let the user supply target
+        manually instead.
+    UpdateSloRequest:
+      type: object
+      properties:
+        name:
+          maxLength: 255
+          minLength: 1
+          type: string
+          description: The name of the SLO.
+          example: checkout-availability-99.9
+        description:
+          maxLength: 4000
+          type: string
+          description: Extra contextual information about the SLO.
+          example: Checkout availability on the production load balancer.
+        team:
+          maxLength: 255
+          type: string
+          description: The team that owns this SLO.
+          example: checkout
+        service:
+          maxLength: 255
+          type: string
+          description: The service this SLO measures.
+          example: checkout-api
+        objective:
+          $ref: '#/components/schemas/SloObjective'
+      description: >-
+        Request body to partially update an SLO. Only the fields provided are
+        changed; omitted fields keep their current value.
+    SloIndicator:
+      required:
+        - type
+      type: object
+      properties:
+        type:
+          type: string
+          description: >-
+            The indicator template. `RATIO` requires at least two of
+            `good_query`/`bad_query`/ `total_query` — the third is derived (e.g.
+            good + bad → total). `bad_query` is preferred whenever included
+            (i.e. `bad_query`+`total_query` or `good_query`+ `bad_query`), see
+            its description. `LATENCY` requires `total_query` and
+            `latency_threshold`.
+          enum:
+            - RATIO
+            - LATENCY
+        good_query:
+          description: >-
+            RATIO only. The good-event count, i.e. the numerator of the ratio. A
+            single query (MetricQuery) or a multi-query/formula expression
+            (MetricExpression). At least two of
+            `good_query`/`bad_query`/`total_query` must be set. If `bad_query`
+            is omitted (i.e. only `good_query`+`total_query` are set), its not
+            possible to "jump to offending events"  alert drilldown feature,
+            since `bad` can't be safely derived from `good`.
+          oneOf:
+            - $ref: '#/components/schemas/MetricQuery'
+            - $ref: '#/components/schemas/MetricExpression'
+        bad_query:
+          description: >-
+            RATIO only, the preferred field to include. The bad-event count.
+            When paired with `total_query`, good is derived as total - bad; when
+            paired with `good_query`, total is derived as good + bad. At least
+            two of `good_query`/`bad_query`/`total_query` must be set.  This is
+            also the recommended way to express an availability SLO (e.g.
+            `where: "status_code >= 500"` or `where: "service_status != 'UP'"`)
+          oneOf:
+            - $ref: '#/components/schemas/MetricQuery'
+            - $ref: '#/components/schemas/MetricExpression'
+        total_query:
+          description: >-
+            Required for LATENCY. For RATIO, at least two of
+            `good_query`/`bad_query`/ `total_query` must be set — `total_query`
+            is optional and, when omitted, its derived as good + bad. The total
+            (valid request) count, i.e. the denominator of the ratio. A single
+            query (MetricQuery) or a multi-query/formula expression
+            (MetricExpression).
+          oneOf:
+            - $ref: '#/components/schemas/MetricQuery'
+            - $ref: '#/components/schemas/MetricExpression'
+        latency_threshold:
+          $ref: '#/components/schemas/LatencyThreshold'
+      description: >-
+        The Service Level Indicator: how health is measured, expressed as a
+        good/total ratio (value in 0..1). Two templates are supported: `RATIO`
+        (any two of good/bad/total, the third derived) and `LATENCY` (a total
+        query plus a latency threshold). Field requirements per type are
+        documented below; they are enforced by the API, not expressible as a
+        JSON Schema constraint here.
     SloStatus:
       required:
         - current_sli
@@ -16192,6 +16633,17 @@ components:
           format: int64
           readOnly: true
           example: 1710948395538
+        ai_report_enabled:
+          type: boolean
+          description: >-
+            True if an automatic report should be generated when the monitor
+            triggers
+        ai_report_instructions:
+          type: string
+          description: >
+            Instructions for the AI on what to include in the report, e.g. check
+            for recent deployments, verify the health of the following
+            dependencies: ... etc
     RetentionRule:
       required:
         - entity
@@ -16376,8 +16828,14 @@ components:
           properties:
             last_heartbeat_at:
               type: integer
-              description: Timestamp of the last heartbeat in milliseconds since epoch.
+              description: >
+                Timestamp of the last heartbeat in milliseconds since epoch,
+                rounded to the start of the day. This should not be used as a
+                liveness check as it may be delayed by up to 24 hours; consider
+                querying the usage APIs instead.
               format: int64
+              example: 1791331200000
+          description: metadata of the object
       description: |
         Metadata for a metric sent to Bronto
     TopKeysPerLogOrMetric:
@@ -16758,8 +17216,13 @@ components:
           $ref: '#/components/schemas/Identity'
         last_heartbeat_at:
           type: integer
-          description: Timestamp of the last heartbeat in milliseconds since epoch.
+          description: >
+            Timestamp of the last heartbeat in milliseconds since epoch, rounded
+            to the start of the day. This should not be used as a liveness check
+            as it may be delayed by up to 24 hours; consider querying the usage
+            APIs instead.
           format: int64
+          example: 1791331200000
       description: Common metadata attached to all persisted resources.
     OrganisationSettings:
       type: object
@@ -17119,6 +17582,21 @@ components:
             Windows in which nothing matched are included
           items:
             $ref: '#/components/schemas/AnomalyPreviewWindow'
+        seasonal_timeseries:
+          type: array
+          description: >
+            The same windows scored against a baseline with the seasonal pattern
+            taken out, so that the
+
+            baseline, and the bands derived from it, follow the time of day and
+            week. A window can be
+
+            anomalous in one series and not the other. Present only when
+            seasonality is ADJUSTED.
+          items:
+            $ref: '#/components/schemas/AnomalyPreviewWindow'
+        seasonality:
+          $ref: '#/components/schemas/AnomalyPreviewSeasonality'
       description: >
         One evaluated series and the windows it was scored over. Anomaly
         detection builds a baseline per
@@ -17127,6 +17605,41 @@ components:
         groups are evaluated against the
 
         same warn and alert thresholds.
+    AnomalyPreviewSeasonality:
+      type: string
+      description: >
+        Whether the seasonal pattern of the metric could be taken out. Present
+        only when the request set
+
+        `seasonality_enabled` in `aux`.
+
+
+        ADJUSTED means a seasonal profile was applied and `seasonal_timeseries`
+        is present. On the preview
+
+        as a whole it means at least one group was adjusted. NOT_SEASONAL means
+        the metric was found to
+
+        have no seasonal pattern, so there is nothing to take out and only
+        `timeseries` is returned.
+
+        PROFILE_GENERATING means no profile exists yet: it is being trained from
+        the history of the
+
+        metric, which takes a while, and only `timeseries` is returned.
+        Previewing again later returns
+
+        the adjusted series. PROFILE_UNAVAILABLE means the seasonal profile
+        could not be used, for
+
+        example because it could not be loaded, or because this group has no
+        profile when others do.
+      example: ADJUSTED
+      enum:
+        - ADJUSTED
+        - NOT_SEASONAL
+        - PROFILE_GENERATING
+        - PROFILE_UNAVAILABLE
     TagValues:
       type: array
       items:
@@ -17763,66 +18276,6 @@ components:
           type: string
           description: Extra contextual information to add to the monitor.
           example: Average response time is over 1 seconds in the last 20 minutes
-    SloIndicator:
-      required:
-        - type
-      type: object
-      properties:
-        type:
-          type: string
-          description: >-
-            The indicator template. `RATIO` requires at least two of
-            `good_query`/`bad_query`/ `total_query` — the third is derived (e.g.
-            good + bad → total). `bad_query` is preferred whenever included
-            (i.e. `bad_query`+`total_query` or `good_query`+ `bad_query`), see
-            its description. `LATENCY` requires `total_query` and
-            `latency_threshold`.
-          enum:
-            - RATIO
-            - LATENCY
-        good_query:
-          description: >-
-            RATIO only. The good-event count, i.e. the numerator of the ratio. A
-            single query (MetricQuery) or a multi-query/formula expression
-            (MetricExpression). At least two of
-            `good_query`/`bad_query`/`total_query` must be set. If `bad_query`
-            is omitted (i.e. only `good_query`+`total_query` are set), its not
-            possible to "jump to offending events"  alert drilldown feature,
-            since `bad` can't be safely derived from `good`.
-          oneOf:
-            - $ref: '#/components/schemas/MetricQuery'
-            - $ref: '#/components/schemas/MetricExpression'
-        bad_query:
-          description: >-
-            RATIO only, the preferred field to include. The bad-event count.
-            When paired with `total_query`, good is derived as total - bad; when
-            paired with `good_query`, total is derived as good + bad. At least
-            two of `good_query`/`bad_query`/`total_query` must be set.  This is
-            also the recommended way to express an availability SLO (e.g.
-            `where: "status_code >= 500"` or `where: "service_status != 'UP'"`)
-          oneOf:
-            - $ref: '#/components/schemas/MetricQuery'
-            - $ref: '#/components/schemas/MetricExpression'
-        total_query:
-          description: >-
-            Required for LATENCY. For RATIO, at least two of
-            `good_query`/`bad_query`/ `total_query` must be set — `total_query`
-            is optional and, when omitted, its derived as good + bad. The total
-            (valid request) count, i.e. the denominator of the ratio. A single
-            query (MetricQuery) or a multi-query/formula expression
-            (MetricExpression).
-          oneOf:
-            - $ref: '#/components/schemas/MetricQuery'
-            - $ref: '#/components/schemas/MetricExpression'
-        latency_threshold:
-          $ref: '#/components/schemas/LatencyThreshold'
-      description: >-
-        The Service Level Indicator: how health is measured, expressed as a
-        good/total ratio (value in 0..1). Two templates are supported: `RATIO`
-        (any two of good/bad/total, the third derived) and `LATENCY` (a total
-        query plus a latency threshold). Field requirements per type are
-        documented below; they are enforced by the API, not expressible as a
-        JSON Schema constraint here.
     SloObjective:
       required:
         - target
@@ -18013,6 +18466,62 @@ components:
         than a single query (for example a sum of two queries, or a derived
         expression). A single query is the degenerate case: `queries` of length
         1 with no `formula`.
+    SloWindow:
+      required:
+        - duration
+      type: object
+      properties:
+        duration:
+          type: string
+          description: The time period over which the objective is evaluated.
+          example: 30d
+        alignment:
+          type: string
+          description: Resets at the start of each calendar period.
+          default: ROLLING
+          enum:
+            - ROLLING
+            - CALENDAR
+        period_timezone:
+          type: string
+          description: >-
+            IANA timezone the calendar period resets against. Only meaningful
+            when alignment is CALENDAR.
+          example: Europe/Dublin
+      description: The window over which an objective (or agreement) is evaluated.
+    LatencyThreshold:
+      required:
+        - comparison_operator
+        - field
+      type: object
+      properties:
+        field:
+          type: string
+          description: >-
+            The field in `total_query`'s dataset holding the latency/duration
+            value.
+          example: $span.duration_nano
+        comparison_operator:
+          type: string
+          description: >-
+            How `field` must compare to `threshold` for a request to be good.
+            `BELOW` is the common case (good = faster than the threshold).
+          default: BELOW
+          enum:
+            - BELOW
+            - ABOVE
+        threshold:
+          type: number
+          description: >-
+            The latency value requests are compared against. Omitted on
+            discovery candidates where the threshold hasn't been proposed or set
+            yet.
+          format: double
+          example: 500000000
+      description: >-
+        The threshold that classifies a request as good or bad for a LATENCY
+        indicator. `good` is derived as `total_query` filtered by `field
+        <comparison_operator> threshold`.
     ErrorBudget:
       required:
         - consumed_ratio
@@ -18377,62 +18886,6 @@ components:
           oneOf:
             - type: string
             - type: boolean
-    LatencyThreshold:
-      required:
-        - comparison_operator
-        - field
-      type: object
-      properties:
-        field:
-          type: string
-          description: >-
-            The field in `total_query`'s dataset holding the latency/duration
-            value.
-          example: $span.duration_nano
-        comparison_operator:
-          type: string
-          description: >-
-            How `field` must compare to `threshold` for a request to be good.
-            `BELOW` is the common case (good = faster than the threshold).
-          default: BELOW
-          enum:
-            - BELOW
-            - ABOVE
-        threshold:
-          type: number
-          description: >-
-            The latency value requests are compared against. Omitted on
-            discovery candidates where the threshold hasn't been proposed or set
-            yet.
-          format: double
-          example: 500000000
-      description: >-
-        The threshold that classifies a request as good or bad for a LATENCY
-        indicator. `good` is derived as `total_query` filtered by `field
-        <comparison_operator> threshold`.
-    SloWindow:
-      required:
-        - duration
-      type: object
-      properties:
-        duration:
-          type: string
-          description: The time period over which the objective is evaluated.
-          example: 30d
-        alignment:
-          type: string
-          description: Resets at the start of each calendar period.
-          default: ROLLING
-          enum:
-            - ROLLING
-            - CALENDAR
-        period_timezone:
-          type: string
-          description: >-
-            IANA timezone the calendar period resets against. Only meaningful
-            when alignment is CALENDAR.
-          example: Europe/Dublin
-      description: The window over which an objective (or agreement) is evaluated.
     QueryUnitConfig:
       description: >
         Optional configuration describing the unit of the query's raw value and,

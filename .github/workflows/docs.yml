@@ -8,6 +8,7 @@ on:
       - docs/**
       - internal/**
       - cmd/**
+      - api/**
       - README.md
       - skill.md
       - llms.txt
@@ -19,6 +20,7 @@ on:
       - docs/**
       - internal/**
       - cmd/**
+      - api/**
       - README.md
       - skill.md
       - llms.txt
