@@ -14,5 +14,15 @@
       "previous_status": "ALERT",
       "message": "p95(duration_ms) = 143 <= 1000"
     }
+  ],
+  "groups_history": [
+    {
+      "monitor_id": "b2e4d0a3-5c7f-4092-8d3e-8f6c4b9a2d02",
+      "group_id": "",
+      "history": [
+        {"time": 1784452770000, "status": "ALERT"},
+        {"time": 1784453110000, "status": "OK"}
+      ]
+    }
   ]
 }

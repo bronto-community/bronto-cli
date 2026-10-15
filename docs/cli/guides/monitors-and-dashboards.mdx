@@ -15,15 +15,19 @@ lists every field a monitor takes. To see what a monitor has been doing:
 {/* test: tty */}
 ```console
 $ bronto monitors list
-NAME                       WINDOW  THRESHOLD  CREATED     ID
-High 5xx rate on checkout  5m      5          2026-05-04  a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01
-Payments latency p95       10m     1000       2026-05-12  b2e4d0a3-5c7f-4092-8d3e-8f6c4b9a2d02
+NAME                       WINDOW           THRESHOLD  CREATED     ID
+High 5xx rate on checkout  Last 5 minutes   5          2026-05-04  a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01
+Payments latency p95       Last 10 minutes  1000       2026-05-12  b2e4d0a3-5c7f-4092-8d3e-8f6c4b9a2d02
 $ bronto monitors get "High 5xx rate on checkout"
 {
   "actions": [
     {
-      "group_id": "0a7b9c3d-1e2f-4a5b-8c6d-7e8f9a0b1c07",
-      "type": "GROUP"
+      "email": "ada@example.com",
+      "type": "EMAIL"
+    },
+    {
+      "email": "grace@example.com",
+      "type": "EMAIL"
     }
   ],
   "aux": {
@@ -31,7 +35,7 @@ $ bronto monitors get "High 5xx rate on checkout"
     "select": "count(*)",
     "where": "status \u003e= 500"
   },
-  "comparison_operator": "GREATER_THAN",
+  "comparison_operator": "ABOVE",
   "description": "More than 5 responses with status \u003e= 500 from checkout-service in 5 minutes",
   "id": "a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01",
   "last_trigger_ts": 1784452890000,
@@ -41,11 +45,11 @@ $ bronto monitors get "High 5xx rate on checkout"
     "modified_at": 1780389000000,
     "modified_by": "grace@example.com"
   },
-  "monitor_type": "LOG",
+  "monitor_type": "PATTERN",
   "name": "High 5xx rate on checkout",
   "status": "ALERT",
   "threshold": 5,
-  "window": "5m"
+  "window": "Last 5 minutes"
 }
 $ bronto monitors events "High 5xx rate on checkout"
 MESSAGE                                                      MONITOR_ID                            MONITOR_STATUS  PREVIOUS_STATUS  TIME
@@ -67,12 +71,14 @@ milliseconds.
 
 ```sh
 bronto monitors mute "High 5xx rate on checkout"                       # until you unmute it
-bronto monitors mute "High 5xx rate on checkout" --until 1784451600000 # until a time, in epoch milliseconds
+bronto monitors mute "High 5xx rate on checkout" --until <epoch-ms>    # until a future time, in epoch milliseconds
 bronto monitors mute "High 5xx rate on checkout" --unmute
 ```
 
-`--until -1`, the default, mutes indefinitely. With `--dry-run` it prints the request it
-would send, with the monitor's name resolved to its id:
+`--until -1`, the default, mutes indefinitely. Any other `--until` must be a future time
+in epoch milliseconds, and `--unmute` can't be combined with `--until`: the command
+refuses either mistake with exit code 2. With `--dry-run` it prints the request it would
+send, with the monitor's name resolved to its id:
 
 {/* test: tty */}
 ```console
@@ -90,14 +96,26 @@ $ bronto monitors mute "High 5xx rate on checkout" --dry-run
 ### Downtimes and templates
 
 Downtimes schedule planned quiet periods. They support `list`, `create`, `update`, and
-`delete`:
+`delete`, and resolve by id or name. A downtime needs a `name`, a `description`, the
+monitor ids it silences in `from`, and either a `static_time_range` (epoch milliseconds)
+or a recurring `dynamic_time_range`:
 
 ```sh
 bronto monitors downtimes list
+bronto monitors downtimes create -f name=deploy -f description="Friday deploy" \
+  -f 'from=["<monitor-id>"]' -f 'static_time_range={"from":<start-ms>,"to":<end-ms>}'
 bronto monitors downtimes create --input downtime.json
 ```
 
-Monitor templates have the full set of verbs under `bronto monitors templates`.
+`bronto monitors downtimes update` replaces the whole downtime, so pass all of these
+fields again.
+
+Monitor templates have the full set of verbs under `bronto monitors templates`. In a
+template `create` body, `threshold` is a string (`-f 'threshold="1000"'`); see
+`bronto monitors templates create --help` for the other required fields.
+
+Monitor updates replace the whole monitor too: `bronto monitors update` needs the full
+body, so keep it in a file and pass it with `--input`.
 
 ### Lint monitor definitions in CI
 
@@ -123,8 +141,8 @@ covers [dashboards](https://docs.bronto.io/api-reference/dashboards/get-all-dash
 {/* test: tty */}
 ```console
 $ bronto dashboards list
-NAME               DESCRIPTION                                                 WIDGETS_COUNT  CREATED     ID
-Checkout overview  Request rate, 5xx errors and latency for the checkout flow  3              2026-05-04  d4c6e2b5-7e91-42b4-af50-1b8e6d3c4f04
+NAME               DESCRIPTION                                                 CREATED     ID
+Checkout overview  Request rate, 5xx errors and latency for the checkout flow  2026-05-04  d4c6e2b5-7e91-42b4-af50-1b8e6d3c4f04
 $ bronto dashboards get "Checkout overview"
 {
   "description": "Request rate, 5xx errors and latency for the checkout flow",
@@ -158,14 +176,14 @@ bronto widgets create --input widget.json
 Then attach, remove, or detach:
 
 ```sh
-bronto dashboards attach-widgets "Checkout overview" --widget-ids <widget-id>,<widget-id>
-bronto dashboards remove-widget "Checkout overview" <widget-id>
+bronto dashboards attach-widgets "Checkout overview" --widget-ids <widget>,<widget>
+bronto dashboards remove-widget "Checkout overview" <widget>
 bronto dashboards detach-from-template "Checkout overview"
 ```
 
-- `bronto dashboards attach-widgets` adds widgets by id. `--widget-ids` takes a
-  comma-separated list or can be repeated.
-- `bronto dashboards remove-widget` takes the dashboard and one widget id.
+- `bronto dashboards attach-widgets` adds widgets by id or unique name. `--widget-ids`
+  takes a comma-separated list or can be repeated.
+- `bronto dashboards remove-widget` takes the dashboard and one widget.
 - `bronto dashboards detach-from-template` unlinks a dashboard created from a template,
   and prints the updated dashboard.
 
@@ -174,9 +192,11 @@ Widgets can contain other widgets. `bronto widgets attach-widgets` and
 dashboard:
 
 ```sh
-bronto widgets attach-widgets <parent-widget> --widget-ids <widget-id>
-bronto widgets remove-widget <parent-widget> <widget-id>
+bronto widgets attach-widgets <parent-widget> --widget-ids <widget>
+bronto widgets remove-widget <parent-widget> <widget>
 ```
 
-The dashboard or parent widget can be an id or a unique name. All of these commands
-support `--dry-run`.
+The dashboard, parent widget, and widgets can each be an id or a unique name. All of these
+commands support `--dry-run`.
+
+`bronto dashboards update` needs `name` (or a `layout`), and ignores a `description`.

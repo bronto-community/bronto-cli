@@ -215,17 +215,6 @@ func userListRows(rows []map[string]any, format output.Format) []map[string]any 
 	return rows
 }
 
-// dashboardListRows derives a widget count — the layout/widgets blobs are
-// meaningless in a table.
-func dashboardListRows(rows []map[string]any, _ output.Format) []map[string]any {
-	for _, row := range rows {
-		if ids, ok := row["widget_ids"].([]any); ok {
-			row["widgets_count"] = len(ids)
-		}
-	}
-	return rows
-}
-
 // logViewListRows derives readable columns for /logs/views rows, which
 // carry only a components array and template tags.
 func logViewListRows(rows []map[string]any, _ output.Format) []map[string]any {
