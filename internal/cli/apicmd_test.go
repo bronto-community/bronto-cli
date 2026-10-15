@@ -191,3 +191,22 @@ func TestAPIInt64Fidelity(t *testing.T) {
 		}
 	})
 }
+
+// Values that merely start with JSON stay strings.
+func TestParseFieldArgsKeepsNonJSONStrings(t *testing.T) {
+	got, err := parseFieldArgs([]string{"window=20 minutes", "date=2024-01-01", "v=1.0.0", "n=10", "b=true", `o={"a":1}`})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for k, want := range map[string]string{"window": "20 minutes", "date": "2024-01-01", "v": "1.0.0"} {
+		if got[k] != want {
+			t.Errorf("%s = %#v, want %q", k, got[k], want)
+		}
+	}
+	if got["n"] != json.Number("10") || got["b"] != true {
+		t.Errorf("JSON scalars lost their type: %#v %#v", got["n"], got["b"])
+	}
+	if o, ok := got["o"].(map[string]any); !ok || o["a"] != json.Number("1") {
+		t.Errorf("object = %#v", got["o"])
+	}
+}

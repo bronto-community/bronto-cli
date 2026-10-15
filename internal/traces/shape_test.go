@@ -258,3 +258,15 @@ func TestRenderShapeBarNonPositiveWidth(t *testing.T) {
 		}
 	}
 }
+
+// A label that only fits once its escapes are counted must not be
+// truncated to the minimum column.
+func TestRenderShapeSizesEscapedLabels(t *testing.T) {
+	spans := []Span{{TraceID: "t1", SpanID: "r", Name: "op\x1b\x1b\x1b\x1b\x1b", Service: "svc", StartNS: 0, DurationNS: 10, EndNS: 10}}
+	buckets, used := ComputeShape(spans, EntryMatch{})
+	var buf bytes.Buffer
+	RenderShape(&buf, buckets, used, 1, 20, false)
+	if !strings.Contains(buf.String(), `svc/op\x1b\x1b\x1b\x1b\x1b`) {
+		t.Fatalf("label truncated or unescaped: %q", buf.String())
+	}
+}

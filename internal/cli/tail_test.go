@@ -431,3 +431,18 @@ func TestTailNoFollowNoBannerAndLimitWarning(t *testing.T) {
 		t.Fatalf("a poll under the limit must not warn: %q", stderr)
 	}
 }
+
+func TestRenderTailLineEscapesControls(t *testing.T) {
+	ev := map[string]any{"@time": "t\x1b[2J", "@status": "error\r", "@origin": "o\x1b]8;;http://x\a"}
+	for _, color := range []bool{false, true} {
+		got := renderTailLine(ev, "msg\x1b]0;PWNED\a\nnext", nil, color, nil)
+		// Only our own SGR color codes may remain.
+		plain := regexp.MustCompile(`\x1b\[[0-9;]*m`).ReplaceAllString(got, "")
+		if strings.ContainsAny(plain, "\x1b\a\r") || !strings.Contains(got, "\nnext") {
+			t.Fatalf("color=%v: %q", color, got)
+		}
+	}
+	if got := renderTailLine(map[string]any{"f": "a\x1bb"}, "", nil, false, []string{"f"}); got != `a\x1bb` {
+		t.Fatalf("--fields: %q", got)
+	}
+}
