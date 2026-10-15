@@ -390,7 +390,7 @@ func RenderShape(w io.Writer, buckets map[string]*ShapeBucket, tracesUsed, total
 
 	maxLabel := 0
 	for _, b := range buckets {
-		if l := utf8.RuneCountInString(b.Service) + utf8.RuneCountInString(b.Name) + 1 + 2*b.Depth(); l > maxLabel {
+		if l := utf8.RuneCountInString(termsafe.Line(b.Service+"/"+b.Name)) + 2*b.Depth(); l > maxLabel {
 			maxLabel = l
 		}
 	}

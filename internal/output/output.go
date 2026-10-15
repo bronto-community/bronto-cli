@@ -190,8 +190,9 @@ func (p *Printer) cell(row map[string]any, col string) string {
 // printFieldUnion implements "--fields ?" for PrintRows: the sorted union
 // of every row's keys, one per line, in place of the data.
 func (p *Printer) printFieldUnion(rows []map[string]any) error {
+	// Keys come from API data, so escape them like table cells.
 	for _, n := range unionKeys(rows) {
-		if _, err := fmt.Fprintln(p.w, n); err != nil {
+		if _, err := fmt.Fprintln(p.w, termsafe.Line(n)); err != nil {
 			return err
 		}
 	}
@@ -214,7 +215,7 @@ func (p *Printer) printNewFields(row map[string]any) error {
 	sort.Strings(keys)
 	for _, k := range keys {
 		p.seenFields[k] = struct{}{}
-		if _, err := fmt.Fprintln(p.w, k); err != nil {
+		if _, err := fmt.Fprintln(p.w, termsafe.Line(k)); err != nil {
 			return err
 		}
 	}

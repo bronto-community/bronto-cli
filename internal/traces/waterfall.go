@@ -184,7 +184,8 @@ func RenderWaterfall(w io.Writer, spans []Span, width int, color bool) {
 	maxLabel := 0
 	for _, s := range spans {
 		services[s.Service] = true
-		if l := utf8.RuneCountInString(s.Service) + utf8.RuneCountInString(s.Name) + 1; l > maxLabel {
+		// Measure the escaped label: that is what gets printed.
+		if l := utf8.RuneCountInString(termsafe.Line(s.Service + "/" + s.Name)); l > maxLabel {
 			maxLabel = l
 		}
 	}

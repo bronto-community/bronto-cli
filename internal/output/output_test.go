@@ -620,3 +620,18 @@ func TestTableEscapesControlCharacters(t *testing.T) {
 		t.Fatalf("csv must stay byte-exact: %q", buf.String())
 	}
 }
+
+func TestFieldDiscoveryEscapesKeys(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetListFields(true)
+	if err := p.PrintRows(nil, []map[string]any{{"k\x1b]0;x\a": 1}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.PrintRow(nil, map[string]any{"s\x1b[2J": 1}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.ContainsAny(buf.String(), "\x1b\a") {
+		t.Fatalf("got %q", buf.String())
+	}
+}

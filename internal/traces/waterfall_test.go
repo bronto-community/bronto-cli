@@ -164,3 +164,22 @@ func TestTraceBoundsIgnoresNonPositiveStarts(t *testing.T) {
 		t.Fatalf("bounds = %d..%d total %d", start, end, total)
 	}
 }
+
+// Escaped labels are longer than the raw ones; the name column must be
+// sized from what is printed, or bars of spans starting together drift.
+func TestRenderWaterfallAlignsEscapedLabels(t *testing.T) {
+	spans := []Span{
+		{TraceID: "t", SpanID: "a", Name: "run\x1b\x1b\x1b", Service: "svc", StartNS: 0, DurationNS: 10, EndNS: 10},
+		{TraceID: "t", SpanID: "b", Name: "run", Service: "svc", StartNS: 0, DurationNS: 10, EndNS: 10},
+	}
+	var buf bytes.Buffer
+	RenderWaterfall(&buf, spans, 20, false)
+	lines := strings.Split(strings.TrimRight(buf.String(), "\n"), "\n")[1:]
+	if strings.Contains(buf.String(), "\x1b") {
+		t.Fatalf("raw ESC printed: %q", buf.String())
+	}
+	col := func(l string) int { return utf8.RuneCountInString(l[:strings.Index(l, "█")]) }
+	if col(lines[0]) != col(lines[1]) {
+		t.Fatalf("bars misaligned:\n%s\n%s", lines[0], lines[1])
+	}
+}
