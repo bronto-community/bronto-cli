@@ -24,6 +24,7 @@ bronto forward-configs <command> [flags]
 | [`bronto forward-configs create`](/cli/reference/commands/forward-configs#bronto-forward-configs-create) | Create a forward config |
 | [`bronto forward-configs delete`](/cli/reference/commands/forward-configs#bronto-forward-configs-delete) | Delete a forward config |
 | [`bronto forward-configs list`](/cli/reference/commands/forward-configs#bronto-forward-configs-list) | List forward configs |
+| [`bronto forward-configs test`](/cli/reference/commands/forward-configs#bronto-forward-configs-test) | Check that Bronto can write to a forward config's S3 destination |
 | [`bronto forward-configs update`](/cli/reference/commands/forward-configs#bronto-forward-configs-update) | Update a forward config |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
@@ -89,6 +90,36 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto forward-configs list
+```
+
+## bronto forward-configs test
+
+Check that Bronto can write to a forward config's S3 destination
+
+<Tip>
+- **Platform docs:** [docs.bronto.io/core-features/log-forwarding](https://docs.bronto.io/core-features/log-forwarding)
+- **API reference:** [docs.bronto.io/api-reference/forward/test-access-to-the-destination](https://docs.bronto.io/api-reference/forward/test-access-to-the-destination)
+</Tip>
+
+```sh
+bronto forward-configs test [forward-config] [--bucket <bucket>] [--prefix <prefix>] [--storage-class <class>] [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--bucket` |  | string |  | S3 bucket to test (overrides the forward config's) |
+| `--prefix` |  | string |  | key prefix for the test object (overrides the forward config's) |
+| `--storage-class` |  | string |  | S3 storage class: STANDARD, STANDARD\_IA or GLACIER\_IR |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto forward-configs test archive
+bronto forward-configs test --bucket my-archive-bucket --prefix bronto/
 ```
 
 ## bronto forward-configs update

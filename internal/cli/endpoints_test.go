@@ -88,6 +88,9 @@ var endpointProbes = map[string][][]string{
 	"bronto datasets parser get":             {{"datasets", "parser", "get", "ds"}},
 	"bronto datasets parser set":             {{"datasets", "parser", "set", "ds", "p1"}},
 	"bronto datasets parser unset":           {{"datasets", "parser", "unset", "ds"}},
+	"bronto datasets monitors":               {{"datasets", "monitors", "ds"}},
+	"bronto datasets dashboards":             {{"datasets", "dashboards", "ds"}},
+	"bronto forward-configs test":            {{"forward-configs", "test", "f1"}, {"forward-configs", "test", "--bucket", "b"}},
 	"bronto users deactivate":                {{"users", "deactivate", probeID}},
 	"bronto users reactivate":                {{"users", "reactivate", probeID}},
 	"bronto users resend-invite":             {{"users", "resend-invite", probeID}},
@@ -163,6 +166,8 @@ func recordRequests(t *testing.T, args []string) []string {
 			_, _ = fmt.Fprintf(w, `{"metrics":[{"metric_id":%q,"metric_name":"cpu"}]}`, probeID)
 		case "/parsers":
 			_, _ = fmt.Fprintf(w, `{"parsers":[{"id":%q,"name":"p1"}]}`, probeID)
+		case "/forward-configs":
+			_, _ = fmt.Fprintf(w, `{"forward_configs":[{"id":%q,"name":"f1","destination":{"bucket":"b"}}]}`, probeID)
 		default:
 			_, _ = fmt.Fprint(w, `{}`)
 		}

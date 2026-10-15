@@ -22,9 +22,11 @@ bronto datasets <command> [flags]
 | Command | Description |
 | --- | --- |
 | [`bronto datasets create`](/cli/reference/commands/datasets#bronto-datasets-create) | Create a dataset |
+| [`bronto datasets dashboards`](/cli/reference/commands/datasets#bronto-datasets-dashboards) | List the dashboards that use a dataset |
 | [`bronto datasets delete`](/cli/reference/commands/datasets#bronto-datasets-delete) | Delete a dataset |
 | [`bronto datasets get`](/cli/reference/commands/datasets#bronto-datasets-get) | Get a dataset by ID |
 | [`bronto datasets list`](/cli/reference/commands/datasets#bronto-datasets-list) | List datasets |
+| [`bronto datasets monitors`](/cli/reference/commands/datasets#bronto-datasets-monitors) | List the monitors that use a dataset |
 | [`bronto datasets parser`](/cli/reference/commands/datasets#bronto-datasets-parser) | Show or change the parser assigned to a dataset |
 | [`bronto datasets update`](/cli/reference/commands/datasets#bronto-datasets-update) | Update a dataset |
 
@@ -52,6 +54,27 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 ```sh
 bronto datasets create -f collection=<collection> -f dataset=<dataset>
 bronto datasets create --input body.json
+```
+
+## bronto datasets dashboards
+
+List the dashboards that use a dataset
+
+<Tip>
+- **Platform docs:** [docs.bronto.io/Search-and-Visualize/Dashboards](https://docs.bronto.io/Search-and-Visualize/Dashboards)
+- **API reference:** [docs.bronto.io/api-reference/dashboards/list-dashboards-associated-with-a-log](https://docs.bronto.io/api-reference/dashboards/list-dashboards-associated-with-a-log)
+</Tip>
+
+```sh
+bronto datasets dashboards <dataset> [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto datasets dashboards prod/checkout-service
 ```
 
 ## bronto datasets delete
@@ -106,6 +129,27 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto datasets list
+```
+
+## bronto datasets monitors
+
+List the monitors that use a dataset
+
+<Tip>
+- **Platform docs:** [docs.bronto.io/core-features/monitors](https://docs.bronto.io/core-features/monitors)
+- **API reference:** [docs.bronto.io/api-reference/monitors/list-monitors-associated-with-a-log](https://docs.bronto.io/api-reference/monitors/list-monitors-associated-with-a-log)
+</Tip>
+
+```sh
+bronto datasets monitors <dataset> [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto datasets monitors prod/checkout-service
 ```
 
 ## bronto datasets parser
