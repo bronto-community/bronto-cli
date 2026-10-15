@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // runSendDryRun runs `bronto send --dry-run` with the given stdin and args,
@@ -55,5 +57,34 @@ func TestSendDryRunOneShotIncludesEvent(t *testing.T) {
 	ev, _ := events[0].(map[string]any)
 	if ev["message"] != "hello world" {
 		t.Fatalf("event = %v", ev)
+	}
+}
+
+// -d <collection>/<dataset> splits like everywhere else; sent verbatim it
+// created a dataset literally named "prod/app".
+func TestSendSplitsCollectionFromDataset(t *testing.T) {
+	plan := runSendDryRun(t, "", "-m", "x", "-d", "prod/app")
+	if plan["dataset"] != "app" || plan["collection"] != "prod" {
+		t.Fatalf("plan = %v", plan)
+	}
+}
+
+func TestSendRejectsAmbiguousCollection(t *testing.T) {
+	for _, args := range [][]string{
+		{"-d", "prod/app", "--collection", "staging"},
+		{"-d", "/app"},
+		{"-d", "prod/"},
+		{"-d", "a/b/c"},
+	} {
+		t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+		root := NewRootCmd()
+		root.SetOut(&bytes.Buffer{})
+		root.SetErr(&bytes.Buffer{})
+		root.SetIn(strings.NewReader(""))
+		root.SetArgs(append([]string{"send", "-m", "x", "--api-key", "k", "--dry-run"}, args...))
+		err := root.Execute()
+		if clierr.ExitCode(err) != 2 {
+			t.Errorf("%v: err = %v, want a usage error", args, err)
+		}
 	}
 }

@@ -57,6 +57,19 @@ func newSendCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// -d prod/app means dataset app in collection prod, as everywhere
+			// else; sent verbatim, it created a dataset named "prod/app".
+			if c, d, ok := strings.Cut(dataset, "/"); ok {
+				if collection != "" {
+					return clierr.New("usage_conflicting_flags",
+						fmt.Sprintf("-d %q names a collection and --collection is set too", dataset)).
+						WithHint("Use either -d <collection>/<dataset> or -d <dataset> --collection <collection>.")
+				}
+				if c == "" || d == "" || strings.Contains(d, "/") {
+					return clierr.New("usage_invalid_dataset", fmt.Sprintf("-d %q is not <collection>/<dataset>", dataset))
+				}
+				collection, dataset = c, d
+			}
 
 			url := ingestURLFlag
 			if url == "" {

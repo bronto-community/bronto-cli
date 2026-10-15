@@ -69,7 +69,8 @@ $ bronto search -d prod/checkout-service --ge status=500 --gt duration_ms=1000 -
 Each flag can be repeated. The CLI ANDs them together, and with the positional query if
 you pass one. The CLI looks up each field name in the dataset's field index, so
 `model` finds `$model` and matching is case-insensitive. It quotes the value based on its
-shape: numbers and booleans stay bare, strings get single quotes. The compiled filter is
+shape: plain numbers stay bare, and everything else gets single quotes, booleans
+included, because Bronto compares boolean fields as the strings `'true'` and `'false'`. The compiled filter is
 echoed to stderr.
 
 - `--show-query` prints the compiled WHERE and exits without searching.
