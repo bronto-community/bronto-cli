@@ -45,9 +45,11 @@ func newForwardConfigTestCmd() *cobra.Command {
 					dest[k] = v
 				}
 			}
-			for k, v := range map[string]string{"bucket": bucket, "prefix": prefix, "storage_class": storageClass} {
-				if v != "" {
-					dest[k] = v
+			// Changed, not non-empty: --prefix '' tests the bucket root
+			// even when the saved config has a prefix.
+			for flag, v := range map[string]string{"bucket": bucket, "prefix": prefix, "storage-class": storageClass} {
+				if cmd.Flags().Changed(flag) {
+					dest[strings.ReplaceAll(flag, "-", "_")] = v
 				}
 			}
 			body, err := json.Marshal(dest)

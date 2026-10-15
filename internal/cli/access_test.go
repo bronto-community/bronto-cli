@@ -324,6 +324,17 @@ func TestForwardConfigTestUsesSavedDestination(t *testing.T) {
 	}
 }
 
+// An explicitly empty --prefix clears the saved one.
+func TestForwardConfigTestEmptyPrefixClearsSaved(t *testing.T) {
+	var s accessStub
+	if _, _, err := runResource(t, s.handler(), "", "forward-configs", "test", "archive", "--prefix", ""); err != nil {
+		t.Fatal(err)
+	}
+	if want := `{"bucket":"archive-bucket","destination_type":"S3","prefix":""}`; s.body != want {
+		t.Fatalf("body = %s\nwant   %s", s.body, want)
+	}
+}
+
 func TestForwardConfigTestFailsWhenUnreachable(t *testing.T) {
 	var s accessStub
 	_, _, err := runResource(t, s.handler(), "", "forward-configs", "test", "--bucket", "denied")
