@@ -90,7 +90,7 @@ func TestDoStatusErrors(t *testing.T) {
 		resp, err := doGet(t, func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(tc.status)
 		}, 5*time.Second)
-		wantCode(t, err, tc.code, tc.exit)
+		_ = wantCode(t, err, tc.code, tc.exit)
 		if resp == nil || resp.StatusCode != tc.status {
 			t.Fatalf("%d: response not returned alongside the error: %+v", tc.status, resp)
 		}
@@ -101,7 +101,7 @@ func TestDoUnreachableIsNetworkError(t *testing.T) {
 	c := NewHTTPClient("k", "test")
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:1/logs", nil)
 	_, err := Do(c, req)
-	wantCode(t, err, "network_error", 1)
+	_ = wantCode(t, err, "network_error", 1)
 }
 
 func TestDoCanceledContextPassesThrough(t *testing.T) {

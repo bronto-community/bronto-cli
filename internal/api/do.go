@@ -23,7 +23,7 @@ type Response struct {
 // ClassifyTransportError; the status code is NOT inspected. Use Do unless
 // the caller maps some status itself first (ingestion's 413).
 func Fetch(client *http.Client, req *http.Request) (*Response, error) {
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- callers build req for the configured Bronto API URL
 	if err != nil {
 		return nil, ClassifyTransportError(req.Context(), err)
 	}

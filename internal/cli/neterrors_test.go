@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -57,9 +58,9 @@ func TestHangingServerIsTimeoutForEveryCommand(t *testing.T) {
 		{"ping"},
 		{"datasets", "list"},
 	} {
-		full := append(args, "--base-url", srv.URL, "--api-key", "k", "--timeout", "1", "-o", "json")
+		full := append(slices.Clone(args), "--base-url", srv.URL, "--api-key", "k", "--timeout", "1", "-o", "json")
 		_, _, err := runCLI(t, full...)
-		wantCLIErr(t, err, "timeout", 5)
+		_ = wantCLIErr(t, err, "timeout", 5)
 	}
 }
 
@@ -74,9 +75,9 @@ func TestBodyReadFailureIsNetworkError(t *testing.T) {
 	}))
 	defer srv.Close()
 	for _, args := range [][]string{{"api", "GET", "/logs"}, {"datasets", "list"}} {
-		full := append(args, "--base-url", srv.URL, "--api-key", "k", "-o", "json")
+		full := append(slices.Clone(args), "--base-url", srv.URL, "--api-key", "k", "-o", "json")
 		_, _, err := runCLI(t, full...)
-		wantCLIErr(t, err, "network_error", 1)
+		_ = wantCLIErr(t, err, "network_error", 1)
 	}
 }
 
@@ -107,13 +108,13 @@ func TestAuthStatusOnlyAuthFailuresAreAuthErrors(t *testing.T) {
 		out, _, err := runCLI(t, "auth", "status", "--base-url", srv.URL, "--api-key", "kkkkkkkkkkkkkkkk",
 			"--max-retries", "0", "-o", "json")
 		srv.Close()
-		wantCLIErr(t, err, tc.code, tc.exit)
+		_ = wantCLIErr(t, err, tc.code, tc.exit)
 		if !strings.Contains(out, `"status"`) {
 			t.Fatalf("%d: status row not printed: %q", tc.status, out)
 		}
 	}
 	_, _, err := runCLI(t, "auth", "status", "--base-url", "http://127.0.0.1:1", "--api-key", "kkkkkkkkkkkkkkkk")
-	wantCLIErr(t, err, "network_error", 1)
+	_ = wantCLIErr(t, err, "network_error", 1)
 }
 
 func TestPickRegionDistinguishesOutageFromRejection(t *testing.T) {
@@ -136,7 +137,7 @@ func TestPickRegionDistinguishesOutageFromRejection(t *testing.T) {
 	}
 
 	_, _, err = pickRegion(ctx, []regionCandidate{{"eu", rejects.URL}, {"us", rejects.URL}}, "k")
-	wantCLIErr(t, err, "auth_invalid_key", 3)
+	_ = wantCLIErr(t, err, "auth_invalid_key", 3)
 
 	region, base, err := pickRegion(ctx, []regionCandidate{{"eu", rejects.URL}, {"us", accepts.URL}}, "k")
 	if err != nil || region != "us" || base != accepts.URL {
@@ -313,7 +314,7 @@ func TestDownloadExportFailuresLeaveNoPartialFile(t *testing.T) {
 			t.Fatal(err)
 		}
 		err := downloadExport(context.Background(), downloadApp(t, tc.srv.URL, 300*time.Millisecond), tc.srv.URL, dest)
-		wantCLIErr(t, err, tc.code, clierr.New(tc.code, "").ExitCode())
+		_ = wantCLIErr(t, err, tc.code, clierr.New(tc.code, "").ExitCode())
 		assertOnlyFile(t, dir, "out.bin")
 		if b, _ := os.ReadFile(dest); string(b) != "previous" {
 			t.Fatalf("%s: existing file clobbered: %q", tc.code, b)
@@ -350,7 +351,7 @@ func TestDownloadExportRefusesPlainHTTPForHTTPSBase(t *testing.T) {
 	dir := t.TempDir()
 	err := downloadExport(context.Background(), downloadApp(t, "https://api.eu.bronto.io", time.Second),
 		srv.URL, filepath.Join(dir, "out.bin"))
-	wantCLIErr(t, err, "export_download_insecure", 1)
+	_ = wantCLIErr(t, err, "export_download_insecure", 1)
 	assertOnlyFile(t, dir)
 
 	if err := checkDownloadURL("https://api.eu.bronto.io", "https://bucket.s3.amazonaws.com/x?sig=1"); err != nil {
@@ -372,7 +373,7 @@ func TestUnknownProfileIsNotFound(t *testing.T) {
 	}
 	t.Setenv("BRONTO_PROFILE", "p2x")
 	_, _, err = runCLI(t, "auth", "token")
-	wantCLIErr(t, err, "profile_not_found", 4)
+	_ = wantCLIErr(t, err, "profile_not_found", 4)
 
 	// A key from the environment or a flag needs no profile config.
 	out, _, err := runCLI(t, "auth", "token", "--api-key", "k")
@@ -419,6 +420,6 @@ func TestBaseURLPasswordIsMaskedInOutput(t *testing.T) {
 func TestMalformedBaseURLIsConfigError(t *testing.T) {
 	for _, base := range []string{"notaurl", "ftp://x", "https://h/pfx?x=1"} {
 		_, _, err := runCLI(t, "ping", "--api-key", "k", "--base-url", base)
-		wantCLIErr(t, err, "config_invalid_url", 2)
+		_ = wantCLIErr(t, err, "config_invalid_url", 2)
 	}
 }

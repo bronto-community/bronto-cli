@@ -54,7 +54,7 @@ func mutateUserFile(dir string, fn func(*userFile) []userEdit) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return err
 	}
-	return os.WriteFile(path, out, 0o600)
+	return os.WriteFile(path, out, 0o600) // #nosec G703 -- the user's own config file under their config dir
 }
 
 // applyUserEdits returns src with edits applied. It tries a line-level
