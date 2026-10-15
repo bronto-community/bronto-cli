@@ -1,7 +1,9 @@
 package integration
 
 import (
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -28,8 +30,11 @@ func TestTail_SIGINTCleanExit(t *testing.T) {
 
 	time.Sleep(3 * time.Second)
 
-	if err := Stop(cmd, 10*time.Second); err != nil {
-		t.Fatalf("tail did not exit cleanly after SIGINT: %v\nstdout: %s\nstderr: %s",
+	// A non-zero exit is an *exec.ExitError from Wait; the code is
+	// checked below. Anything else (a timeout) is a failure.
+	var exitErr *exec.ExitError
+	if err := Stop(cmd, 10*time.Second); err != nil && !errors.As(err, &exitErr) {
+		t.Fatalf("tail did not exit after SIGINT: %v\nstdout: %s\nstderr: %s",
 			err, stdout.String(), stderr.String())
 	}
 	if code := cmd.ProcessState.ExitCode(); code != 130 {
