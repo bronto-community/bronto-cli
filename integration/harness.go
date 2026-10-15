@@ -334,7 +334,15 @@ type ErrorEnvelope struct {
 func ParseErrorEnvelope(t *testing.T, stderr string) ErrorEnvelope {
 	t.Helper()
 	var env ErrorEnvelope
-	if err := json.Unmarshal([]byte(strings.TrimSpace(stderr)), &env); err != nil {
+	// A coverage-instrumented binary run without GOCOVERDIR (local runs;
+	// CI sets it) prints Go's own warning line first: skip it.
+	var lines []string
+	for _, l := range strings.Split(stderr, "\n") {
+		if !strings.HasPrefix(l, "warning: GOCOVERDIR not set") {
+			lines = append(lines, l)
+		}
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(strings.Join(lines, "\n"))), &env); err != nil {
 		t.Fatalf("stderr is not a JSON error envelope: %v\nstderr: %s", err, stderr)
 	}
 	return env

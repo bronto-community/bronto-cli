@@ -250,6 +250,101 @@ func TestQuery_ContextAroundSeededEvent(t *testing.T) {
 	}
 }
 
+// TestQuery_CheckMatchesServerGrammar holds `bronto query check` to the
+// live API: every expression the server accepts must pass the check (CI
+// lints queries with it, so a false rejection fails valid pipelines),
+// each must return only events that satisfy it, and expressions the
+// server rejects must fail the check too.
+func TestQuery_CheckMatchesServerGrammar(t *testing.T) {
+	key := skipIfNoCreds(t)
+	_, marker := seededData(t)
+	r := NewRunner(t, key)
+	logID := seededLogID(t)
+
+	str := func(row map[string]any, k string) string { return fmt.Sprint(eventField(row, k)) }
+	accepted := []struct {
+		expr string
+		ok   func(row map[string]any) bool // every returned row must satisfy it
+	}{
+		{"status IN (500, 404)", func(r map[string]any) bool { s := str(r, "status"); return s == "500" || s == "404" }},
+		{"status NOT IN (500, 404)", func(r map[string]any) bool { s := str(r, "status"); return s != "500" && s != "404" }},
+		{"level in ('error', 'warn')", func(r map[string]any) bool { l := str(r, "level"); return l == "error" || l == "warn" }},
+		{"message LIKE '%seed trace%'", func(r map[string]any) bool { return strings.Contains(str(r, "message"), "seed trace") }},
+		{"message NOT LIKE '%seed trace%'", func(r map[string]any) bool { return !strings.Contains(str(r, "message"), "seed trace") }},
+		{"message ILIKE 'BRONTO-CI SEED EVENT%'", func(r map[string]any) bool { return strings.HasPrefix(str(r, "message"), "bronto-ci seed event") }},
+		{"message REGEXP 'seed (event|trace) 1$'", func(r map[string]any) bool { return strings.HasSuffix(str(r, "message"), " 1") }},
+		{`"seed trace"`, func(r map[string]any) bool { return strings.Contains(str(r, "message"), "seed trace") }},
+		{"'seed trace'", func(r map[string]any) bool { return strings.Contains(str(r, "message"), "seed trace") }},
+		{"trace AND NOT event", func(r map[string]any) bool { return strings.Contains(str(r, "message"), "seed trace") }},
+		{"status <> 200", func(r map[string]any) bool { return str(r, "status") != "200" }},
+		{"LOWER(level) = 'error'", func(r map[string]any) bool { return str(r, "level") == "error" }},
+		{"trace_id IS NOT NULL", func(r map[string]any) bool { return eventField(r, "trace_id") != nil }},
+		{"trace_id IS NULL AND EXISTS level", func(r map[string]any) bool { return eventField(r, "trace_id") == nil }},
+		{`"level" = 'warn' && status >= 400`, func(r map[string]any) bool { return str(r, "level") == "warn" }},
+		{"level = 'debug' OR level = 'info' AND status = 500", func(r map[string]any) bool {
+			// AND binds tighter: debug rows of any status, or info rows with 500
+			return str(r, "level") == "debug" || (str(r, "level") == "info" && str(r, "status") == "500")
+		}},
+	}
+	for _, c := range accepted {
+		t.Run("accepts "+c.expr, func(t *testing.T) {
+			check, err := r.Run(t.Context(), "", "query", "check", c.expr, "-o", "json")
+			if err != nil {
+				t.Fatal(err)
+			}
+			var verdict struct{ Valid bool }
+			if check.ExitCode != 0 || json.Unmarshal([]byte(check.Stdout), &verdict) != nil || !verdict.Valid {
+				t.Errorf("query check rejected a server-valid query (exit %d)\nstdout: %s\nstderr: %s",
+					check.ExitCode, check.Stdout, check.Stderr)
+			}
+			res, err := r.Run(t.Context(), "", searchArgs(logID,
+				fmt.Sprintf("ci_marker = '%s' AND (%s)", marker, c.expr), "-o", "json", "-n", "200")...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if res.ExitCode != 0 {
+				t.Fatalf("server rejected %q (exit %d): %s", c.expr, res.ExitCode, res.Stderr)
+			}
+			var rows []map[string]any
+			if err := json.Unmarshal([]byte(res.Stdout), &rows); err != nil {
+				t.Fatalf("search -o json did not parse: %v\n%s", err, res.Stdout)
+			}
+			if len(rows) == 0 {
+				t.Fatalf("%q matched no seeded events", c.expr)
+			}
+			for _, row := range rows {
+				if !c.ok(row) {
+					t.Fatalf("%q returned a row that does not satisfy it: %+v", c.expr, row)
+				}
+			}
+		})
+	}
+
+	for _, expr := range []string{
+		"status IN ()",
+		"seed trace", // an unquoted phrase
+		"level = 'error' || status >= 500",
+		"status NOT = 500",
+	} {
+		t.Run("rejects "+expr, func(t *testing.T) {
+			check, err := r.Run(t.Context(), "", "query", "check", expr, "-o", "json")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if check.ExitCode != 2 || ParseErrorEnvelope(t, check.Stderr).Error.Code != "usage_invalid_query" {
+				t.Errorf("query check accepted %q (exit %d): %s", expr, check.ExitCode, check.Stdout)
+			}
+			res, err := r.Run(t.Context(), "", searchArgs(logID, expr, "-o", "json", "-n", "1")...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if res.ExitCode == 0 {
+				t.Errorf("server now accepts %q; query check must accept it too", expr)
+			}
+		})
+	}
+}
+
 // parseSequence accepts @sequence as either a JSON number or a numeric
 // string (the spec documents it as a string; being liberal here costs
 // nothing).

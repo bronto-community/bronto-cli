@@ -156,9 +156,22 @@ $ bronto query check "status >= 500 AND service = 'checkout-service'"
 ✓ valid — fields: service, status
 ```
 
-With `-d <dataset>` it also warns about fields that haven't appeared in that dataset
-recently and suggests close matches. `--strict` turns those warnings into a failure
-for use in CI.
+It accepts the same
+[search syntax](https://docs.bronto.io/query-syntax/search-syntax) as the API, including
+`IN`, `LIKE`, `IS NULL`, and free-text terms like `"slow to respond"`. It also warns
+about an unquoted value such as `level = error`: the query language reads a bare word
+on the right of an operator as a field name, so that query compares two fields. With
+`-d <dataset>` it also warns about fields that haven't appeared in that dataset
+recently and suggests close matches. `--strict` turns those field warnings into a
+failure for use in CI.
+
+Piped or with `-o json`, the result is a JSON object, and `-` reads the query from
+stdin:
+
+```console
+$ echo "status IN (500, 502) AND level = error" | bronto query check - | jq -c .
+{"fields":["error","level","status"],"valid":true,"warnings":["error in `level =` names the attribute \"error\", not a string — write 'error' to compare against the text"]}
+```
 
 ## Aggregate
 

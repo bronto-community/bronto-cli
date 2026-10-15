@@ -26,7 +26,7 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ## bronto query check
 
-Validate a query expression before using it
+Checks a query expression client-side: syntax (with the error position marked), likely mistakes such as an unquoted string value, and with -d whether its fields exist in the dataset. Pass '-' as the query to read it from stdin.
 
 ```sh
 bronto query check <query> [flags]
@@ -45,5 +45,7 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto query check "status >= 500 AND level = 'error'"
+bronto query check "status IN (500, 502) AND message LIKE '%timeout%'"
 bronto query check "stauts >= 500" -d prod/payments-api   # catches the typo
+bronto query check - -o json < query.txt
 ```

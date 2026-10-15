@@ -96,7 +96,7 @@ Extras beyond the uniform pattern: `monitors events|mute|check` (`check --input 
 
 ## Query validation
 
-`bronto query check "<expr>"` validates syntax client-side (caret-positioned errors) and, with `-d <dataset>`, warns on fields not seen recently (did-you-mean included); `--strict` makes unknown fields fatal for CI. Server 400s on searches automatically carry the same local diagnosis when applicable.
+`bronto query check "<expr>"` validates syntax client-side (caret-positioned errors) against the full search grammar (comparisons, `[NOT] IN (…)`, `[NOT] LIKE`/`ILIKE` with `%` wildcards, `REGEXP`/`~`, `IS [NOT] NULL`, `EXISTS f`, `LOWER(f)`, free-text terms like `slow` or `"slow to respond"`) and, with `-d <dataset>`, warns on fields not seen recently (did-you-mean included); `--strict` makes unknown fields fatal for CI. It also warns on unquoted values: `level = error` compares against the *field* `error` and matches nothing — strings take single quotes, double quotes name fields. `-o json` prints `{"valid":true,"fields":[…],"warnings":[…]}` (failures are the usual error envelope); `-` reads the expression from stdin. Server 400s on searches automatically carry the same local diagnosis when applicable.
 
 ## Escape hatch
 
