@@ -381,7 +381,7 @@ func (g *gen) commandBody(b *bytes.Buffer, c *cobra.Command) {
 	}
 
 	b.WriteString("```sh\n")
-	if c.Runnable() {
+	if c.Runnable() && !cli.IsHelpOnlyGroup(c) {
 		b.WriteString(g.norm.s(c.UseLine()) + "\n")
 	}
 	if c.HasAvailableSubCommands() {

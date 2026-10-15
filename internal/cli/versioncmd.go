@@ -26,17 +26,19 @@ func newVersionCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			doc := map[string]any{
+				"version": version.Version,
+				"commit":  version.Commit,
+				"date":    version.Date,
+			}
 			switch format {
-			case output.FormatTable, output.FormatRaw, output.FormatCSV:
+			case output.FormatTable, output.FormatRaw:
 				_, err = fmt.Fprintln(cmd.OutOrStdout(), version.String())
 				return err
+			case output.FormatCSV:
+				return output.NewPrinter(cmd.OutOrStdout(), format).PrintJSON(doc)
 			default: // json / jsonl
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				return enc.Encode(map[string]string{
-					"version": version.Version,
-					"commit":  version.Commit,
-					"date":    version.Date,
-				})
+				return json.NewEncoder(cmd.OutOrStdout()).Encode(doc)
 			}
 		},
 	}

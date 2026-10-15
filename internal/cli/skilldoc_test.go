@@ -225,7 +225,7 @@ func deeperTokenProblems(span codeSpan, cmd *cobra.Command) []string {
 		}
 		if descending {
 			switch {
-			case !cur.HasSubCommands() || cur.Runnable():
+			case !cur.HasSubCommands() || (cur.Runnable() && !IsHelpOnlyGroup(cur)):
 				descending = false
 			case strings.HasPrefix(w, "-"), strings.HasPrefix(w, "<"):
 				descending = false

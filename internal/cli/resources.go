@@ -8,8 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -461,7 +463,14 @@ func resourceRequestBody(cmd *cobra.Command, input string, fields []string) ([]b
 		return nil, clierr.New("usage_missing_body", "provide --input <file|-> or at least one -f key=value").
 			WithHint("Example: --input body.json, or -f name=x -f limit=10")
 	case input != "":
-		return readBodyInput(cmd, input)
+		body, err := readBodyInput(cmd, input)
+		if err != nil {
+			return nil, err
+		}
+		if err := validateJSONBody(body, input); err != nil {
+			return nil, err
+		}
+		return body, nil
 	default:
 		obj, err := parseFieldArgs(fields)
 		if err != nil {
@@ -648,10 +657,20 @@ func printResourceList(cmd *cobra.Command, app *App, desc resourceDesc, payload 
 			maskSecretRows(rows, desc.SecretKeys)
 		}
 	}
-	if format == output.FormatTable || format == output.FormatCSV {
-		rows = resourceListPolish(rows, format)
-		if desc.ListTransform != nil {
-			rows = desc.ListTransform(rows, format)
+	switch {
+	case format == output.FormatTable || format == output.FormatCSV:
+		rows = humanListRows(desc, rows, format)
+	case app.ListFieldsOnly:
+		// json/jsonl stay raw, but `--fields ?` must list every name
+		// --fields can select there: the raw keys plus the derived ones.
+		rows = append(rows, humanListRows(desc, cloneRows(rows), output.FormatCSV)...)
+	case len(app.FieldFilter) > 0:
+		// A derived column (last_activity, created, ...) named in
+		// --fields adds the derived values to json/jsonl rows, with csv's
+		// machine-friendly absolute timestamps, instead of printing {}.
+		human := humanListRows(desc, cloneRows(rows), output.FormatCSV)
+		if needsDerivedFields(app.FieldFilter, rows, human) {
+			rows = withDerivedFields(desc, rows)
 		}
 	}
 	p, err := app.PrinterFor(format)
@@ -659,6 +678,76 @@ func printResourceList(cmd *cobra.Command, app *App, desc resourceDesc, payload 
 		return err
 	}
 	return p.PrintRows(columnsFor(desc, rows), rows)
+}
+
+// humanListRows applies the table/csv presentation passes for desc's list:
+// the generic resourceListPolish, then the resource's ListTransform.
+func humanListRows(desc resourceDesc, rows []map[string]any, format output.Format) []map[string]any {
+	rows = resourceListPolish(rows, format)
+	if desc.ListTransform != nil {
+		rows = desc.ListTransform(rows, format)
+	}
+	return rows
+}
+
+// cloneRows shallow-copies each row so the presentation passes, which
+// rewrite values in place, leave the raw rows untouched.
+func cloneRows(rows []map[string]any) []map[string]any {
+	out := make([]map[string]any, len(rows))
+	for i, r := range rows {
+		out[i] = maps.Clone(r)
+	}
+	return out
+}
+
+// withDerivedFields adds the human view's derived keys to the raw rows
+// without losing raw values: each raw row is transformed on its own, and
+// every row it yields (permissions expand one group into one row per
+// permission) is merged over a copy of that raw row. Raw keys keep their
+// raw values; only keys the raw row lacks come from the human row.
+func withDerivedFields(desc resourceDesc, rows []map[string]any) []map[string]any {
+	out := make([]map[string]any, 0, len(rows))
+	for _, raw := range rows {
+		human := humanListRows(desc, []map[string]any{maps.Clone(raw)}, output.FormatCSV)
+		if len(human) == 0 {
+			out = append(out, raw)
+			continue
+		}
+		for _, h := range human {
+			merged := maps.Clone(raw)
+			for k, v := range h {
+				if _, ok := merged[k]; !ok {
+					merged[k] = v
+				}
+			}
+			out = append(out, merged)
+		}
+	}
+	return out
+}
+
+// needsDerivedFields reports whether some --fields name (or its top-level
+// segment, for dotted paths) appears only in the human rows, never in the
+// raw ones.
+func needsDerivedFields(fields []string, raw, human []map[string]any) bool {
+	has := func(rows []map[string]any, f string) bool {
+		top, _, _ := strings.Cut(f, ".")
+		for _, r := range rows {
+			if _, ok := r[f]; ok {
+				return true
+			}
+			if _, ok := r[top]; ok {
+				return true
+			}
+		}
+		return false
+	}
+	for _, f := range fields {
+		if !has(raw, f) && has(human, f) {
+			return true
+		}
+	}
+	return false
 }
 
 // maskSecretRows masks the given secret-bearing keys in every row using the
@@ -831,8 +920,18 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// Resolve before confirming: a typo'd name fails as not-found
+			// (exit 4) instead of prompting first, and the prompt can show
+			// which id a name resolved to.
+			id, err := resolveResourceRef(cmd.Context(), app, desc, args[0])
+			if err != nil {
+				return err
+			}
 			if !app.DryRun {
 				prompt := fmt.Sprintf("Delete %s %s?", desc.singular(), args[0])
+				if id != args[0] {
+					prompt = fmt.Sprintf("Delete %s %s (%s)?", desc.singular(), args[0], id)
+				}
 				if err := confirmDestructive(cmd, app, prompt, yes); err != nil {
 					if errors.Is(err, errAborted) {
 						_, _ = fmt.Fprintln(app.Stderr, "Aborted.")
@@ -840,10 +939,6 @@ func newResourceDeleteCmd(desc resourceDesc) *cobra.Command {
 					}
 					return err
 				}
-			}
-			id, err := resolveResourceRef(cmd.Context(), app, desc, args[0])
-			if err != nil {
-				return err
 			}
 			payload, err := doJSONRequest(cmd.Context(), app, http.MethodDelete, desc.idBase()+"/"+url.PathEscape(id), nil)
 			if err != nil {
@@ -1077,7 +1172,9 @@ func matchResourceRef(desc resourceDesc, rows []map[string]any, ref string) (str
 		}
 		for _, key := range desc.nameKeys() {
 			if v, _ := row[key].(string); v != "" {
-				if v == ref {
+				// Emails are case-insensitive in practice (ADA@x is ada@x);
+				// every other name matches exactly.
+				if v == ref || (key == "email" && strings.EqualFold(v, ref)) {
 					matchIDs = append(matchIDs, desc.rowID(row))
 				}
 				available = append(available, v)
@@ -1093,17 +1190,24 @@ func matchResourceRef(desc resourceDesc, rows []map[string]any, ref string) (str
 		return matchIDs[0], nil
 	case 0:
 	default:
-		return "", clierr.New("usage_ambiguous_"+strings.ReplaceAll(desc.singular(), " ", "_"),
-			fmt.Sprintf("%d %s are named %q", len(matchIDs), desc.Name, ref)).
+		return "", clierr.New(ambiguousCode(desc),
+			fmt.Sprintf("%d %s are named %q", len(matchIDs), desc.plural(), ref)).
 			WithHint("Pass the id instead: " + capList(matchIDs))
 	}
 	hint := fmt.Sprintf("Run 'bronto %s list' to see ids and names.", desc.display())
 	if len(available) > 0 {
 		sort.Strings(available)
+		available = slices.Compact(available)
 		hint = fmt.Sprintf("This account has: %s.", capList(available))
 	}
 	return "", clierr.New("resource_not_found",
 		fmt.Sprintf("no %s named %q", desc.singular(), ref)).WithHint(hint)
+}
+
+// ambiguousCode is the lower_snake usage_ambiguous_<kind> error code for
+// desc, e.g. usage_ambiguous_api_key for "API key".
+func ambiguousCode(desc resourceDesc) string {
+	return "usage_ambiguous_" + strings.ReplaceAll(strings.ToLower(desc.singular()), " ", "_")
 }
 
 // resolveKindRefs resolves several refs of one kind, fetching the kind's

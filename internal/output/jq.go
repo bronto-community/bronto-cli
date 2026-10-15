@@ -58,7 +58,7 @@ func runJQ(w io.Writer, code *gojq.Code, v any, raw bool) error {
 			b = []byte(str)
 		} else {
 			var err error
-			if b, err = json.Marshal(res); err != nil {
+			if b, err = marshalJSON(res); err != nil {
 				continue
 			}
 		}

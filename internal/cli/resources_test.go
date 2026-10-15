@@ -561,6 +561,110 @@ func TestResourceUpdateNoContentConfirmsOnStderr(t *testing.T) {
 	}
 }
 
+// TestAmbiguousNameErrorForMultiWordKinds pins the usage_ambiguous_<kind>
+// code as lower_snake and the message's human plural for kinds whose
+// singular has spaces or capitals ("Slack integration", "API key").
+func TestAmbiguousNameErrorForMultiWordKinds(t *testing.T) {
+	rows := []map[string]any{
+		{"id": "id-1", "name": "dup"}, {"id": "id-2", "name": "dup"},
+	}
+	for kind, want := range map[string]string{
+		"slack":    "usage_ambiguous_slack_integration",
+		"api-keys": "usage_ambiguous_api_key",
+		"monitors": "usage_ambiguous_monitor",
+	} {
+		desc, _ := descByName(kind)
+		_, err := matchResourceRef(desc, rows, "dup")
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != want || clierr.ExitCode(err) != 2 {
+			t.Errorf("%s: want %s exit 2, got %v", kind, want, err)
+			continue
+		}
+		if wantMsg := "2 " + desc.plural() + " are named"; !strings.Contains(ce.Message, wantMsg) {
+			t.Errorf("%s: message %q, want it to contain %q", kind, ce.Message, wantMsg)
+		}
+	}
+}
+
+// TestNotFoundHintDedupesNames pins that the not-found hint lists each
+// available name once, even when several resources share it.
+func TestNotFoundHintDedupesNames(t *testing.T) {
+	desc, _ := descByName("monitors")
+	rows := []map[string]any{
+		{"id": "id-1", "name": "dup"}, {"id": "id-2", "name": "dup"}, {"id": "id-3", "name": "cpu"},
+	}
+	_, err := matchResourceRef(desc, rows, "ghost")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "resource_not_found" {
+		t.Fatalf("want resource_not_found, got %v", err)
+	}
+	if strings.Count(ce.Hint, "dup") != 1 {
+		t.Fatalf("hint lists a duplicate name more than once: %q", ce.Hint)
+	}
+}
+
+// TestUserEmailMatchIsCaseInsensitive pins that users resolve by email
+// regardless of case, while other kinds keep exact name matching.
+func TestUserEmailMatchIsCaseInsensitive(t *testing.T) {
+	users, _ := descByName("users")
+	id, err := matchResourceRef(users, []map[string]any{{"id": "u-1", "email": "ada@example.com"}}, "ADA@Example.com")
+	if err != nil || id != "u-1" {
+		t.Fatalf("email match: id=%q err=%v", id, err)
+	}
+	monitors, _ := descByName("monitors")
+	if _, err := matchResourceRef(monitors, []map[string]any{{"id": "m-1", "name": "cpu"}}, "CPU"); err == nil {
+		t.Fatal("monitor names must match exactly")
+	}
+}
+
+// TestResourcesDeleteResolvesBeforeConfirming pins the delete order: an
+// unknown name fails as not-found (exit 4) before any confirmation, even
+// without a terminal, and the prompt names the id a name resolved to.
+func TestResourcesDeleteResolvesBeforeConfirming(t *testing.T) {
+	oldOut, oldIn := stdoutIsTTY, stdinIsTTY
+	t.Cleanup(func() { stdoutIsTTY, stdinIsTTY = oldOut, oldIn })
+	list := `[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-000000000001","name":"cpu"}]`
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/monitors" {
+			_, _ = w.Write([]byte(list))
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
+
+	stdoutIsTTY = func() bool { return false }
+	stdinIsTTY = func() bool { return false }
+	_, _, err := runResource(t, handler, "", "monitors", "delete", "ghost")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "resource_not_found" || clierr.ExitCode(err) != 4 {
+		t.Fatalf("want resource_not_found exit 4, got %v", err)
+	}
+
+	stdoutIsTTY = func() bool { return true }
+	stdinIsTTY = func() bool { return true }
+	_, stderr, err := runResource(t, handler, "n\n", "monitors", "delete", "cpu")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stderr, "Delete monitor cpu (aaaaaaaa-aaaa-aaaa-aaaa-000000000001)?") {
+		t.Fatalf("prompt should show the resolved id: %q", stderr)
+	}
+}
+
+// TestResourcesCreateRejectsInvalidJSONInput pins that create/update
+// --input must be a JSON object or array, checked before any request.
+func TestResourcesCreateRejectsInvalidJSONInput(t *testing.T) {
+	for _, body := range []string{"", "{oops", "[1,"} {
+		_, _, err := runResource(t, func(http.ResponseWriter, *http.Request) {
+			t.Error("server contacted")
+		}, body, "monitors", "create", "--input", "-")
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != "usage_invalid_body" || clierr.ExitCode(err) != 2 {
+			t.Errorf("body %q: want usage_invalid_body exit 2, got %v", body, err)
+		}
+	}
+}
+
 // groups update is a PATCH that blanks whichever of name/description the
 // body omits (live-verified), so the CLI refuses a partial body.
 func TestGroupsUpdateRequiresNameAndDescription(t *testing.T) {
@@ -675,6 +779,84 @@ func TestMonitorsMuteRejectsBadUntil(t *testing.T) {
 		if clierr.ExitCode(err) != 2 {
 			t.Fatalf("%v: err = %v, want a usage error", args, err)
 		}
+	}
+}
+
+// TestResourceListDerivedFieldsInJSON pins that --fields and --fields '?'
+// agree across formats for derived list columns: json/jsonl can select
+// last_activity (and list it under '?'), while plain -o json stays raw.
+func TestResourceListDerivedFieldsInJSON(t *testing.T) {
+	list := `[{"collection":"prod","dataset":"web","log_id":"l-1","metadata":{"last_heartbeat_at":1784452890000}}]`
+	handler := func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(list)) }
+
+	out, _, err := runResource(t, handler, "", "datasets", "list", "-o", "json", "--fields", "dataset,last_activity")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, `"last_activity": "2026-07-19T`) || !strings.Contains(out, `"dataset": "web"`) {
+		t.Fatalf("json --fields with a derived column = %q", out)
+	}
+
+	out, _, err = runResource(t, handler, "", "datasets", "list", "-o", "jsonl", "--fields", "?")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"last_activity", "metadata", "log_id"} {
+		if !strings.Contains(out, name+"\n") {
+			t.Errorf("--fields '?' -o jsonl missing %q: %q", name, out)
+		}
+	}
+
+	out, _, err = runResource(t, handler, "", "datasets", "list", "-o", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out, "last_activity") || !strings.Contains(out, "1784452890000") {
+		t.Fatalf("plain -o json must stay raw: %q", out)
+	}
+}
+
+// TestSingleRecordCSV pins that get renders -o csv as a one-row CSV rather
+// than silently printing JSON.
+func TestSingleRecordCSV(t *testing.T) {
+	out, _, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"id":"aaaaaaaa-aaaa-aaaa-aaaa-000000000001","name":"cpu"}`))
+	}, "", "monitors", "get", "aaaaaaaa-aaaa-aaaa-aaaa-000000000001", "-o", "csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "id,name\naaaaaaaa-aaaa-aaaa-aaaa-000000000001,cpu\n" {
+		t.Fatalf("get -o csv = %q", out)
+	}
+}
+
+// TestResourceListRawAndDerivedFieldsTogether pins that selecting a
+// derived field keeps the other requested raw fields, including for
+// transforms that expand one raw row into several (permissions: one group
+// into one row per permission).
+func TestResourceListRawAndDerivedFieldsTogether(t *testing.T) {
+	catalog := `{"resources":[{"group_name":"Monitors","permissions":[{"name":"monitors:read"},{"name":"monitors:write"}]}]}`
+	out, _, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(catalog))
+	}, "", "permissions", "list", "-o", "jsonl", "--fields", "group_name,group,name")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"group":"Monitors","group_name":"Monitors","name":"monitors:read"}` + "\n" +
+		`{"group":"Monitors","group_name":"Monitors","name":"monitors:write"}` + "\n"
+	if out != want {
+		t.Fatalf("out = %q, want %q", out, want)
+	}
+
+	list := `[{"dataset":"web","updated_at":1777890000000,"metadata":{"last_heartbeat_at":1784452890000}}]`
+	out, _, err = runResource(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(list))
+	}, "", "datasets", "list", "-o", "jsonl", "--fields", "dataset,updated_at,last_activity")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, `"updated_at":1777890000000`) || !strings.Contains(out, `"last_activity":"2026-`) {
+		t.Fatalf("raw value lost next to its derived column: %q", out)
 	}
 }
 

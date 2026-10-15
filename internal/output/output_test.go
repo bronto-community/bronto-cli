@@ -613,6 +613,67 @@ func TestPrintExpandedEmptyNotice(t *testing.T) {
 	}
 }
 
+// TestPrintJSONAsCSV pins that a single-record document renders as CSV
+// (one row, sorted keys, nested values as compact JSON) instead of being
+// silently printed as JSON, and that a document without object rows is a
+// usage error.
+func TestPrintJSONAsCSV(t *testing.T) {
+	var buf bytes.Buffer
+	doc := map[string]any{"name": "cpu", "id": "m-1", "tags": map[string]any{"a": "x&y"}}
+	if err := NewPrinter(&buf, FormatCSV).PrintJSON(doc); err != nil {
+		t.Fatal(err)
+	}
+	if want := "id,name,tags\nm-1,cpu,\"{\"\"a\"\":\"\"x&y\"\"}\"\n"; buf.String() != want {
+		t.Fatalf("csv = %q, want %q", buf.String(), want)
+	}
+
+	buf.Reset()
+	p := NewPrinter(&buf, FormatCSV)
+	p.SetFieldFilter([]string{"name"})
+	if err := p.PrintJSON([]any{map[string]any{"name": "a", "id": 1}, map[string]any{"name": "b"}}); err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != "name\na\nb\n" {
+		t.Fatalf("csv with --fields = %q", buf.String())
+	}
+
+	if err := NewPrinter(&buf, FormatCSV).PrintJSON("scalar"); err == nil {
+		t.Fatal("want an error for a scalar document")
+	}
+}
+
+// TestJSONOutputDoesNotEscapeHTML pins that & < > print as-is in every JSON
+// path (json, jsonl, PrintJSON, nested table cells, --jq), not as &.
+func TestJSONOutputDoesNotEscapeHTML(t *testing.T) {
+	row := map[string]any{"q": "a < b && c > d", "n": map[string]any{"u": "x?a=1&b=2"}}
+	for _, f := range []Format{FormatJSON, FormatJSONL, FormatTable} {
+		var buf bytes.Buffer
+		p := NewPrinter(&buf, f)
+		if err := p.PrintRows([]string{"q", "n"}, []map[string]any{row}); err != nil {
+			t.Fatal(err)
+		}
+		if err := p.PrintJSON(row); err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(buf.String(), `\u00`) || !strings.Contains(buf.String(), "a < b && c > d") {
+			t.Errorf("%s: HTML-escaped output: %q", f, buf.String())
+		}
+	}
+	code, err := CompileJQ(".q")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetJQ(code)
+	if err := p.PrintJSON(row); err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != "\"a < b && c > d\"\n" {
+		t.Errorf("jq output = %q", buf.String())
+	}
+}
+
 // API data must not reach a terminal as live escape sequences; json/csv
 // stay byte-exact.
 func TestTableEscapesControlCharacters(t *testing.T) {
