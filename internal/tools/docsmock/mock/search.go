@@ -196,11 +196,6 @@ func (s *Server) sourceRows(req searchReq) ([]map[string]any, error) {
 	return rows, nil
 }
 
-// existsRe rewrites "EXISTS field" (used by the traces commands) into a
-// comparison the client-side matcher understands: a regex that matches
-// any present value.
-var existsRe = regexp.MustCompile(`(?i)\bEXISTS\s+([@$]?[A-Za-z0-9_][A-Za-z0-9_.-]*)`)
-
 // compileWhere builds a row predicate from a Bronto WHERE expression,
 // reusing the CLI's own parser and matcher (internal/query). An empty
 // expression matches everything.
@@ -208,8 +203,7 @@ func compileWhere(where string) (func(map[string]any) bool, error) {
 	if strings.TrimSpace(where) == "" {
 		return func(map[string]any) bool { return true }, nil
 	}
-	expr := existsRe.ReplaceAllString(where, "$1 ~ '.*'")
-	node, err := query.Parse(expr)
+	node, err := query.Parse(where)
 	if err != nil {
 		return nil, fmt.Errorf("Invalid query %q: %w", where, err) //nolint:staticcheck // mirrors the live error text
 	}

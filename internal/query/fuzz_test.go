@@ -18,6 +18,8 @@ func FuzzParse(f *testing.F) {
 		"(x > 1 OR y < 2) AND NOT z ~ 'p'",
 		"field.sub = \"v\"",
 		"@time >= 1700000000",
+		"a IN (1, 'x', b) OR a NOT LIKE 5.0 AND LOWER(b) ~* \"a\"",
+		"slow AND NOT EXISTS c AND a IS NOT NULL",
 		"'unterminated",
 		"= = =",
 		"a = ",
@@ -31,6 +33,10 @@ func FuzzParse(f *testing.F) {
 			return // parse errors are expected for arbitrary input
 		}
 		_ = Fields(n) // must not panic on any accepted query
+		_ = Warnings(n)
+		if m, err := NewMatcher(n); err == nil { // nor must evaluating it
+			m.Match(map[string]any{"@raw": "x 5", "a": "5.0", "b": 5.0, "c": nil})
+		}
 		if _, err2 := Parse(input); err2 != nil {
 			t.Fatalf("Parse non-deterministic for %q: accepted, then %v", input, err2)
 		}

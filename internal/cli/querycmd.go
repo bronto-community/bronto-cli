@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/output"
 	"github.com/bronto-community/bronto-cli/internal/query"
 )
 
@@ -30,11 +32,27 @@ func newQueryCheckCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "check <query>",
 		Short: "Validate a query expression before using it",
+		Long: "Checks a query expression client-side: syntax (with the error position marked), " +
+			"likely mistakes such as an unquoted string value, and with -d whether its fields " +
+			"exist in the dataset. Pass '-' as the query to read it from stdin.",
 		Example: "  bronto query check \"status >= 500 AND level = 'error'\"\n" +
-			"  bronto query check \"stauts >= 500\" -d prod/payments-api   # catches the typo",
+			"  bronto query check \"status IN (500, 502) AND message LIKE '%timeout%'\"\n" +
+			"  bronto query check \"stauts >= 500\" -d prod/payments-api   # catches the typo\n" +
+			"  bronto query check - -o json < query.txt",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			app, err := NewApp(cmd)
+			if err != nil {
+				return err
+			}
 			input := args[0]
+			if input == "-" {
+				b, err := io.ReadAll(cmd.InOrStdin())
+				if err != nil {
+					return err
+				}
+				input = strings.TrimSpace(string(b))
+			}
 			node, err := query.Parse(input)
 			if err != nil {
 				var pe *query.ParseError
@@ -45,16 +63,13 @@ func newQueryCheckCmd() *cobra.Command {
 				return err
 			}
 			fields := query.Fields(node)
+			warnings := query.Warnings(node)
 
 			// Field existence is best-effort: /top-keys only sees recent
 			// data, so unknown fields WARN by default; --strict makes
 			// them fatal (CI usage).
 			var unknownWarnings []string
 			if dataset != "" {
-				app, err := NewApp(cmd)
-				if err != nil {
-					return err
-				}
 				known, err := datasetFieldNames(cmd.Context(), app, dataset)
 				if err != nil {
 					return err
@@ -75,18 +90,47 @@ func newQueryCheckCmd() *cobra.Command {
 				}
 			}
 
-			out := cmd.OutOrStdout()
+			format, err := app.DetectFormat(false)
+			if err != nil {
+				return err
+			}
+			machine := format == output.FormatJSON || format == output.FormatJSONL
 			if strict && len(unknownWarnings) > 0 {
-				for _, w := range unknownWarnings {
-					_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "✗ "+w)
+				if !machine {
+					for _, w := range unknownWarnings {
+						_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "✗ "+w)
+					}
 				}
 				return clierr.New("query_unknown_field",
-					fmt.Sprintf("%d unknown field(s)", len(unknownWarnings)))
+					fmt.Sprintf("%d unknown field(s)", len(unknownWarnings))).
+					WithHint(strings.Join(unknownWarnings, "\n"))
 			}
-			for _, w := range unknownWarnings {
+			warnings = append(warnings, unknownWarnings...)
+			if machine {
+				p, err := app.PrinterFor(format)
+				if err != nil {
+					return err
+				}
+				// Failures use the standard error envelope; success is
+				// this object, with warnings always an array.
+				ws := make([]any, len(warnings))
+				for i, w := range warnings {
+					ws[i] = w
+				}
+				fs := make([]any, len(fields))
+				for i, f := range fields {
+					fs[i] = f
+				}
+				return p.PrintJSON(map[string]any{"valid": true, "fields": fs, "warnings": ws})
+			}
+			for _, w := range warnings {
 				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "warning: "+w)
 			}
-			_, _ = fmt.Fprintf(out, "✓ valid — fields: %s\n", strings.Join(fields, ", "))
+			msg := "✓ valid"
+			if len(fields) > 0 {
+				msg += " — fields: " + strings.Join(fields, ", ")
+			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), msg)
 			return nil
 		},
 	}

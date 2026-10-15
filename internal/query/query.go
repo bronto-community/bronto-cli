@@ -1,23 +1,38 @@
-// Package query parses the Bronto search query subset client-side: enough
-// grammar to validate structure, position errors with a caret, and
-// extract referenced fields — the foundation for `bronto query check`,
-// monitor linting, and (eventually) local evaluation.
+// Package query parses the Bronto search query language client-side:
+// enough grammar to validate structure, position errors with a caret,
+// extract referenced fields, and evaluate queries locally — the
+// foundation for `bronto query check`, monitor linting, and
+// `bronto search --local`.
 //
-// Grammar (case-insensitive keywords):
+// Grammar (keywords are case-insensitive), matching what the live search
+// API accepts (https://docs.bronto.io/query-syntax/search-syntax):
 //
-//	expr    := or
-//	or      := and ("OR" and)*
-//	and     := not ("AND" not)*
-//	not     := "NOT" not | primary
-//	primary := "(" expr ")" | comparison
-//	comparison := field op value
-//	op      := = | != | >= | <= | > | < | ~ | !~
-//	field   := [@$]?ident(.ident)*
-//	value   := number | 'string' | "string" | bareword
+//	expr      := or
+//	or        := and ("OR" and)*
+//	and       := not (("AND" | "&&") not)*
+//	not       := "NOT" not | primary
+//	primary   := "(" expr ")" | predicate | freetext
+//	predicate := operand op value
+//	           | operand ["NOT"] "IN" "(" value ("," value)* ")"
+//	           | operand ["NOT"] ("LIKE" | "ILIKE" | "REGEXP" | "RLIKE") value
+//	           | operand "IS" ["NOT"] "NULL"
+//	           | "EXISTS" field | "EXISTS" "(" field ")"
+//	operand  := field | "LOWER" "(" field ")"
+//	op        := = | != | <> | >= | <= | > | < | ~ | !~ | ~* | !~*
+//	field     := [@$]?ident(.ident)* | "double-quoted name"
+//	value     := number | 'string' | field
+//	freetext  := bareword | number | 'string' | "string"
 //
-// The live language may accept more than this; callers that cannot
-// tolerate false negatives should treat parse failures as advisory (see
-// search's error enrichment) — only `query check` treats them as fatal.
+// Single quotes delimit strings and double quotes delimit attribute
+// names; either quote is escaped by doubling it (backslash is literal).
+// So a bareword or double-quoted VALUE is an attribute reference, not a
+// string: level = error compares two attributes. A free-text term
+// matches events whose raw text contains it, case-insensitively — the
+// server expands it to @raw ILIKE '%term%'.
+//
+// Callers that cannot tolerate false negatives should treat parse
+// failures as advisory (see search's error enrichment) — only
+// `query check` treats them as fatal.
 package query
 
 import (
@@ -36,24 +51,57 @@ type Binary struct {
 
 type Not struct{ X Node }
 
+// Compare is one predicate. Op is canonical upper case: = != > >= < <=
+// ~ !~ ~* !~* LIKE ILIKE REGEXP IN IS NULL EXISTS, each binary keyword
+// form optionally prefixed "NOT " ("NOT IN", "IS NOT NULL"). <> becomes
+// != and RLIKE becomes REGEXP.
 type Compare struct {
-	Field string
-	Op    string
-	Value Literal
+	Field  string
+	Lower  bool // the field was wrapped in LOWER(...)
+	Op     string
+	Value  Literal   // unused by IN and IS [NOT] NULL
+	Values []Literal // IN / NOT IN list
 }
 
+// FreeText is a bare term or quoted phrase searched for in the raw event.
+type FreeText struct{ Term Literal }
+
 type Literal struct {
-	Raw      string
-	IsString bool
+	Raw      string // as written, quotes included
+	IsString bool   // 'single-quoted'
+	IsAttr   bool   // bareword or "double-quoted" value: an attribute reference
 	Num      float64
 	IsNum    bool
 }
 
-func (b Binary) fields(m map[string]bool)  { b.Left.fields(m); b.Right.fields(m) }
-func (n Not) fields(m map[string]bool)     { n.X.fields(m) }
-func (c Compare) fields(m map[string]bool) { m[c.Field] = true }
+// Text is the literal's content: quotes stripped and doubled quotes
+// unescaped.
+func (l Literal) Text() string {
+	return unquote(l.Raw)
+}
 
-// Fields returns the sorted set of field names referenced by the query.
+func unquote(s string) string {
+	if len(s) >= 2 && (s[0] == '\'' || s[0] == '"') && s[len(s)-1] == s[0] {
+		q := s[:1]
+		return strings.ReplaceAll(s[1:len(s)-1], q+q, q)
+	}
+	return s
+}
+
+func (b Binary) fields(m map[string]bool) { b.Left.fields(m); b.Right.fields(m) }
+func (n Not) fields(m map[string]bool)    { n.X.fields(m) }
+func (FreeText) fields(map[string]bool)   {}
+func (c Compare) fields(m map[string]bool) {
+	m[c.Field] = true
+	for _, v := range append([]Literal{c.Value}, c.Values...) {
+		if v.IsAttr {
+			m[v.Text()] = true
+		}
+	}
+}
+
+// Fields returns the sorted set of field names referenced by the query,
+// including attributes referenced on the value side (level = other).
 func Fields(n Node) []string {
 	m := map[string]bool{}
 	n.fields(m)
@@ -62,6 +110,33 @@ func Fields(n Node) []string {
 		out = append(out, k)
 	}
 	sortStrings(out)
+	return out
+}
+
+// Warnings lists constructs that are valid but probably not what the
+// author meant. The server silently returns nothing for these, so
+// `query check` surfaces them.
+func Warnings(n Node) []string {
+	var out []string
+	var walk func(Node)
+	walk = func(n Node) {
+		switch t := n.(type) {
+		case Binary:
+			walk(t.Left)
+			walk(t.Right)
+		case Not:
+			walk(t.X)
+		case Compare:
+			for _, v := range append([]Literal{t.Value}, t.Values...) {
+				if v.IsAttr {
+					out = append(out, fmt.Sprintf(
+						"%s in `%s %s` names the attribute %q, not a string — write '%s' to compare against the text",
+						v.Raw, t.Field, t.Op, v.Text(), strings.ReplaceAll(v.Text(), "'", "''")))
+				}
+			}
+		}
+	}
+	walk(n)
 	return out
 }
 
@@ -85,7 +160,7 @@ func (e *ParseError) Caret(input string) string {
 }
 
 type token struct {
-	kind string // ident, num, str, op, lparen, rparen, and, or, not, eof
+	kind string // ident, num, str, op, lparen, rparen, comma, and, or, not, eof
 	text string
 	pos  int
 }
@@ -95,15 +170,23 @@ type lexer struct {
 	pos int
 }
 
+// isFieldRune reports whether r continues a bareword. ':' may appear
+// inside one (key:value and 15:22:38 are free-text terms) but not lead.
 func isFieldRune(r rune, first bool) bool {
 	if first && (r == '@' || r == '$') {
+		return true
+	}
+	if !first && r == ':' {
 		return true
 	}
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '.' || r == '-'
 }
 
+// operators, longest first so the lexer matches greedily.
+var operators = []string{"!~*", "!=", ">=", "<=", "<>", "!~", "~*", "=", ">", "<", "~"}
+
 func (l *lexer) next() (token, *ParseError) {
-	for l.pos < len(l.in) && (l.in[l.pos] == ' ' || l.in[l.pos] == '\t' || l.in[l.pos] == '\n') {
+	for l.pos < len(l.in) && (l.in[l.pos] == ' ' || l.in[l.pos] == '\t' || l.in[l.pos] == '\n' || l.in[l.pos] == '\r') {
 		l.pos++
 	}
 	if l.pos >= len(l.in) {
@@ -118,18 +201,21 @@ func (l *lexer) next() (token, *ParseError) {
 	case c == ')':
 		l.pos++
 		return token{kind: "rparen", text: ")", pos: start}, nil
+	case c == ',':
+		l.pos++
+		return token{kind: "comma", text: ",", pos: start}, nil
+	case strings.HasPrefix(l.in[l.pos:], "&&"):
+		l.pos += 2
+		return token{kind: "and", text: "&&", pos: start}, nil
 	case c == '\'' || c == '"':
 		quote := c
 		l.pos++
 		for l.pos < len(l.in) {
-			if l.in[l.pos] == '\\' && l.pos+1 < len(l.in) {
-				l.pos += 2
-				continue
-			}
 			if l.in[l.pos] == quote {
 				// A doubled quote is a SQL-style escaped quote inside the
 				// string (traces.Quote emits exactly this: 'O''Brien'),
-				// not a close-then-reopen.
+				// not a close-then-reopen. Backslash is not an escape:
+				// the server rejects 'a\'b'.
 				if l.pos+1 < len(l.in) && l.in[l.pos+1] == quote {
 					l.pos += 2
 					continue
@@ -141,8 +227,7 @@ func (l *lexer) next() (token, *ParseError) {
 		}
 		return token{}, &ParseError{Pos: start, Len: l.pos - start, Msg: "unterminated string"}
 	case strings.ContainsRune("=!<>~", rune(c)):
-		ops := []string{"!=", ">=", "<=", "!~", "=", ">", "<", "~"}
-		for _, op := range ops {
+		for _, op := range operators {
 			if strings.HasPrefix(l.in[l.pos:], op) {
 				l.pos += len(op)
 				return token{kind: "op", text: op, pos: start}, nil
@@ -166,6 +251,8 @@ func (l *lexer) next() (token, *ParseError) {
 		case "NOT":
 			return token{kind: "not", text: text, pos: start}, nil
 		}
+		// IN, LIKE, IS, NULL, … stay idents: they are keywords only in
+		// predicate position (a lone `in` is a valid free-text search).
 		if _, err := strconv.ParseFloat(text, 64); err == nil {
 			return token{kind: "num", text: text, pos: start}, nil
 		}
@@ -210,7 +297,13 @@ func Parse(input string) (Node, error) {
 }
 
 func (p *parser) cur() token { return p.toks[p.i] }
-func (p *parser) advance()   { p.i++ }
+func (p *parser) peek(k int) token {
+	if p.i+k < len(p.toks) {
+		return p.toks[p.i+k]
+	}
+	return p.toks[len(p.toks)-1] // eof
+}
+func (p *parser) advance() { p.i++ }
 
 func (p *parser) parseOr() (Node, error) {
 	left, err := p.parseAnd()
@@ -256,6 +349,31 @@ func (p *parser) parseNot() (Node, error) {
 	return p.parsePrimary()
 }
 
+// binaryKeywords are the word operators that may follow NOT.
+var binaryKeywords = map[string]bool{"IN": true, "LIKE": true, "ILIKE": true, "REGEXP": true, "RLIKE": true}
+
+func kw(t token) string {
+	if t.kind != "ident" {
+		return ""
+	}
+	return strings.ToUpper(t.text)
+}
+
+// startsPredicate reports whether the token at offset k begins the
+// operator part of a predicate.
+func (p *parser) startsPredicate(k int) bool {
+	t := p.peek(k)
+	switch {
+	case t.kind == "op":
+		return true
+	case binaryKeywords[kw(t)] || kw(t) == "IS":
+		return true
+	case t.kind == "not":
+		return binaryKeywords[kw(p.peek(k+1))]
+	}
+	return false
+}
+
 func (p *parser) parsePrimary() (Node, error) {
 	t := p.cur()
 	switch t.kind {
@@ -272,35 +390,185 @@ func (p *parser) parsePrimary() (Node, error) {
 		p.advance()
 		return n, nil
 	case "ident":
-		field := t.text
-		p.advance()
-		op := p.cur()
-		if op.kind != "op" {
-			return nil, &ParseError{Pos: op.pos, Len: len(op.text),
-				Msg: fmt.Sprintf("expected a comparison operator after field %q", field)}
+		if kw(t) == "LOWER" && p.peek(1).kind == "lparen" {
+			p.advance()
+			p.advance()
+			f := p.cur()
+			if f.kind != "ident" && (f.kind != "str" || f.text[0] != '"') {
+				return nil, &ParseError{Pos: f.pos, Len: max(len(f.text), 1), Msg: "expected a field name inside LOWER(...)"}
+			}
+			p.advance()
+			if p.cur().kind != "rparen" {
+				c := p.cur()
+				return nil, &ParseError{Pos: c.pos, Len: 1, Msg: "missing closing parenthesis after LOWER(" + f.text}
+			}
+			p.advance()
+			if !p.startsPredicate(0) {
+				c := p.cur()
+				return nil, &ParseError{Pos: c.pos, Len: max(len(c.text), 1),
+					Msg: "expected a comparison operator after LOWER(" + f.text + ")"}
+			}
+			return p.parsePredicate(unquote(f.text), true)
 		}
-		p.advance()
-		val := p.cur()
-		switch val.kind {
-		case "num":
-			p.advance()
-			f, _ := strconv.ParseFloat(val.text, 64)
-			return Compare{Field: field, Op: op.text, Value: Literal{Raw: val.text, Num: f, IsNum: true}}, nil
-		case "str":
-			p.advance()
-			return Compare{Field: field, Op: op.text, Value: Literal{Raw: val.text, IsString: true}}, nil
-		case "ident":
-			p.advance()
-			return Compare{Field: field, Op: op.text, Value: Literal{Raw: val.text}}, nil
-		default:
-			return nil, &ParseError{Pos: val.pos, Len: 1,
-				Msg: fmt.Sprintf("expected a value after %q", op.text)}
+		if kw(t) == "EXISTS" {
+			if f, n, ok := p.existsOperand(); ok {
+				p.i += n
+				return Compare{Field: f, Op: "EXISTS"}, nil
+			}
 		}
+		if p.startsPredicate(1) {
+			p.advance()
+			return p.parsePredicate(t.text, false)
+		}
+		if kw(t) == "NULL" {
+			return nil, &ParseError{Pos: t.pos, Len: len(t.text),
+				Msg: "NULL is only valid in field IS NULL / field IS NOT NULL"}
+		}
+		return p.freeText(Literal{Raw: t.text})
+	case "str":
+		if t.text[0] == '"' && p.startsPredicate(1) {
+			p.advance()
+			return p.parsePredicate(unquote(t.text), false)
+		}
+		return p.freeText(Literal{Raw: t.text, IsString: true})
+	case "num":
+		f, _ := strconv.ParseFloat(t.text, 64)
+		return p.freeText(Literal{Raw: t.text, Num: f, IsNum: true})
 	case "eof":
 		return nil, &ParseError{Pos: len(p.in), Len: 1, Msg: "incomplete expression — expected a condition"}
 	default:
 		return nil, &ParseError{Pos: t.pos, Len: len(t.text),
-			Msg: fmt.Sprintf("unexpected %q — expected a field name or '('", t.text)}
+			Msg: fmt.Sprintf("unexpected %q — expected a field name, a search term, or '('", t.text)}
+	}
+}
+
+// existsOperand reads the field after an EXISTS at the cursor — written
+// EXISTS field or EXISTS (field) — returning it and the tokens consumed.
+// ok is false when EXISTS stands alone, which makes it a search term.
+func (p *parser) existsOperand() (field string, n int, ok bool) {
+	isField := func(t token) bool { return t.kind == "ident" || (t.kind == "str" && t.text[0] == '"') }
+	if f := p.peek(1); isField(f) {
+		return unquote(f.text), 2, true
+	}
+	if p.peek(1).kind == "lparen" && isField(p.peek(2)) && p.peek(3).kind == "rparen" {
+		return unquote(p.peek(2).text), 4, true
+	}
+	return "", 0, false
+}
+
+// freeText consumes a free-text term. The server takes one term per
+// position, so a following bare term means an unquoted phrase.
+func (p *parser) freeText(lit Literal) (Node, error) {
+	p.advance()
+	switch n := p.cur(); n.kind {
+	case "ident", "str", "num":
+		return nil, &ParseError{Pos: n.pos, Len: len(n.text),
+			Msg: fmt.Sprintf("unexpected %q after the search term %q — quote a phrase as one term (\"a b\") or join terms with AND/OR",
+				n.text, lit.Raw)}
+	}
+	return FreeText{Term: lit}, nil
+}
+
+// parsePredicate parses what follows a predicate's operand (the cursor
+// sits on the operator).
+func (p *parser) parsePredicate(field string, lower bool) (Node, error) {
+	c := Compare{Field: field, Lower: lower}
+	t := p.cur()
+	if t.kind == "op" {
+		p.advance()
+		c.Op = t.text
+		if c.Op == "<>" {
+			c.Op = "!="
+		}
+		v, err := p.parseValue(t.text)
+		if err != nil {
+			return nil, err
+		}
+		c.Value = v
+		return c, nil
+	}
+	neg := ""
+	if t.kind == "not" {
+		neg = "NOT "
+		p.advance()
+		t = p.cur()
+	}
+	switch k := kw(t); k {
+	case "IS":
+		p.advance()
+		op := "IS NULL"
+		if p.cur().kind == "not" {
+			op = "IS NOT NULL"
+			p.advance()
+		}
+		if n := p.cur(); kw(n) != "NULL" {
+			return nil, &ParseError{Pos: n.pos, Len: max(len(n.text), 1), Msg: "expected NULL or NOT NULL after IS"}
+		}
+		p.advance()
+		c.Op = op
+		return c, nil
+	case "IN":
+		p.advance()
+		c.Op = neg + "IN"
+		if n := p.cur(); n.kind != "lparen" {
+			return nil, &ParseError{Pos: n.pos, Len: max(len(n.text), 1), Msg: "expected '(' after IN"}
+		}
+		p.advance()
+		for {
+			v, err := p.parseValue(c.Op)
+			if err != nil {
+				return nil, err
+			}
+			c.Values = append(c.Values, v)
+			if p.cur().kind != "comma" {
+				break
+			}
+			p.advance()
+		}
+		if n := p.cur(); n.kind != "rparen" {
+			return nil, &ParseError{Pos: n.pos, Len: max(len(n.text), 1),
+				Msg: "expected ',' or ')' in the IN list"}
+		}
+		p.advance()
+		return c, nil
+	default: // LIKE ILIKE REGEXP RLIKE (startsPredicate guarantees one)
+		p.advance()
+		if k == "RLIKE" {
+			k = "REGEXP"
+		}
+		c.Op = neg + k
+		v, err := p.parseValue(t.text)
+		if err != nil {
+			return nil, err
+		}
+		c.Value = v
+		return c, nil
+	}
+}
+
+func (p *parser) parseValue(after string) (Literal, error) {
+	val := p.cur()
+	switch val.kind {
+	case "num":
+		p.advance()
+		f, _ := strconv.ParseFloat(val.text, 64)
+		return Literal{Raw: val.text, Num: f, IsNum: true}, nil
+	case "str":
+		p.advance()
+		if val.text[0] == '"' {
+			return Literal{Raw: val.text, IsAttr: true}, nil
+		}
+		return Literal{Raw: val.text, IsString: true}, nil
+	case "ident":
+		if kw(val) == "NULL" {
+			return Literal{}, &ParseError{Pos: val.pos, Len: len(val.text),
+				Msg: "compare with NULL using IS NULL or IS NOT NULL"}
+		}
+		p.advance()
+		return Literal{Raw: val.text, IsAttr: true}, nil
+	default:
+		return Literal{}, &ParseError{Pos: val.pos, Len: 1,
+			Msg: fmt.Sprintf("expected a value after %q", after)}
 	}
 }
 

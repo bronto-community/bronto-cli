@@ -2,9 +2,11 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -28,12 +30,93 @@ func runQueryCheck(t *testing.T, srvURL string, args ...string) (string, string,
 }
 
 func TestQueryCheckValid(t *testing.T) {
-	out, _, err := runQueryCheck(t, "", "status >= 500 AND level = 'error'")
+	out, _, err := runQueryCheck(t, "", "status >= 500 AND level = 'error'", "-o", "table")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out, "✓ valid") || !strings.Contains(out, "level, status") {
 		t.Fatalf("out = %q", out)
+	}
+}
+
+func TestQueryCheckJSON(t *testing.T) {
+	out, stderr, err := runQueryCheck(t, "", "status IN (500, 502) AND level = error", "-o", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got struct {
+		Valid    bool
+		Fields   []string
+		Warnings []string
+	}
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("-o json output does not parse: %v\n%s", err, out)
+	}
+	if !got.Valid || !reflect.DeepEqual(got.Fields, []string{"error", "level", "status"}) ||
+		len(got.Warnings) != 1 || !strings.Contains(got.Warnings[0], `attribute "error"`) {
+		t.Fatalf("result = %+v", got)
+	}
+	if stderr != "" {
+		t.Fatalf("json mode must keep warnings out of stderr: %q", stderr)
+	}
+
+	// No warnings is an empty array, not null.
+	out, _, err = runQueryCheck(t, "", "slow", "-o", "json")
+	if err != nil || strings.TrimSpace(out) != `{"fields":[],"valid":true,"warnings":[]}` {
+		t.Fatalf("out = %q, err = %v", out, err)
+	}
+}
+
+func TestQueryCheckJQ(t *testing.T) {
+	out, _, err := runQueryCheck(t, "", "message LIKE '%fail%'", "-o", "json", "--jq", ".valid")
+	if err != nil || strings.TrimSpace(out) != "true" {
+		t.Fatalf("out = %q, err = %v", out, err)
+	}
+	out, _, err = runQueryCheck(t, "", "a = b", "-o", "json", "--jq", ".warnings | length")
+	if err != nil || strings.TrimSpace(out) != "1" {
+		t.Fatalf("out = %q, err = %v", out, err)
+	}
+}
+
+func TestQueryCheckStdin(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetIn(strings.NewReader("\"slow to respond\" AND status NOT IN (200)\n"))
+	root.SetArgs([]string{"query", "check", "-", "-o", "table"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.TrimSpace(out.String()); got != "✓ valid — fields: status" {
+		t.Fatalf("out = %q", got)
+	}
+
+	root = NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetIn(strings.NewReader("status >"))
+	root.SetArgs([]string{"query", "check", "-"})
+	var ce *clierr.Error
+	if err := root.Execute(); !errors.As(err, &ce) || ce.Code != "usage_invalid_query" {
+		t.Fatalf("stdin query must be parsed, not the literal '-': %v", err)
+	}
+}
+
+// TestQueryCheckAcceptsServerSyntax runs the command over expressions the
+// live API accepts (IN, LIKE, free text, …), which it used to reject.
+func TestQueryCheckAcceptsServerSyntax(t *testing.T) {
+	for _, q := range []string{
+		"status IN (500, 502)",
+		"message LIKE '%fail%'",
+		`"slow to respond"`,
+		"nosuchfield IS NULL",
+		"LOWER(level) NOT IN ('info')",
+	} {
+		if _, _, err := runQueryCheck(t, "", q, "-o", "json"); err != nil {
+			t.Errorf("query check %q: %v", q, err)
+		}
 	}
 }
 
@@ -61,7 +144,7 @@ func TestQueryCheckUnknownFieldSuggests(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, stderr, err := runQueryCheck(t, srv.URL, "stauts >= 500", "-d", "web")
+	_, stderr, err := runQueryCheck(t, srv.URL, "stauts >= 500", "-d", "web", "-o", "table")
 	if err != nil {
 		t.Fatalf("non-strict unknown field must warn, not fail: %v", err)
 	}
