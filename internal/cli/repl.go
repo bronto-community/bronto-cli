@@ -368,12 +368,15 @@ var replCtx = func() (context.Context, context.CancelFunc) {
 func (s *replSession) runQuery(where string) error {
 	ctx, stop := replCtx()
 	defer stop()
+	// The API defaults to oldest first; the page header promises the most
+	// recent events, and \more pages through these rows client-side.
+	mrf := true
 	req := bronto.SearchRequest{
 		From: s.ids, FromExpr: s.expr,
 		Time:   timerange.Spec{TimeRange: s.since},
 		Where:  where,
 		Select: []string{"@time", "@raw"},
-		Limit:  s.limit,
+		Limit:  s.limit, MostRecentFirst: &mrf,
 	}
 	resp, err := s.client.Search(ctx, req)
 	if err != nil {

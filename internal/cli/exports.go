@@ -73,9 +73,11 @@ func newExportsCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create an export",
+		Long: "Creates an export of a dataset's events. Without a time flag it exports the last 15 minutes,\n" +
+			"like search. The downloaded file is zstd-compressed NDJSON.",
 		Example: "  bronto exports create --dataset <dataset> --since 1h --where \"status=500\" --wait\n" +
 			"  bronto exports create --input body.json\n" +
-			"  bronto exports create --dataset <dataset> --since 1h --download out.json.gz",
+			"  bronto exports create --dataset <dataset> --since 1h --download out.ndjson.zst",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if download != "" {
@@ -168,6 +170,11 @@ func exportRequestBody(cmd *cobra.Command, input string, fields []string, datase
 		spec, err := timerange.Resolve(since, from, to, nil)
 		if err != nil {
 			return nil, err
+		}
+		if spec.IsZero() {
+			// The API requires a range (400 "No schema matches" without
+			// one); default it the way search does.
+			spec.TimeRange = "Last 15 minutes"
 		}
 		return json.Marshal(map[string]any{"search_details": exportSearchDetails(dataset, where, spec)})
 	default:

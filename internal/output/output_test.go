@@ -224,6 +224,24 @@ func TestPrintJSONAppliesFieldFilter(t *testing.T) {
 	}
 }
 
+// get-style documents print pretty under -o json, like lists do; jsonl
+// and raw keep one compact line per document.
+func TestPrintJSONPrettyOnlyForJSON(t *testing.T) {
+	for format, want := range map[Format]string{
+		FormatJSON:  "{\n  \"a\": 1\n}\n",
+		FormatJSONL: "{\"a\":1}\n",
+		FormatRaw:   "{\"a\":1}\n",
+	} {
+		var buf bytes.Buffer
+		if err := NewPrinter(&buf, format).PrintJSON(map[string]any{"a": 1}); err != nil {
+			t.Fatal(err)
+		}
+		if buf.String() != want {
+			t.Errorf("%s: got %q, want %q", format, buf.String(), want)
+		}
+	}
+}
+
 func TestCompileJQInvalidExpressionIsUsageError(t *testing.T) {
 	if _, err := CompileJQ("this is not jq {{{"); err == nil {
 		t.Fatal("want error for invalid jq expression")

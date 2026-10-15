@@ -415,7 +415,9 @@ func (p *Printer) PrintJSON(v any) error {
 		return runJQ(p.w, p.jq, v, p.rawOutput)
 	}
 	enc := json.NewEncoder(p.w)
-	if p.format == FormatTable { // human context: pretty-print
+	// Pretty-print for humans and for -o json, matching what PrintRows
+	// does for lists; jsonl/raw stay one compact line.
+	if p.format == FormatTable || p.format == FormatJSON {
 		enc.SetIndent("", "  ")
 	}
 	return enc.Encode(v)

@@ -3,6 +3,8 @@ package timerange
 import (
 	"testing"
 	"time"
+
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 var testNow = func() time.Time {
@@ -78,6 +80,22 @@ func TestErrors(t *testing.T) {
 	}
 	if _, err := Resolve("", "not-a-date", "", testNow); err == nil {
 		t.Error("bad RFC3339 must error")
+	}
+}
+
+func TestInvertedRangeIsUsageError(t *testing.T) {
+	for _, c := range []struct{ from, to string }{
+		{"2026-07-07T11:00:00Z", "2026-07-07T10:00:00Z"},
+		{"2026-07-08T00:00:00Z", ""}, // --from in the future, --to defaults to now
+	} {
+		_, err := Resolve("", c.from, c.to, testNow)
+		if clierr.ExitCode(err) != 2 {
+			t.Errorf("Resolve(from=%q, to=%q) = %v; want a usage error (exit 2)", c.from, c.to, err)
+		}
+	}
+	// equal bounds are a valid (empty) range
+	if _, err := Resolve("", "2026-07-07T10:00:00Z", "2026-07-07T10:00:00Z", testNow); err != nil {
+		t.Errorf("from == to must be accepted: %v", err)
 	}
 }
 

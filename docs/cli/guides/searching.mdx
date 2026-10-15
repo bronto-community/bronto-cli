@@ -32,7 +32,8 @@ $ bronto search "status >= 500" -d prod/checkout-service --since 1h
   selector expression instead, for example `--from-expr "log_id = '<uuid>'"`.
 - **Time range.** `--since` takes a relative lookback such as `30s`, `15m`, `1h`, `2d`,
   `1w`, or `1h30m`. For a fixed window, pass RFC 3339 timestamps with `--from` and
-  `--to`. With no time flag, the search covers the last 15 minutes.
+  `--to`; `--from` must not be later than `--to`. With no time flag, the search covers the
+  last 15 minutes.
 - **Size and order.** `-n`/`--limit` caps the number of events (1 to 10000, default 100).
   Results come newest first. `--oldest-first` flips that, and `--order-by` takes an
   SQL-style order such as `'duration_ms DESC'`.
@@ -200,16 +201,17 @@ period before a spike is easy to see.
 
 `--patterns` clusters events into message templates with counts, which shows what a noisy
 dataset is mostly made of (learn more about
-[patterns](https://docs.bronto.io/core-features/patterns)):
+[patterns](https://docs.bronto.io/core-features/patterns)). It clusters the parsed
+`message` field when events have one, and the raw line otherwise:
 
 {/* test: tty */}
 ```console
 $ bronto search "" -d prod/checkout-service --since 1h --patterns
 COUNT  PATTERN
-58     <*> <*>
-13     <*> failed: payments-api timed out after <*>
-3      <*> slow to respond <*>
-2      {"level":"info","service":"checkout-service","host":"web-2","message":"checkout <*>
+36     checkout completed
+24     cart loaded
+13     payment failed: payments-api timed out after <num>
+3      payments-api slow to respond (<num>)
 ```
 
 ## Saved searches and the web UI
@@ -230,7 +232,8 @@ Saved searches are a regular [resource](/cli/guides/resources), so
 your browser. Neither runs the query. The link targets your active org. If the CLI can't
 work out the org, set it with `bronto config set org_id <uuid>`.
 
-`--explain-only` returns the query plan and cost estimate instead of results.
+`--explain-only` returns the query plan and cost estimate instead of results, as one JSON
+document, so `-o csv` is rejected.
 
 ## Search local files
 
@@ -243,9 +246,12 @@ kubectl logs deploy/checkout | bronto search --local - "status >= 500"
 bronto search --local export.ndjson "path = '/api/checkout'" -o jsonl --fields @time,path
 ```
 
-JSON lines are queryable by their keys (nested keys in dotted form). Plain-text lines are
-matched with `@raw ~ 'regex'`. `-o`, `--fields`, `--jq`, and `-n` work. Dataset, time
-range, select, and group-by flags don't apply and are rejected.
+JSON lines are queryable by their keys (nested keys in dotted form). A bare field name
+also matches its `message_kvs.<field>` key, so a `bronto search -o jsonl` dump answers the
+same query you ran against Bronto. Plain-text lines are matched with `@raw ~ 'regex'`.
+`-o`, `--fields`, `--jq`, and `-n` work. Matches print in file order. Dataset, time range,
+select, and group-by flags don't apply and are rejected, as are `--histogram`,
+`--patterns`, `--url`, `--open`, `--order-by`, `--oldest-first`, and `--saved`.
 
 ## The REPL
 

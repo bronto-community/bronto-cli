@@ -45,6 +45,10 @@ func runLocalSearch(app *App, in io.Reader, path, where string, limit int) error
 		if err != nil {
 			return clierr.New("usage_invalid_query", err.Error())
 		}
+		// Same fallback as --fields: a bronto search -o jsonl dump carries
+		// parsed fields as message_kvs.<name>, and the server query names
+		// them bare.
+		m.SetFieldFallbackPrefix("message_kvs.")
 		match = m.Match
 	}
 

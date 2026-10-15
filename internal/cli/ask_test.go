@@ -277,6 +277,46 @@ func TestAskYesRunsAggregatePlan(t *testing.T) {
 	}
 }
 
+// A grouped plan without select must still send one: the API rejects a
+// search with no select (400 "should contain property select").
+func TestAskGroupedPlanDefaultsSelect(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	var sel, mrf atomic.Value
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/logs":
+			_, _ = w.Write([]byte(`{"logs":[{"log":"payments-api","collection":"prod","log_id":"11111111-1111-1111-1111-111111111111"}]}`))
+		case "/top-keys":
+			_, _ = w.Write([]byte(`{}`))
+		case "/search":
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			b, _ := json.Marshal(body["select"])
+			sel.Store(string(b))
+			mrf.Store(body["most_recent_first"])
+			_, _ = w.Write([]byte(`{"groups":[]}`))
+		}
+	}))
+	defer api.Close()
+	llm := askLLMServer(t, `{"dataset":"payments-api","since":"1h","query":"","group_by":["host"],"why":"w"}`, nil, nil)
+	defer llm.Close()
+	t.Setenv("BRONTO_ASK_URL", llm.URL)
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"ask", "count by host", "--yes", "--base-url", api.URL, "--api-key", "k", "-o", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if got := sel.Load(); got != `["count(*)"]` {
+		t.Fatalf("select = %v, want [\"count(*)\"]", got)
+	}
+	// The API defaults to oldest first.
+	if got := mrf.Load(); got != true {
+		t.Fatalf("most_recent_first = %v, want true", got)
+	}
+}
+
 func TestAskLLMHTTPError(t *testing.T) {
 	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
 	api := askAPIServer(t, nil)
