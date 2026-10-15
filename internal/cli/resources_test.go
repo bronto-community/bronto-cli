@@ -639,7 +639,7 @@ func TestCheckMuteFlags(t *testing.T) {
 		{"zero would unmute", 0, false, true, "usage_invalid_flags", "--unmute"},
 		{"past", past, false, true, "usage_invalid_flags", "future"},
 		{"negative", -5, false, true, "usage_invalid_flags", "-1 to mute indefinitely"},
-		{"seconds", now.Unix() + 60, false, true, "usage_invalid_flags", "seconds"},
+		{"seconds", now.Unix() + 60, false, true, "usage_invalid_flags", "looks like seconds"},
 		{"unmute", -1, true, false, "", ""},
 		{"unmute with until", future, true, true, "usage_conflicting_flags", ""},
 	}
@@ -653,6 +653,11 @@ func TestCheckMuteFlags(t *testing.T) {
 		if c.hintSubst != "" && (!errors.As(err, &ce) || !strings.Contains(ce.Hint, c.hintSubst)) {
 			t.Errorf("%s: hint = %+v, want it to mention %q", c.name, ce, c.hintSubst)
 		}
+	}
+	// An expired millisecond timestamp has the right units: no seconds hint.
+	var ce *clierr.Error
+	if err := checkMuteFlags(past, false, true, now); !errors.As(err, &ce) || strings.Contains(ce.Hint, "looks like seconds") {
+		t.Errorf("past ms timestamp: err = %v, hint = %+v; want no seconds hint", err, ce)
 	}
 }
 

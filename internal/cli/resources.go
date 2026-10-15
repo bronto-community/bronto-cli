@@ -903,7 +903,7 @@ func newMonitorMuteCmd() *cobra.Command {
 		Use:   "mute <id>",
 		Short: "Mute or unmute a monitor",
 		Example: "  bronto monitors mute <id>\n" +
-			"  bronto monitors mute <id> --until 1710958395538\n" +
+			"  bronto monitors mute <id> --until <epoch-ms>\n" +
 			"  bronto monitors mute <id> --unmute",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeKindRef("monitors"),
@@ -966,7 +966,9 @@ func checkMuteFlags(until int64, unmute, untilSet bool, now time.Time) error {
 	hint := "Pass a future Unix timestamp in milliseconds, or -1 to mute indefinitely."
 	if until == 0 {
 		hint = "To unmute, pass --unmute. " + hint
-	} else if until > 0 && until*1000 > now.UnixMilli() {
+	} else if until > 0 && until < 1e11 && until*1000 > now.UnixMilli() {
+		// Below 1e11 an epoch-ms value is 1973; an expired ms value must
+		// not be told its units are wrong.
 		hint = "That looks like seconds: --until takes milliseconds. " + hint
 	}
 	return clierr.New("usage_invalid_flags",
