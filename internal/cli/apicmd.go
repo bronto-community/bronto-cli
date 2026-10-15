@@ -15,6 +15,7 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/api"
 	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/output"
 )
 
 var allowedMethods = map[string]bool{
@@ -65,6 +66,13 @@ func newAPICmd() *cobra.Command {
 				if err != nil {
 					return err
 				}
+				// Only JSON bodies are checked: --content-type text/plain
+				// (or any other non-JSON type) sends the bytes as given.
+				if isJSONContentType(contentType) {
+					if err := validateJSONBody(bodyBytes, input); err != nil {
+						return err
+					}
+				}
 			case hasBodyMethod && len(fields) > 0:
 				obj, err := parseFieldArgs(fields)
 				if err != nil {
@@ -80,10 +88,10 @@ func newAPICmd() *cobra.Command {
 				q := url.Values{}
 				for _, kv := range fields {
 					k, v, ok := strings.Cut(kv, "=")
-					if !ok {
+					if !ok || k == "" {
 						return clierr.New("usage_invalid_field", fmt.Sprintf("--field %q is not key=value", kv))
 					}
-					q.Add(k, v)
+					q.Add(k, v) // repeated query keys are legitimate (?tag=a&tag=b)
 				}
 				sep := "?"
 				if strings.Contains(path, "?") {
@@ -135,7 +143,17 @@ func newAPICmd() *cobra.Command {
 				_, err := app.Stdout.Write(respBody) // non-JSON: pass through
 				return err
 			}
-			p, err := app.Printer(false)
+			format, err := app.DetectFormat(false)
+			if err != nil {
+				return err
+			}
+			if app.JQ == nil && !app.ListFieldsOnly && len(app.FieldFilter) == 0 {
+				if out, ok := apiBodyFor(format, respBody); ok {
+					_, err := app.Stdout.Write(out)
+					return err
+				}
+			}
+			p, err := app.PrinterFor(format)
 			if err != nil {
 				return err
 			}
@@ -152,14 +170,19 @@ func newAPICmd() *cobra.Command {
 // parseFieldArgs turns repeated key=value pairs into a JSON body object.
 // Each value is tried as JSON first (so `-f limit=10` produces a number and
 // `-f enabled=true` a bool); anything that doesn't parse as JSON is kept as
-// a plain string. Shared by the api escape hatch and the generic resource
-// commands (resources.go).
+// a plain string. An empty key or a key given twice is a usage error
+// rather than a silent {"": …} or last-one-wins. Shared by the api escape
+// hatch and the generic resource commands (resources.go).
 func parseFieldArgs(fields []string) (map[string]any, error) {
 	obj := map[string]any{}
 	for _, kv := range fields {
 		k, v, ok := strings.Cut(kv, "=")
-		if !ok {
+		if !ok || k == "" {
 			return nil, clierr.New("usage_invalid_field", fmt.Sprintf("--field %q is not key=value", kv))
+		}
+		if _, dup := obj[k]; dup {
+			return nil, clierr.New("usage_invalid_field", fmt.Sprintf("--field key %q is given more than once", k)).
+				WithHint("Pass each key once; for a list value use JSON, e.g. -f 'tags=[\"a\",\"b\"]'.")
 		}
 		var parsed any
 		// UseNumber here too: `-f seq=4367602734065516544` must reach the
@@ -186,4 +209,58 @@ func readBodyInput(cmd *cobra.Command, input string) ([]byte, error) {
 	}
 	defer func() { _ = f.Close() }()
 	return io.ReadAll(f)
+}
+
+// apiBodyFor renders a JSON response body for format without decoding and
+// re-encoding it, so key order, number spelling and characters like & < >
+// stay exactly as the API sent them: verbatim for json and raw, indented
+// for table (a terminal), compacted to one line for jsonl. ok is false for
+// csv, which needs the decoded document.
+func apiBodyFor(format output.Format, body []byte) (out []byte, ok bool) {
+	var buf bytes.Buffer
+	switch format {
+	case output.FormatJSON, output.FormatRaw:
+		buf.Write(bytes.TrimRight(body, "\r\n"))
+	case output.FormatTable:
+		if err := json.Indent(&buf, body, "", "  "); err != nil {
+			return nil, false
+		}
+	case output.FormatJSONL:
+		if err := json.Compact(&buf, body); err != nil {
+			return nil, false
+		}
+	default:
+		return nil, false
+	}
+	buf.WriteByte('\n')
+	return buf.Bytes(), true
+}
+
+// isJSONContentType reports whether a Content-Type names a JSON body:
+// application/json or any +json suffix type, parameters ignored.
+func isJSONContentType(ct string) bool {
+	mt, _, _ := strings.Cut(ct, ";")
+	mt = strings.ToLower(strings.TrimSpace(mt))
+	return mt == "application/json" || strings.HasSuffix(mt, "+json")
+}
+
+// validateJSONBody rejects an --input body that isn't a JSON object or
+// array before it is sent: invalid JSON would otherwise reach the API as a
+// raw string, and an empty file as a body-less request, both failing there
+// with a less helpful 400.
+func validateJSONBody(body []byte, input string) error {
+	src := input
+	if input == "-" {
+		src = "stdin"
+	}
+	trimmed := bytes.TrimSpace(body)
+	if len(trimmed) == 0 {
+		return clierr.New("usage_invalid_body", fmt.Sprintf("--input %s is empty", src)).
+			WithHint("The request body must be a JSON object or array.")
+	}
+	if (trimmed[0] != '{' && trimmed[0] != '[') || !json.Valid(trimmed) {
+		return clierr.New("usage_invalid_body", fmt.Sprintf("--input %s is not a JSON object or array", src)).
+			WithHint("Check the file with 'jq . " + src + "'; for a non-JSON body use bronto api --content-type.")
+	}
+	return nil
 }

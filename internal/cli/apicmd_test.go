@@ -191,3 +191,106 @@ func TestAPIInt64Fidelity(t *testing.T) {
 		}
 	})
 }
+
+// TestParseFieldArgsRejectsEmptyAndDuplicateKeys pins that -f '=v' and a
+// key given twice are usage errors, not {"": "v"} or a silent last-wins.
+func TestParseFieldArgsRejectsEmptyAndDuplicateKeys(t *testing.T) {
+	for _, fields := range [][]string{{"=v"}, {"name=a", "name=b"}} {
+		_, err := parseFieldArgs(fields)
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != "usage_invalid_field" || clierr.ExitCode(err) != 2 {
+			t.Errorf("%v: want usage_invalid_field, got %v", fields, err)
+		}
+	}
+	if _, err := parseFieldArgs([]string{"a=1", "b=x=y"}); err != nil {
+		t.Fatalf("valid fields rejected: %v", err)
+	}
+	// Query parameters may repeat (?tag=a&tag=b), but an empty key still fails.
+	var gotQuery string
+	if _, err := runAPI(t, func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		_, _ = w.Write([]byte(`{}`))
+	}, "GET", "/x", "-f", "tag=a", "-f", "tag=b"); err != nil || gotQuery != "tag=a&tag=b" {
+		t.Fatalf("repeated query keys: query=%q err=%v", gotQuery, err)
+	}
+	if _, err := runAPI(t, func(http.ResponseWriter, *http.Request) {
+		t.Error("server contacted")
+	}, "GET", "/x", "-f", "=v"); clierr.ExitCode(err) != 2 {
+		t.Fatalf("empty query key: want exit 2, got %v", err)
+	}
+}
+
+// TestAPIInputValidatesJSONBodies pins that a JSON --input must be an
+// object or array: invalid or empty input fails client-side (exit 2)
+// instead of reaching the API as a raw string or a body-less request.
+func TestAPIInputValidatesJSONBodies(t *testing.T) {
+	for _, body := range []string{"", "  \n", "{not json", `"a string"`, "42"} {
+		root := NewRootCmd()
+		root.SetOut(&bytes.Buffer{})
+		root.SetErr(&bytes.Buffer{})
+		root.SetIn(strings.NewReader(body))
+		root.SetArgs([]string{"api", "POST", "/search", "--input", "-", "--base-url", "http://127.0.0.1:1", "--api-key", "k"})
+		err := root.Execute()
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != "usage_invalid_body" || clierr.ExitCode(err) != 2 {
+			t.Errorf("body %q: want usage_invalid_body exit 2, got %v", body, err)
+		}
+	}
+	for ct, want := range map[string]bool{
+		"application/json": true, "Application/JSON; charset=utf-8": true,
+		"application/merge-patch+json": true, "text/plain": false, "application/x-ndjson": false,
+	} {
+		if got := isJSONContentType(ct); got != want {
+			t.Errorf("isJSONContentType(%q) = %v, want %v", ct, got, want)
+		}
+	}
+}
+
+// TestAPIPrintsBodyVerbatim pins that without --jq/--fields the response
+// body prints as the API sent it: key order kept, & < > not escaped, big
+// numbers untouched. jsonl compacts it; csv still decodes.
+func TestAPIPrintsBodyVerbatim(t *testing.T) {
+	body := `{"z":1,"a":"x&y<z>","n":4367602734065516544}`
+	handler := func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(body)) }
+	out, err := runAPI(t, handler, "GET", "/x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != body+"\n" {
+		t.Fatalf("json = %q, want the body verbatim", out)
+	}
+	out, err = runAPI(t, handler, "GET", "/x", "-o", "jsonl")
+	if err != nil || out != body+"\n" {
+		t.Fatalf("jsonl = %q (%v)", out, err)
+	}
+	out, err = runAPI(t, handler, "GET", "/x", "-o", "table")
+	if err != nil || !strings.HasPrefix(out, "{\n  \"z\": 1,\n  \"a\": \"x&y<z>\"") {
+		t.Fatalf("table = %q (%v)", out, err)
+	}
+	out, err = runAPI(t, handler, "GET", "/x", "-o", "csv")
+	if err != nil || out != "a,n,z\nx&y<z>,4367602734065516544,1\n" {
+		t.Fatalf("csv = %q (%v)", out, err)
+	}
+}
+
+// TestCommaListComplete pins the comma-list adapter used by --fields and
+// --users/--groups: the segment after the last comma is completed and the
+// typed prefix kept on each candidate.
+func TestCommaListComplete(t *testing.T) {
+	var gotToComplete string
+	single := func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		gotToComplete = toComplete
+		return []string{"host", "status\tdesc"}, cobra.ShellCompDirectiveNoFileComp
+	}
+	cands, _ := commaListComplete(single)(nil, nil, "path,st")
+	if gotToComplete != "st" {
+		t.Fatalf("inner completer got %q, want the last segment", gotToComplete)
+	}
+	if strings.Join(cands, "|") != "path,host|path,status\tdesc" {
+		t.Fatalf("cands = %q", cands)
+	}
+	cands, _ = commaListComplete(single)(nil, nil, "st")
+	if strings.Join(cands, "|") != "host|status\tdesc" {
+		t.Fatalf("no-comma cands = %q", cands)
+	}
+}

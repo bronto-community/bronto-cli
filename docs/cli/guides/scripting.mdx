@@ -17,7 +17,8 @@ You usually don't need `-o`. The CLI checks whether stdout is a terminal:
 | Command | At a terminal | Piped |
 | --- | --- | --- |
 | `search`, `tail`, `traces` | table | JSON Lines, one object per line |
-| everything else (`list`, `get`, `usage`, `config list`, ...) | table | one pretty-printed JSON document, usually an array |
+| lists (`list`, `usage`, `config list`, ...) | table | one pretty-printed JSON document, usually an array |
+| single records (`get`, `create`, `update`, ...) | indented JSON | one JSON document |
 
 Parse that JSON document as a whole. For one row per line from a non-streaming command,
 pass `-o jsonl`.
@@ -47,7 +48,9 @@ available field names instead of the data:
 ```console
 $ bronto datasets list --fields '?'
 collection
+created
 dataset
+last_activity
 log
 log_id
 metadata

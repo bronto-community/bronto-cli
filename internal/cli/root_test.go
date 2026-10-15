@@ -77,3 +77,83 @@ func TestUnknownCommandSuggests(t *testing.T) {
 		t.Fatalf("hint should suggest search: %q", ce.Hint)
 	}
 }
+
+// TestGroupCommandsRejectUnknownSubcommands pins that every group, not just
+// root, fails a stray or typo'd subcommand with usage_invalid_args (exit 2)
+// instead of printing help and exiting 0.
+func TestGroupCommandsRejectUnknownSubcommands(t *testing.T) {
+	for _, argv := range [][]string{
+		{"parsers", "get", "x"},
+		{"webhooks", "get", "x"},
+		{"datasets", "bogus"},
+		{"monitors", "downtimes", "get", "x"},
+		{"datasets", "parser", "bogus"},
+		{"auth", "bogus"},
+		{"config", "bogus"},
+	} {
+		root := NewRootCmd()
+		var out bytes.Buffer
+		root.SetOut(&out)
+		root.SetErr(&bytes.Buffer{})
+		root.SetArgs(argv)
+		err := root.Execute()
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != "usage_invalid_args" || clierr.ExitCode(err) != 2 {
+			t.Errorf("%v: want usage_invalid_args exit 2, got %v", argv, err)
+			continue
+		}
+		if out.Len() != 0 {
+			t.Errorf("%v: printed help on stdout: %q", argv, out.String())
+		}
+	}
+}
+
+// TestBareGroupPrintsHelp pins the other half: a bare group still shows its
+// help and exits 0, without a "[flags]" usage line for the group itself.
+func TestBareGroupPrintsHelp(t *testing.T) {
+	root := NewRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"monitors"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("bare group returned error: %v", err)
+	}
+	if !strings.Contains(out.String(), "bronto monitors [command]") {
+		t.Fatalf("bare group output missing usage: %q", out.String())
+	}
+	if strings.Contains(out.String(), "bronto monitors [flags]") {
+		t.Fatalf("help-only group shows a runnable usage line: %q", out.String())
+	}
+}
+
+// TestFlagGroupErrorsAreUsageErrors pins that cobra's flag-group errors
+// (mutually exclusive, required together, one required) exit 2 like
+// required-flag errors do, instead of unknown_error exit 1.
+func TestFlagGroupErrorsAreUsageErrors(t *testing.T) {
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	argv := []string{"traces", "shape", "--any-span", "--entry"}
+	root.SetArgs(argv)
+	err := Execute(t.Context(), root, argv)
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "usage_conflicting_flags" || clierr.ExitCode(err) != 2 {
+		t.Fatalf("want usage_conflicting_flags exit 2, got %v", err)
+	}
+
+	for msg, want := range map[string]string{
+		`required flag(s) "x" not set`:                                                          "usage_missing_flag",
+		"at least one of the flags in the group [a b] is required":                              "usage_missing_flag",
+		"if any flags in the group [a b] are set they must all be set; missing [b]":             "usage_missing_flag",
+		"if any flags in the group [a b] are set none of the others can be; [a b] were all set": "usage_conflicting_flags",
+	} {
+		err := WrapExecuteError(errors.New(msg))
+		if !errors.As(err, &ce) || ce.Code != want {
+			t.Errorf("%q: want %s, got %v", msg, want, err)
+		}
+	}
+	if err := WrapExecuteError(errors.New("boom")); errors.As(err, &ce) {
+		t.Errorf("unrelated error wrapped: %v", err)
+	}
+}

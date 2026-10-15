@@ -454,3 +454,44 @@ func TestCompleteFilterFieldFlag(t *testing.T) {
 		t.Fatalf("filter cands = %v", cands)
 	}
 }
+
+// TestCompleteListFlagAfterComma pins that a comma-separated --users value
+// completes the segment after the last comma, keeping the typed prefix on
+// each candidate so the shell's prefix match still applies.
+func TestCompleteListFlagAfterComma(t *testing.T) {
+	h := func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/users" {
+			t.Errorf("path = %s", r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`[{"email":"ada@example.com","id":"u-1"},{"email":"grace@example.com","id":"u-2"}]`))
+	}
+	cands, _ := runComplete(t, h, "groups", "add-members", "oncall", "--users", "ada@example.com,")
+	want := []string{"ada@example.com,ada@example.com\tu-1", "ada@example.com,grace@example.com\tu-2"}
+	if strings.Join(cands, "|") != strings.Join(want, "|") {
+		t.Fatalf("cands = %q, want %q", cands, want)
+	}
+	cands, _ = runComplete(t, h, "groups", "add-members", "oncall", "--users", "")
+	if len(cands) != 2 || !strings.HasPrefix(cands[0], "ada@example.com\t") {
+		t.Fatalf("no-comma cands = %q", cands)
+	}
+}
+
+// TestCompleteDuplicateNamesOfferIDs pins that names shared by several
+// resources complete as ids (with the name as description): the name
+// itself would fail as ambiguous once run.
+func TestCompleteDuplicateNamesOfferIDs(t *testing.T) {
+	h := func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`[{"name":"dup","id":"aaaa1111-0000-0000-0000-000000000001"},
+			{"name":"dup","id":"aaaa1111-0000-0000-0000-000000000002"},
+			{"name":"cpu","id":"aaaa1111-0000-0000-0000-000000000003"}]`))
+	}
+	cands, _ := runComplete(t, h, "monitors", "get", "")
+	want := []string{
+		"aaaa1111-0000-0000-0000-000000000001\tdup",
+		"aaaa1111-0000-0000-0000-000000000002\tdup",
+		"cpu\taaaa1111-0000-0000-0000-000000000003",
+	}
+	if strings.Join(cands, "|") != strings.Join(want, "|") {
+		t.Fatalf("cands = %q, want %q", cands, want)
+	}
+}
