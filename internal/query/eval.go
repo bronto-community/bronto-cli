@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"math/big"
 	"regexp"
 	"strings"
 
@@ -118,18 +119,26 @@ func (m *Matcher) Match(ev map[string]any) bool {
 func (m *Matcher) eval(n Node, ev map[string]any) tri {
 	switch t := n.(type) {
 	case Binary:
-		l, r := m.eval(t.Left, ev), m.eval(t.Right, ev)
+		// FALSE AND x and TRUE OR x are decided by the left side alone, so
+		// the right side (often a regex) only runs when it matters.
+		l := m.eval(t.Left, ev)
 		if t.Op == "AND" {
-			switch {
-			case l == triFalse || r == triFalse:
+			if l == triFalse {
+				return triFalse
+			}
+			switch r := m.eval(t.Right, ev); {
+			case r == triFalse:
 				return triFalse
 			case l == triTrue && r == triTrue:
 				return triTrue
 			}
 			return triUnknown
 		}
-		switch {
-		case l == triTrue || r == triTrue:
+		if l == triTrue {
+			return triTrue
+		}
+		switch r := m.eval(t.Right, ev); {
+		case r == triTrue:
 			return triTrue
 		case l == triFalse && r == triFalse:
 			return triFalse
@@ -256,7 +265,9 @@ func resolve(l Literal, ev map[string]any) (any, bool) {
 		v, ok := ev[l.Text()]
 		return v, ok && v != nil
 	case l.IsNum:
-		return l.Num, true
+		// The literal as written, not l.Num: a float64 would round
+		// integers above 2^53 (see compareValues).
+		return json.Number(l.Raw), true
 	}
 	return l.Text(), true
 }
@@ -277,17 +288,55 @@ func compareValues(a, b any) (int, bool) {
 	fb, nb := valueNumber(b)
 	switch {
 	case na && nb:
+		// Rounding to float64 is monotonic, so unequal floats order the
+		// exact values too. Equal floats may hide distinct textual numbers
+		// (9007199254740993 vs …992): compare those exactly.
 		switch {
 		case fa < fb:
 			return -1, true
 		case fa > fb:
 			return 1, true
 		}
+		if ra, ok := exactNumber(a); ok {
+			if rb, ok := exactNumber(b); ok {
+				return ra.Cmp(rb), true
+			}
+		}
 		return 0, true
 	case isNumberValue(a) || isNumberValue(b):
 		return 0, false
 	}
 	return strings.Compare(valueString(a), valueString(b)), true
+}
+
+// exactNumber returns v's exact value as a rational: textual numbers
+// (strings, json.Number) are parsed without rounding, typed numbers are
+// already exact.
+func exactNumber(v any) (*big.Rat, bool) {
+	var s string
+	switch t := v.(type) {
+	case string:
+		s = t
+	case json.Number:
+		s = string(t)
+	}
+	if s != "" {
+		// Plain decimals only: an exponent like 1e-999999999 would make
+		// big.Rat materialize an enormous power of ten.
+		if strings.ContainsAny(s, "eEpPxX") {
+			return nil, false
+		}
+		return new(big.Rat).SetString(s)
+	}
+	f, ok := coerce.Number(v)
+	if !ok {
+		return nil, false
+	}
+	r := new(big.Rat)
+	if r.SetFloat64(f) == nil {
+		return nil, false
+	}
+	return r, true
 }
 
 // isNumberValue reports whether v is a typed number rather than text.

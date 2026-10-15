@@ -124,7 +124,7 @@ func newQueryCheckCmd() *cobra.Command {
 				return p.PrintJSON(map[string]any{"valid": true, "fields": fs, "warnings": ws})
 			}
 			for _, w := range warnings {
-				_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "warning: "+w)
+				app.Notef("warning: %s\n", w)
 			}
 			msg := "✓ valid"
 			if len(fields) > 0 {

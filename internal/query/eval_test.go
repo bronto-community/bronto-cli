@@ -188,6 +188,56 @@ func TestMatcherFreeTextWithoutRawIsUnknown(t *testing.T) {
 	}
 }
 
+// TestMatcherLargeIntegersStayExact: 2^53+1 and 2^53 round to the same
+// float64, but they are different ids.
+func TestMatcherLargeIntegersStayExact(t *testing.T) {
+	for _, id := range []any{"9007199254740993", json.Number("9007199254740993")} {
+		ev := map[string]any{"id": id}
+		for q, want := range map[string]bool{
+			"id = '9007199254740992'":               false,
+			"id = 9007199254740992":                 false,
+			"id = '9007199254740993'":               true,
+			"id = 9007199254740993":                 true,
+			"id != 9007199254740992":                true,
+			"id IN (9007199254740992, 1)":           false,
+			"id NOT IN ('9007199254740992')":        true,
+			"id > 9007199254740992":                 true,
+			"id < 9007199254740994":                 true,
+			"id >= '9007199254740994'":              false,
+			"id = 9007199254740993.0":               true,
+			"id = 9007199254740993.000000000000001": false,
+		} {
+			if got := mustMatcher(t, q).Match(ev); got != want {
+				t.Errorf("id=%#v: %q = %v, want %v", id, q, got, want)
+			}
+		}
+	}
+}
+
+// countingValue counts how often the matcher reads its string form.
+type countingValue struct{ n *int }
+
+func (c countingValue) String() string { *c.n++; return "x" }
+
+// TestMatcherShortCircuits: FALSE AND x and TRUE OR x must not evaluate
+// x (typically the expensive regex side).
+func TestMatcherShortCircuits(t *testing.T) {
+	for q, want := range map[string]int{
+		"status = 500 AND msg ~ 'x'":     0,
+		"status = 200 OR msg ~ 'x'":      0,
+		"status = 200 AND msg ~ 'x'":     1,
+		"status = 500 OR msg ~ 'x'":      1,
+		"missing = 1 AND msg ~ 'x'":      1, // UNKNOWN AND x still needs x
+		"NOT status = 200 AND msg ~ 'x'": 0,
+	} {
+		n := 0
+		mustMatcher(t, q).Match(map[string]any{"status": 200, "msg": countingValue{&n}})
+		if n != want {
+			t.Errorf("%q evaluated the right side %d times, want %d", q, n, want)
+		}
+	}
+}
+
 func TestMatcherNaNStringsCompareAsText(t *testing.T) {
 	ev := map[string]any{"v": "nan"}
 	if !mustMatcher(t, "v = 'nan'").Match(ev) {

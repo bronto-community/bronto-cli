@@ -67,6 +67,17 @@ func TestQueryCheckJSON(t *testing.T) {
 	}
 }
 
+func TestQueryCheckQuietSilencesWarnings(t *testing.T) {
+	_, stderr, err := runQueryCheck(t, "", "level = error", "-o", "table")
+	if err != nil || !strings.Contains(stderr, "warning: ") {
+		t.Fatalf("without --quiet the warning must print: stderr = %q, err = %v", stderr, err)
+	}
+	out, stderr, err := runQueryCheck(t, "", "level = error", "-o", "table", "--quiet")
+	if err != nil || stderr != "" || !strings.Contains(out, "✓ valid") {
+		t.Fatalf("--quiet: out = %q, stderr = %q, err = %v", out, stderr, err)
+	}
+}
+
 func TestQueryCheckJQ(t *testing.T) {
 	out, _, err := runQueryCheck(t, "", "message LIKE '%fail%'", "-o", "json", "--jq", ".valid")
 	if err != nil || strings.TrimSpace(out) != "true" {
