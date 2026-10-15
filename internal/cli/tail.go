@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
+
 	"github.com/spf13/cobra"
 
 	"github.com/bronto-community/bronto-cli/internal/bronto"
@@ -259,7 +261,7 @@ func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, 
 		vals := make([]string, len(fields))
 		for i, f := range fields {
 			if v, ok := ev[f]; ok && v != nil {
-				vals[i] = fmt.Sprint(v)
+				vals[i] = termsafe.Line(fmt.Sprint(v))
 			} else {
 				vals[i] = "-"
 			}
@@ -273,14 +275,17 @@ func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, 
 		return line
 	}
 
-	ts := fmt.Sprint(ev["@time"])
+	// Log data is attacker-influenced: escape controls before adding our
+	// own colors. raw keeps its newlines (stack traces stay readable).
+	raw = termsafe.Text(raw)
+	ts := termsafe.Line(fmt.Sprint(ev["@time"]))
 	status := ""
 	if s, ok := ev["@status"]; ok && s != nil {
-		status = fmt.Sprint(s)
+		status = termsafe.Line(fmt.Sprint(s))
 	}
 	origin := ""
 	if o, ok := ev["@origin"]; ok && o != nil {
-		origin = fmt.Sprint(o)
+		origin = termsafe.Line(fmt.Sprint(o))
 	}
 	if color {
 		for _, re := range highlights {

@@ -10,6 +10,8 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
+
 	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/output"
@@ -178,7 +180,7 @@ func renderAggFrame(rows []map[string]any, selects, groups []string, now time.Ti
 	_, _ = fmt.Fprintln(tw, strings.Join(cols, "\t"))
 	for _, r := range rows {
 		vals := make([]string, 0, len(selects)+2)
-		vals = append(vals, fmt.Sprint(r["group"]))
+		vals = append(vals, termsafe.Line(fmt.Sprint(r["group"])))
 		for _, s := range selects {
 			vals = append(vals, formatAggValue(toNumber(r[s])))
 		}

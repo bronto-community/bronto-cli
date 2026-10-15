@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
+
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
@@ -245,13 +247,13 @@ func (s *replSession) loop(t replTerm) error {
 func (s *replSession) reportErr(err error) {
 	var ce *clierr.Error
 	if errors.As(err, &ce) {
-		_, _ = fmt.Fprintf(s.app.Stderr, "Error: %s\n", ce.Message)
+		_, _ = fmt.Fprintf(s.app.Stderr, "Error: %s\n", termsafe.Text(ce.Message))
 		if ce.Hint != "" {
-			_, _ = fmt.Fprintf(s.app.Stderr, "Hint: %s\n", ce.Hint)
+			_, _ = fmt.Fprintf(s.app.Stderr, "Hint: %s\n", termsafe.Text(ce.Hint))
 		}
 		return
 	}
-	_, _ = fmt.Fprintf(s.app.Stderr, "Error: %v\n", err)
+	_, _ = fmt.Fprintf(s.app.Stderr, "Error: %s\n", termsafe.Text(err.Error()))
 }
 
 func (s *replSession) meta(line string) (quit bool, err error) {
@@ -353,7 +355,7 @@ func (s *replSession) showFields() error {
 		return nil
 	}
 	for _, r := range rows {
-		_, _ = fmt.Fprintln(s.app.Stdout, r["key"])
+		_, _ = fmt.Fprintln(s.app.Stdout, termsafe.Line(fmt.Sprint(r["key"])))
 	}
 	return nil
 }
@@ -437,11 +439,11 @@ func renderReplLine(ev map[string]any, color bool) string {
 	}
 	status := ""
 	if v, ok := ev["@status"]; ok && v != nil {
-		status = fmt.Sprint(v)
+		status = termsafe.Line(fmt.Sprint(v))
 	}
 	raw := ""
 	if v, ok := ev["@raw"]; ok && v != nil {
-		raw = fmt.Sprint(v)
+		raw = termsafe.Text(fmt.Sprint(v))
 	}
 	if r := []rune(raw); len(r) > replRawCap {
 		raw = string(r[:replRawCap-1]) + "…"
