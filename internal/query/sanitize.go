@@ -54,10 +54,10 @@ func Sanitize(input string) (string, bool) {
 		if i+1 == len(toks) {
 			return false
 		}
-		switch n := toks[i+1]; {
-		case n.kind == "op":
+		switch n := toks[i+1]; n.kind {
+		case "op":
 			return true
-		case n.kind == "not":
+		case "not":
 			return i+2 < len(toks) && binaryKeywords[kw(toks[i+2])]
 		default:
 			return binaryKeywords[kw(n)] || kw(n) == "IS"
