@@ -88,7 +88,7 @@ func newConfigCmd() *cobra.Command {
 			if err := config.SetUserValue(dir, app.Config.Profile(), args[0], args[1]); err != nil {
 				return err
 			}
-			_, _ = fmt.Fprintf(app.Stderr, "Set %s in profile %q\n", args[0], profileOrDefault(app.Config.Profile()))
+			app.Notef("Set %s in profile %q\n", args[0], profileOrDefault(app.Config.Profile()))
 			return nil
 		},
 	}

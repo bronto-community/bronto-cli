@@ -14,5 +14,15 @@
       "previous_status": "ALERT",
       "message": "count(*) = 0 <= 5"
     }
+  ],
+  "groups_history": [
+    {
+      "monitor_id": "a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01",
+      "group_id": "",
+      "history": [
+        {"time": 1784452890000, "status": "ALERT"},
+        {"time": 1784453160000, "status": "OK"}
+      ]
+    }
   ]
 }

@@ -144,7 +144,8 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 #### Examples
 
 ```sh
-bronto monitors downtimes create -f name=<name>
+bronto monitors downtimes create -f name=<name> -f description=<description> -f 'from=["<monitor-id>"]' \
+    -f 'static_time_range={"from":<start-ms>,"to":<end-ms>}'
 bronto monitors downtimes create --input body.json
 ```
 
@@ -206,7 +207,8 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 #### Examples
 
 ```sh
-bronto monitors downtimes update <id> -f name=<name>
+bronto monitors downtimes update <id> -f name=<name> -f description=<description> -f 'from=["<monitor-id>"]' \
+    -f 'static_time_range={"from":<start-ms>,"to":<end-ms>}'
 bronto monitors downtimes update <id> --input body.json
 ```
 
@@ -345,7 +347,7 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 #### Examples
 
 ```sh
-bronto monitors templates create -f name=<name> -f 'window=Last 20 minutes' -f threshold=1000 \
+bronto monitors templates create -f name=<name> -f 'window=Last 20 minutes' -f 'threshold="1000"' \
     -f comparison_operator=ABOVE -f 'metric=<json>' -f 'this_template_tags=<json>'
 bronto monitors templates create --input body.json
 ```

@@ -48,7 +48,7 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 #### Examples
 
 ```sh
-bronto saved-searches create -f name=<name>
+bronto saved-searches create -f name=<name> -f 'log_ids=["<dataset-id>"]' -f 'search_details={"from":"<dataset-id>","where":"","time_range":"Last 15 minutes"}'
 bronto saved-searches create --input body.json
 ```
 
@@ -126,6 +126,6 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 #### Examples
 
 ```sh
-bronto saved-searches update <id> -f name=<name>
+bronto saved-searches update <id> -f name=<name> -f 'log_ids=["<dataset-id>"]' -f 'search_details={"from":"<dataset-id>","where":"","time_range":"Last 15 minutes"}'
 bronto saved-searches update <id> --input body.json
 ```

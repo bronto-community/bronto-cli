@@ -80,10 +80,18 @@ groups by id or name with `--groups`. Each flag takes a comma-separated list or 
 repeated.
 
 ```sh
-bronto groups create -f name=sre
+bronto groups create -f name=sre -f description="Site reliability"
 bronto groups add-members oncall --users ada@example.com,grace@example.com
 bronto groups add-members oncall --groups sre
 bronto groups remove-members oncall --users grace@example.com
+```
+
+`groups update` replaces the group's name and description: the API clears whichever one
+you leave out. Pass both, repeating the current value of the one you keep. The CLI refuses
+an update without both:
+
+```sh
+bronto groups update oncall -f name=oncall -f description="Paged by every prod monitor"
 ```
 
 `--dry-run` resolves the group and the users and prints the request it would send,
@@ -148,6 +156,8 @@ an array.
 ## API keys
 
 API keys have `bronto api-keys list`, `create`, `update`, and `delete`.
-`list` masks the key values unless you pass `--reveal`. See
+`create` prints the full key, including in the JSON it prints when piped, and is the only
+time you can see the secret part: store it right away. `list` shows only the key's id
+part, masked unless you pass `--reveal`. See
 [API Keys on docs.bronto.io](https://docs.bronto.io/Account-Management/API-Keys) for the
 roles a key can have.

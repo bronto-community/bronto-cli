@@ -63,22 +63,22 @@ var flagClasses = map[string]argClass{
 	"since":         argValue,
 	"storage-class": argValue,
 	"to":            argValue, // RFC3339 time
-	"widget-ids":    argValue,
 	"window":        argValue,
 
-	"bucket":    argName, // S3 bucket name
-	"download":  argName, // local path
-	"exclude":   argName, // regex
-	"groups":    argName, // ids or names
-	"highlight": argName, // regex
-	"include":   argName, // regex
-	"input":     argName, // local path
-	"jq":        argName,
-	"local":     argName, // local path
-	"message":   argName,
-	"prefix":    argName, // S3 key prefix
-	"select":    argName, // expressions can hold literals
-	"users":     argName, // ids or emails
+	"bucket":     argName, // S3 bucket name
+	"download":   argName, // local path
+	"exclude":    argName, // regex
+	"groups":     argName, // ids or names
+	"highlight":  argName, // regex
+	"include":    argName, // regex
+	"input":      argName, // local path
+	"jq":         argName,
+	"local":      argName, // local path
+	"message":    argName,
+	"prefix":     argName, // S3 key prefix
+	"select":     argName, // expressions can hold literals
+	"users":      argName, // ids or emails
+	"widget-ids": argName, // ids or names
 
 	"from-expr": argQuery,
 	"where":     argQuery,
@@ -110,7 +110,6 @@ var argPlaceholders = map[string]argClass{
 	"profile":        argValue,
 	"trace-id":       argValue,
 	"widget":         argValue,
-	"widget-id":      argValue,
 
 	"message":  argName,
 	"question": argName,

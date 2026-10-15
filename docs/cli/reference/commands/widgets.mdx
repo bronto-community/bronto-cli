@@ -43,7 +43,7 @@ bronto widgets attach-widgets <widget> --widget-ids <id,...> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--widget-ids` |  | strings |  | widget IDs to attach (comma-separated or repeated) |
+| `--widget-ids` |  | strings |  | widget IDs or names to attach (comma-separated or repeated) |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
 
@@ -136,7 +136,7 @@ bronto widgets list
 Remove a widget from a widget
 
 ```sh
-bronto widgets remove-widget <widget> <widget-id> [flags]
+bronto widgets remove-widget <widget> <widget> [flags]
 ```
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
@@ -144,7 +144,7 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 #### Examples
 
 ```sh
-bronto widgets remove-widget <widget> <widget-id>
+bronto widgets remove-widget <widget> <widget>
 ```
 
 ## bronto widgets update
