@@ -104,7 +104,9 @@ func NewRootCmd() *cobra.Command {
 		case "metrics":
 			rc = newResourceCmd(d, newMetricTopKeysCmd())
 		case "datasets":
-			rc = newResourceCmd(d, newDatasetParserCmd())
+			rc = newResourceCmd(d, newDatasetParserCmd(), newDatasetLinkedCmd("monitors"), newDatasetLinkedCmd("dashboards"))
+		case "forward-configs":
+			rc = newResourceCmd(d, newForwardConfigTestCmd())
 		default:
 			rc = newResourceCmd(d)
 		}

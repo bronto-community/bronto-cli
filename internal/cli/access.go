@@ -15,8 +15,9 @@ import (
 
 // Hand-written sub-verbs for the #122 endpoints that don't fit the
 // list/get/create/update/delete factory: group membership changes, a
-// user's groups, monitor notifications, metric top-keys and dataset parser
-// assignment. Each resolves its parent by id or unique name, supports
+// user's groups, monitor notifications, metric top-keys, dataset parser
+// assignment, and (#123) the monitors and dashboards that use a dataset.
+// Each resolves its parent by id or unique name, supports
 // --dry-run for mutations, and confirms 204s through App.Notef.
 
 // newGroupMembershipCmd builds "groups add-members|remove-members <group>":
@@ -329,6 +330,37 @@ func newDatasetParserCmd() *cobra.Command {
 		},
 	})
 	return parent
+}
+
+// newDatasetLinkedCmd builds "datasets monitors|dashboards <dataset>": the
+// monitors or dashboards that query a dataset (GET /logs/{id}/<kind>),
+// printed like "bronto <kind> list". The spec documents a bare array; the
+// live API wraps it as {"<kind>": [...]} (2026-10-15). rowsFromPayload
+// takes either.
+func newDatasetLinkedCmd(kind string) *cobra.Command {
+	return &cobra.Command{
+		Use:               kind + " <dataset>",
+		Short:             "List the " + kind + " that use a dataset",
+		Example:           "  bronto datasets " + kind + " prod/checkout-service",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeDatasets,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			app, err := NewApp(cmd)
+			if err != nil {
+				return err
+			}
+			id, err := resolveKindRef(cmd.Context(), app, "datasets", args[0])
+			if err != nil {
+				return err
+			}
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, "/logs/"+url.PathEscape(id)+"/"+kind, nil)
+			if err != nil {
+				return err
+			}
+			desc, _ := descByName(kind)
+			return printResourceList(cmd, app, desc, payload)
+		},
+	}
 }
 
 // completeDatasetThenParser completes "parser set"'s positionals: a

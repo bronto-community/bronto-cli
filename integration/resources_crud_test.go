@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestResourcesCRUD exercises create/list/get/update/delete (per resource
@@ -80,6 +81,16 @@ func testMonitorCRUD(t *testing.T, r *Runner, logID string) {
 	// full, valid body rather than a partial patch.
 	mustRunJSONObject(t, r, "monitors", "update", id, "--input",
 		writeBodyFile(t, monitorBody(name, logID, 2_000_000)))
+
+	// The monitor queries logID, so it shows up under that dataset.
+	PollUntil(t, 30*time.Second, 2*time.Second, func() (bool, error) {
+		for _, row := range mustRunJSONArray(t, r, "datasets", "monitors", logID, "-o", "json") {
+			if row["id"] == id {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
 
 	mustExitZero(t, r, "monitors", "events", id)
 	mustExitZero(t, r, "monitors", "notifications", id, "--since", "1h")

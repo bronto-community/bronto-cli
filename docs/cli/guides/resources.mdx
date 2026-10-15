@@ -178,6 +178,8 @@ A few resources have extra verbs:
 | `bronto users groups`, `bronto users deactivate`, `bronto users reactivate`, `bronto users resend-invite` | user lifecycle | [Access management](/cli/guides/access-management) |
 | `bronto datasets parser get`, `bronto datasets parser set`, `bronto datasets parser unset` | assign a parser to a dataset | below |
 | `bronto metrics top-keys` | attribute keys seen on a metric | below |
+| `bronto datasets monitors`, `bronto datasets dashboards` | what uses a dataset | below |
+| `bronto forward-configs test` | check that Bronto can write to a forwarding destination | below |
 
 ### Assign a parser to a dataset
 
@@ -206,6 +208,37 @@ metrics counterpart of `bronto fields`:
 ```sh
 bronto metrics top-keys system.cpu.utilization --since 1h
 ```
+
+### What uses a dataset
+
+`bronto datasets monitors` and `bronto datasets dashboards` list the monitors and
+dashboards that query a dataset. Check them before you delete or rename the dataset. They
+print the same columns as `bronto monitors list` and `bronto dashboards list`:
+
+{/* test: tty */}
+```console
+$ bronto datasets monitors prod/checkout-service
+NAME                       WINDOW  THRESHOLD  CREATED     ID
+High 5xx rate on checkout  5m      5          2026-05-04  a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01
+$ bronto datasets dashboards prod/checkout-service
+NAME               DESCRIPTION                                                 WIDGETS_COUNT  CREATED     ID
+Checkout overview  Request rate, 5xx errors and latency for the checkout flow  3              2026-05-04  d4c6e2b5-7e91-42b4-af50-1b8e6d3c4f04
+```
+
+### Test a forwarding destination
+
+[Log forwarding](https://docs.bronto.io/core-features/log-forwarding) copies events to an
+S3 bucket. `bronto forward-configs test` has Bronto write and delete a test object there,
+so you can check the bucket policy before you create a forward config, or after you change
+it. Name an existing forward config, or pass `--bucket` (with `--prefix` and
+`--storage-class` if needed). Flags override the saved config's fields:
+
+```sh
+bronto forward-configs test --bucket my-archive-bucket --prefix bronto/
+bronto forward-configs test <forward-config>
+```
+
+If Bronto can't write to the bucket, the command exits 1 with `forward_destination_failed`.
 
 ## API keys
 

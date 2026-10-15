@@ -574,35 +574,42 @@ func newResourceListCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			rows := rowsFromPayload(payload, desc.ListRowKeys...)
-			format, err := app.DetectFormat(false)
-			if err != nil {
-				return err
-			}
-			// Mask secret material in ALL formats (json/jsonl are the piped
-			// default) unless the user explicitly asked to reveal it.
-			if len(desc.SecretKeys) > 0 {
-				if reveal, _ := cmd.Flags().GetBool("reveal"); !reveal {
-					maskSecretRows(rows, desc.SecretKeys)
-				}
-			}
-			if format == output.FormatTable || format == output.FormatCSV {
-				rows = resourceListPolish(rows, format)
-				if desc.ListTransform != nil {
-					rows = desc.ListTransform(rows, format)
-				}
-			}
-			p, err := app.PrinterFor(format)
-			if err != nil {
-				return err
-			}
-			return p.PrintRows(columnsFor(desc, rows), rows)
+			return printResourceList(cmd, app, desc, payload)
 		},
 	}
 	if len(desc.SecretKeys) > 0 {
 		cmd.Flags().Bool("reveal", false, "show full secret values instead of masking them")
 	}
 	return cmd
+}
+
+// printResourceList prints a list payload of desc's kind the way
+// "bronto <resource> list" does, so a filtered list from another endpoint
+// (datasets monitors) renders like the resource's own list.
+func printResourceList(cmd *cobra.Command, app *App, desc resourceDesc, payload any) error {
+	rows := rowsFromPayload(payload, desc.ListRowKeys...)
+	format, err := app.DetectFormat(false)
+	if err != nil {
+		return err
+	}
+	// Mask secret material in ALL formats (json/jsonl are the piped
+	// default) unless the user explicitly asked to reveal it.
+	if len(desc.SecretKeys) > 0 {
+		if reveal, _ := cmd.Flags().GetBool("reveal"); !reveal {
+			maskSecretRows(rows, desc.SecretKeys)
+		}
+	}
+	if format == output.FormatTable || format == output.FormatCSV {
+		rows = resourceListPolish(rows, format)
+		if desc.ListTransform != nil {
+			rows = desc.ListTransform(rows, format)
+		}
+	}
+	p, err := app.PrinterFor(format)
+	if err != nil {
+		return err
+	}
+	return p.PrintRows(columnsFor(desc, rows), rows)
 }
 
 // maskSecretRows masks the given secret-bearing keys in every row using the

@@ -47,6 +47,12 @@ datasets:
   api: https://docs.bronto.io/api-reference/datasets/retrieve-a-list-of-datasets
 datasets parser:
   docs: https://docs.bronto.io/core-features/custom-parser
+datasets monitors:
+  docs: https://docs.bronto.io/core-features/monitors
+  api: https://docs.bronto.io/api-reference/monitors/list-monitors-associated-with-a-log
+datasets dashboards:
+  docs: https://docs.bronto.io/Search-and-Visualize/Dashboards
+  api: https://docs.bronto.io/api-reference/dashboards/list-dashboards-associated-with-a-log
 parsers:
   docs: https://docs.bronto.io/core-features/custom-parser
 monitors:
@@ -84,6 +90,9 @@ encryption-keys:
 forward-configs:
   docs: https://docs.bronto.io/core-features/log-forwarding
   api: https://docs.bronto.io/api-reference/forward/retrieve-forward-configs
+forward-configs test:
+  docs: https://docs.bronto.io/core-features/log-forwarding
+  api: https://docs.bronto.io/api-reference/forward/test-access-to-the-destination
 slack:
   docs: https://docs.bronto.io/integrations/slack
   api: https://docs.bronto.io/api-reference/integrations/get-all-slack-integration-resources-for-an-organisation

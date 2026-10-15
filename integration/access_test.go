@@ -194,3 +194,29 @@ func TestDatasetParserLive(t *testing.T) {
 
 	mustExitZero(t, r, "datasets", "delete", ref, "--yes")
 }
+
+// TestForwardConfigTestUnreachable: the CI account has no S3 bucket Bronto
+// may write to, so a made-up bucket must fail with a non-zero exit and the
+// forward_destination_failed code (the API answers 200 {"result": false}).
+func TestForwardConfigTestUnreachable(t *testing.T) {
+	key := skipIfNoCreds(t)
+	r := NewRunner(t, key)
+	res, err := r.Run(t.Context(), "", "forward-configs", "test", "--bucket", resourceName("no-such-bucket"), "-o", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.ExitCode != 1 || !strings.Contains(res.Stderr, "forward_destination_failed") {
+		t.Fatalf("exit %d, want 1 with forward_destination_failed\nstderr: %s", res.ExitCode, res.Stderr)
+	}
+}
+
+// TestDatasetLinkedListsShape: datasets monitors|dashboards print a JSON
+// array for a real dataset. testMonitorCRUD checks a monitor appears.
+func TestDatasetLinkedListsShape(t *testing.T) {
+	key := skipIfNoCreds(t)
+	r := NewRunner(t, key)
+	logID := firstDatasetLogID(t, r)
+	for _, kind := range []string{"monitors", "dashboards"} {
+		mustRunJSONArray(t, r, "datasets", kind, logID, "-o", "json")
+	}
+}

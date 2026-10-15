@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -18,6 +19,7 @@ const (
 	aParser = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000ab"
 	aMon    = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000ac"
 	aMetric = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000ad"
+	aFwd    = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000ae"
 )
 
 // accessStub answers the list endpoints name resolution uses and records
@@ -50,10 +52,18 @@ func (s *accessStub) handler() http.HandlerFunc {
 			_, _ = w.Write([]byte(`{"roles":[{"role_id":"Admin","display_name":"Administrator Role"}]}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/metrics":
 			_, _ = w.Write([]byte(`{"metrics":[{"metric_id":"` + aMetric + `","metric_name":"system.cpu"}]}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/forward-configs":
+			_, _ = w.Write([]byte(`{"forward_configs":[{"id":"` + aFwd + `","name":"archive",` +
+				`"destination":{"destination_type":"S3","bucket":"archive-bucket","prefix":"bronto/"}}]}`))
 		default:
 			b, _ := io.ReadAll(r.Body)
 			s.method, s.path, s.query, s.body = r.Method, r.URL.Path, r.URL.RawQuery, string(b)
 			switch {
+			case r.URL.Path == "/forward-configs/test-destination":
+				// Only the bucket named "denied" is unreachable.
+				_, _ = w.Write([]byte(`{"result":` + strconv.FormatBool(!strings.Contains(string(b), `"denied"`)) + `}`))
+			case strings.HasPrefix(r.URL.Path, "/logs/"): // datasets monitors, live shape: wrapped
+				_, _ = w.Write([]byte(`{"monitors":[{"id":"` + aMon + `","name":"High 5xx","window":"5m"}]}`))
 			case strings.HasSuffix(r.URL.Path, "/groups"): // users groups, live shape
 				_, _ = w.Write([]byte(`{"groups":["` + aGroup + `","aaaaaaaa-aaaa-aaaa-aaaa-0000000000ff"]}`))
 			case r.Method == http.MethodGet:
@@ -270,4 +280,93 @@ func TestRoleUpdateHintPointsAtPermissionsList(t *testing.T) {
 	if !strings.Contains(ce.Hint, "bronto permissions list") || strings.Contains(ce.Hint, "roles get") {
 		t.Fatalf("hint = %q", ce.Hint)
 	}
+}
+
+func TestDatasetMonitorsListsLikeMonitorsList(t *testing.T) {
+	var s accessStub
+	out, _, err := runResource(t, s.handler(), "", "datasets", "monitors", "default/nginx", "-o", "csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.method != http.MethodGet || s.path != "/logs/"+aDS+"/monitors" {
+		t.Fatalf("%s %s", s.method, s.path)
+	}
+	// The monitors list columns, not auto-derived ones.
+	if !strings.HasPrefix(out, "name,window,threshold,created,id\n") || !strings.Contains(out, "High 5xx,5m,") {
+		t.Fatalf("out = %q", out)
+	}
+}
+
+func TestDatasetDashboardsPath(t *testing.T) {
+	var s accessStub
+	if _, _, err := runResource(t, s.handler(), "", "datasets", "dashboards", aDS); err != nil {
+		t.Fatal(err)
+	}
+	if s.path != "/logs/"+aDS+"/dashboards" {
+		t.Fatalf("path = %s", s.path)
+	}
+}
+
+// A named forward config's destination is tested, with flags overriding
+// its fields.
+func TestForwardConfigTestUsesSavedDestination(t *testing.T) {
+	var s accessStub
+	_, stderr, err := runResource(t, s.handler(), "", "forward-configs", "test", "archive", "--prefix", "other/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"bucket":"archive-bucket","destination_type":"S3","prefix":"other/"}`
+	if s.method != http.MethodPost || s.path != "/forward-configs/test-destination" || s.body != want {
+		t.Fatalf("%s %s %s\nwant body %s", s.method, s.path, s.body, want)
+	}
+	if !strings.Contains(stderr, "Bronto can write to s3://archive-bucket/other.") {
+		t.Fatalf("stderr = %q", stderr)
+	}
+}
+
+// An explicitly empty --prefix clears the saved one.
+func TestForwardConfigTestEmptyPrefixClearsSaved(t *testing.T) {
+	var s accessStub
+	if _, _, err := runResource(t, s.handler(), "", "forward-configs", "test", "archive", "--prefix", ""); err != nil {
+		t.Fatal(err)
+	}
+	if want := `{"bucket":"archive-bucket","destination_type":"S3","prefix":""}`; s.body != want {
+		t.Fatalf("body = %s\nwant   %s", s.body, want)
+	}
+}
+
+func TestForwardConfigTestFailsWhenUnreachable(t *testing.T) {
+	var s accessStub
+	_, _, err := runResource(t, s.handler(), "", "forward-configs", "test", "--bucket", "denied")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "forward_destination_failed" || ce.ExitCode() != 1 {
+		t.Fatalf("err = %v", err)
+	}
+	if s.body != `{"bucket":"denied","destination_type":"S3"}` {
+		t.Fatalf("body = %s", s.body)
+	}
+}
+
+func TestForwardConfigTestNeedsDestination(t *testing.T) {
+	var s accessStub
+	_, _, err := runResource(t, s.handler(), "", "forward-configs", "test")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.ExitCode() != 2 {
+		t.Fatalf("err = %v", err)
+	}
+	if s.path != "" {
+		t.Fatalf("made a request: %s %s", s.method, s.path)
+	}
+}
+
+func TestForwardConfigTestDryRun(t *testing.T) {
+	var s accessStub
+	out, stderr, err := runResource(t, s.handler(), "", "forward-configs", "test", "--bucket", "b", "--dry-run", "-o", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.path != "" {
+		t.Fatalf("dry run made a request: %s %s", s.method, s.path)
+	}
+	decodePlan(t, out, stderr, "POST", "/forward-configs/test-destination")
 }

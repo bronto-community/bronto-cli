@@ -89,6 +89,7 @@ The common codes are below. Scripts should match on `code`.
 | `api_error` | 1 | any other API error status |
 | `query_unknown_field` | 1 | `bronto query check --strict` found unknown fields |
 | `monitor_check_failed` | 1 | `bronto monitors check` found problems |
+| `forward_destination_failed` | 1 | `bronto forward-configs test` found that Bronto can't write to the S3 destination |
 | `export_failed`, `export_wait_timeout` | 1 | an export job failed, or `--wait` gave up |
 | `payload_too_large` | 1 | an ingestion batch was over 10 MB |
 | `ask_llm_error` | 1 | the `bronto ask` endpoint failed or returned something unusable |

@@ -55,6 +55,11 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/datasets/{*}/parser", Command: "bronto datasets parser"},
 	// parser set resolves the parser name through the parsers list.
 	{Pattern: "/parsers", Command: "bronto datasets parser set"},
+	{Pattern: "/logs/{*}/monitors", Command: "bronto datasets monitors"},
+	{Pattern: "/logs/{*}/dashboards", Command: "bronto datasets dashboards"},
+	{Pattern: "/forward-configs/test-destination", Command: "bronto forward-configs test"},
+	// forward-configs test <name> reads the saved destination from the list.
+	{Pattern: "/forward-configs", Command: "bronto forward-configs test"},
 	{Pattern: "/users/{*}/deactivate", Command: "bronto users deactivate"},
 	{Pattern: "/users/{*}/reactivate", Command: "bronto users reactivate"},
 	{Pattern: "/users/{*}/resend-invite", Command: "bronto users resend-invite"},

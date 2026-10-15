@@ -44,27 +44,29 @@ var safeFlagTypes = map[string]bool{
 // TestTelemetryClassifiesEveryArg fails when a flag or positional argument
 // has no class, so a new flag is recorded only once someone has decided how.
 var flagClasses = map[string]argClass{
-	"by":           argValue,
-	"collection":   argValue,
-	"content-type": argValue,
-	"dataset":      argValue,
-	"direction":    argValue,
-	"fields":       argValue,
-	"from":         argValue, // RFC3339 time
-	"group-by":     argValue,
-	"kind":         argValue,
-	"operation":    argValue,
-	"order-by":     argValue,
-	"output":       argValue,
-	"profile":      argValue,
-	"region":       argValue,
-	"saved":        argValue,
-	"service":      argValue,
-	"since":        argValue,
-	"to":           argValue, // RFC3339 time
-	"widget-ids":   argValue,
-	"window":       argValue,
+	"by":            argValue,
+	"collection":    argValue,
+	"content-type":  argValue,
+	"dataset":       argValue,
+	"direction":     argValue,
+	"fields":        argValue,
+	"from":          argValue, // RFC3339 time
+	"group-by":      argValue,
+	"kind":          argValue,
+	"operation":     argValue,
+	"order-by":      argValue,
+	"output":        argValue,
+	"profile":       argValue,
+	"region":        argValue,
+	"saved":         argValue,
+	"service":       argValue,
+	"since":         argValue,
+	"storage-class": argValue,
+	"to":            argValue, // RFC3339 time
+	"widget-ids":    argValue,
+	"window":        argValue,
 
+	"bucket":    argName, // S3 bucket name
 	"download":  argName, // local path
 	"exclude":   argName, // regex
 	"groups":    argName, // ids or names
@@ -74,6 +76,7 @@ var flagClasses = map[string]argClass{
 	"jq":        argName,
 	"local":     argName, // local path
 	"message":   argName,
+	"prefix":    argName, // S3 key prefix
 	"select":    argName, // expressions can hold literals
 	"users":     argName, // ids or emails
 
@@ -94,19 +97,20 @@ var flagClasses = map[string]argClass{
 // argPlaceholders classifies positional arguments by the placeholder that
 // names them in a command's Use line, e.g. <id> or [query].
 var argPlaceholders = map[string]argClass{
-	"METHOD":      argValue,
-	"dashboard":   argValue,
-	"dataset":     argValue,
-	"group":       argValue,
-	"id":          argValue,
-	"key":         argValue,
-	"metric":      argValue,
-	"name-filter": argValue,
-	"parser":      argValue,
-	"profile":     argValue,
-	"trace-id":    argValue,
-	"widget":      argValue,
-	"widget-id":   argValue,
+	"METHOD":         argValue,
+	"dashboard":      argValue,
+	"dataset":        argValue,
+	"forward-config": argValue,
+	"group":          argValue,
+	"id":             argValue,
+	"key":            argValue,
+	"metric":         argValue,
+	"name-filter":    argValue,
+	"parser":         argValue,
+	"profile":        argValue,
+	"trace-id":       argValue,
+	"widget":         argValue,
+	"widget-id":      argValue,
 
 	"message":  argName,
 	"question": argName,
