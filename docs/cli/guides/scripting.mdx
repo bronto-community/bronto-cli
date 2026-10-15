@@ -17,7 +17,8 @@ You usually don't need `-o`. The CLI checks whether stdout is a terminal:
 | Command | At a terminal | Piped |
 | --- | --- | --- |
 | `search`, `tail`, `traces` | table | JSON Lines, one object per line |
-| everything else (`list`, `get`, `usage`, `config list`, ...) | table | one pretty-printed JSON document, usually an array |
+| lists (`list`, `usage`, `config list`, ...) | table | one pretty-printed JSON document, usually an array |
+| single records (`get`, `create`, `update`, ...) | indented JSON | one JSON document |
 
 Parse that JSON document as a whole. For one row per line from a non-streaming command,
 pass `-o jsonl`.
@@ -47,7 +48,9 @@ available field names instead of the data:
 ```console
 $ bronto datasets list --fields '?'
 collection
+created
 dataset
+last_activity
 log
 log_id
 metadata
@@ -166,6 +169,7 @@ it isn't, you get one line of JSON:
 | `3` | auth error (missing, invalid, or under-privileged key) |
 | `4` | not found |
 | `5` | rate limited or timed out: retry reads; after a timed-out write, check whether it landed first |
+| `130` | interrupted by Ctrl-C or SIGTERM |
 
 [Exit codes](/cli/reference/exit-codes) maps every error code to its exit status.
 

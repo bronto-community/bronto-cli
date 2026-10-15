@@ -224,6 +224,24 @@ func TestPrintJSONAppliesFieldFilter(t *testing.T) {
 	}
 }
 
+// get-style documents print pretty under -o json, like lists do; jsonl
+// and raw keep one compact line per document.
+func TestPrintJSONPrettyOnlyForJSON(t *testing.T) {
+	for format, want := range map[Format]string{
+		FormatJSON:  "{\n  \"a\": 1\n}\n",
+		FormatJSONL: "{\"a\":1}\n",
+		FormatRaw:   "{\"a\":1}\n",
+	} {
+		var buf bytes.Buffer
+		if err := NewPrinter(&buf, format).PrintJSON(map[string]any{"a": 1}); err != nil {
+			t.Fatal(err)
+		}
+		if buf.String() != want {
+			t.Errorf("%s: got %q, want %q", format, buf.String(), want)
+		}
+	}
+}
+
 func TestCompileJQInvalidExpressionIsUsageError(t *testing.T) {
 	if _, err := CompileJQ("this is not jq {{{"); err == nil {
 		t.Fatal("want error for invalid jq expression")
@@ -592,5 +610,107 @@ func TestPrintExpandedEmptyNotice(t *testing.T) {
 	}
 	if buf.Len() != 0 || !strings.Contains(note.String(), "No results.") {
 		t.Fatalf("stdout=%q notice=%q", buf.String(), note.String())
+	}
+}
+
+// TestPrintJSONAsCSV pins that a single-record document renders as CSV
+// (one row, sorted keys, nested values as compact JSON) instead of being
+// silently printed as JSON, and that a document without object rows is a
+// usage error.
+func TestPrintJSONAsCSV(t *testing.T) {
+	var buf bytes.Buffer
+	doc := map[string]any{"name": "cpu", "id": "m-1", "tags": map[string]any{"a": "x&y"}}
+	if err := NewPrinter(&buf, FormatCSV).PrintJSON(doc); err != nil {
+		t.Fatal(err)
+	}
+	if want := "id,name,tags\nm-1,cpu,\"{\"\"a\"\":\"\"x&y\"\"}\"\n"; buf.String() != want {
+		t.Fatalf("csv = %q, want %q", buf.String(), want)
+	}
+
+	buf.Reset()
+	p := NewPrinter(&buf, FormatCSV)
+	p.SetFieldFilter([]string{"name"})
+	if err := p.PrintJSON([]any{map[string]any{"name": "a", "id": 1}, map[string]any{"name": "b"}}); err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != "name\na\nb\n" {
+		t.Fatalf("csv with --fields = %q", buf.String())
+	}
+
+	if err := NewPrinter(&buf, FormatCSV).PrintJSON("scalar"); err == nil {
+		t.Fatal("want an error for a scalar document")
+	}
+}
+
+// TestJSONOutputDoesNotEscapeHTML pins that & < > print as-is in every JSON
+// path (json, jsonl, PrintJSON, nested table cells, --jq), not as &.
+func TestJSONOutputDoesNotEscapeHTML(t *testing.T) {
+	row := map[string]any{"q": "a < b && c > d", "n": map[string]any{"u": "x?a=1&b=2"}}
+	for _, f := range []Format{FormatJSON, FormatJSONL, FormatTable} {
+		var buf bytes.Buffer
+		p := NewPrinter(&buf, f)
+		if err := p.PrintRows([]string{"q", "n"}, []map[string]any{row}); err != nil {
+			t.Fatal(err)
+		}
+		if err := p.PrintJSON(row); err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(buf.String(), `\u00`) || !strings.Contains(buf.String(), "a < b && c > d") {
+			t.Errorf("%s: HTML-escaped output: %q", f, buf.String())
+		}
+	}
+	code, err := CompileJQ(".q")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetJQ(code)
+	if err := p.PrintJSON(row); err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != "\"a < b && c > d\"\n" {
+		t.Errorf("jq output = %q", buf.String())
+	}
+}
+
+// API data must not reach a terminal as live escape sequences; json/csv
+// stay byte-exact.
+func TestTableEscapesControlCharacters(t *testing.T) {
+	evil := []map[string]any{{"name": "ok\x1b]0;PWNED\a\x1b[2J", "multi\nline": "a\tb"}}
+	for _, render := range []func(*Printer) error{
+		func(p *Printer) error { return p.PrintRows([]string{"name", "multi\nline"}, evil) },
+		func(p *Printer) error { return p.PrintExpanded(evil, nil, false) },
+	} {
+		var buf bytes.Buffer
+		if err := render(NewPrinter(&buf, FormatTable)); err != nil {
+			t.Fatal(err)
+		}
+		out := buf.String()
+		if strings.ContainsAny(out, "\x1b\a") || !strings.Contains(out, `ok\x1b]0;PWNED\x07\x1b[2J`) || !strings.Contains(out, `a\tb`) {
+			t.Fatalf("control characters not escaped: %q", out)
+		}
+	}
+	var buf bytes.Buffer
+	if err := NewPrinter(&buf, FormatCSV).PrintRows([]string{"name"}, evil); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "ok\x1b]0;PWNED\a\x1b[2J") {
+		t.Fatalf("csv must stay byte-exact: %q", buf.String())
+	}
+}
+
+func TestFieldDiscoveryEscapesKeys(t *testing.T) {
+	var buf bytes.Buffer
+	p := NewPrinter(&buf, FormatJSON)
+	p.SetListFields(true)
+	if err := p.PrintRows(nil, []map[string]any{{"k\x1b]0;x\a": 1}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.PrintRow(nil, map[string]any{"s\x1b[2J": 1}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.ContainsAny(buf.String(), "\x1b\a") {
+		t.Fatalf("got %q", buf.String())
 	}
 }

@@ -37,10 +37,10 @@ bronto tail [query] [flags]
 | `--highlight` |  | stringArray |  | highlight regex matches in the output (repeatable) |
 | `--include` |  | stringArray |  | only show lines matching this regex (repeatable, ANDed) |
 | `--interval` |  | duration | `3s` | polling interval (min 1s) |
-| `--limit` | `-n` | int | `500` | max events per poll |
+| `--limit` | `-n` | int | `500` | max events per poll (1-10000) |
 | `--no-follow` |  | bool |  | fetch the current window once and exit |
 | `--select` |  | stringArray |  | aggregate to compute on each poll, e.g. count(\*) (repeatable; switches to aggregate mode) |
-| `--window` |  | string | `30s` | per-poll lookback window (single unit) |
+| `--window` |  | string | `30s` | per-poll lookback window, one unit only (e.g. 30s, 5m, 1h) |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
 

@@ -93,6 +93,12 @@ func (s *Server) serveSearch(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	// Like the live API: every search, explain-only and grouped ones
+	// included, must name what to select.
+	if len(req.Select) == 0 {
+		writeError(w, http.StatusBadRequest, "provided object should contain property select")
+		return
+	}
 	lo, hi := window(rows)
 	match, err := compileWhere(req.Where)
 	if err != nil {
@@ -124,7 +130,7 @@ func (s *Server) serveSearch(w http.ResponseWriter, r *http.Request) {
 	if isTailPoll(req) {
 		matched = s.tailBatch(req, matched)
 	}
-	mrf := true
+	mrf := false // the live API returns oldest first unless asked otherwise
 	if req.MostRecentFirst != nil {
 		mrf = *req.MostRecentFirst
 	}

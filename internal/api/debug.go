@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
 )
 
 // debugBodyCap bounds how much of a request/response body the debug trace
@@ -49,7 +51,7 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	_, _ = fmt.Fprintf(d.W, "* %s %s\n", req.Method, debugURL(req.URL))
 	keyAPI := isAPIKeysPath(req.URL.Path)
 	if len(reqBody) > 0 {
-		_, _ = fmt.Fprintf(d.W, "* > %s\n", redactBody(truncateBody(reqBody), keyAPI))
+		_, _ = fmt.Fprintf(d.W, "* > %s\n", termsafe.Text(redactBody(truncateBody(reqBody), keyAPI)))
 	}
 	if err != nil {
 		_, _ = fmt.Fprintf(d.W, "* ! %v (%s)\n", err, elapsed)
@@ -65,7 +67,7 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			io.Closer
 		}{io.MultiReader(bytes.NewReader(peek), rest), rest}
 		if len(peek) > 0 {
-			_, _ = fmt.Fprintf(d.W, "* < %s\n", redactBody(truncateBody(peek), keyAPI))
+			_, _ = fmt.Fprintf(d.W, "* < %s\n", termsafe.Text(redactBody(truncateBody(peek), keyAPI)))
 		}
 	}
 	return resp, nil

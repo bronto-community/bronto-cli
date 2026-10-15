@@ -108,9 +108,9 @@ func TestDryRunActionVerbsPrintPlan(t *testing.T) {
 		{[]string{"dashboards", "attach-widgets", dash, "--widget-ids", wWidget}, "POST", "/dashboards/" + dash + "/widgets",
 			`{"widget_ids":["` + wWidget + `"]}`},
 		{[]string{"dashboards", "remove-widget", dash, wWidget}, "DELETE", "/dashboards/" + dash + "/widgets/" + wWidget, ""},
-		{[]string{"widgets", "attach-widgets", wWidget, "--widget-ids", "id-1"}, "POST", "/widgets/" + wWidget + "/widgets",
-			`{"widget_ids":["id-1"]}`},
-		{[]string{"widgets", "remove-widget", wWidget, "id-1"}, "DELETE", "/widgets/" + wWidget + "/widgets/id-1", ""},
+		{[]string{"widgets", "attach-widgets", wWidget, "--widget-ids", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000f3"}, "POST", "/widgets/" + wWidget + "/widgets",
+			`{"widget_ids":["aaaaaaaa-aaaa-aaaa-aaaa-0000000000f3"]}`},
+		{[]string{"widgets", "remove-widget", wWidget, "aaaaaaaa-aaaa-aaaa-aaaa-0000000000f3"}, "DELETE", "/widgets/" + wWidget + "/widgets/aaaaaaaa-aaaa-aaaa-aaaa-0000000000f3", ""},
 	}
 	for _, c := range cases {
 		t.Run(strings.Join(c.args[:2], " "), func(t *testing.T) {

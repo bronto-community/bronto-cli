@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -69,8 +71,18 @@ func (c *Client) do(req *http.Request, out any) error {
 // sequence numbers exceed 2^53, so a float64 round-trip silently corrupts
 // them (observed live: …516544 became …516500). Every decode of API
 // response bytes must go through this, not plain json.Unmarshal.
+//
+// Like json.Unmarshal, it rejects anything but whitespace after the value:
+// a bare json.Decoder stops after the first value, so `-f window=20
+// minutes` decoded as the number 20 and the rest was silently dropped.
 func DecodeJSON(data []byte, out any) error {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
-	return dec.Decode(out)
+	if err := dec.Decode(out); err != nil {
+		return err
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		return errors.New("invalid JSON: unexpected data after the top-level value")
+	}
+	return nil
 }

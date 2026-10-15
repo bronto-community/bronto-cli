@@ -211,16 +211,3 @@ func TestUserListRows(t *testing.T) {
 		t.Fatalf("no logins must not derive a column: %v", rows[1])
 	}
 }
-
-func TestDashboardListRows(t *testing.T) {
-	rows := dashboardListRows([]map[string]any{
-		{"widget_ids": []any{"a", "b", "c"}},
-		{"name": "no-widgets"},
-	}, output.FormatTable)
-	if rows[0]["widgets_count"] != 3 {
-		t.Fatalf("widgets_count = %v", rows[0]["widgets_count"])
-	}
-	if _, ok := rows[1]["widgets_count"]; ok {
-		t.Fatalf("missing widget_ids must not derive a count: %v", rows[1])
-	}
-}

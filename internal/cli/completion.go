@@ -194,25 +194,35 @@ func listResourceNames(cmd *cobra.Command, desc resourceDesc) []string {
 		return nil
 	}
 	rows := rowsFromPayload(payload, desc.ListRowKeys...)
-	var out []string
+	type entry struct{ id, name string }
+	entries := make([]entry, 0, len(rows))
+	nameCount := map[string]int{}
 	for _, row := range rows {
-		id := desc.rowID(row)
-		name := ""
+		e := entry{id: desc.rowID(row)}
 		for _, key := range desc.nameKeys() {
 			if v, _ := row[key].(string); v != "" {
-				name = v
+				e.name = v
 				break
 			}
 		}
+		entries = append(entries, e)
+		nameCount[e.name]++
+	}
+	var out []string
+	for _, e := range entries {
 		switch {
-		case name != "" && id != "":
-			out = append(out, name+"\t"+id)
-		case name != "":
-			out = append(out, name)
-		case id != "":
+		case e.name != "" && e.id != "" && nameCount[e.name] > 1:
+			// A shared name would fail as ambiguous once run: offer the id,
+			// with the name as its description.
+			out = append(out, e.id+"\t"+e.name)
+		case e.name != "" && e.id != "":
+			out = append(out, e.name+"\t"+e.id)
+		case e.name != "":
+			out = append(out, e.name)
+		case e.id != "":
 			// No name field (e.g. limits): the opaque id still completes,
 			// which beats a silent file-completion fallback.
-			out = append(out, id)
+			out = append(out, e.id)
 		}
 	}
 	sort.Strings(out)
@@ -254,6 +264,32 @@ func completeKindFlag(kind string) compFunc {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 		return listResourceNames(cmd, desc), cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
+// completeKindListFlag is completeKindFlag for comma-separated slice flags
+// (--users a@x,b@y).
+func completeKindListFlag(kind string) compFunc {
+	return commaListComplete(completeKindFlag(kind))
+}
+
+// commaListComplete adapts a single-value completer to a comma-separated
+// slice flag (--users a@x,<tab>, --fields a,<tab>): it completes the segment
+// after the last comma and keeps the already-typed prefix on every
+// candidate, so the shell's prefix match still sees the whole word.
+func commaListComplete(single compFunc) compFunc {
+	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		i := strings.LastIndexByte(toComplete, ',')
+		if i < 0 {
+			return single(cmd, args, toComplete)
+		}
+		prefix := toComplete[:i+1]
+		comps, dir := single(cmd, args, toComplete[i+1:])
+		out := make([]string, len(comps))
+		for j, c := range comps {
+			out[j] = prefix + c
+		}
+		return out, dir
 	}
 }
 

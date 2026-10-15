@@ -105,6 +105,14 @@ func TestLocalSearchUsageErrors(t *testing.T) {
 		{[]string{"search", "--local", p, "--since", "1h", "q"}, "usage_invalid_flags"},
 		{[]string{"search", "--local", p, "--select", "count()", "q"}, "usage_invalid_flags"},
 		{[]string{"search", "--local", "-", "-"}, "usage_invalid_flags"},
+		// server-only views and ordering are rejected, not silently ignored
+		{[]string{"search", "--local", p, "--histogram"}, "usage_invalid_flags"},
+		{[]string{"search", "--local", p, "--patterns"}, "usage_invalid_flags"},
+		{[]string{"search", "--local", p, "--url"}, "usage_invalid_flags"},
+		{[]string{"search", "--local", p, "--open"}, "usage_invalid_flags"},
+		{[]string{"search", "--local", p, "--order-by", "status DESC"}, "usage_invalid_flags"},
+		{[]string{"search", "--local", p, "--oldest-first"}, "usage_invalid_flags"},
+		{[]string{"search", "--local", p, "--saved", "s"}, "usage_invalid_flags"},
 		{[]string{"search", "--local", p, "status >>= 5"}, "usage_invalid_query"},
 		{[]string{"search", "--local", filepath.Join(t.TempDir(), "missing.jsonl"), "q = 1"}, "local_file_error"},
 	} {
@@ -113,6 +121,24 @@ func TestLocalSearchUsageErrors(t *testing.T) {
 		if !errors.As(err, &ce) || ce.Code != tc.code {
 			t.Fatalf("%v: want %s, got %v", tc.args, tc.code, err)
 		}
+	}
+}
+
+// A bronto search -o jsonl dump carries parsed fields as message_kvs.<f>;
+// the bare name the server query uses must match them too, while an
+// exact top-level key still wins.
+func TestLocalSearchMessageKVsFallback(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	dump := `{"@time":"t1","message_kvs.status":"502","message_kvs.level":"error"}
+{"@time":"t2","message_kvs.status":"200","message_kvs.level":"info"}
+{"@time":"t3","status":"404","message_kvs.status":"500"}
+`
+	out, err := runLocal(t, dump, "search", "--local", "-", "status >= 500", "-o", "jsonl", "--jq", ".\"@time\"")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Fields(out); len(got) != 1 || got[0] != `"t1"` {
+		t.Fatalf("matches = %q, want only t1", out)
 	}
 }
 

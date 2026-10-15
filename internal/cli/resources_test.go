@@ -7,8 +7,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
@@ -322,7 +327,7 @@ func TestDatasetsUpdateUsesPut(t *testing.T) {
 	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
 		gotMethod = r.Method
 		_, _ = w.Write([]byte(`{"id":"aaaaaaaa-aaaa-aaaa-aaaa-0000000000d1"}`))
-	}, "", "datasets", "update", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000d1", "-f", "log=http2")
+	}, "", "datasets", "update", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000d1", "-f", "collection=prod", "-f", "dataset=http2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -351,13 +356,18 @@ func TestMonitorsEventsMute(t *testing.T) {
 		if r.Method != http.MethodGet || r.URL.Path != "/monitors/aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1/events" {
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
-		_, _ = w.Write([]byte(`{"events":[{"id":"e1"}]}`))
+		// The live shape (spec GetMonitorEventsResponse): events plus a
+		// groups_history array, which must not turn the output into one
+		// row of two JSON blobs.
+		_, _ = w.Write([]byte(`{"monitor_events":[{"monitor_id":"m","time":1784452890000,"monitor_status":"ALERT"},` +
+			`{"monitor_id":"m","time":1784453160000,"monitor_status":"OK"}],` +
+			`"groups_history":[{"monitor_id":"m","group_id":"g","history":[]}]}`))
 	}, "", "monitors", "events", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1", "-o", "json")
 	if err != nil {
 		t.Fatal(err)
 	}
 	var rows []map[string]any
-	if err := json.Unmarshal([]byte(out), &rows); err != nil || len(rows) != 1 {
+	if err := json.Unmarshal([]byte(out), &rows); err != nil || len(rows) != 2 || rows[0]["monitor_status"] != "ALERT" {
 		t.Fatalf("events output = %q, err %v", out, err)
 	}
 
@@ -548,5 +558,376 @@ func TestResourceUpdateNoContentConfirmsOnStderr(t *testing.T) {
 	}
 	if want := "Updated widget " + id + "."; !strings.Contains(errOut, want) {
 		t.Fatalf("stderr = %q, want it to contain %q", errOut, want)
+	}
+}
+
+// TestAmbiguousNameErrorForMultiWordKinds pins the usage_ambiguous_<kind>
+// code as lower_snake and the message's human plural for kinds whose
+// singular has spaces or capitals ("Slack integration", "API key").
+func TestAmbiguousNameErrorForMultiWordKinds(t *testing.T) {
+	rows := []map[string]any{
+		{"id": "id-1", "name": "dup"}, {"id": "id-2", "name": "dup"},
+	}
+	for kind, want := range map[string]string{
+		"slack":    "usage_ambiguous_slack_integration",
+		"api-keys": "usage_ambiguous_api_key",
+		"monitors": "usage_ambiguous_monitor",
+	} {
+		desc, _ := descByName(kind)
+		_, err := matchResourceRef(desc, rows, "dup")
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != want || clierr.ExitCode(err) != 2 {
+			t.Errorf("%s: want %s exit 2, got %v", kind, want, err)
+			continue
+		}
+		if wantMsg := "2 " + desc.plural() + " are named"; !strings.Contains(ce.Message, wantMsg) {
+			t.Errorf("%s: message %q, want it to contain %q", kind, ce.Message, wantMsg)
+		}
+	}
+}
+
+// TestNotFoundHintDedupesNames pins that the not-found hint lists each
+// available name once, even when several resources share it.
+func TestNotFoundHintDedupesNames(t *testing.T) {
+	desc, _ := descByName("monitors")
+	rows := []map[string]any{
+		{"id": "id-1", "name": "dup"}, {"id": "id-2", "name": "dup"}, {"id": "id-3", "name": "cpu"},
+	}
+	_, err := matchResourceRef(desc, rows, "ghost")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "resource_not_found" {
+		t.Fatalf("want resource_not_found, got %v", err)
+	}
+	if strings.Count(ce.Hint, "dup") != 1 {
+		t.Fatalf("hint lists a duplicate name more than once: %q", ce.Hint)
+	}
+}
+
+// TestUserEmailMatchIsCaseInsensitive pins that users resolve by email
+// regardless of case, while other kinds keep exact name matching.
+func TestUserEmailMatchIsCaseInsensitive(t *testing.T) {
+	users, _ := descByName("users")
+	id, err := matchResourceRef(users, []map[string]any{{"id": "u-1", "email": "ada@example.com"}}, "ADA@Example.com")
+	if err != nil || id != "u-1" {
+		t.Fatalf("email match: id=%q err=%v", id, err)
+	}
+	monitors, _ := descByName("monitors")
+	if _, err := matchResourceRef(monitors, []map[string]any{{"id": "m-1", "name": "cpu"}}, "CPU"); err == nil {
+		t.Fatal("monitor names must match exactly")
+	}
+}
+
+// TestResourcesDeleteResolvesBeforeConfirming pins the delete order: an
+// unknown name fails as not-found (exit 4) before any confirmation, even
+// without a terminal, and the prompt names the id a name resolved to.
+func TestResourcesDeleteResolvesBeforeConfirming(t *testing.T) {
+	oldOut, oldIn := stdoutIsTTY, stdinIsTTY
+	t.Cleanup(func() { stdoutIsTTY, stdinIsTTY = oldOut, oldIn })
+	list := `[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-000000000001","name":"cpu"}]`
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/monitors" {
+			_, _ = w.Write([]byte(list))
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
+
+	stdoutIsTTY = func() bool { return false }
+	stdinIsTTY = func() bool { return false }
+	_, _, err := runResource(t, handler, "", "monitors", "delete", "ghost")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "resource_not_found" || clierr.ExitCode(err) != 4 {
+		t.Fatalf("want resource_not_found exit 4, got %v", err)
+	}
+
+	stdoutIsTTY = func() bool { return true }
+	stdinIsTTY = func() bool { return true }
+	_, stderr, err := runResource(t, handler, "n\n", "monitors", "delete", "cpu")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stderr, "Delete monitor cpu (aaaaaaaa-aaaa-aaaa-aaaa-000000000001)?") {
+		t.Fatalf("prompt should show the resolved id: %q", stderr)
+	}
+}
+
+// TestResourcesCreateRejectsInvalidJSONInput pins that create/update
+// --input must be a JSON object or array, checked before any request.
+func TestResourcesCreateRejectsInvalidJSONInput(t *testing.T) {
+	for _, body := range []string{"", "{oops", "[1,"} {
+		_, _, err := runResource(t, func(http.ResponseWriter, *http.Request) {
+			t.Error("server contacted")
+		}, body, "monitors", "create", "--input", "-")
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != "usage_invalid_body" || clierr.ExitCode(err) != 2 {
+			t.Errorf("body %q: want usage_invalid_body exit 2, got %v", body, err)
+		}
+	}
+}
+
+// groups update is a PATCH that blanks whichever of name/description the
+// body omits (live-verified), so the CLI refuses a partial body.
+func TestGroupsUpdateRequiresNameAndDescription(t *testing.T) {
+	const id = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000f1"
+	for _, fields := range [][]string{{"-f", "description=x"}, {"-f", "name=x"}} {
+		_, _, err := runResource(t, func(_ http.ResponseWriter, r *http.Request) {
+			t.Errorf("partial update must not call the API: %s %s", r.Method, r.URL.Path)
+		}, "", append([]string{"groups", "update", id}, fields...)...)
+		if codeOf(err) != "usage_missing_fields" {
+			t.Fatalf("%v: err = %v", fields, err)
+		}
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || !strings.Contains(ce.Hint, "omitted field is cleared") {
+			t.Fatalf("%v: hint = %+v", fields, ce)
+		}
+	}
+	var gotMethod, gotBody string
+	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		gotMethod, gotBody = r.Method, string(b)
+		_, _ = w.Write([]byte(`{"group_id":"` + id + `"}`))
+	}, "", "groups", "update", id, "-f", "name=n", "-f", "description=d")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotMethod != http.MethodPatch || gotBody != `{"description":"d","name":"n"}` {
+		t.Fatalf("%s %s", gotMethod, gotBody)
+	}
+}
+
+func TestDatasetsUpdateRequiresCollectionAndDataset(t *testing.T) {
+	_, _, err := runResource(t, func(_ http.ResponseWriter, r *http.Request) {
+		t.Errorf("partial update must not call the API: %s %s", r.Method, r.URL.Path)
+	}, "", "datasets", "update", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000d1", "-f", "dataset=x")
+	if codeOf(err) != "usage_missing_fields" || !strings.Contains(err.Error(), "collection") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+// Downtime rows carry downtime_id, not id: without IDKey a name matched
+// a row with no usable id and reported not-found.
+func TestDowntimesResolveByName(t *testing.T) {
+	const id = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000b7"
+	var deleted string
+	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/monitors/downtimes":
+			_, _ = w.Write([]byte(`[{"downtime_id":"` + id + `","name":"weekly"}]`))
+		case r.Method == http.MethodDelete:
+			deleted = r.URL.Path
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+		}
+	}, "", "monitors", "downtimes", "delete", "weekly", "--yes")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if deleted != "/monitors/downtimes/"+id {
+		t.Fatalf("deleted %q", deleted)
+	}
+}
+
+func TestCheckMuteFlags(t *testing.T) {
+	now := time.UnixMilli(1_800_000_000_000)
+	future, past := now.UnixMilli()+60_000, now.UnixMilli()-60_000
+	cases := []struct {
+		name            string
+		until           int64
+		unmute, set     bool
+		code, hintSubst string
+	}{
+		{"default mutes forever", -1, false, false, "", ""},
+		{"explicit -1", -1, false, true, "", ""},
+		{"future", future, false, true, "", ""},
+		{"zero would unmute", 0, false, true, "usage_invalid_flags", "--unmute"},
+		{"past", past, false, true, "usage_invalid_flags", "future"},
+		{"negative", -5, false, true, "usage_invalid_flags", "-1 to mute indefinitely"},
+		{"seconds", now.Unix() + 60, false, true, "usage_invalid_flags", "looks like seconds"},
+		{"unmute", -1, true, false, "", ""},
+		{"unmute with until", future, true, true, "usage_conflicting_flags", ""},
+	}
+	for _, c := range cases {
+		err := checkMuteFlags(c.until, c.unmute, c.set, now)
+		if codeOf(err) != c.code {
+			t.Errorf("%s: err = %v, want code %q", c.name, err, c.code)
+			continue
+		}
+		var ce *clierr.Error
+		if c.hintSubst != "" && (!errors.As(err, &ce) || !strings.Contains(ce.Hint, c.hintSubst)) {
+			t.Errorf("%s: hint = %+v, want it to mention %q", c.name, ce, c.hintSubst)
+		}
+	}
+	// An expired millisecond timestamp has the right units: no seconds hint.
+	var ce *clierr.Error
+	if err := checkMuteFlags(past, false, true, now); !errors.As(err, &ce) || strings.Contains(ce.Hint, "looks like seconds") {
+		t.Errorf("past ms timestamp: err = %v, hint = %+v; want no seconds hint", err, ce)
+	}
+}
+
+// An invalid --until is refused before any request: --until 0 used to
+// send the unmute value and print "Muted".
+func TestMonitorsMuteRejectsBadUntil(t *testing.T) {
+	for _, args := range [][]string{
+		{"--until", "0"},
+		{"--until", "1000"},
+		{"--unmute", "--until", "-1"},
+	} {
+		_, _, err := runResource(t, func(_ http.ResponseWriter, r *http.Request) {
+			t.Errorf("%v must not call the API: %s %s", args, r.Method, r.URL.Path)
+		}, "", append([]string{"monitors", "mute", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1"}, args...)...)
+		if clierr.ExitCode(err) != 2 {
+			t.Fatalf("%v: err = %v, want a usage error", args, err)
+		}
+	}
+}
+
+// TestResourceListDerivedFieldsInJSON pins that --fields and --fields '?'
+// agree across formats for derived list columns: json/jsonl can select
+// last_activity (and list it under '?'), while plain -o json stays raw.
+func TestResourceListDerivedFieldsInJSON(t *testing.T) {
+	list := `[{"collection":"prod","dataset":"web","log_id":"l-1","metadata":{"last_heartbeat_at":1784452890000}}]`
+	handler := func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(list)) }
+
+	out, _, err := runResource(t, handler, "", "datasets", "list", "-o", "json", "--fields", "dataset,last_activity")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, `"last_activity": "2026-07-19T`) || !strings.Contains(out, `"dataset": "web"`) {
+		t.Fatalf("json --fields with a derived column = %q", out)
+	}
+
+	out, _, err = runResource(t, handler, "", "datasets", "list", "-o", "jsonl", "--fields", "?")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"last_activity", "metadata", "log_id"} {
+		if !strings.Contains(out, name+"\n") {
+			t.Errorf("--fields '?' -o jsonl missing %q: %q", name, out)
+		}
+	}
+
+	out, _, err = runResource(t, handler, "", "datasets", "list", "-o", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out, "last_activity") || !strings.Contains(out, "1784452890000") {
+		t.Fatalf("plain -o json must stay raw: %q", out)
+	}
+}
+
+// TestSingleRecordCSV pins that get renders -o csv as a one-row CSV rather
+// than silently printing JSON.
+func TestSingleRecordCSV(t *testing.T) {
+	out, _, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"id":"aaaaaaaa-aaaa-aaaa-aaaa-000000000001","name":"cpu"}`))
+	}, "", "monitors", "get", "aaaaaaaa-aaaa-aaaa-aaaa-000000000001", "-o", "csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out != "id,name\naaaaaaaa-aaaa-aaaa-aaaa-000000000001,cpu\n" {
+		t.Fatalf("get -o csv = %q", out)
+	}
+}
+
+// TestResourceListRawAndDerivedFieldsTogether pins that selecting a
+// derived field keeps the other requested raw fields, including for
+// transforms that expand one raw row into several (permissions: one group
+// into one row per permission).
+func TestResourceListRawAndDerivedFieldsTogether(t *testing.T) {
+	catalog := `{"resources":[{"group_name":"Monitors","permissions":[{"name":"monitors:read"},{"name":"monitors:write"}]}]}`
+	out, _, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(catalog))
+	}, "", "permissions", "list", "-o", "jsonl", "--fields", "group_name,group,name")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"group":"Monitors","group_name":"Monitors","name":"monitors:read"}` + "\n" +
+		`{"group":"Monitors","group_name":"Monitors","name":"monitors:write"}` + "\n"
+	if out != want {
+		t.Fatalf("out = %q, want %q", out, want)
+	}
+
+	list := `[{"dataset":"web","updated_at":1777890000000,"metadata":{"last_heartbeat_at":1784452890000}}]`
+	out, _, err = runResource(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(list))
+	}, "", "datasets", "list", "-o", "jsonl", "--fields", "dataset,updated_at,last_activity")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, `"updated_at":1777890000000`) || !strings.Contains(out, `"last_activity":"2026-`) {
+		t.Fatalf("raw value lost next to its derived column: %q", out)
+	}
+}
+
+// api-keys create's response is the only place the full key appears, so
+// create tells the user to store it (stderr, honoring --quiet and silent
+// under --dry-run).
+func TestAPIKeysCreateNotice(t *testing.T) {
+	handler := func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"id":"k1","api_key":"uuid.secret"}`))
+	}
+	out, stderr, err := runResource(t, handler, "", "api-keys", "create", "-f", "name=n", "-o", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "uuid.secret") {
+		t.Fatalf("create must print the full key: %q", out)
+	}
+	if !strings.Contains(stderr, "shown only once") {
+		t.Fatalf("stderr = %q", stderr)
+	}
+	for _, extra := range []string{"--quiet", "--dry-run"} {
+		_, stderr, err = runResource(t, handler, "", "api-keys", "create", "-f", "name=n", "-o", "json", extra)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if stderr != "" {
+			t.Fatalf("%s stderr = %q", extra, stderr)
+		}
+	}
+}
+
+// dashboards list rows carry an empty widget_ids live even when widgets
+// are attached, so the list view has no widget count column.
+func TestDashboardsListHasNoWidgetCount(t *testing.T) {
+	out, _, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`[{"id":"d1","name":"ops","widget_ids":[]}]`))
+	}, "", "dashboards", "list", "-o", "table")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out, "WIDGETS") || !strings.Contains(out, "ops") {
+		t.Fatalf("out = %q", out)
+	}
+}
+
+// TestResourcesGuideListsPutUpdates keeps the managing-resources guide's
+// list of full-replacement (PUT) updates in step with the registry.
+func TestResourcesGuideListsPutUpdates(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join(docsRepoRoot(t), "docs", "cli", "guides", "resources.mdx"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := strings.Join(strings.Fields(string(data)), " ")
+	_, after, ok := strings.Cut(text, "Updates to ")
+	sentence, _, ok2 := strings.Cut(after, " use HTTP PUT")
+	if !ok || !ok2 {
+		t.Fatal(`resources.mdx has no "Updates to … use HTTP PUT" sentence`)
+	}
+	var documented []string
+	for _, m := range regexp.MustCompile("`([^`]+)`").FindAllStringSubmatch(sentence, -1) {
+		documented = append(documented, m[1])
+	}
+	var want []string
+	for _, d := range resourceRegistry {
+		if !d.NoUpdate && d.updateMethod() == http.MethodPut {
+			want = append(want, d.display())
+		}
+	}
+	slices.Sort(documented)
+	slices.Sort(want)
+	if !slices.Equal(documented, want) {
+		t.Fatalf("resources.mdx lists PUT updates %v, the registry has %v", documented, want)
 	}
 }

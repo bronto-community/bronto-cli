@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -56,6 +57,19 @@ func newSendCmd() *cobra.Command {
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
+			}
+			// -d prod/app means dataset app in collection prod, as everywhere
+			// else; sent verbatim, it created a dataset named "prod/app".
+			if c, d, ok := strings.Cut(dataset, "/"); ok {
+				if collection != "" {
+					return clierr.New("usage_conflicting_flags",
+						fmt.Sprintf("-d %q names a collection and --collection is set too", dataset)).
+						WithHint("Use either -d <collection>/<dataset> or -d <dataset> --collection <collection>.")
+				}
+				if c == "" || d == "" || strings.Contains(d, "/") {
+					return clierr.New("usage_invalid_dataset", fmt.Sprintf("-d %q is not <collection>/<dataset>", dataset))
+				}
+				collection, dataset = c, d
 			}
 
 			url := ingestURLFlag
@@ -131,9 +145,25 @@ func joinTags(tags []string) (string, error) {
 	return strings.Join(tags, ","), nil
 }
 
+// shutdownFlushTimeout bounds the final flush after Ctrl-C/SIGTERM: the
+// signal context is already cancelled, so that flush runs on a detached
+// context that gives the last batch this long to land.
+const shutdownFlushTimeout = 5 * time.Second
+
+// ShutdownError is a failure in the clean-up a command still runs after
+// Ctrl-C/SIGTERM, such as send's final flush. main renders it and exits
+// with its own code instead of the silent 130 of an interrupted run: the
+// user has to know that events were lost.
+type ShutdownError struct{ Err error }
+
+func (e *ShutdownError) Error() string { return e.Err.Error() }
+func (e *ShutdownError) Unwrap() error { return e.Err }
+
 // runSendStream reads NDJSON/plain-text lines from stdin, batches them, and
 // flushes on batch-full, a flush-interval ticker, EOF, or context
-// cancellation (best-effort final flush, then a clean exit).
+// cancellation. On cancellation the pending batch is flushed on a detached
+// context; a failed flush is reported, and a successful one still returns
+// the cancellation error so the process exits 130.
 func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSize, batchBytes int, flushInterval time.Duration) error {
 	scanner := bufio.NewScanner(cmd.InOrStdin())
 	scanner.Buffer(make([]byte, 0, 64*1024), 1<<20)
@@ -159,17 +189,43 @@ func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSiz
 	defer ticker.Stop()
 
 	var sentEvents, sentBatches int
-	flush := func() error {
-		if batcher.Len() == 0 {
-			return nil
-		}
-		events := batcher.Drain()
-		if err := sender.Send(cmd.Context(), events); err != nil {
+	send := func(ctx context.Context, events []map[string]any) error {
+		if err := sender.Send(ctx, events); err != nil {
 			return err
 		}
 		sentEvents += len(events)
 		sentBatches++
 		return nil
+	}
+	// flush sends the pending batch. Once the command context is cancelled
+	// (Ctrl-C/SIGTERM), it sends on a detached context bounded by
+	// shutdownFlushTimeout instead, also retrying a batch whose request
+	// the interrupt cut off (which can duplicate it if it had landed).
+	flush := func() error {
+		if batcher.Len() == 0 {
+			return nil
+		}
+		events := batcher.Drain()
+		if cmd.Context().Err() == nil {
+			err := send(cmd.Context(), events)
+			if err == nil || cmd.Context().Err() == nil {
+				return err
+			}
+		}
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(cmd.Context()), shutdownFlushTimeout)
+		defer cancel()
+		return send(ctx, events)
+	}
+	// fail reports a flush error. After an interrupt it is a ShutdownError,
+	// so main reports it instead of exiting with a silent 130.
+	fail := func(err error) error {
+		if cmd.Context().Err() == nil {
+			return err
+		}
+		if !app.Quiet {
+			_, _ = fmt.Fprintf(app.Stderr, "Sent %d event(s) in %d batch(es) before the interrupt; the last batch was not delivered.\n", sentEvents, sentBatches)
+		}
+		return &ShutdownError{Err: err}
 	}
 
 	summary := func() {
@@ -184,7 +240,7 @@ func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSiz
 			if !ok {
 				// EOF or scanner read error: final flush first.
 				if err := flush(); err != nil {
-					return err
+					return fail(err)
 				}
 				// Check if the scanner hit an error (e.g., line > 1 MiB buffer).
 				if scanErr != nil {
@@ -195,7 +251,9 @@ func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSiz
 						WithHint("Lines longer than 1 MiB cannot be sent; the events flushed before the error were delivered.")
 				}
 				summary()
-				return nil
+				// nil on a normal EOF; the cancellation (exit 130) when an
+				// interrupt arrived during the final flush.
+				return cmd.Context().Err()
 			}
 			if strings.TrimSpace(line) == "" {
 				continue
@@ -203,17 +261,20 @@ func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSiz
 			ev := ingest.LineToEvent(line, nil)
 			if batcher.Add(ev) {
 				if err := flush(); err != nil {
-					return err
+					return fail(err)
 				}
 			}
 		case <-ticker.C:
 			if err := flush(); err != nil {
-				return err
+				return fail(err)
 			}
 		case <-cmd.Context().Done():
-			_ = flush() // best-effort; ignore errors on shutdown
+			if err := flush(); err != nil {
+				return fail(err)
+			}
 			summary()
-			return nil
+			// The cancellation error makes main exit 130 without an error message.
+			return cmd.Context().Err()
 		}
 	}
 }

@@ -55,7 +55,7 @@ func NewRootCmd() *cobra.Command {
 	_ = cmd.RegisterFlagCompletionFunc("output", completeOutputFormat)
 	_ = cmd.RegisterFlagCompletionFunc("region", completeRegion)
 	_ = cmd.RegisterFlagCompletionFunc("profile", completeProfiles)
-	_ = cmd.RegisterFlagCompletionFunc("fields", completeFields)
+	_ = cmd.RegisterFlagCompletionFunc("fields", commaListComplete(completeFields))
 	cmd.AddCommand(newVersionCmd())
 	cmd.AddCommand(newConfigCmd())
 	cmd.AddCommand(newAuthCmd())
@@ -124,6 +124,11 @@ func NewRootCmd() *cobra.Command {
 		parent.AddCommand(newResourceCmd(d))
 	}
 
+	rejectUnknownSubcommands(cmd)
+	// Set once on root and inherited by every command: help-only groups
+	// skip the "bronto <group> [flags]" usage line, everything else keeps
+	// its invocation syntax.
+	cmd.SetUsageTemplate(strings.Replace(cmd.UsageTemplate(), runnableUsageLine, helpAwareUsageLine, 1))
 	wrapArgsValidators(cmd)
 	applyCompletions(cmd)
 	// Root keeps subcommand-name completion (it's a group), plus a completer
@@ -131,6 +136,51 @@ func NewRootCmd() *cobra.Command {
 	cmd.ValidArgsFunction = completeHiddenCommands
 
 	return cmd
+}
+
+// HelpOnlyGroupAnnotation marks a group command whose Run only prints help
+// (set by rejectUnknownSubcommands). Such a group is runnable to cobra, but
+// tools walking the tree (docgen, the doc checkers) treat it as a plain
+// group with no action of its own. See IsHelpOnlyGroup.
+const HelpOnlyGroupAnnotation = "bronto_help_only_group"
+
+// runnableUsageLine is the usage-template fragment cobra prints only for
+// runnable commands; helpAwareUsageLine also skips it for help-only groups,
+// which are runnable to cobra but do nothing on their own.
+const (
+	runnableUsageLine  = "{{if .Runnable}}\n  {{.UseLine}}{{end}}"
+	helpAwareUsageLine = "{{if and .Runnable (not (isHelpOnlyGroup .))}}\n  {{.UseLine}}{{end}}"
+)
+
+func init() { cobra.AddTemplateFunc("isHelpOnlyGroup", IsHelpOnlyGroup) }
+
+// IsHelpOnlyGroup reports whether c is a group whose own Run only prints
+// help: a group without a default action.
+func IsHelpOnlyGroup(c *cobra.Command) bool {
+	return c.Annotations[HelpOnlyGroupAnnotation] == "true"
+}
+
+// rejectUnknownSubcommands makes every group command (one with
+// subcommands but no Run of its own) behave like root: bare, it prints its
+// help and exits 0; with a stray argument (`bronto parsers get x`, a typo'd
+// subcommand) it fails with "unknown command". Cobra's default for a
+// non-runnable group is to print help and exit 0 for ANY arguments, which
+// hides typos from scripts. Must run before wrapArgsValidators so the
+// NoArgs error is typed as usage_invalid_args.
+func rejectUnknownSubcommands(cmd *cobra.Command) {
+	if cmd.HasSubCommands() && !cmd.Runnable() {
+		if cmd.Args == nil {
+			cmd.Args = cobra.NoArgs
+		}
+		cmd.Run = func(c *cobra.Command, _ []string) { _ = c.Help() }
+		if cmd.Annotations == nil {
+			cmd.Annotations = map[string]string{}
+		}
+		cmd.Annotations[HelpOnlyGroupAnnotation] = "true"
+	}
+	for _, sub := range cmd.Commands() {
+		rejectUnknownSubcommands(sub)
+	}
 }
 
 // wrapArgsValidators walks the command tree and wraps every command's Args
@@ -203,18 +253,26 @@ func Execute(ctx context.Context, cmd *cobra.Command, argv []string) error {
 	return WrapExecuteError(err)
 }
 
-// WrapExecuteError wraps cobra required-flag errors that surface from Execute
-// as plain errors into usage_missing_flag clierr.Errors so they exit with
-// the correct code (2). This should be called on the error returned from
-// cmd.Execute().
+// WrapExecuteError wraps cobra flag-validation errors that surface from
+// Execute as plain errors — required flags and flag groups (required
+// together, one required, mutually exclusive) — into usage_ clierr.Errors so
+// they exit with the correct code (2). This should be called on the error
+// returned from cmd.Execute().
 func WrapExecuteError(err error) error {
 	if err == nil {
 		return nil
 	}
 	errMsg := err.Error()
-	if strings.HasPrefix(errMsg, "required flag(s)") {
-		return clierr.New("usage_missing_flag", errMsg).
-			WithHint("Run 'bronto --help' for usage.")
+	var code string
+	switch {
+	case strings.HasPrefix(errMsg, "required flag(s)"),
+		strings.HasPrefix(errMsg, "at least one of the flags in the group"),
+		strings.HasPrefix(errMsg, "if any flags in the group") && strings.Contains(errMsg, "they must all be set"):
+		code = "usage_missing_flag"
+	case strings.HasPrefix(errMsg, "if any flags in the group") && strings.Contains(errMsg, "none of the others can be"):
+		code = "usage_conflicting_flags"
+	default:
+		return err
 	}
-	return err
+	return clierr.New(code, errMsg).WithHint("Run 'bronto --help' for usage.")
 }

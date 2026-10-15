@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
+
 	"github.com/spf13/cobra"
 
 	"github.com/bronto-community/bronto-cli/internal/bronto"
@@ -51,6 +53,14 @@ func newTailCmd() *cobra.Command {
 			if dedupSize <= 0 {
 				return clierr.New("usage_invalid_dedup_size", "dedup-size must be a positive integer")
 			}
+			if limit < 1 || limit > maxTailLimit {
+				return clierr.New("usage_invalid_limit",
+					fmt.Sprintf("limit must be between 1 and %d, got %d", maxTailLimit, limit))
+			}
+			spec, err := tailWindowSpec(window)
+			if err != nil {
+				return err
+			}
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
@@ -71,13 +81,6 @@ func newTailCmd() *cobra.Command {
 			ids, expr, err := resolveDataset(cmd.Context(), app, datasets, fromExpr)
 			if err != nil {
 				return err
-			}
-			spec, err := timerange.Resolve(window, "", "", nil)
-			if err != nil {
-				return err
-			}
-			if spec.TimeRange == "" {
-				return clierr.New("usage_invalid_since", "window must be a single-unit duration (e.g. 30s, 5m)")
 			}
 			filter, err := buildFilter(includes, excludes)
 			if err != nil {
@@ -112,7 +115,7 @@ func newTailCmd() *cobra.Command {
 				return err
 			}
 			humanMode := tailFormat == output.FormatTable // table format: TTY default or explicit -o table; PrintRow cannot render tables
-			if !app.Quiet {
+			if !app.Quiet && !noFollow {
 				_, _ = fmt.Fprintf(app.Stderr, "Tailing every %s (window %s). Ctrl-C to stop.\n", interval, window)
 			}
 
@@ -128,14 +131,23 @@ func newTailCmd() *cobra.Command {
 			}
 			client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
 			dedup := bronto.NewDedup(dedupSize)
+			warnedLimit := false
 
 			for {
 				resp, err := client.Search(cmd.Context(), req)
 				if err != nil {
-					if cmd.Context().Err() != nil {
-						return nil //nolint:nilerr // cancelled mid-request (SIGINT): clean exit by contract
+					if ctxErr := cmd.Context().Err(); ctxErr != nil {
+						return ctxErr // cancelled mid-request: main exits 130 without an error message
 					}
 					return err
+				}
+				// A full page means the window held more events than one
+				// poll returns: the rest are never printed. Say so once.
+				if n := len(resp.SelectedRows()); n >= limit && !warnedLimit && !app.Quiet {
+					warnedLimit = true
+					_, _ = fmt.Fprintf(app.Stderr,
+						"Warning: a poll returned %d events, the --limit; events beyond it in that window are not shown. "+
+							"Raise -n (max %d), shorten --window, or narrow the query.\n", n, maxTailLimit)
 				}
 				for _, ev := range dedupSorted(resp, dedup) {
 					raw := fmt.Sprint(ev["@raw"])
@@ -155,7 +167,7 @@ func newTailCmd() *cobra.Command {
 				}
 				select {
 				case <-cmd.Context().Done():
-					return nil
+					return cmd.Context().Err() // main exits 130 without an error message
 				case <-time.After(interval):
 				}
 			}
@@ -165,8 +177,8 @@ func newTailCmd() *cobra.Command {
 	f.StringArrayVarP(&datasets, "dataset", "d", nil, "dataset name or UUID to tail (repeatable)")
 	f.StringVar(&fromExpr, "from-expr", "", "dataset selector expression")
 	f.DurationVar(&interval, "interval", 3*time.Second, "polling interval (min 1s)")
-	f.StringVar(&window, "window", "30s", "per-poll lookback window (single unit)")
-	f.IntVarP(&limit, "limit", "n", 500, "max events per poll")
+	f.StringVar(&window, "window", "30s", "per-poll lookback window, one unit only (e.g. 30s, 5m, 1h)")
+	f.IntVarP(&limit, "limit", "n", 500, "max events per poll (1-10000)")
 	f.StringArrayVar(&includes, "include", nil, "only show lines matching this regex (repeatable, ANDed)")
 	f.StringArrayVar(&excludes, "exclude", nil, "hide lines matching this regex (repeatable)")
 	f.StringArrayVar(&highlights, "highlight", nil, "highlight regex matches in the output (repeatable)")
@@ -176,6 +188,34 @@ func newTailCmd() *cobra.Command {
 	f.IntVar(&dedupSize, "dedup-size", 20000, "number of recent events remembered to drop duplicates across polls; raise it for very high-volume streams")
 	cmd.ValidArgsFunction = defaultArgComplete // positional is a WHERE expr; hint flags instead
 	return cmd
+}
+
+// maxTailLimit is the API's cap on events per search, as for search -n.
+const maxTailLimit = 10000
+
+// tailWindowRe is the --window syntax: one positive count and one unit.
+// The live tail query needs a relative time_range ("Last 30 seconds"),
+// which compound durations like 1h30m cannot express.
+var tailWindowRe = regexp.MustCompile(`^([0-9]+)([smhdw])$`)
+
+// tailWindowSpec validates --window and resolves it to a relative range.
+func tailWindowSpec(window string) (timerange.Spec, error) {
+	m := tailWindowRe.FindStringSubmatch(window)
+	if m == nil {
+		return timerange.Spec{}, clierr.New("usage_invalid_window",
+			fmt.Sprintf("cannot parse --window %q", window)).
+			WithHint("Use one number and one unit: s, m, h, d, or w (e.g. 30s, 5m, 1h).")
+	}
+	if strings.TrimLeft(m[1], "0") == "" {
+		return timerange.Spec{}, clierr.New("usage_invalid_window",
+			fmt.Sprintf("--window must be longer than zero, got %q", window))
+	}
+	spec, err := timerange.Resolve(window, "", "", nil)
+	if err != nil {
+		return timerange.Spec{}, clierr.New("usage_invalid_window",
+			fmt.Sprintf("cannot parse --window %q: the number is too large", window))
+	}
+	return spec, nil
 }
 
 func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
@@ -259,7 +299,7 @@ func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, 
 		vals := make([]string, len(fields))
 		for i, f := range fields {
 			if v, ok := ev[f]; ok && v != nil {
-				vals[i] = fmt.Sprint(v)
+				vals[i] = termsafe.Line(fmt.Sprint(v))
 			} else {
 				vals[i] = "-"
 			}
@@ -273,14 +313,17 @@ func renderTailLine(ev map[string]any, raw string, highlights []*regexp.Regexp, 
 		return line
 	}
 
-	ts := fmt.Sprint(ev["@time"])
+	// Log data is attacker-influenced: escape controls before adding our
+	// own colors. raw keeps its newlines (stack traces stay readable).
+	raw = termsafe.Text(raw)
+	ts := termsafe.Line(fmt.Sprint(ev["@time"]))
 	status := ""
 	if s, ok := ev["@status"]; ok && s != nil {
-		status = fmt.Sprint(s)
+		status = termsafe.Line(fmt.Sprint(s))
 	}
 	origin := ""
 	if o, ok := ev["@origin"]; ok && o != nil {
-		origin = fmt.Sprint(o)
+		origin = termsafe.Line(fmt.Sprint(o))
 	}
 	if color {
 		for _, re := range highlights {

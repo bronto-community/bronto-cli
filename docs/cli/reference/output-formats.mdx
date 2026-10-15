@@ -24,8 +24,14 @@ stdout carries only data. `--quiet` suppresses the notices.
 | `table` | Aligned columns with an uppercase header. Long cells are truncated. Prints `No results.` to stderr when empty. |
 | `json` | One JSON document. Lists are an array, pretty-printed. |
 | `jsonl` | One compact JSON object per line. |
-| `csv` | A header row, then one row per record. |
+| `csv` | A header row, then one row per record. A single record, such as `get` output, is one row; nested values are compact JSON cells. |
 | `raw` | For events, the original `@raw` line. Other rows print as compact JSON. |
+
+Commands that return one record rather than rows (`get`, `create`, `update`, `ping`, and
+others) have no table layout: in `table` mode, including the terminal default, they print
+the record as indented JSON.
+
+JSON output doesn't escape `&`, `<`, and `>`, so URLs and queries print as written.
 
 Use `jsonl` for streaming, since a consumer can process each line as it arrives. `json`
 has to be parsed as a whole.
@@ -37,10 +43,28 @@ Some views render their own layout at a terminal instead of a table: the expande
 (`search -x`), `--histogram`, `--patterns`, live `tail` aggregates, and the `traces show`
 and `traces shape` waterfalls.
 
+## Control characters
+
+Log lines, resource names and API error messages can contain terminal escape sequences,
+for example from a crafted user agent that ended up in a log. The table format, the views
+above, `tail` lines and error messages print control characters as visible escapes such
+as `\x1b` and `\r`, so they can't change your terminal's title, clear the screen or plant
+hidden links. Newlines and tabs are kept in `tail` lines and become `\n` and `\t` in table
+cells.
+
+`json`, `jsonl`, `csv` and `raw` keep values byte-exact. JSON escapes control characters
+itself. A CSV cell can start with `=`, `+`, `-` or `@`, which spreadsheet apps read as a
+formula, so check the data before you open search results from untrusted sources in a
+spreadsheet.
+
 ## --fields
 
 `--fields a,b,c` keeps only the named keys in `json`, `jsonl`, and `csv`, and picks the
 columns in `table` output for resource lists, `search`, and `tail`.
+
+Resource lists add derived columns to `table` and `csv`, such as `created`, `modified`, and
+`last_activity`. `json` and `jsonl` keep the raw API rows, but naming a derived column in
+`--fields` selects it there too, with absolute timestamps as in `csv`.
 
 `--fields '?'` prints the field names available instead of the data. For the streaming
 commands (`tail`, `traces`), combine it with a machine format such as `-o jsonl`.

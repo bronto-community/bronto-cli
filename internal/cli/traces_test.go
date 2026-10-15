@@ -343,3 +343,35 @@ func TestTracesListPipedDefaultIsJSONL(t *testing.T) {
 		t.Fatalf("row0 = %v", row0)
 	}
 }
+
+func TestTracesRejectsBadLimitAndBarWidth(t *testing.T) {
+	for _, args := range [][]string{
+		{"traces", "list", "-n", "0"},
+		{"traces", "list", "-n", "-1"},
+		{"traces", "show", "abc", "--bar-width", "0"},
+		{"traces", "show", "abc", "--bar-width", "-5"},
+		{"traces", "show", "abc", "--bar-width", "9"},
+		{"traces", "shape", "--bar-width", "0"},
+	} {
+		root := NewRootCmd()
+		root.SetOut(&bytes.Buffer{})
+		root.SetErr(&bytes.Buffer{})
+		// An unreachable base URL: validation must fail before any request.
+		root.SetArgs(append(args, "--api-key", "k", "--base-url", "http://127.0.0.1:0"))
+		err := root.Execute()
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != "usage_invalid_flag" {
+			t.Fatalf("%v: want usage_invalid_flag, got %v", args, err)
+		}
+	}
+}
+
+func TestShapeSampleWhereMinDurationIsInclusive(t *testing.T) {
+	where, err := shapeSampleWhere(false, "", "", false, 500, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if where != "$span.duration_nano >= 500000000" {
+		t.Fatalf("where = %q", where)
+	}
+}

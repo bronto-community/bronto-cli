@@ -44,7 +44,7 @@ bronto dashboards attach-widgets <dashboard> --widget-ids <id,...> [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--widget-ids` |  | strings |  | widget IDs to attach (comma-separated or repeated) |
+| `--widget-ids` |  | strings |  | widget IDs or names to attach (comma-separated or repeated) |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
 
@@ -153,7 +153,7 @@ bronto dashboards list
 Remove a widget from a dashboard
 
 ```sh
-bronto dashboards remove-widget <dashboard> <widget-id> [flags]
+bronto dashboards remove-widget <dashboard> <widget> [flags]
 ```
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
@@ -161,7 +161,7 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 #### Examples
 
 ```sh
-bronto dashboards remove-widget <dashboard> <widget-id>
+bronto dashboards remove-widget <dashboard> <widget>
 ```
 
 ## bronto dashboards update

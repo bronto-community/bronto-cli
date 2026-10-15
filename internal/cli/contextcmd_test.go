@@ -69,3 +69,17 @@ func TestContextRejectsMissingRequiredFlag(t *testing.T) {
 		t.Fatalf("want usage exit 2 for missing required flag, got %v (exit %d)", err, clierr.ExitCode(err))
 	}
 }
+
+func TestContextRejectsNonPositiveLimit(t *testing.T) {
+	for _, n := range []string{"0", "-1"} {
+		root := NewRootCmd()
+		root.SetOut(&bytes.Buffer{})
+		root.SetErr(&bytes.Buffer{})
+		root.SetArgs([]string{"context", "--sequence", "1", "-d", "x", "--timestamp", "1",
+			"-n", n, "--api-key", "k", "--base-url", "http://127.0.0.1:0"})
+		err := root.Execute()
+		if err == nil || clierr.ExitCode(err) != 2 {
+			t.Fatalf("-n %s: want usage exit 2, got %v", n, err)
+		}
+	}
+}

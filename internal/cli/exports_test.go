@@ -89,6 +89,24 @@ func TestExportsCreateConvenienceFlagsWhereAlwaysPresent(t *testing.T) {
 	}
 }
 
+// The live API rejects search_details without a range ("No schema
+// matches"); with no time flag, create defaults to search's 15 minutes.
+func TestExportsCreateDefaultsTimeRange(t *testing.T) {
+	var gotBody map[string]any
+	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"export_id":"exp-1","status":"CREATED"}`))
+	}, "", "exports", "create", "--dataset", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+	details, _ := gotBody["search_details"].(map[string]any)
+	if details["time_range"] != "Last 15 minutes" {
+		t.Fatalf("search_details = %v, want time_range Last 15 minutes", details)
+	}
+}
+
 func TestExportsCreateBodyVsConvenienceConflict(t *testing.T) {
 	_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("server should not be contacted")
