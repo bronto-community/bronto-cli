@@ -311,7 +311,20 @@ func TestQuery_SearchOrdering(t *testing.T) {
 		}
 		return out
 	}
+	// The seed spaces its events one second apart; without at least two
+	// distinct times every direction check below would pass vacuously.
+	distinct := func(ts []int64) bool {
+		for _, v := range ts[1:] {
+			if v != ts[0] {
+				return true
+			}
+		}
+		return false
+	}
 	newest := times()
+	if !distinct(newest) {
+		t.Fatalf("need at least two distinct @time values to check ordering, got %v", newest)
+	}
 	for i := 1; i < len(newest); i++ {
 		if newest[i] > newest[i-1] {
 			t.Fatalf("default order is not newest first: %v", newest)
@@ -323,8 +336,11 @@ func TestQuery_SearchOrdering(t *testing.T) {
 			t.Fatalf("--oldest-first order is not ascending: %v", oldest)
 		}
 	}
-	if newest[0] < oldest[0] {
-		t.Fatalf("default first event (%d) is older than --oldest-first's (%d)", newest[0], oldest[0])
+	if !distinct(oldest) {
+		t.Fatalf("need at least two distinct @time values to check ordering, got %v", oldest)
+	}
+	if newest[0] <= oldest[0] {
+		t.Fatalf("default first event (%d) is not newer than --oldest-first's (%d)", newest[0], oldest[0])
 	}
 }
 

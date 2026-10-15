@@ -343,12 +343,18 @@ var seedStatuses = []int{200, 201, 301, 404, 500}
 // seedLines builds the NDJSON body sent by the seed fixture: seedTotalEvents
 // events all carrying ci_marker=marker, varied level/status fields, with the
 // last seedTraceEvents additionally carrying OTel-shaped trace_id/span_id/
-// duration_ms fields.
+// duration_ms fields. Every event carries an explicit timestamp, one
+// second apart and ascending with seq, so ordering assertions see distinct
+// @time values (without one, send stamps the whole batch with the same
+// whole second).
 func seedLines(marker string) string {
 	var out string
+	base := time.Now().UTC().Add(-time.Duration(seedTotalEvents) * time.Second)
+	ts := func(i int) string { return base.Add(time.Duration(i) * time.Second).Format(time.RFC3339) }
 	plain := seedTotalEvents - seedTraceEvents
 	for i := 0; i < plain; i++ {
 		out += jsonLine(map[string]any{
+			"timestamp": ts(i),
 			"message":   fmt.Sprintf("bronto-ci seed event %d", i),
 			"ci_marker": marker,
 			"level":     seedLevels[i%len(seedLevels)],
@@ -358,6 +364,7 @@ func seedLines(marker string) string {
 	}
 	for i := 0; i < seedTraceEvents; i++ {
 		out += jsonLine(map[string]any{
+			"timestamp":   ts(plain + i),
 			"message":     fmt.Sprintf("bronto-ci seed trace %d", i),
 			"ci_marker":   marker,
 			"level":       "info",
@@ -458,11 +465,18 @@ func TestSeedLines_Shape(t *testing.T) {
 	}
 
 	traceCount := 0
+	seenTS := map[string]bool{}
 	for i, line := range lines {
 		var ev map[string]any
 		if err := json.Unmarshal([]byte(line), &ev); err != nil {
 			t.Fatalf("line %d did not parse as JSON: %v\nline: %s", i, err, line)
 		}
+		// distinct timestamps are what make TestQuery_SearchOrdering meaningful
+		tsv, _ := ev["timestamp"].(string)
+		if tsv == "" || seenTS[tsv] {
+			t.Fatalf("line %d timestamp %q is missing or repeated", i, tsv)
+		}
+		seenTS[tsv] = true
 		if m, _ := ev["ci_marker"].(string); m != marker {
 			t.Fatalf("line %d ci_marker = %q, want %q", i, m, marker)
 		}
