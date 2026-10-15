@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
@@ -157,5 +159,78 @@ func TestSendOversizedLineSurfacesReadError(t *testing.T) {
 	// the good line before the error must still have been delivered
 	if lines.Load() != 1 {
 		t.Fatalf("delivered lines = %d, want 1", lines.Load())
+	}
+}
+
+// runSendInterrupted streams one line into send through a pipe that stays
+// open, then cancels the command context like Ctrl-C/SIGTERM would. The
+// hour-long --flush-interval keeps the ticker from flushing first.
+func runSendInterrupted(t *testing.T, ingestURL string) (string, error) {
+	t.Helper()
+	pr, pw := io.Pipe()
+	defer func() { _ = pw.Close() }()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	root := NewRootCmd()
+	var errBuf bytes.Buffer
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&errBuf)
+	root.SetIn(pr)
+	root.SetArgs([]string{"send", "-d", "app", "--no-gzip", "--flush-interval", "1h",
+		"--ingest-url", ingestURL, "--api-key", "k"})
+	done := make(chan error, 1)
+	go func() { done <- root.ExecuteContext(ctx) }()
+	if _, err := pw.Write([]byte("last-line\n")); err != nil {
+		t.Fatal(err)
+	}
+	// The pipe write returns once the scanner has the line; give the loop
+	// a moment to add it to the batch before the interrupt.
+	time.Sleep(100 * time.Millisecond)
+	cancel()
+	select {
+	case err := <-done:
+		return errBuf.String(), err
+	case <-time.After(10 * time.Second):
+		t.Fatal("send did not stop after the interrupt")
+		return "", nil
+	}
+}
+
+func TestSendInterruptFlushesLastBatch(t *testing.T) {
+	var body atomic.Value
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		body.Store(string(b))
+	}))
+	defer srv.Close()
+
+	stderr, err := runSendInterrupted(t, srv.URL)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("an interrupted send must return the cancellation (exit 130), got %v", err)
+	}
+	if got, _ := body.Load().(string); !strings.Contains(got, "last-line") {
+		t.Fatalf("pending batch was not flushed after the interrupt: %q", got)
+	}
+	if !strings.Contains(stderr, "Sent 1 event(s) in 1 batch(es).") {
+		t.Fatalf("summary = %q", stderr)
+	}
+}
+
+func TestSendInterruptFlushFailureIsReported(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(401)
+	}))
+	defer srv.Close()
+
+	stderr, err := runSendInterrupted(t, srv.URL)
+	var se *ShutdownError
+	if !errors.As(err, &se) {
+		t.Fatalf("a failed final flush must be a ShutdownError, got %v", err)
+	}
+	if clierr.ExitCode(err) != 3 {
+		t.Fatalf("exit = %d, want the auth error's 3", clierr.ExitCode(err))
+	}
+	if !strings.Contains(stderr, "Sent 0 event(s) in 0 batch(es) before the interrupt; the last batch was not delivered.") {
+		t.Fatalf("stderr = %q", stderr)
 	}
 }

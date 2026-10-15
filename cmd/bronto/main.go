@@ -51,7 +51,9 @@ func run() int {
 
 // exitStatus maps the outcome of an executed command to a process exit
 // code. A run aborted by the signal context exits 130 (128+SIGINT) without
-// rendering an error — the interrupt was the user's own action. An exec
+// rendering an error — the interrupt was the user's own action — unless
+// the command's clean-up after the interrupt failed (cli.ShutdownError),
+// which is rendered with its own exit code. An exec
 // plugin's own exit code passes through verbatim, unrendered: plugins own
 // their exit codes and their own output.
 func exitStatus(ctx context.Context, err error) (int, bool) {
@@ -61,6 +63,10 @@ func exitStatus(ctx context.Context, err error) (int, bool) {
 	var pe *cli.PluginExit
 	if errors.As(err, &pe) {
 		return pe.Code, false
+	}
+	var se *cli.ShutdownError
+	if errors.As(err, &se) {
+		return clierr.ExitCode(se.Err), true
 	}
 	if ctx.Err() != nil || errors.Is(err, context.Canceled) {
 		return 130, false
@@ -78,7 +84,8 @@ func errorType(ctx context.Context, err error) string {
 	if errors.As(err, &pe) {
 		return "plugin_exit"
 	}
-	if ctx.Err() != nil || errors.Is(err, context.Canceled) {
+	var se *cli.ShutdownError
+	if !errors.As(err, &se) && (ctx.Err() != nil || errors.Is(err, context.Canceled)) {
 		return "canceled"
 	}
 	var ce *clierr.Error

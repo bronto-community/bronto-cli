@@ -15,6 +15,10 @@ description: The exit-code contract, the JSON error envelope, and which error co
 | `5` | rate limited or timed out | yes for reads and rate limits; after a timed-out write, check whether it landed first |
 | `130` | interrupted by Ctrl-C or SIGTERM | |
 
+Long-running commands such as `bronto tail` and `bronto send` also exit `130` when you stop
+them. If `send` can't deliver its last batch after the interrupt, it reports that error
+and exits with its code instead.
+
 When `bronto` runs an [exec plugin](/cli/extend/plugins), the plugin's own exit code passes
 through unchanged.
 

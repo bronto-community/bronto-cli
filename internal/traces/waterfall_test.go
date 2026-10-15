@@ -164,3 +164,19 @@ func TestTraceBoundsIgnoresNonPositiveStarts(t *testing.T) {
 		t.Fatalf("bounds = %d..%d total %d", start, end, total)
 	}
 }
+
+func TestRenderBarNonPositiveWidthDoesNotPanic(t *testing.T) {
+	s := Span{StartNS: 50, DurationNS: 50}
+	for _, w := range []int{0, -3} {
+		for _, color := range []bool{false, true} {
+			if bar := RenderBar(s, 0, 100, w, color); !strings.Contains(bar, "█") {
+				t.Fatalf("width %d: bar = %q", w, bar)
+			}
+		}
+	}
+	var buf bytes.Buffer
+	RenderWaterfall(&buf, []Span{{SpanID: "a", Service: "svc", Name: "op", StartNS: 1, DurationNS: 10}}, 0, false)
+	if !strings.Contains(buf.String(), "svc/op") {
+		t.Fatalf("waterfall = %q", buf.String())
+	}
+}

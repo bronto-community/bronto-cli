@@ -54,6 +54,10 @@ Lines are batched. A batch is sent when it reaches `--batch-size` events (defaul
 `--flush-interval` (default `1s`, minimum `100ms`), so `tail -f` output shows up promptly.
 Request bodies are gzip-compressed unless you pass `--no-gzip`.
 
+On Ctrl-C or SIGTERM, `send` flushes the pending batch, waiting up to 5 seconds, and exits
+with code `130`. If that last batch fails, `send` reports the error and exits with its
+code instead.
+
 <Warning>
 If a batch fails, `send` stops with an error, and the events in that batch are lost.
 Batches aren't deduplicated, so re-running the command after a partial failure can send

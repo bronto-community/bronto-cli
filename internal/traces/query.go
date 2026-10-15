@@ -46,6 +46,15 @@ func KindClause(kind string) (string, error) {
 	return fmt.Sprintf("$span.kind = 'SPAN_KIND_%s'", bare), nil
 }
 
+// MinDurationClause matches spans at least ms milliseconds long, the
+// --min-duration-ms filter; it is empty for ms <= 0 (no filter).
+func MinDurationClause(ms float64) string {
+	if ms <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("$span.duration_nano >= %d", int64(ms*1e6))
+}
+
 func AndJoin(clauses ...string) string {
 	var parts []string
 	for _, c := range clauses {

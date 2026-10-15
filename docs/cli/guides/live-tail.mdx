@@ -16,7 +16,7 @@ bronto tail "status >= 500" -d prod/checkout-service
 ```
 
 It takes the same positional WHERE query and `-d`/`--from-expr` dataset selection as
-[`bronto search`](/cli/guides/searching). Stop it with Ctrl-C.
+[`bronto search`](/cli/guides/searching). Stop it with Ctrl-C, which exits with code `130`.
 
 To print the current window once and exit, for example in a script, add `--no-follow`:
 
@@ -67,7 +67,8 @@ $ bronto tail "" -d prod/checkout-service --fields @time,status,path,message --n
 With `--select` or `-g`/`--group-by`, `tail` switches to aggregate mode. It runs the
 same group-by query on every interval and, at a terminal, redraws the result in place as
 a small live dashboard with a trend sparkline per group. `--select` defaults to
-`count(*)`.
+`count(*)`. With several `--select` flags each gets its own column. A column the API
+returned no value for shows `-` (`null` when piped), with a warning on stderr.
 
 ```sh
 bronto tail -d prod/checkout-service -g status --window 1m
@@ -99,7 +100,7 @@ $ bronto tail -d prod/checkout-service -g status --window 5m --no-follow --field
 | --- | --- | --- |
 | `--interval` | `3s` | time between polls (minimum `1s`) |
 | `--window` | `30s` | lookback per poll, one unit only (`30s`, `5m`, `1h`) |
-| `-n`, `--limit` | `500` | maximum events per poll |
+| `-n`, `--limit` | `500` | maximum events per poll, `1` to `10000` |
 | `--dedup-size` | `20000` | events remembered to suppress duplicates across polls |
 
 Events are sorted within each poll but not across polls, so a late event can print after
@@ -109,6 +110,9 @@ An event whose timestamp is already older than `--window` by the time it becomes
 searchable is never printed: every poll asks for the last `--window` only. If events
 reach Bronto with a delay, use a larger `--window`, or use `bronto search` over a fixed
 time range when you need every event.
+
+If a poll returns `--limit` events, `tail` warns on stderr that it may have skipped
+events in that window. Raise `-n`, shorten `--window`, or narrow the query.
 
 On very high-volume streams, raise `--dedup-size` if you see repeated lines.
 

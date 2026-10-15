@@ -16,6 +16,10 @@ const (
 	ansiCyan  = "\x1b[36m"
 )
 
+// MinBarWidth is the narrowest --bar-width the CLI accepts. The renderers
+// clamp anything below 1 themselves, but a bar that narrow shows nothing.
+const MinBarWidth = 10
+
 // BuildTree indexes spans into a parent->children map and finds roots.
 // A span is a root when its parent is absent from THIS batch — which
 // includes true roots and orphans whose parent fell outside the query
@@ -88,6 +92,9 @@ func TraceBounds(spans []Span) (start, end, total int64) {
 // RenderBar draws a span's position on the trace axis. Unlike v1, bars are
 // clamped into [0,width] so pathological offsets cannot overflow the column.
 func RenderBar(s Span, traceStart, total int64, width int, color bool) string {
+	if width < 1 {
+		width = 1
+	}
 	if total < 1 {
 		total = 1
 	}

@@ -29,7 +29,7 @@ func TestListSpansBuildsWhereAndRows(t *testing.T) {
 		t.Fatal(err)
 	}
 	where, _ := body["where"].(string)
-	want := "$service.name = 'web' AND $span.name = 'GET /x' AND $span.duration_nano > 1500000 AND $span.status_code = 'STATUS_CODE_ERROR'"
+	want := "$service.name = 'web' AND $span.name = 'GET /x' AND $span.duration_nano >= 1500000 AND $span.status_code = 'STATUS_CODE_ERROR'"
 	if where != want {
 		t.Fatalf("where = %q\nwant    %q", where, want)
 	}
