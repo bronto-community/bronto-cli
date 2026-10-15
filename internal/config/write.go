@@ -129,7 +129,7 @@ func editTOMLText(text string, e userEdit) string {
 		if k, ok := lineTOMLKey(t); ok {
 			if k == key {
 				indent := l[:len(l)-len(strings.TrimLeft(l, " \t"))]
-				lines[i] = indent + line
+				lines[i] = indent + strings.TrimSuffix(line, "\n") + trailingTOMLComment(l) + "\n"
 				return strings.Join(lines, "")
 			}
 			insertAt = i
@@ -156,6 +156,34 @@ func editTOMLText(text string, e userEdit) string {
 	}
 	b.WriteString("[" + strings.Join(parts, ".") + "]\n" + line)
 	return b.String()
+}
+
+// trailingTOMLComment returns the inline comment of a "key = value" line,
+// with the whitespace before it ("  # CI limit"), or "". A '#' inside a
+// quoted key or value doesn't start a comment.
+func trailingTOMLComment(l string) string {
+	l = strings.TrimRight(l, "\r\n")
+	quote := byte(0)
+	for i := 0; i < len(l); i++ {
+		c := l[i]
+		switch {
+		case quote == '"' && c == '\\':
+			i++ // skip the escaped character
+		case quote != 0:
+			if c == quote {
+				quote = 0
+			}
+		case c == '"' || c == '\'':
+			quote = c
+		case c == '#':
+			start := i
+			for start > 0 && (l[start-1] == ' ' || l[start-1] == '\t') {
+				start--
+			}
+			return l[start:]
+		}
+	}
+	return ""
 }
 
 var bareTOMLKey = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
@@ -290,6 +318,11 @@ func ValidateUserValue(key, value string) error {
 	if !slices.Contains(userFileKeys, key) {
 		return clierr.New("config_unknown_key", fmt.Sprintf("unknown config key %q", key)).
 			WithHint("Settable keys: " + strings.Join(userFileKeys, ", ") + ".")
+	}
+	// An empty value clears the setting (Load skips empty values), e.g.
+	// `config set base_url ''` to go back to the region's URL.
+	if value == "" {
+		return nil
 	}
 	switch key {
 	case "region":

@@ -76,8 +76,15 @@ and `set` still work, so you can repair it:
 bronto config set timeout 30
 ```
 
-`config set` changes only the line for that key. Comments and keys the CLI doesn't use stay
-as they are. If the file uses TOML syntax the line edit can't handle safely, such as
+To clear a setting, set it to an empty value. The CLI then falls back to the next source
+or the default, for example the region's API URL:
+
+```sh
+bronto config set base_url ''
+```
+
+`config set` changes only the value on that key's line and keeps a comment at the end of
+it. Other comments and keys the CLI doesn't use stay as they are. If the file uses TOML syntax the line edit can't handle safely, such as
 inline tables, the CLI rewrites the whole file instead: every key is kept, but comments
 are lost.
 

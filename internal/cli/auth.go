@@ -349,7 +349,9 @@ func newAuthSwitchCmd() *cobra.Command {
 		Short: "Set the default profile",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := NewApp(cmd)
+			// allowNewProfile: switching away from a missing profile must
+			// work. The target profile is checked below.
+			app, err := newApp(cmd, appOptions{allowNewProfile: true})
 			if err != nil {
 				return err
 			}

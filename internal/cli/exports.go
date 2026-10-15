@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -354,7 +355,13 @@ func downloadExport(ctx context.Context, app *App, location, path string) error 
 		return err
 	}
 	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.ResponseHeaderTimeout = idle
+	if idle > 0 {
+		// Each setup phase gets the app timeout; there is deliberately no
+		// total Client.Timeout, which would cut off a healthy long download.
+		tr.DialContext = (&net.Dialer{Timeout: idle, KeepAlive: 30 * time.Second}).DialContext
+		tr.TLSHandshakeTimeout = idle
+		tr.ResponseHeaderTimeout = idle
+	}
 	client := &http.Client{
 		Transport: tr,
 		CheckRedirect: func(r *http.Request, via []*http.Request) error {

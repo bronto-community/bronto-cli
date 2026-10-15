@@ -192,10 +192,33 @@ func validateURLSetting(key, val string) error {
 // don't parse are returned unchanged.
 func RedactURLString(s string) string {
 	u, err := url.Parse(s)
-	if err != nil || u.User == nil {
+	if err == nil {
+		if u.User == nil {
+			return s
+		}
+		return u.Redacted()
+	}
+	// Malformed ("https://u:pw@host:bad", a bad %-escape): url.Parse
+	// finds no userinfo, so mask everything between the scheme and the
+	// last '@' before any query or fragment by hand. A value without a
+	// "user:password@" part (an ordinary setting) is returned unchanged.
+	prefix, rest := "", s
+	if i := strings.Index(s, "://"); i >= 0 {
+		prefix, rest = s[:i+3], s[i+3:]
+	}
+	auth := rest
+	if j := strings.IndexAny(rest, "?#"); j >= 0 {
+		auth = rest[:j]
+	}
+	at := strings.LastIndex(auth, "@")
+	if at < 0 {
 		return s
 	}
-	return u.Redacted()
+	user, _, hasPassword := strings.Cut(auth[:at], ":")
+	if !hasPassword {
+		return s
+	}
+	return prefix + user + ":xxxxx" + rest[at:]
 }
 
 // regionPattern is a conservative slug: lowercase alphanumerics and
