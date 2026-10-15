@@ -11,9 +11,15 @@ import (
 // Matcher evaluates a parsed query against events client-side. Regexes
 // for ~ / !~ are compiled once at construction.
 type Matcher struct {
-	node Node
-	res  map[string]*regexp.Regexp
+	node     Node
+	res      map[string]*regexp.Regexp
+	fallback string
 }
+
+// SetFieldFallbackPrefix makes a field absent from the event resolve to
+// prefix+field instead, e.g. status → message_kvs.status for events
+// dumped by bronto search -o jsonl. An exact key always wins.
+func (m *Matcher) SetFieldFallbackPrefix(prefix string) { m.fallback = prefix }
 
 // NewMatcher compiles the regex literals reachable from n. An invalid
 // regex is reported here, not at match time.
@@ -73,6 +79,9 @@ func (m *Matcher) eval(n Node, ev map[string]any) bool {
 
 func (m *Matcher) compare(c Compare, ev map[string]any) bool {
 	v, ok := ev[c.Field]
+	if !ok && m.fallback != "" {
+		v, ok = ev[m.fallback+c.Field]
+	}
 	if !ok || v == nil {
 		return false
 	}

@@ -104,10 +104,10 @@ Any endpoint without a dedicated command: `bronto api <METHOD> <path>`, e.g. `br
 
 ```
 bronto exports create --dataset <dataset> --since 1h --where "status=500" --wait
-bronto exports create --dataset <dataset> --since 1h --download out.json.gz
+bronto exports create --dataset <dataset> --since 1h --download out.ndjson.zst
 ```
 
-`--wait` polls until the export is `COMPLETE`/`FAILED`, giving up after `--wait-timeout` (default 15m) with a non-zero `export_wait_timeout` exit; `--download <path>` implies `--wait` and saves the result.
+`--wait` polls until the export is `COMPLETE`/`FAILED`, giving up after `--wait-timeout` (default 15m) with a non-zero `export_wait_timeout` exit; `--download <path>` implies `--wait` and saves the result as zstd-compressed NDJSON (`zstd -dc out.ndjson.zst | bronto search --local - "<query>"`). Without `--since`/`--from` the export covers the last 15 minutes.
 
 ## Plugins
 

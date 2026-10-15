@@ -516,7 +516,7 @@ func TestSearchTeachingFooter(t *testing.T) {
 
 	t.Run("shown on tty table", func(t *testing.T) {
 		stderr := run(t, true)
-		want := "2 results. 6 fields available — 'bronto fields -d 11111111-1111-1111-1111-111111111111' lists them; '--select <field,...>' picks columns; '-x' expands a row."
+		want := "2 results. 6 fields available — 'bronto fields -d 11111111-1111-1111-1111-111111111111' lists them; '--select <field>' picks a column (repeatable); '-x' expands a row."
 		if !strings.Contains(stderr, want) {
 			t.Fatalf("footer missing.\nwant: %s\ngot stderr: %q", want, stderr)
 		}
@@ -629,6 +629,102 @@ func TestSearchExpandRejectsMachineFormatsAndGroups(t *testing.T) {
 		}
 		if requests != 0 {
 			t.Fatalf("%v: no HTTP request should be made, got %d", args, requests)
+		}
+	}
+}
+
+// searchBody runs search against a capturing fake and returns the
+// request body it sent. The fake answers anything, so these assertions
+// are what keep the body honest against the live API's rules.
+func searchBody(t *testing.T, respond string, args ...string) map[string]any {
+	t.Helper()
+	var body map[string]any
+	srv := searchServer(t, respond, &body)
+	defer srv.Close()
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs(append([]string{"search", "-d", "11111111-1111-1111-1111-111111111111",
+		"--base-url", srv.URL, "--api-key", "k", "-o", "json"}, args...))
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	return body
+}
+
+// The live API returns oldest first when most_recent_first is absent, so
+// search must always send it.
+func TestSearchAlwaysSendsOrder(t *testing.T) {
+	if got := searchBody(t, `{"events":[]}`)["most_recent_first"]; got != true {
+		t.Errorf("default most_recent_first = %v, want true", got)
+	}
+	if got := searchBody(t, `{"events":[]}`, "--oldest-first")["most_recent_first"]; got != false {
+		t.Errorf("--oldest-first most_recent_first = %v, want false", got)
+	}
+}
+
+// The live API rejects any search without select (400 "should contain
+// property select"), grouped and explain-only ones included.
+func TestSearchAlwaysSendsSelect(t *testing.T) {
+	for _, tc := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"-g", "host"}, `["count(*)"]`},
+		{[]string{"-g", "host", "--select", "avg(duration_ms)"}, `["avg(duration_ms)"]`},
+		{[]string{"--explain-only"}, `["@time","@raw","*"]`},
+		{[]string{"--explain-only", "-g", "host"}, `["count(*)"]`},
+	} {
+		body := searchBody(t, `{"groups":[],"explain":{}}`, tc.args...)
+		got, _ := json.Marshal(body["select"])
+		if string(got) != tc.want {
+			t.Errorf("%v: select = %s, want %s", tc.args, got, tc.want)
+		}
+	}
+}
+
+func TestSearchExplainOnlyRejectsCSV(t *testing.T) {
+	srv := searchServer(t, `{"explain":{}}`, nil)
+	defer srv.Close()
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "--explain-only", "-o", "csv", "-d", "11111111-1111-1111-1111-111111111111",
+		"--base-url", srv.URL, "--api-key", "k"})
+	err := root.Execute()
+	if clierr.ExitCode(err) != 2 {
+		t.Fatalf("want a usage error (exit 2), got %v", err)
+	}
+}
+
+func TestSearchRejectsInvertedRange(t *testing.T) {
+	srv := searchServer(t, `{"events":[]}`, nil)
+	defer srv.Close()
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"search", "-d", "11111111-1111-1111-1111-111111111111",
+		"--from", "2026-07-07T11:00:00Z", "--to", "2026-07-07T10:00:00Z",
+		"--base-url", srv.URL, "--api-key", "k"})
+	if err := root.Execute(); clierr.ExitCode(err) != 2 {
+		t.Fatalf("want a usage error (exit 2), got %v", err)
+	}
+}
+
+// JSON logs cluster on their parsed message, not on the whole @raw line.
+func TestPatternLinePrefersMessage(t *testing.T) {
+	for _, tc := range []struct {
+		ev   map[string]any
+		want string
+	}{
+		{map[string]any{"@raw": `{"message":"m1","id":7}`, "message_kvs": map[string]any{"message": "m1"}}, "m1"},
+		{map[string]any{"@raw": "r", "message_kvs.message": "m2"}, "m2"},
+		{map[string]any{"@raw": "r", "message": "m3"}, "m3"},
+		{map[string]any{"@raw": "plain line", "message_kvs": map[string]any{"status": "200"}}, "plain line"},
+		{map[string]any{}, ""},
+	} {
+		if got := patternLine(tc.ev); got != tc.want {
+			t.Errorf("patternLine(%v) = %q, want %q", tc.ev, got, tc.want)
 		}
 	}
 }

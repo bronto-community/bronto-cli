@@ -19,7 +19,7 @@ The convenience flags build the request body for you:
 | Flag | Meaning |
 | --- | --- |
 | `-d`, `--dataset` | dataset name or UUID |
-| `--since` | relative lookback, for example `1h` |
+| `--since` | relative lookback, for example `1h`. Without a time flag, the export covers the last 15 minutes, as `bronto search` does. |
 | `--from`, `--to` | absolute start and end, RFC 3339 |
 | `--where` | query filter |
 
@@ -57,17 +57,18 @@ checks. It gives up after `--wait-timeout` (default `15m`) and exits non-zero wi
 `--download <path>` implies `--wait` and saves the finished export to that path:
 
 ```sh
-bronto exports create -d prod/checkout-service --since 6h --where "status >= 500" --download checkout-5xx.json.gz
+bronto exports create -d prod/checkout-service --since 6h --where "status >= 500" --download checkout-5xx.ndjson.zst
 ```
 
 The download comes from a presigned URL, and the CLI doesn't send your API key to it.
-The file is written as delivered, with `0600` permissions.
+The file is written as delivered, with `0600` permissions: NDJSON, one event per line,
+compressed with [zstd](https://facebook.github.io/zstd/).
 
-To query the export offline, feed it to [`bronto search --local`](/cli/guides/searching#search-local-files).
-If the file is gzip-compressed, decompress it on the way in:
+To query the export offline, decompress it on the way into
+[`bronto search --local`](/cli/guides/searching#search-local-files):
 
 ```sh
-gunzip -c checkout-5xx.json.gz | bronto search --local - "path = '/api/checkout'"
+zstd -dc checkout-5xx.ndjson.zst | bronto search --local - "path = '/api/checkout'"
 ```
 
 ## Manage export jobs

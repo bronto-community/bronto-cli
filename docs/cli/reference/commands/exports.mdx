@@ -30,7 +30,8 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ## bronto exports create
 
-Create an export
+Creates an export of a dataset's events. Without a time flag it exports the last 15 minutes,
+like search. The downloaded file is zstd-compressed NDJSON.
 
 ```sh
 bronto exports create [flags]
@@ -58,7 +59,7 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 ```sh
 bronto exports create --dataset <dataset> --since 1h --where "status=500" --wait
 bronto exports create --input body.json
-bronto exports create --dataset <dataset> --since 1h --download out.json.gz
+bronto exports create --dataset <dataset> --since 1h --download out.ndjson.zst
 ```
 
 ## bronto exports delete

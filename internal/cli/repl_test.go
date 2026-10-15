@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -306,5 +308,29 @@ func TestReplTailStreamsThenStops(t *testing.T) {
 	out, _ := runRepl(t, srv, []string{`\tail`, `\q`})
 	if !strings.Contains(out, "tailed-line") || !strings.Contains(out, "(tail stopped)") {
 		t.Fatalf("tail output wrong:\n%s", out)
+	}
+}
+
+// The API returns the oldest events unless asked otherwise; the REPL's
+// header promises the most recent ones.
+func TestReplQueryAsksForMostRecentFirst(t *testing.T) {
+	var mrf atomic.Value
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/search":
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			mrf.Store(body["most_recent_first"])
+			_, _ = w.Write([]byte(`{"events":[]}`))
+		case "/logs":
+			_, _ = w.Write([]byte(`{"logs":[{"log":"web","collection":"prod","log_id":"11111111-1111-1111-1111-111111111111"}]}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	defer srv.Close()
+	runRepl(t, srv, []string{"status >= 500", `\q`})
+	if got := mrf.Load(); got != true {
+		t.Fatalf("most_recent_first = %v, want true", got)
 	}
 }
