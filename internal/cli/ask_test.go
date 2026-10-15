@@ -340,3 +340,54 @@ func TestAskLLMHTTPError(t *testing.T) {
 		t.Fatalf("error body not truncated: %d chars", len(ce.Message))
 	}
 }
+
+// countingLLM counts calls, so a test can assert the question never left.
+func countingLLM(t *testing.T, calls *atomic.Int32) *httptest.Server {
+	t.Helper()
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls.Add(1)
+		resp := map[string]any{"choices": []map[string]any{{"message": map[string]any{"content": askPlanJSON}}}}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	t.Cleanup(s.Close)
+	return s
+}
+
+// An unknown -d fails before the question leaves the machine.
+func TestAskResolvesDatasetBeforeCallingLLM(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	api := askAPIServer(t, nil)
+	defer api.Close()
+	var calls atomic.Int32
+	t.Setenv("BRONTO_ASK_URL", countingLLM(t, &calls).URL)
+	_, _, err := runCLI(t, "ask", "errors", "-d", "nope", "--base-url", api.URL, "--api-key", "k", "-o", "json")
+	_ = wantCLIErr(t, err, "dataset_not_found", 4)
+	if calls.Load() != 0 {
+		t.Fatalf("LLM called %d time(s) before -d was validated", calls.Load())
+	}
+}
+
+func TestAskRejectsEmptyQuestion(t *testing.T) {
+	var calls atomic.Int32
+	t.Setenv("BRONTO_ASK_URL", countingLLM(t, &calls).URL)
+	for _, q := range []string{"", "   "} {
+		_, _, err := runCLI(t, "ask", q, "--api-key", "k", "-o", "json")
+		_ = wantCLIErr(t, err, "usage_missing_question", 2)
+	}
+	if calls.Load() != 0 {
+		t.Fatal("an empty question must not reach the LLM")
+	}
+}
+
+// A malformed ask_url is a config error (exit 2), not a retryable
+// ask_llm_error.
+func TestAskMalformedURLIsConfigError(t *testing.T) {
+	for _, u := range []string{"not a url", "ftp://example.com/chat", "localhost:8080/v1"} {
+		t.Setenv("BRONTO_ASK_URL", u)
+		_, _, err := runCLI(t, "ask", "errors", "--api-key", "k", "-o", "json")
+		ce := wantCLIErr(t, err, "config_invalid_url", 2)
+		if ce.Retryable {
+			t.Fatalf("%q: config error must not be retryable", u)
+		}
+	}
+}

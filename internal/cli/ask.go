@@ -14,6 +14,7 @@ import (
 
 	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/config"
 	"github.com/bronto-community/bronto-cli/internal/output"
 	"github.com/bronto-community/bronto-cli/internal/timerange"
 )
@@ -70,6 +71,11 @@ func newAskCmd() *cobra.Command {
 			"  bronto config set ask_url https://api.openai.com/v1/chat/completions",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			question := strings.TrimSpace(args[0])
+			if question == "" {
+				return clierr.New("usage_missing_question", "the question is empty").
+					WithHint(`Ask in plain words, e.g. bronto ask "errors by host in the last hour".`)
+			}
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
@@ -82,14 +88,25 @@ func newAskCmd() *cobra.Command {
 					WithHint("Set an OpenAI-compatible chat-completions URL: 'bronto config set ask_url <url>' " +
 						"(and ask_model; export BRONTO_ASK_API_KEY if the endpoint needs a key).")
 			}
+			if err := config.ValidateURL("ask_url", askURL); err != nil {
+				return err
+			}
 			modelVal, _ := app.Config.Get("ask_model")
 			model := modelVal.Val
 			if model == "" {
 				model = "gpt-4o-mini"
 			}
 
-			grounding := askGrounding(cmd.Context(), app, dataset)
-			plan, err := askLLM(cmd.Context(), app, askURL, model, args[0], grounding)
+			// Resolve -d before the question leaves the machine: a typo or
+			// an ambiguous name fails here, not after an LLM round trip.
+			var logID string
+			if dataset != "" {
+				if logID, err = resolveDatasetRef(cmd.Context(), app, dataset); err != nil {
+					return err
+				}
+			}
+			grounding := askGrounding(cmd.Context(), app, dataset, logID)
+			plan, err := askLLM(cmd.Context(), app, askURL, model, question, grounding)
 			if err != nil {
 				return err
 			}
@@ -138,8 +155,9 @@ func newAskCmd() *cobra.Command {
 
 // askGrounding collects dataset and field NAMES (never event contents)
 // so the model can target real fields. Best-effort: an unreachable API
-// only degrades the grounding, it does not block generation.
-func askGrounding(ctx context.Context, app *App, dataset string) string {
+// only degrades the grounding, it does not block generation. logID is the
+// already resolved -d dataset, or empty to fall back to default_dataset.
+func askGrounding(ctx context.Context, app *App, dataset, logID string) string {
 	var sb strings.Builder
 	if ds, err := listDatasets(ctx, app); err == nil {
 		names := make([]string, 0, len(ds))
@@ -159,9 +177,11 @@ func askGrounding(ctx context.Context, app *App, dataset string) string {
 	if ref == "" {
 		return sb.String()
 	}
-	logID, err := resolveDatasetRef(ctx, app, ref)
-	if err != nil {
-		return sb.String()
+	if logID == "" {
+		var err error
+		if logID, err = resolveDatasetRef(ctx, app, ref); err != nil {
+			return sb.String()
+		}
 	}
 	keys, err := topKeyNames(ctx, app, logID, "Last 1 hour")
 	if err != nil {

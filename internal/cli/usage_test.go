@@ -2,10 +2,23 @@ package cli
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
+
+// The /usage endpoint returns one ingestion_org_usage series (billable
+// bytes ingested); the help must not promise search or export numbers.
+func TestUsageHelpClaimsOnlyIngestion(t *testing.T) {
+	cmd := newUsageCmd()
+	if !strings.Contains(cmd.Short, "ingestion") || strings.Contains(cmd.Short, "search") || strings.Contains(cmd.Short, "export") {
+		t.Fatalf("Short = %q", cmd.Short)
+	}
+	if strings.Contains(cmd.Long, "search, and export usage") {
+		t.Fatalf("Long still promises search and export usage: %q", cmd.Long)
+	}
+}
 
 func TestUsageBuildsTimeRangeParam(t *testing.T) {
 	var gotPath string

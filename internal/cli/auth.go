@@ -188,15 +188,19 @@ func detectRegion(ctx context.Context, cfg *config.Config, key, regionFlag, base
 
 // pickRegion is detectRegion's probe loop over explicit candidates.
 func pickRegion(ctx context.Context, cands []regionCandidate, key string) (region, baseURL string, err error) {
-	var lastAuthErr, otherErr error
+	var lastAuthErr, forbiddenErr, otherErr error
 	var otherRegion string
 	for _, c := range cands {
 		err := probeRegion(ctx, c, key)
+		var ce *clierr.Error
 		switch {
 		case err == nil:
 			return c.region, c.baseURL, nil
 		case isAuthRejection(err):
 			lastAuthErr = err
+			if errors.As(err, &ce) && ce.Code == "auth_insufficient_role" {
+				forbiddenErr = err
+			}
 		default:
 			otherErr, otherRegion = err, c.region
 		}
@@ -217,12 +221,22 @@ func pickRegion(ctx context.Context, cands []regionCandidate, key string) (regio
 		}
 		return "", "", &out
 	}
+	// A 403 means a region knows the key but its role doesn't reach the
+	// management API (an ingestion-only key). Only 401s everywhere mean
+	// the key itself was rejected.
+	if forbiddenErr != nil {
+		return "", "", clierr.New("auth_insufficient_role",
+			fmt.Sprintf("the key lacks permission for the management API (%v)", forbiddenErr)).
+			WithHint(api.IngestionKeyHint).
+			WithDocs("https://docs.bronto.io/api-reference/api-keys/overview")
+	}
 	msg := "the key was not accepted in any region"
 	if lastAuthErr != nil {
 		msg = fmt.Sprintf("%s (%v)", msg, lastAuthErr)
 	}
 	return "", "", clierr.New("auth_invalid_key", msg).
-		WithHint("You are likely using an ingestion key. This CLI needs a management key (Settings → API Keys in the Bronto UI).").
+		WithHint("Check that the key is complete, not revoked, and belongs to this account. " +
+			"Keys only work in their own region: pass --region eu or --region us to try one.").
 		WithDocs("https://docs.bronto.io/api-reference/api-keys/overview")
 }
 

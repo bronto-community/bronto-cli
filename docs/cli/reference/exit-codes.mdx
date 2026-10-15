@@ -103,8 +103,9 @@ Every code `bronto` emits is listed below. Scripts should match on `code`.
 | `usage_missing_fields` | 2 | an `update` that replaces the whole resource is missing required fields |
 | `usage_invalid_method` | 2 | `bronto api` got an unsupported HTTP method |
 | `usage_invalid_region` | 2 | `--region` isn't `eu` or `us` |
-| `usage_invalid_tag` | 2 | a `bronto send --tag` isn't `key=value` |
+| `usage_invalid_tag` | 2 | a `bronto send --tag` isn't `key=value` with a non-empty key |
 | `usage_missing_message` | 2 | an event sent with `bronto send` has no `message` field |
+| `usage_missing_question` | 2 | `bronto ask` got an empty question |
 | `usage_key_required` | 2 | `bronto auth login` without a terminal or `--key-stdin` |
 | `usage_repl_requires_tty` | 2 | `bronto repl` with piped input or output |
 | `config_ask_not_configured` | 2 | `bronto ask` without `ask_url` |

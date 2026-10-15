@@ -157,6 +157,33 @@ func TestSendMapsStatuses(t *testing.T) {
 	}
 }
 
+// TestSendAuthHintsFitIngestion: send needs only an ingestion key, so its
+// auth hints must not send the user off to get a management key.
+func TestSendAuthHintsFitIngestion(t *testing.T) {
+	for _, c := range []struct {
+		status int
+		code   string
+		want   string
+	}{
+		{401, "auth_invalid_key", "an ingestion key is enough"},
+		{403, "auth_insufficient_role", "ingestion access"},
+	} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(c.status)
+		}))
+		s := &Sender{HTTP: srv.Client(), URL: srv.URL}
+		err := s.Send(context.Background(), []map[string]any{{"message": "x"}})
+		srv.Close()
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != c.code {
+			t.Fatalf("status %d: got %v", c.status, err)
+		}
+		if strings.Contains(ce.Hint, "management key") || !strings.Contains(ce.Hint, c.want) {
+			t.Fatalf("status %d: hint = %q", c.status, ce.Hint)
+		}
+	}
+}
+
 func TestSendEmptyIsNoop(t *testing.T) {
 	s := &Sender{HTTP: http.DefaultClient, URL: "http://127.0.0.1:1"} // would fail if dialed
 	if err := s.Send(context.Background(), nil); err != nil {

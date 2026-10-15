@@ -117,7 +117,18 @@ func (s *Sender) Send(ctx context.Context, events []map[string]any) error {
 			fmt.Sprintf("ingestion rejected a %d-byte batch (10 MB cap)", len(body))).
 			WithHint("Reduce --batch-size.")
 	}
-	return errOrNil(api.ErrorFromStatus(resp.StatusCode, resp.Body))
+	ce := api.ErrorFromStatus(resp.StatusCode, resp.Body)
+	// The shared hints talk about the management API; ingestion takes any
+	// key with ingestion access, so an ingestion-only key is fine here.
+	switch {
+	case ce == nil:
+	case ce.Code == "auth_invalid_key":
+		ce.Hint = "The ingestion API did not accept the key: it may be mistyped, revoked, or for another account or region. " +
+			"Pass a valid key with --api-key or BRONTO_API_KEY (an ingestion key is enough), and check --region / --ingest-url."
+	case ce.Code == "auth_insufficient_role":
+		ce.Hint = "The key is not allowed to send data. Use a key with ingestion access, such as one with the Ingestion role (Settings → API Keys in the Bronto UI)."
+	}
+	return errOrNil(ce)
 }
 
 // errOrNil avoids returning a non-nil interface holding a nil *clierr.Error.
