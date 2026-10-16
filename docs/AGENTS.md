@@ -5,10 +5,11 @@ The user-facing documentation for the `bronto` CLI, written for
 
 - **Dev site:** a Mintlify Starter project that deploys `docs/` from `main`
   through Mintlify's GitHub app. It shows only the CLI tab.
-- **Official docs:** https://docs.bronto.io/cli. Maintainers copy `docs/cli/`
-  into the official docs repository from a release with
-  `scripts/sync-official-docs.sh`. Never edit the copy there: the next sync
-  overwrites it.
+- **Official docs:** https://docs.bronto.io/cli. When a release is
+  published, the `docs-sync` workflow copies `docs/cli/` at that tag into
+  the official docs repository with `scripts/sync-official-docs.sh` and
+  opens a pull request there for a maintainer to merge. Never edit the
+  copy there: the next sync overwrites it.
 
 Everything a page links to or embeds must therefore work in both places:
 pages and assets live under `cli/`, and links into the rest of
