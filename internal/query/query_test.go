@@ -339,8 +339,19 @@ func TestWarningsFlagStringOperand(t *testing.T) {
 		t.Fatal(err)
 	}
 	w := Warnings(n)
-	if len(w) != 1 || !strings.Contains(w[0], "constant") || !strings.Contains(w[0], `"status"`) {
+	if len(w) != 1 || !strings.Contains(w[0], "constant string") || !strings.Contains(w[0], `"status"`) {
 		t.Fatalf("Warnings = %q", w)
+	}
+	// Only the left operand is constant: 'error' = level still depends on
+	// the event, so the warning must not call the comparison constant.
+	n, err = Parse("'error' = level")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, msg := range Warnings(n) {
+		if strings.Contains(msg, "comparison is constant") {
+			t.Fatalf("misleading warning: %q", msg)
+		}
 	}
 }
 

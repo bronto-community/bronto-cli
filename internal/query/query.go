@@ -142,7 +142,7 @@ func Warnings(n Node) []string {
 				lhs = t.Left.Raw
 				if t.Left.IsString {
 					out = append(out, fmt.Sprintf(
-						"%s in `%s %s` is a string, not the attribute %q — the comparison is constant; write %s to compare the attribute",
+						"%s in `%s %s` is a constant string, not the attribute %q; write %s to compare the attribute",
 						t.Left.Raw, t.Left.Raw, t.Op, t.Left.Text(), quoteField(t.Left.Text())))
 				}
 			}
