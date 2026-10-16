@@ -382,7 +382,7 @@ func TestAskRejectsEmptyQuestion(t *testing.T) {
 // A malformed ask_url is a config error (exit 2), not a retryable
 // ask_llm_error.
 func TestAskMalformedURLIsConfigError(t *testing.T) {
-	for _, u := range []string{"not a url", "ftp://example.com/chat", "localhost:8080/v1"} {
+	for _, u := range []string{"not a url", "ftp://example.com/chat", "localhost:8080/v1", "https://:443/v1/chat/completions"} {
 		t.Setenv("BRONTO_ASK_URL", u)
 		_, _, err := runCLI(t, "ask", "errors", "--api-key", "k", "-o", "json")
 		ce := wantCLIErr(t, err, "config_invalid_url", 2)

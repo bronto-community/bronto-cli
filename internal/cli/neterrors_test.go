@@ -153,6 +153,15 @@ func TestPickRegionDistinguishesOutageFromRejection(t *testing.T) {
 		t.Fatalf("403 hint = %q", ce.Hint)
 	}
 
+	// A 403 wins over another region's outage, in either probe order.
+	for _, cands := range [][]regionCandidate{
+		{{"eu", forbids.URL}, {"us", down.URL}},
+		{{"eu", down.URL}, {"us", forbids.URL}},
+	} {
+		_, _, err = pickRegion(ctx, cands, "k")
+		_ = wantCLIErr(t, err, "auth_insufficient_role", 3)
+	}
+
 	region, base, err := pickRegion(ctx, []regionCandidate{{"eu", rejects.URL}, {"us", accepts.URL}}, "k")
 	if err != nil || region != "us" || base != accepts.URL {
 		t.Fatalf("got %q %q %v", region, base, err)

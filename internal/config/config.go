@@ -182,7 +182,7 @@ func ValidateURL(key, val string) error { return validateURLSetting(key, val) }
 func validateURLSetting(key, val string) error {
 	u, err := url.Parse(val)
 	switch {
-	case err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "":
+	case err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Hostname() == "":
 		example := "https://api.eu.bronto.io"
 		switch key {
 		case "ingest_url":
