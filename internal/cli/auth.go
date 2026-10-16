@@ -172,12 +172,13 @@ func regionCandidates(cfg *config.Config, regionFlag, baseURLFlag string) []regi
 // /logs and returns the first that accepts it. Each probe is bounded to 5s
 // so an unreachable host can't hang the command.
 //
-// Only a 401/403 says anything about the key. If every candidate rejected
-// it that way, the key is invalid: auth_invalid_key (exit 3). If any
-// candidate failed for another reason (DNS, timeout, 5xx, 429, ...) the
-// key may well belong to that region, so that typed error is returned
-// instead (network_error, timeout, api_server_error, ...), keeping its
-// exit code and retryability.
+// Only a 401/403 says anything about the key. Precedence when no
+// candidate accepts it: a cancelled context passes through; a 403 in any
+// region means the key is known but lacks the management role
+// (auth_insufficient_role, exit 3), whatever the other regions did; then
+// any other failure (DNS, timeout, 5xx, 429, ...) is returned as its typed
+// error, since the key may belong to that region; only 401s everywhere
+// make the key invalid (auth_invalid_key, exit 3).
 func detectRegion(ctx context.Context, cfg *config.Config, key, regionFlag, baseURLFlag string) (region, baseURL string, err error) {
 	if regionFlag != "" && regionFlag != "eu" && regionFlag != "us" {
 		return "", "", clierr.New("usage_invalid_region",
@@ -188,24 +189,38 @@ func detectRegion(ctx context.Context, cfg *config.Config, key, regionFlag, base
 
 // pickRegion is detectRegion's probe loop over explicit candidates.
 func pickRegion(ctx context.Context, cands []regionCandidate, key string) (region, baseURL string, err error) {
-	var lastAuthErr, otherErr error
+	var lastAuthErr, forbiddenErr, otherErr error
 	var otherRegion string
 	for _, c := range cands {
 		err := probeRegion(ctx, c, key)
+		var ce *clierr.Error
 		switch {
 		case err == nil:
 			return c.region, c.baseURL, nil
 		case isAuthRejection(err):
 			lastAuthErr = err
+			if errors.As(err, &ce) && ce.Code == "auth_insufficient_role" {
+				forbiddenErr = err
+			}
 		default:
 			otherErr, otherRegion = err, c.region
 		}
 	}
+	var oce *clierr.Error
+	if otherErr != nil && !errors.As(otherErr, &oce) {
+		return "", "", otherErr // context cancellation: pass through
+	}
+	// A 403 means a region knows the key but its role doesn't reach the
+	// management API (an ingestion-only key). That is a definite answer,
+	// so it wins over another region's outage.
+	if forbiddenErr != nil {
+		return "", "", clierr.New("auth_insufficient_role",
+			fmt.Sprintf("the key lacks permission for the management API (%v)", forbiddenErr)).
+			WithHint(api.IngestionKeyHint).
+			WithDocs("https://docs.bronto.io/api-reference/api-keys/overview")
+	}
 	if otherErr != nil {
-		var ce *clierr.Error
-		if !errors.As(otherErr, &ce) {
-			return "", "", otherErr // context cancellation: pass through
-		}
+		ce := oce
 		where := otherRegion
 		if where == "" {
 			where = "the --base-url"
@@ -217,12 +232,14 @@ func pickRegion(ctx context.Context, cands []regionCandidate, key string) (regio
 		}
 		return "", "", &out
 	}
+	// Only 401s everywhere mean the key itself was rejected.
 	msg := "the key was not accepted in any region"
 	if lastAuthErr != nil {
 		msg = fmt.Sprintf("%s (%v)", msg, lastAuthErr)
 	}
 	return "", "", clierr.New("auth_invalid_key", msg).
-		WithHint("You are likely using an ingestion key. This CLI needs a management key (Settings → API Keys in the Bronto UI).").
+		WithHint("Check that the key is complete, not revoked, and belongs to this account. " +
+			"Keys only work in their own region: pass --region eu or --region us to try one.").
 		WithDocs("https://docs.bronto.io/api-reference/api-keys/overview")
 }
 

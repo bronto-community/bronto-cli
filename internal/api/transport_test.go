@@ -277,6 +277,18 @@ func TestErrorFromStatus(t *testing.T) {
 	}
 }
 
+// TestErrorFromStatusAuthHints pins which status blames an ingestion key:
+// an ingestion key is accepted but lacks the role (403); a 401 means the
+// key itself was rejected.
+func TestErrorFromStatusAuthHints(t *testing.T) {
+	if h := ErrorFromStatus(401, nil).Hint; strings.Contains(h, "ingestion") || !strings.Contains(h, "revoked") {
+		t.Errorf("401 hint = %q", h)
+	}
+	if h := ErrorFromStatus(403, nil).Hint; !strings.Contains(h, "ingestion key") {
+		t.Errorf("403 hint = %q", h)
+	}
+}
+
 func TestErrorFromStatusMessageExtraction(t *testing.T) {
 	cases := []struct {
 		name string

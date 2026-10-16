@@ -13,8 +13,8 @@
 > bronto search "status >= 500" -d checkout-service; echo "exit code: $?"
 Error: 2 datasets are named "checkout-service": prod/checkout-service, staging/checkout-service (usa
 ge_ambiguous_dataset)
-Hint: Qualify it as <collection>/<name> — e.g. -d prod/checkout-service — or pass the UUID from 'bro
-nto datasets list'.
+Hint: Qualify it as <collection>/<name>, e.g. prod/checkout-service, or pass the UUID from 'bronto d
+atasets list'.
 exit code: 2
 >
 ────────────────────────────────────────────────────────────────────────────────

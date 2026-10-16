@@ -50,7 +50,7 @@ func TestLoadRejectsNonScalarSetting(t *testing.T) {
 }
 
 func TestLoadRejectsMalformedBaseURL(t *testing.T) {
-	for _, bad := range []string{"notaurl", "ftp://x", "https://h/pfx?x=1", "https://h/pfx#f", "https://h?"} {
+	for _, bad := range []string{"notaurl", "ftp://x", "https://:443", "https://h/pfx?x=1", "https://h/pfx#f", "https://h?"} {
 		_, err := Load(LoadOptions{Flags: map[string]string{"base_url": bad}, Getenv: noEnv,
 			WorkDir: t.TempDir(), UserConfigDir: t.TempDir()})
 		if clierr.ExitCode(err) != 2 || !strings.Contains(err.Error(), "base_url") {

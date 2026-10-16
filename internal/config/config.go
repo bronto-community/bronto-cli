@@ -170,6 +170,11 @@ func Load(opts LoadOptions) (*Config, error) {
 	return c, nil
 }
 
+// ValidateURL checks a URL-valued setting that Load leaves alone because
+// only one command reads it (ask_url): a malformed value then fails as a
+// config_invalid_url in that command instead of breaking every other one.
+func ValidateURL(key, val string) error { return validateURLSetting(key, val) }
+
 // validateURLSetting checks a URL-valued setting: absolute http(s) with a
 // host. base_url also may not carry a query or fragment, since request
 // paths are appended to it ("…/pfx?x=1" + "/logs" is not a URL anyone
@@ -177,9 +182,16 @@ func Load(opts LoadOptions) (*Config, error) {
 func validateURLSetting(key, val string) error {
 	u, err := url.Parse(val)
 	switch {
-	case err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "":
+	case err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Hostname() == "":
+		example := "https://api.eu.bronto.io"
+		switch key {
+		case "ingest_url":
+			example = "https://ingestion.eu.bronto.io"
+		case "ask_url":
+			example = "https://api.openai.com/v1/chat/completions"
+		}
 		return clierr.New("config_invalid_url", fmt.Sprintf("%s must be an http(s) URL, got %q", key, RedactURLString(val))).
-			WithHint("Example: https://api.eu.bronto.io")
+			WithHint("Example: " + example)
 	case key == "base_url" && (u.RawQuery != "" || u.Fragment != "" || u.ForceQuery):
 		return clierr.New("config_invalid_url", fmt.Sprintf("base_url can't have a query string or fragment, got %q", RedactURLString(val))).
 			WithHint("Use only scheme, host and an optional path prefix, e.g. https://example.com/bronto")

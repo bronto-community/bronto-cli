@@ -127,7 +127,9 @@ func resolveDatasetRef(ctx context.Context, app *App, ref string) (string, error
 		}
 		return "", clierr.New("usage_ambiguous_dataset",
 			fmt.Sprintf("%d datasets are named %q: %s", len(matches), ref, strings.Join(qualified, ", "))).
-			WithHint(fmt.Sprintf("Qualify it as <collection>/<name> — e.g. -d %s — or pass the UUID from 'bronto datasets list'.", qualified[0]))
+			// No "-d" in the example: datasets get/update/delete take the
+			// dataset as a positional argument, -d commands as a flag value.
+			WithHint(fmt.Sprintf("Qualify it as <collection>/<name>, e.g. %s, or pass the UUID from 'bronto datasets list'.", qualified[0]))
 	}
 }
 

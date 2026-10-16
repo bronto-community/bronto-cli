@@ -171,6 +171,10 @@ func refuseCrossHostRedirect(req *http.Request, via []*http.Request) error {
 	return nil
 }
 
+// IngestionKeyHint explains the usual cause of a 403 from the management
+// API: an ingestion-only key, which is accepted but lacks the role.
+const IngestionKeyHint = "You are likely using an ingestion key. This CLI needs a management key (Settings → API Keys in the Bronto UI)."
+
 // ErrorFromStatus maps a non-2xx API response to a typed error. Nil for 2xx.
 func ErrorFromStatus(status int, body []byte) *clierr.Error {
 	if status >= 200 && status < 300 {
@@ -201,10 +205,11 @@ func ErrorFromStatus(status int, body []byte) *clierr.Error {
 	switch {
 	case status == http.StatusUnauthorized:
 		return clierr.New("auth_invalid_key", msg).
-			WithHint("Run 'bronto auth login' to store a valid management key, or set BRONTO_API_KEY. 'bronto auth status' shows what is configured.")
+			WithHint("The key was not accepted: it may be mistyped, revoked, or for another account or region. " +
+				"Run 'bronto auth login' to store a valid key, or set BRONTO_API_KEY. 'bronto auth status' shows what is configured.")
 	case status == http.StatusForbidden:
 		return clierr.New("auth_insufficient_role", msg).
-			WithHint("You are likely using an ingestion key. This CLI needs a management key (Settings → API Keys in the Bronto UI).").
+			WithHint(IngestionKeyHint).
 			WithDocs("https://docs.bronto.io/api-reference/api-keys/overview")
 	case status == http.StatusNotFound:
 		return clierr.New("resource_not_found", msg)

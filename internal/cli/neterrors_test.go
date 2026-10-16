@@ -137,7 +137,30 @@ func TestPickRegionDistinguishesOutageFromRejection(t *testing.T) {
 	}
 
 	_, _, err = pickRegion(ctx, []regionCandidate{{"eu", rejects.URL}, {"us", rejects.URL}}, "k")
-	_ = wantCLIErr(t, err, "auth_invalid_key", 3)
+	// 401 everywhere: the key itself was rejected, so the hint must not
+	// blame an ingestion key (that is a 403).
+	ce = wantCLIErr(t, err, "auth_invalid_key", 3)
+	if strings.Contains(ce.Hint, "ingestion") || !strings.Contains(ce.Hint, "revoked") {
+		t.Fatalf("401 hint = %q", ce.Hint)
+	}
+
+	// A 403 in any region: the key is known but lacks the role, which is
+	// the ingestion-key case.
+	forbids := serve(403)
+	_, _, err = pickRegion(ctx, []regionCandidate{{"eu", forbids.URL}, {"us", rejects.URL}}, "k")
+	ce = wantCLIErr(t, err, "auth_insufficient_role", 3)
+	if !strings.Contains(ce.Hint, "ingestion key") {
+		t.Fatalf("403 hint = %q", ce.Hint)
+	}
+
+	// A 403 wins over another region's outage, in either probe order.
+	for _, cands := range [][]regionCandidate{
+		{{"eu", forbids.URL}, {"us", down.URL}},
+		{{"eu", down.URL}, {"us", forbids.URL}},
+	} {
+		_, _, err = pickRegion(ctx, cands, "k")
+		_ = wantCLIErr(t, err, "auth_insufficient_role", 3)
+	}
 
 	region, base, err := pickRegion(ctx, []regionCandidate{{"eu", rejects.URL}, {"us", accepts.URL}}, "k")
 	if err != nil || region != "us" || base != accepts.URL {

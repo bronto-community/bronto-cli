@@ -88,3 +88,48 @@ func TestSendRejectsAmbiguousCollection(t *testing.T) {
 		}
 	}
 }
+
+// The plan shows every --tag, in both the one-shot and the stream shape,
+// so a dry run reveals what lands in the x-bronto-tags header.
+func TestSendDryRunShowsTags(t *testing.T) {
+	for _, extra := range [][]string{
+		{"-m", "x", "--tag", "env=prod", "--tag", "team=a"},
+		{"--tag", "env=prod", "--tag", "team=a"},
+	} {
+		plan := runSendDryRun(t, "line\n", extra...)
+		tags, _ := plan["tags"].([]any)
+		if len(tags) != 2 || tags[0] != "env=prod" || tags[1] != "team=a" {
+			t.Fatalf("%v: tags = %v", extra, plan["tags"])
+		}
+	}
+	if plan := runSendDryRun(t, "", "-m", "x"); plan["tags"] != nil {
+		t.Fatalf("no --tag must leave tags out: %v", plan["tags"])
+	}
+}
+
+func TestSendRejectsEmptyTagKey(t *testing.T) {
+	for _, tag := range []string{"=x", " =x", "novalue"} {
+		_, _, err := runCLI(t, "send", "-d", "demo", "-m", "x", "--api-key", "k", "--dry-run", "--tag", tag)
+		_ = wantCLIErr(t, err, "usage_invalid_tag", 2)
+	}
+}
+
+// The dry run caps lines like the real stream (1 MiB), so it rejects
+// exactly the input a real run would.
+func TestSendDryRunRejectsOverlongLine(t *testing.T) {
+	t.Setenv("BRONTO_CONFIG_DIR", t.TempDir())
+	root := NewRootCmd()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetIn(strings.NewReader(strings.Repeat("a", maxSendLine+1) + "\n"))
+	root.SetArgs([]string{"send", "-d", "demo", "--api-key", "k", "--dry-run", "-o", "json"})
+	ce := wantCLIErr(t, root.Execute(), "ingest_read_error", 1)
+	if strings.Contains(ce.Hint, "delivered") {
+		t.Fatalf("a dry run delivered nothing: hint = %q", ce.Hint)
+	}
+
+	plan := runSendDryRun(t, strings.Repeat("a", maxSendLine-1)+"\n")
+	if plan["events"] != 1.0 {
+		t.Fatalf("a line under the cap must count: %v", plan)
+	}
+}

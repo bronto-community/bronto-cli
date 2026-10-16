@@ -195,8 +195,22 @@ func TestResolveDatasetAmbiguousTeachesQualification(t *testing.T) {
 	if !strings.Contains(ce.Message, "prod/logs") || !strings.Contains(ce.Message, "staging/logs") {
 		t.Fatalf("message must list qualified candidates: %q", ce.Message)
 	}
-	if !strings.Contains(ce.Hint, "-d prod/logs") {
+	if !strings.Contains(ce.Hint, "prod/logs") {
 		t.Fatalf("hint must show a copy-pasteable qualified example: %q", ce.Hint)
+	}
+	// The same resolver serves positional arguments (datasets get <ref>),
+	// so the example must not assume a -d flag.
+	if strings.Contains(ce.Hint, "-d ") {
+		t.Fatalf("hint must not assume a -d flag: %q", ce.Hint)
+	}
+}
+
+func TestDatasetsGetAmbiguousHintHasNoFlag(t *testing.T) {
+	app, _ := datasetTestApp(t, dupDatasets)
+	_, err := resolveResourceRef(context.Background(), app, resourceDesc{Name: "datasets"}, "logs")
+	ce := wantCLIErr(t, err, "usage_ambiguous_dataset", 2)
+	if strings.Contains(ce.Hint, "-d ") || !strings.Contains(ce.Hint, "prod/logs") {
+		t.Fatalf("hint = %q, want a bare prod/logs example", ce.Hint)
 	}
 }
 

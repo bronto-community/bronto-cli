@@ -69,8 +69,8 @@ The ingestion API rejects request bodies over 10 MB with `payload_too_large`. Lo
 
 ## Preview without sending
 
-`--dry-run` prints what would be sent, including the resolved ingestion URL, instead of
-sending it:
+`--dry-run` prints what would be sent, including the resolved ingestion URL and any
+`--tag` values, instead of sending it:
 
 {/* test: tty */}
 ```console

@@ -92,6 +92,15 @@ func newSendCmd() *cobra.Command {
 				Gzip:       !noGzip,
 			}
 
+			// The dry-run plan: everything that would go into the request
+			// headers, plus the events (one-shot) or their counts (stream).
+			plan := map[string]any{
+				"dry_run": true, "ingest_url": url, "dataset": dataset, "collection": collection,
+			}
+			if len(tags) > 0 {
+				plan["tags"] = tags
+			}
+
 			if cmd.Flags().Changed("message") {
 				ev := ingest.LineToEvent(message, nil)
 				if app.DryRun {
@@ -99,10 +108,8 @@ func newSendCmd() *cobra.Command {
 					if perr != nil {
 						return perr
 					}
-					return p.PrintJSON(map[string]any{
-						"dry_run": true, "ingest_url": url, "dataset": dataset,
-						"collection": collection, "events": []map[string]any{ev},
-					})
+					plan["events"] = []map[string]any{ev}
+					return p.PrintJSON(plan)
 				}
 				if err := sender.Send(cmd.Context(), []map[string]any{ev}); err != nil {
 					return err
@@ -114,7 +121,7 @@ func newSendCmd() *cobra.Command {
 			}
 
 			if app.DryRun {
-				return dryRunSendStream(cmd, app, url, dataset, collection)
+				return dryRunSendStream(cmd, app, plan)
 			}
 			return runSendStream(cmd, app, sender, batchSize, batchBytes, flushInterval)
 		},
@@ -137,12 +144,26 @@ func newSendCmd() *cobra.Command {
 // x-bronto-tags header.
 func joinTags(tags []string) (string, error) {
 	for _, t := range tags {
-		if !strings.Contains(t, "=") {
+		if k, _, ok := strings.Cut(t, "="); !ok || strings.TrimSpace(k) == "" {
 			return "", clierr.New("usage_invalid_tag",
-				fmt.Sprintf("--tag %q must be in key=value form", t))
+				fmt.Sprintf("--tag %q must be in key=value form with a non-empty key", t))
 		}
 	}
 	return strings.Join(tags, ","), nil
+}
+
+// maxSendLine caps one input line. The real and the dry-run stream share
+// it, so --dry-run rejects exactly the input a real run would.
+const maxSendLine = 1 << 20
+
+// sendReadError reports a stdin read failure, typically a line over
+// maxSendLine. A dry run has delivered nothing, so its hint says less.
+func sendReadError(err error, dryRun bool) error {
+	hint := "Lines longer than 1 MiB cannot be sent; the events flushed before the error were delivered."
+	if dryRun {
+		hint = "Lines longer than 1 MiB cannot be sent."
+	}
+	return clierr.New("ingest_read_error", fmt.Sprintf("reading input failed: %v", err)).WithHint(hint)
 }
 
 // shutdownFlushTimeout bounds the final flush after Ctrl-C/SIGTERM: the
@@ -166,7 +187,7 @@ func (e *ShutdownError) Unwrap() error { return e.Err }
 // the cancellation error so the process exits 130.
 func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSize, batchBytes int, flushInterval time.Duration) error {
 	scanner := bufio.NewScanner(cmd.InOrStdin())
-	scanner.Buffer(make([]byte, 0, 64*1024), 1<<20)
+	scanner.Buffer(make([]byte, 0, 64*1024), maxSendLine)
 
 	lines := make(chan string)
 	stop := make(chan struct{})
@@ -247,8 +268,7 @@ func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSiz
 					if !app.Quiet {
 						_, _ = fmt.Fprintf(app.Stderr, "Sent %d event(s) in %d batch(es) before the input error.\n", sentEvents, sentBatches)
 					}
-					return clierr.New("ingest_read_error", fmt.Sprintf("reading input failed: %v", scanErr)).
-						WithHint("Lines longer than 1 MiB cannot be sent; the events flushed before the error were delivered.")
+					return sendReadError(scanErr, false)
 				}
 				summary()
 				// nil on a normal EOF; the cancellation (exit 130) when an
@@ -280,10 +300,11 @@ func runSendStream(cmd *cobra.Command, app *App, sender *ingest.Sender, batchSiz
 }
 
 // dryRunSendStream consumes stdin like the real stream path would, but
-// only counts events/bytes and prints a plan instead of posting anything.
-func dryRunSendStream(cmd *cobra.Command, app *App, url, dataset, collection string) error {
+// only counts events/bytes and adds them to plan, which it prints instead
+// of posting anything.
+func dryRunSendStream(cmd *cobra.Command, app *App, plan map[string]any) error {
 	sc := bufio.NewScanner(cmd.InOrStdin())
-	sc.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
+	sc.Buffer(make([]byte, 0, 64*1024), maxSendLine)
 	events, bytes := 0, 0
 	for sc.Scan() {
 		line := strings.TrimSpace(sc.Text())
@@ -294,14 +315,12 @@ func dryRunSendStream(cmd *cobra.Command, app *App, url, dataset, collection str
 		bytes += len(line)
 	}
 	if err := sc.Err(); err != nil {
-		return err
+		return sendReadError(err, true)
 	}
 	p, err := app.Printer(false)
 	if err != nil {
 		return err
 	}
-	return p.PrintJSON(map[string]any{
-		"dry_run": true, "ingest_url": url, "dataset": dataset,
-		"collection": collection, "events": events, "bytes": bytes,
-	})
+	plan["events"], plan["bytes"] = events, bytes
+	return p.PrintJSON(plan)
 }
