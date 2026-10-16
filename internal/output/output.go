@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -139,7 +141,7 @@ func cellValue(v any) string {
 	}
 	switch t := v.(type) {
 	case json.Number:
-		return string(t)
+		return string(canonicalNumber(t))
 	case float64:
 		// JSON numbers decode as float64; render integral values (ids,
 		// epoch timestamps) without Go's scientific notation.
@@ -408,11 +410,88 @@ func unionKeys(rows []map[string]any) []string {
 }
 
 // newEncoder is json.NewEncoder without HTML escaping: & < > in data
-// (URLs, queries) must print as-is, not as \u0026 \u003c \u003e.
-func newEncoder(w io.Writer) *json.Encoder {
+// (URLs, queries) must print as-is, not as \u0026 \u003c \u003e. Its
+// Encode also canonicalizes integral numbers (see canonicalNumbers).
+func newEncoder(w io.Writer) jsonEncoder {
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
-	return enc
+	return jsonEncoder{enc}
+}
+
+type jsonEncoder struct{ *json.Encoder }
+
+func (e jsonEncoder) Encode(v any) error { return e.Encoder.Encode(canonicalNumbers(v)) }
+
+// canonicalNumber drops an all-zero fraction from a decoded number: the
+// API writes some integral values as doubles (a monitor threshold of
+// 1000000.0), which --jq already prints as 1000000 (normalizeForJQ), so
+// table, csv, json, and jsonl print them that way too. Exponents and
+// non-zero fractions stay as written.
+func canonicalNumber(n json.Number) json.Number {
+	s := string(n)
+	dot := strings.IndexByte(s, '.')
+	if dot <= 0 || strings.Trim(s[dot+1:], "0") != "" {
+		return n
+	}
+	if s = s[:dot]; s == "-0" {
+		s = "0"
+	}
+	return json.Number(s)
+}
+
+// canonicalNumbers applies canonicalNumber throughout v, copying a map or
+// slice only when something in it changes (rows are shared with callers).
+func canonicalNumbers(v any) any {
+	out, _ := canonicalize(v)
+	return out
+}
+
+func canonicalize(v any) (any, bool) {
+	switch t := v.(type) {
+	case json.Number:
+		c := canonicalNumber(t)
+		return c, c != t
+	case map[string]any:
+		var out map[string]any
+		for k, val := range t {
+			if c, changed := canonicalize(val); changed {
+				if out == nil {
+					out = maps.Clone(t)
+				}
+				out[k] = c
+			}
+		}
+		if out != nil {
+			return out, true
+		}
+	case []any:
+		var out []any
+		for i, val := range t {
+			if c, changed := canonicalize(val); changed {
+				if out == nil {
+					out = slices.Clone(t)
+				}
+				out[i] = c
+			}
+		}
+		if out != nil {
+			return out, true
+		}
+	case []map[string]any:
+		var out []map[string]any
+		for i, m := range t {
+			if c, changed := canonicalize(m); changed {
+				if out == nil {
+					out = slices.Clone(t)
+				}
+				out[i] = c.(map[string]any)
+			}
+		}
+		if out != nil {
+			return out, true
+		}
+	}
+	return v, false
 }
 
 // marshalJSON is json.Marshal without HTML escaping and without the

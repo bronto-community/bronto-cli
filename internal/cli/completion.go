@@ -189,7 +189,7 @@ func listResourceNames(cmd *cobra.Command, desc resourceDesc) []string {
 		return nil
 	}
 	defer cancel()
-	payload, err := doJSONRequest(ctx, app, http.MethodGet, desc.Base, nil)
+	payload, err := doJSONRequest(ctx, app, http.MethodGet, desc.listPath(), nil)
 	if err != nil {
 		return nil
 	}

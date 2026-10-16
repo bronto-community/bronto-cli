@@ -247,3 +247,43 @@ func TestGroupAggregateLiveShape(t *testing.T) {
 		t.Fatalf("agg = %+v", got)
 	}
 }
+
+// TestServicesMergeDropsGroupsTheCountLacks: the three aggregates are
+// separate top-limit requests, so avg and max can name groups the count
+// did not return (or counted as 0). Those must not surface as spans=0
+// rows, and the merged result must not exceed the limit.
+func TestServicesMergeDropsGroupsTheCountLacks(t *testing.T) {
+	srv, _ := aggServer(t, map[string]string{
+		"count(*)":                 `{"groups":[{"group":["cart"],"count(*)":30},{"group":["web"],"count(*)":10},{"group":["idle"],"count(*)":0}]}`,
+		"avg($span.duration_nano)": `{"groups":[{"group":["cart"],"avg($span.duration_nano)":2000000},{"group":["late"],"avg($span.duration_nano)":5}]}`,
+		"max($span.duration_nano)": `{"groups":[{"group":["other"],"max($span.duration_nano)":9},{"group":["web"],"max($span.duration_nano)":9000000}]}`,
+	})
+	defer srv.Close()
+	rows, err := newAgg(srv).Services(context.Background(), false, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 2 || rows[0]["service"] != "cart" || rows[1]["service"] != "web" {
+		t.Fatalf("rows = %v", rows)
+	}
+	rows, err = newAgg(srv).Services(context.Background(), false, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 || rows[0]["service"] != "cart" {
+		t.Fatalf("limit 1: rows = %v", rows)
+	}
+}
+
+func TestMergeThreeWayTrimsAfterRanking(t *testing.T) {
+	e := func(v float64, vals ...string) aggEntry { return aggEntry{Vals: vals, V: v} }
+	counts := map[string]aggEntry{"a": e(1, "a"), "b": e(5, "b"), "c": e(3, "c"), "d": e(0, "d")}
+	keyCols := func(vals []string) map[string]any { return map[string]any{"k": at(vals, 0)} }
+	rows := mergeThreeWay(counts, nil, nil, 2, keyCols)
+	if len(rows) != 2 || rows[0]["k"] != "b" || rows[1]["k"] != "c" {
+		t.Fatalf("rows = %v", rows)
+	}
+	if all := mergeThreeWay(counts, nil, nil, 0, keyCols); len(all) != 3 {
+		t.Fatalf("limit 0 keeps every counted group: %v", all)
+	}
+}

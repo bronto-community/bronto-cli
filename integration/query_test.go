@@ -285,6 +285,11 @@ func TestQuery_CheckMatchesServerGrammar(t *testing.T) {
 			// AND binds tighter: debug rows of any status, or info rows with 500
 			return str(r, "level") == "debug" || (str(r, "level") == "info" && str(r, "status") == "500")
 		}},
+		// literal and parenthesized operands; a literal is a constant
+		{"200 = status", func(r map[string]any) bool { return str(r, "status") == "200" }},
+		{"(status) = 200", func(r map[string]any) bool { return str(r, "status") == "200" }},
+		{"'a' = 'a'", func(map[string]any) bool { return true }},
+		{"@raw ~ 'ci_marker'", func(map[string]any) bool { return true }}, // @raw: the one @-field
 	}
 	for _, c := range accepted {
 		t.Run("accepts "+c.expr, func(t *testing.T) {
@@ -325,6 +330,9 @@ func TestQuery_CheckMatchesServerGrammar(t *testing.T) {
 		"seed trace", // an unquoted phrase
 		"level = 'error' || status >= 500",
 		"status NOT = 500",
+		"@status = 'info'", // @-fields other than @raw
+		"@time > 0",
+		"'x' = @foo",
 	} {
 		t.Run("rejects "+expr, func(t *testing.T) {
 			check, err := r.Run(t.Context(), "", "query", "check", expr, "-o", "json")

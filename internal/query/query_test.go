@@ -16,7 +16,7 @@ func TestParseValid(t *testing.T) {
 		"a = 1 OR b = 2 AND NOT c = 3",
 		"(a = 1 OR b = 2) AND c != 'x'",
 		"$span.trace_id = 'd14b'",
-		"@status = 'info'",
+		"@raw ~ 'info'",
 		"message ~ 'timeout'",
 		"path !~ 'health'",
 		"gateway = stripe", // bareword value
@@ -158,6 +158,39 @@ func TestParseServerGrammar(t *testing.T) {
 		"NOT slow",
 		`level = 'warn' AND "slow"`,
 		"status IN (502, 503) AND NOT message LIKE '%x%' OR slow",
+		// literal and parenthesized operands (a literal is a constant)
+		"'status' = 200",
+		"'a' = 'a'",
+		"200 = status",
+		"'200' = status",
+		"1 = 1",
+		"'x' IN ('x')",
+		"200 IN (status)",
+		"'status' IS NULL",
+		"'status' LIKE 'x'",
+		"(status) = 500",
+		"((status)) = 500",
+		"((status) = 500)",
+		"(status) IN (1)",
+		"(status) IS NULL",
+		"(LOWER(status)) = 'x'",
+		"('status') = 200",
+		"(200) = status",
+		"'a' = 'b' OR status = 200",
+		// @raw is the one @-field; other @-barewords pass as free text
+		// and after EXISTS, and "@name" is an ordinary attribute
+		"@raw ~ 'x'",
+		"@raw IS NULL",
+		"@raw IN ('x')",
+		"LOWER(@raw) = 'x'",
+		"status = @raw",
+		"@foo",
+		"NOT @foo",
+		"@foo AND @bar",
+		"EXISTS @time",
+		"EXISTS(@foo)",
+		`"@foo" = 'x'`,
+		"$foo = 'x'",
 	} {
 		if _, err := Parse(q); err != nil {
 			t.Errorf("Parse(%q) = %v, want ok (the server accepts it)", q, err)
@@ -193,6 +226,21 @@ func TestParseRejectsWhatServerRejects(t *testing.T) {
 		`level = 'a\'b'`,
 		"status + 1 > 2",
 		"status EXISTS",
+		"@status = 'info'",
+		"@foo = 'x'",
+		"@time > 0",
+		"@time IS NULL",
+		"@timestamp > 0",
+		"@sequence > 0",
+		"@RAW ~ 'x'", // case-sensitive
+		"LOWER(@foo) = 'x'",
+		"@foo IN ('x')",
+		"@foo LIKE 'x'",
+		"status = @foo",
+		"status IN (@foo)",
+		"'x' = @foo",
+		"@",
+		"@ = 'x'",
 	} {
 		if _, err := Parse(q); err == nil {
 			t.Errorf("Parse(%q) accepted a query the server rejects", q)
@@ -216,6 +264,10 @@ func TestParseAST(t *testing.T) {
 		{`LOWER("a.b") = "c"`, Compare{Field: "a.b", Lower: true, Op: "=", Value: Literal{Raw: `"c"`, IsAttr: true}}},
 		{`"slow to respond"`, FreeText{Term: str(`"slow to respond"`)}},
 		{"slow", FreeText{Term: Literal{Raw: "slow"}}},
+		{"'a' = 200", Compare{Left: &Literal{Raw: "'a'", IsString: true}, Op: "=", Value: num("200", 200)}},
+		{"(200) = s", Compare{Left: &Literal{Raw: "200", Num: 200, IsNum: true}, Op: "=", Value: Literal{Raw: "s", IsAttr: true}}},
+		{"((LOWER(s))) IS NULL", Compare{Field: "s", Lower: true, Op: "IS NULL"}},
+		{"('x')", FreeText{Term: str("'x'")}}, // a group around a free-text term
 		// NOT binds looser than comparisons, AND tighter than OR.
 		{"NOT a = 1 OR b LIKE 'x' AND c IS NULL", Binary{Op: "OR",
 			Left: Not{X: Compare{Field: "a", Op: "=", Value: num("1", 1)}},
@@ -268,5 +320,48 @@ func TestWarningsFlagAttributeValues(t *testing.T) {
 	if len(w) != 2 || !strings.Contains(w[0], `attribute "error"`) || !strings.Contains(w[0], "'error'") ||
 		!strings.Contains(w[1], `attribute "x"`) {
 		t.Fatalf("Warnings = %q", w)
+	}
+}
+
+func TestFieldsSkipLiteralOperands(t *testing.T) {
+	n, err := Parse("'a' = b AND (200) = c")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := Fields(n), []string{"b", "c"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("Fields = %v, want %v", got, want)
+	}
+}
+
+func TestWarningsFlagStringOperand(t *testing.T) {
+	n, err := Parse("'status' = 200")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := Warnings(n)
+	if len(w) != 1 || !strings.Contains(w[0], "constant string") || !strings.Contains(w[0], `"status"`) {
+		t.Fatalf("Warnings = %q", w)
+	}
+	// Only the left operand is constant: 'error' = level still depends on
+	// the event, so the warning must not call the comparison constant.
+	n, err = Parse("'error' = level")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, msg := range Warnings(n) {
+		if strings.Contains(msg, "comparison is constant") {
+			t.Fatalf("misleading warning: %q", msg)
+		}
+	}
+}
+
+func TestSystemFieldError(t *testing.T) {
+	_, err := Parse("level = 'x' AND @time > 0")
+	var pe *ParseError
+	if !errors.As(err, &pe) {
+		t.Fatalf("want ParseError, got %v", err)
+	}
+	if pe.Pos != 16 || pe.Len != 5 || !strings.Contains(pe.Msg, "@raw") || !strings.Contains(pe.Msg, "--since") {
+		t.Fatalf("err = %+v", pe)
 	}
 }

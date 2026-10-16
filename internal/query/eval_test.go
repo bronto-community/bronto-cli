@@ -275,3 +275,30 @@ func TestNewMatcherRejectsBadRegex(t *testing.T) {
 		t.Fatal("invalid regex must fail at construction")
 	}
 }
+
+// TestMatcherLiteralOperands: a literal on the left is a constant, as on
+// the server — 'status' = 502 compares the text "status", so it matches
+// nothing, while 'a' = 'a' matches every event.
+func TestMatcherLiteralOperands(t *testing.T) {
+	ev := map[string]any{"status": json.Number("502"), "level": "error"}
+	for q, want := range map[string]bool{
+		"'status' = 502":           false,
+		"'status' != 502":          true, // verified live: 'status' != 200 matches every event
+		"'a' = 'a'":                true,
+		"'a' = 'b'":                false,
+		"502 = status":             true,
+		"(status) = 502":           true,
+		"'error' = level":          true,
+		"'x' IN ('y', 'x')":        true,
+		"'status' IS NULL":         false,
+		"'abc' LIKE 'a%'":          true,
+		"500 < status":             true,
+		"'x' = missing":            false,
+		"NOT 'x' = missing":        false, // still UNKNOWN
+		"(LOWER(level)) = 'error'": true,
+	} {
+		if got := mustMatcher(t, q).Match(ev); got != want {
+			t.Errorf("%q = %v, want %v", q, got, want)
+		}
+	}
+}
