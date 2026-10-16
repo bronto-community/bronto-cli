@@ -66,7 +66,7 @@ jobs:
         # Short-lived installation token from the Bronto Community Bot app,
         # scoped to contents:write on homebrew-tap only. The default
         # GITHUB_TOKEN cannot push cross-repo.
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: tap-token
         with:
           # The App ID lives as an ORG SECRET alongside the private key
@@ -79,7 +79,7 @@ jobs:
           permission-contents: write
 
       - name: Run goreleaser
-        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
           # Exact-pinned for the same reason cosign is above: this is the
           # most credential-dense step in the repo (release token, tap
