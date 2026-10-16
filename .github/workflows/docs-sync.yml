@@ -7,15 +7,18 @@ name: Sync official docs
 # The target repository is never named in this repo: its owner and name
 # come from the DOCS_SYNC_OWNER and DOCS_SYNC_REPO secrets, which GitHub
 # masks in every log line, PR URLs included. The branch and the pull
-# request are created with a GitHub App installation token, so the app is
-# the PR author and any maintainer can approve it.
+# request are created with an installation token of the Bronto Community
+# Bot app (the org secrets the release workflow uses), so the app is the
+# PR author and any maintainer can approve it.
 #
-# Setup (repo Settings → Environments → docs-sync):
-#   - Deployment branches and tags: `main` and tags `v*` only, so a
-#     workflow edited on a branch can't read these secrets.
-#   - Secrets: DOCS_SYNC_OWNER, DOCS_SYNC_REPO, DOCS_SYNC_APP_ID,
-#     DOCS_SYNC_APP_PRIVATE_KEY. The app needs Contents: read & write and
-#     Pull requests: read & write, installed on the docs repository only.
+# Setup:
+#   - Install the Bronto Community Bot on the docs repository only (an
+#     owner of that organisation approves the install). It already has
+#     Contents and Pull requests: read & write.
+#   - Repo Settings → Environments → docs-sync: deployment branches and
+#     tags limited to `main` and tags `v*`, so a workflow edited on a
+#     branch can't read these secrets; secrets DOCS_SYNC_OWNER and
+#     DOCS_SYNC_REPO.
 
 on:
   release:
@@ -66,8 +69,9 @@ jobs:
         id: app
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.DOCS_SYNC_APP_ID }}
-          private-key: ${{ secrets.DOCS_SYNC_APP_PRIVATE_KEY }}
+          # Org secrets, shared with the release workflow's tap token.
+          app-id: ${{ secrets.BRONTO_COMMUNITY_BOT_APP_ID }}
+          private-key: ${{ secrets.BRONTO_COMMUNITY_BOT_PRIVATE_KEY }}
           owner: ${{ secrets.DOCS_SYNC_OWNER }}
           repositories: ${{ secrets.DOCS_SYNC_REPO }}
           permission-contents: write
