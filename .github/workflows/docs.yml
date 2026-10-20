@@ -69,7 +69,16 @@ jobs:
           # Pushes to main are already path-filtered by the trigger.
           if [ "$EVENT_NAME" != pull_request ]; then
             echo "docs=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only "$BASE_SHA...$HEAD_SHA" | grep -Eq "$DOCS_PATHS"; then
+            exit 0
+          fi
+          # A failed diff must fail the job (docs-check then runs anyway),
+          # not read as "no docs changes". --no-renames lists a moved file's
+          # old path too, so moving a docs file out still counts.
+          if ! changed=$(git diff --name-only --no-renames "$BASE_SHA...$HEAD_SHA" --); then
+            echo "git diff $BASE_SHA...$HEAD_SHA failed" >&2
+            exit 1
+          fi
+          if printf '%s\n' "$changed" | grep -Eq "$DOCS_PATHS"; then
             echo "docs=true" >> "$GITHUB_OUTPUT"
           else
             echo "docs=false" >> "$GITHUB_OUTPUT"
@@ -80,7 +89,9 @@ jobs:
   # goldens, and Mintlify's strict build plus its link and anchor check.
   docs-check:
     needs: changes
-    if: needs.changes.outputs.docs == 'true'
+    # Skip only when changes succeeded and explicitly found nothing; if it
+    # failed, run the check rather than let a skip satisfy the requirement.
+    if: ${{ !cancelled() && needs.changes.outputs.docs != 'false' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
