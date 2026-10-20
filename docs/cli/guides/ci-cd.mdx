@@ -28,25 +28,41 @@ bronto auth status
 
 ## GitHub Actions
 
+The [Setup bronto CLI](https://github.com/marketplace/actions/setup-bronto-cli) action installs
+the bronto CLI on Linux, macOS, and Windows runners (amd64 and arm64) and puts it on `PATH`:
+
 ```yaml
 jobs:
   check-monitors:
     runs-on: ubuntu-latest
-    env:
-      BRONTO_API_KEY: ${{ secrets.BRONTO_API_KEY }}
-      BRONTO_REGION: eu
     steps:
       - uses: actions/checkout@v4
-      - name: Install bronto
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | BINDIR="$HOME/.local/bin" sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - uses: bronto-community/setup-bronto-cli@v1
+        with:
+          version: 0.8.1
+          api-key: ${{ secrets.BRONTO_API_KEY }}
+          region: eu
       - name: Lint monitor definitions
         run: bronto monitors check --input monitors/checkout-5xx.json --input monitors/payments-p95.json
 ```
 
-Pin a version by piping to `VERSION=v<x.y.z> sh` instead of `sh`, so a new release doesn't change
-your pipeline unannounced.
+- `version` pins the bronto CLI, so a new release doesn't change your pipeline unannounced. Leave
+  it out to get the latest release.
+- `api-key` and `region` are exported as `BRONTO_API_KEY` and `BRONTO_REGION` for the later
+  steps, and the key is masked in logs. You can also set those variables yourself with `env:`.
+- Every download is checked against the release's `checksums.txt`, and the action verifies the
+  cosign signature on that file, as described in [Install](/cli/getting-started/install#verify-a-release).
+
+On other CI systems, or without the action, use the install script:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | VERSION=v0.8.1 BINDIR="$HOME/.local/bin" sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+The `export` only lasts for the rest of that shell. If later steps run in separate shells, add
+the directory to `PATH` the way your CI system persists it between steps (on GitHub Actions,
+append it to `$GITHUB_PATH`).
 
 ## Docker
 

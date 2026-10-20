@@ -33,6 +33,10 @@ cosign verify-blob \
 sha256sum --check --ignore-missing checksums.txt
 ```
 
+The [Setup bronto CLI](https://github.com/bronto-community/setup-bronto-cli) GitHub Action runs
+this verification on every install, with a stricter identity: the certificate must come from
+`release.yml` running for exactly the requested tag.
+
 Release archives and packages also carry signed [SLSA build provenance](https://slsa.dev/).
 Verify that an artifact was built by this repo's release workflow with:
 
