@@ -57,7 +57,12 @@ On other CI systems, or without the action, use the install script:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | VERSION=v0.8.1 BINDIR="$HOME/.local/bin" sh
+export PATH="$HOME/.local/bin:$PATH"
 ```
+
+The `export` only lasts for the rest of that shell. If later steps run in separate shells, add
+the directory to `PATH` the way your CI system persists it between steps (on GitHub Actions,
+append it to `$GITHUB_PATH`).
 
 ## Docker
 
