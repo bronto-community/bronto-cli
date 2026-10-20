@@ -3,17 +3,12 @@ on:
   pull_request:
     # labeled/unlabeled re-run docs-required when `no-docs-needed` is added
     # or removed.
+    # No paths filter here: docs-check is a required status, and a
+    # path-filtered workflow never reports on PRs outside its paths (e.g.
+    # go.mod-only Dependabot bumps), which leaves them blocked forever. The
+    # changes job does the filtering instead; a job skipped by `if:` counts
+    # as passing for a required check.
     types: [opened, synchronize, reopened, labeled, unlabeled]
-    paths:
-      - docs/**
-      - internal/**
-      - cmd/**
-      - api/**
-      - README.md
-      - skill.md
-      - llms.txt
-      - Makefile
-      - .github/workflows/docs.yml
   push:
     branches: [main]
     paths:
@@ -46,10 +41,46 @@ env:
   VHS_VERSION: v0.12.1
 
 jobs:
+  # changes decides whether docs-check needs to run. Keep DOCS_PATHS in sync
+  # with the push paths filter above.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name == 'pull_request'
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DOCS_PATHS: '^(docs|internal|cmd|api)/|^(README\.md|skill\.md|llms\.txt|Makefile|\.github/workflows/docs\.yml)$'
+        run: |
+          # Pushes to main are already path-filtered by the trigger.
+          if [ "$EVENT_NAME" != pull_request ]; then
+            echo "docs=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$BASE_SHA...$HEAD_SHA" | grep -Eq "$DOCS_PATHS"; then
+            echo "docs=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # docs-check runs everything `make docs-check` covers: generated reference
   # is current, coverage, tested snippets against the docs mock, VHS tape
   # goldens, and Mintlify's strict build plus its link and anchor check.
   docs-check:
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -99,6 +130,7 @@ jobs:
 
   # docs-required fails a PR that changes user-facing CLI code without
   # touching the hand-written docs, unless it carries `no-docs-needed`.
+  # It runs on every PR; the script passes when nothing user-facing changed.
   docs-required:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
