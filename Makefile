@@ -35,7 +35,7 @@ lint-workflows:
 # https://docs.zizmor.sh). CI's repo-gates job installs the same pinned
 # zizmor before running this.
 check-actions:
-	go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+	go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 	@command -v zizmor >/dev/null 2>&1 || { echo "zizmor not installed: pipx install zizmor==1.24.1 (https://docs.zizmor.sh)"; exit 1; }
 	zizmor .github/workflows/
 

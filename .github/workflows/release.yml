@@ -180,3 +180,47 @@ jobs:
           tags: ${{ steps.meta.outputs.distroless_tags }}
           provenance: true
           sbom: true
+
+  # verify-release installs the release just published the way users do, with
+  # the project's own GitHub Action (bronto-community/setup-bronto-cli), on
+  # every runner OS/arch the release ships for. That covers the published
+  # archives, checksums.txt and its cosign signature, and the action itself,
+  # minutes after publishing instead of when a user reports a broken asset.
+  # bronto-it has no protection rules, so this needs no second approval.
+  verify-release:
+    needs: release
+    runs-on: ${{ matrix.runner }}
+    environment: bronto-it
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest, windows-11-arm]
+    steps:
+      - name: Harden Runner
+        if: runner.os == 'Linux'  # harden-runner is Linux-only
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - name: Install the released bronto CLI
+        id: setup
+        uses: bronto-community/setup-bronto-cli@7c4488a88503e26a475db18d1e5402d03efc5477 # v1.0.1
+        with:
+          version: ${{ github.ref_name }}
+          # ping reads GET /logs, which needs a management key; an
+          # ingestion-only key gets 403.
+          api-key: ${{ secrets.BRONTO_IT_MGMT_KEY }}
+          region: ${{ vars.BRONTO_IT_REGION || 'eu' }}
+
+      - name: Check version and reach the API
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # `bronto version` prints JSON when stdout is not a terminal.
+          got=$(bronto version | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')
+          [ "$got" = "${TAG#v}" ] || { echo "::error::bronto reports $got, expected ${TAG#v}"; exit 1; }
+          bronto ping
