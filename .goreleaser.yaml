@@ -209,7 +209,9 @@ winget:
     skip_upload: '{{ if index .Env "WINGET_TOKEN" }}auto{{ else }}true{{ end }}'
     repository:
       # goreleaser pushes to this fork of microsoft/winget-pkgs, then opens a
-      # PR upstream. A failed PR is logged but doesn't fail the release.
+      # PR upstream. Only a 422 (validation) from the PR call is downgraded to
+      # a warning; any other failure (403, 5xx, a failed push) fails the
+      # release command after the GitHub release is already published.
       owner: bronto-community
       name: winget-pkgs
       branch: "BrontoCommunity.Bronto-{{ .Version }}"
