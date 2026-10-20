@@ -48,7 +48,9 @@ jobs:
           # sign-blob to require --bundle. v2.6.x produces the .sig/.pem
           # outputs our goreleaser signs block and SECURITY.md verification
           # depend on. Migrating to the v3 bundle format is deliberate
-          # future work (goreleaser args + SECURITY.md together).
+          # future work (goreleaser args + SECURITY.md together), and it
+          # also needs bronto-community/setup-bronto-cli updated: that
+          # action verifies the .sig/.pem pair with cosign v2.6.0.
           cosign-release: "v2.6.0"
 
       - name: Install syft
