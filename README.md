@@ -21,7 +21,7 @@ or
 curl -fsSL https://raw.githubusercontent.com/bronto-community/bronto-cli/main/scripts/install.sh | sh
 ```
 
-The [install guide](https://docs.bronto.io/cli/getting-started/install) covers Scoop on Windows, `go install`, Docker images, `.deb`/`.rpm` packages, release archives, and signature verification.
+The [install guide](https://docs.bronto.io/cli/getting-started/install) covers Scoop and winget on Windows, `go install`, Docker images, `.deb`/`.rpm` packages, release archives, and signature verification.
 
 ## Quickstart
 

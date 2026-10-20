@@ -1,6 +1,6 @@
 ---
 title: Install
-description: Install the bronto CLI with Homebrew, Scoop, the install script, go install, Docker, or a release archive, and verify the download.
+description: Install the bronto CLI with Homebrew, Scoop, winget, the install script, go install, Docker, or a release archive, and verify the download.
 ---
 
 `bronto` is a single static binary for macOS, Linux, and Windows. Install it with
@@ -37,6 +37,19 @@ scoop install bronto-community/bronto
 
 The release workflow updates the bucket's manifest on every stable release, for both
 amd64 and arm64. Update with `scoop update bronto`.
+
+</Tab>
+<Tab title="winget">
+
+On Windows 10 and 11, install with winget, the package manager built into Windows:
+
+```powershell
+winget install BrontoCommunity.Bronto
+```
+
+Each stable release opens a pull request in Microsoft's `winget-pkgs` repository, so a new
+version shows up in winget after Microsoft's validation merges that pull request, so it
+can lag the GitHub release. Update with `winget upgrade BrontoCommunity.Bronto`.
 
 </Tab>
 <Tab title="Install script">
