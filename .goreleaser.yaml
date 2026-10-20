@@ -162,6 +162,24 @@ homebrew_casks:
         install: |
           system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", staged_path] if OS.mac?
 
+scoops:
+  - name: bronto
+    ids:
+      - bronto
+    repository:
+      owner: bronto-community
+      name: scoop-bucket
+      token: "{{ .Env.SCOOP_BUCKET_TOKEN }}"
+    # Scoop's bucket layout keeps manifests under bucket/.
+    directory: bucket
+    # auto = publish on stable tags, skip on pre-releases, like the cask.
+    # SCOOP_BUCKET_TOKEN is the same per-release Bronto Community Bot token
+    # as HOMEBREW_TAP_TOKEN (see release.yml).
+    skip_upload: auto
+    homepage: https://github.com/bronto-community/bronto-cli
+    description: Community CLI for the Bronto observability platform
+    license: MIT
+
 release:
   github:
     owner: bronto-community
