@@ -83,6 +83,9 @@ Every release publishes two images for `linux/amd64` and `linux/arm64`:
 | `ghcr.io/bronto-community/bronto-cli:latest` | `scratch` plus CA certificates |
 | `ghcr.io/bronto-community/bronto-cli:latest-distroless` | distroless |
 
+The same images, with the same digests, are on Docker Hub as `brontoio/bronto-cli`, for
+example `docker pull brontoio/bronto-cli:latest`.
+
 Each release also gets versioned tags (`:<version>` and `:<version>-distroless`).
 Pre-releases don't move `:latest`. The entrypoint is `/bronto`, so arguments go straight to the CLI.
 Neither image has a shell or a keychain, so pass credentials as environment variables.
@@ -136,7 +139,7 @@ CLI:
 gh attestation verify bronto_<version>_<os>_<arch>.tar.gz --repo bronto-community/bronto-cli
 ```
 
-The container images on ghcr.io also carry provenance and SBOM attestations.
+The container images on ghcr.io and Docker Hub also carry provenance and SBOM attestations.
 
 ## Next
 

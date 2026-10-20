@@ -45,7 +45,8 @@ gh attestation verify bronto_<version>_<os>_<arch>.tar.gz --repo bronto-communit
 ```
 
 SPDX SBOMs for every archive are attached to each release; container images
-on ghcr.io carry provenance and SBOM attestations.
+on ghcr.io and Docker Hub (`brontoio/bronto-cli`, the same digests) carry
+provenance and SBOM attestations.
 
 ## Scope notes
 
