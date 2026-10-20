@@ -62,10 +62,11 @@ jobs:
       - name: Run tests
         run: go test ./...
 
-      - name: Mint homebrew-tap token
+      - name: Mint homebrew-tap and scoop-bucket token
         # Short-lived installation token from the Bronto Community Bot app,
-        # scoped to contents:write on homebrew-tap only. The default
-        # GITHUB_TOKEN cannot push cross-repo.
+        # scoped to contents:write on homebrew-tap and scoop-bucket only. The
+        # default GITHUB_TOKEN cannot push cross-repo. Minting fails if the
+        # app's installation lacks either repo, which fails the release.
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: tap-token
         with:
@@ -75,7 +76,9 @@ jobs:
           app-id: ${{ secrets.BRONTO_COMMUNITY_BOT_APP_ID }}
           private-key: ${{ secrets.BRONTO_COMMUNITY_BOT_PRIVATE_KEY }}
           owner: bronto-community
-          repositories: homebrew-tap
+          repositories: |
+            homebrew-tap
+            scoop-bucket
           permission-contents: write
 
       - name: Run goreleaser
@@ -91,6 +94,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ steps.tap-token.outputs.token }}
+          SCOOP_BUCKET_TOKEN: ${{ steps.tap-token.outputs.token }}
 
       # Signed SLSA build provenance for every release archive/package.
       # goreleaser's checksums.txt lists them all, so one attestation over
