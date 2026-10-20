@@ -180,6 +180,49 @@ scoops:
     description: Community CLI for the Bronto observability platform
     license: MIT
 
+winget:
+  - name: bronto
+    ids:
+      - bronto
+    # winget-pkgs layout: manifests/<first letter>/<Publisher>/<Package>/<version>.
+    # The identifier is permanent once published; renaming means a new package.
+    package_identifier: BrontoCommunity.Bronto
+    path: manifests/b/BrontoCommunity/Bronto/{{ .Version }}
+    publisher: Bronto Community
+    publisher_url: https://github.com/bronto-community
+    publisher_support_url: https://github.com/bronto-community/bronto-cli/issues
+    package_name: bronto CLI
+    short_description: Community CLI for the Bronto observability platform
+    license: MIT
+    license_url: https://github.com/bronto-community/bronto-cli/blob/main/LICENSE
+    homepage: https://docs.bronto.io/cli
+    release_notes_url: https://github.com/bronto-community/bronto-cli/releases/tag/{{ .Tag }}
+    tags:
+      - bronto
+      - cli
+      - observability
+      - logs
+    commit_msg_template: "New version: {{ .PackageIdentifier }} version {{ .Version }}"
+    # auto = publish on stable tags, skip on pre-releases, like the cask.
+    # Without WINGET_TOKEN (a classic PAT; see release.yml) skip winget
+    # entirely: the push to the fork would otherwise fail the release.
+    skip_upload: '{{ if index .Env "WINGET_TOKEN" }}auto{{ else }}true{{ end }}'
+    repository:
+      # goreleaser pushes to this fork of microsoft/winget-pkgs, then opens a
+      # PR upstream. Only a 422 (validation) from the PR call is downgraded to
+      # a warning; any other failure (403, 5xx, a failed push) fails the
+      # release command after the GitHub release is already published.
+      owner: bronto-community
+      name: winget-pkgs
+      branch: "BrontoCommunity.Bronto-{{ .Version }}"
+      token: "{{ .Env.WINGET_TOKEN }}"
+      pull_request:
+        enabled: true
+        base:
+          owner: microsoft
+          name: winget-pkgs
+          branch: master
+
 release:
   github:
     owner: bronto-community

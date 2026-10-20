@@ -95,6 +95,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ steps.tap-token.outputs.token }}
           SCOOP_BUCKET_TOKEN: ${{ steps.tap-token.outputs.token }}
+          # Classic PAT (public_repo, workflow) for the bronto-community
+          # winget-pkgs fork and the PR to microsoft/winget-pkgs. A GitHub App
+          # or fine-grained token can't open PRs there. Unset = winget skipped.
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
 
       # Signed SLSA build provenance for every release archive/package.
       # goreleaser's checksums.txt lists them all, so one attestation over
