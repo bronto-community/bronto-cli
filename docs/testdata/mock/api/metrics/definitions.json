@@ -1,0 +1,41 @@
+{
+  "definitions": [
+    {
+      "id": "6c1e9a2b-3d4f-4a5b-8c7d-9e0f1a2b3c51",
+      "name": "checkout-service requests",
+      "description": "Server spans per bucket",
+      "metric_type": "METRIC_TYPE_UNSPECIFIED",
+      "formulas": [],
+      "queries": [
+        {
+          "name": "requests",
+          "select": ["count(*)"],
+          "where": "$span.kind = 'SPAN_KIND_SERVER'",
+          "groups": [],
+          "aggregation": [{"time": "count", "reduce_to": "avg"}],
+          "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'"
+        }
+      ],
+      "metadata": {"created_at": 1781023500000, "created_by": {"id": "ada@example.com", "type": "USER"}}
+    },
+    {
+      "id": "7d2fab3c-4e5a-4b6c-9d8e-0f1a2b3c4d52",
+      "name": "checkout-service p95 latency",
+      "description": "",
+      "metric_type": "METRIC_TYPE_UNSPECIFIED",
+      "formulas": [],
+      "queries": [
+        {
+          "name": "p95_latency",
+          "select": ["p95($span.duration_nano)"],
+          "where": "$span.kind = 'SPAN_KIND_SERVER'",
+          "groups": ["$span.name"],
+          "aggregation": [{"time": "p95", "reduce_to": "avg"}],
+          "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'",
+          "unit_config": {"type": "time", "input": "nanoseconds", "output": "auto"}
+        }
+      ],
+      "metadata": {"created_at": 1781023500000, "created_by": {"id": "ada@example.com", "type": "USER"}}
+    }
+  ]
+}

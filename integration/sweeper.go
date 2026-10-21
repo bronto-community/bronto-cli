@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -29,7 +31,10 @@ import (
 // groups and webhooks joined with the wave-3 resource expansion, widgets
 // with the widgets resource, roles with #122 — their CRUD tests mint
 // bronto-ci-* names like every other kind.
-var ciResourceKinds = []string{"monitors", "dashboards", "widgets", "saved-searches", "api-keys", "datasets", "groups", "webhooks", "roles"}
+// "metrics definitions" is a nested command path (two words): deleting a
+// widget leaves its definitions behind (live 2026-10-21), so a crashed
+// TestMetricDefinitionsLive would otherwise leak them.
+var ciResourceKinds = []string{"monitors", "dashboards", "widgets", "saved-searches", "api-keys", "datasets", "groups", "webhooks", "roles", "metrics definitions"}
 
 // resourceIDKey maps each swept resource kind to the JSON key its API uses
 // for the resource's identifier. These differ across kinds (api/openapi.yaml):
@@ -51,6 +56,8 @@ var resourceIDKey = map[string]string{
 	"saved-searches": "saved_search_id",
 	"api-keys":       "id",
 	"datasets":       "log_id",
+
+	"metrics definitions": "id",
 }
 
 // resourceNameKey maps each swept resource kind to the JSON key its list
@@ -153,7 +160,9 @@ func RunSweeper(ctx context.Context, r *Runner) error {
 }
 
 func sweepKind(ctx context.Context, r *Runner, kind string) error {
-	res, err := r.Run(ctx, "", kind, "list", "-o", "json")
+	// A kind may be a nested command path ("metrics definitions").
+	words := strings.Fields(kind)
+	res, err := r.Run(ctx, "", append(words, "list", "-o", "json")...)
 	if err != nil {
 		return err
 	}
@@ -170,7 +179,7 @@ func sweepKind(ctx context.Context, r *Runner, kind string) error {
 		// something else already removed it) must not fail the whole
 		// sweep — this is opportunistic cleanup, not the assertion under
 		// test.
-		_, _ = r.Run(ctx, "", kind, "delete", id, "--yes")
+		_, _ = r.Run(ctx, "", append(slices.Clone(words), "delete", id, "--yes")...)
 	}
 	return nil
 }

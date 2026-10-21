@@ -21,11 +21,192 @@ bronto metrics <command> [flags]
 
 | Command | Description |
 | --- | --- |
+| [`bronto metrics definitions`](/cli/reference/commands/metrics#bronto-metrics-definitions) | Manage metric definitions |
 | [`bronto metrics get`](/cli/reference/commands/metrics#bronto-metrics-get) | Get a metric by ID |
 | [`bronto metrics list`](/cli/reference/commands/metrics#bronto-metrics-list) | List metrics |
 | [`bronto metrics top-keys`](/cli/reference/commands/metrics#bronto-metrics-top-keys) | List the attribute keys seen on a metric |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+## bronto metrics definitions
+
+Manage metric definitions: the saved queries and formulas that dashboard
+widgets plot (a widget's metric\_ids). These are not the ingested metrics that
+'bronto metrics list' shows.
+
+A definition has up to 6 queries and optional formulas over them. Each query
+needs a name, a select, a where (may be ""), and from\_expr (or from, a list of
+dataset ids). Prefer from\_expr, e.g. "collection" = '.traces' AND "dataset" =
+'checkout-service'. Formulas refer to queries by name: "errors / total \* 100".
+
+Definitions can't be updated: the API has no update endpoint. Create a new
+definition, point the widget at it with 'bronto widgets update', and delete
+the old one.
+
+Run 'bronto metrics definitions query &lt;definition&gt;' to check that a definition
+returns data. The /metrics/definitions endpoint isn't in Bronto's published
+OpenAPI spec; the bronto CLI uses it as the web UI does.
+
+```sh
+bronto metrics definitions <command> [flags]
+```
+
+#### Subcommands
+
+| Command | Description |
+| --- | --- |
+| [`bronto metrics definitions create`](/cli/reference/commands/metrics#bronto-metrics-definitions-create) | Create a metric definition |
+| [`bronto metrics definitions delete`](/cli/reference/commands/metrics#bronto-metrics-definitions-delete) | Delete a metric definition |
+| [`bronto metrics definitions get`](/cli/reference/commands/metrics#bronto-metrics-definitions-get) | Get a metric definition by ID |
+| [`bronto metrics definitions list`](/cli/reference/commands/metrics#bronto-metrics-definitions-list) | List metric definitions |
+| [`bronto metrics definitions query`](/cli/reference/commands/metrics#bronto-metrics-definitions-query) | Evaluate a metric definition and show its series |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+## bronto metrics definitions create
+
+Create a metric definition
+
+```sh
+bronto metrics definitions create [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+# Request count over a trace dataset
+bronto metrics definitions create --input - <<'EOF'
+{"name": "checkout-service requests",
+ "queries": [{"name": "requests", "select": ["count(*)"],
+   "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'",
+   "where": "$span.kind = 'SPAN_KIND_SERVER'",
+   "aggregation": [{"time": "count", "reduce_to": "avg"}]}]}
+EOF
+
+# p95 latency of server spans, grouped by operation, shown in ms/s
+bronto metrics definitions create --input - <<'EOF'
+{"name": "checkout-service p95 latency",
+ "queries": [{"name": "p95_latency", "select": ["p95($span.duration_nano)"],
+   "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'",
+   "where": "$span.kind = 'SPAN_KIND_SERVER'", "groups": ["$span.name"],
+   "aggregation": [{"time": "p95", "reduce_to": "avg"}],
+   "unit_config": {"type": "time", "input": "nanoseconds", "output": "auto"}}]}
+EOF
+
+# Error rate in percent per service: a formula over two queries
+bronto metrics definitions create --input - <<'EOF'
+{"name": "error rate by service",
+ "queries": [
+   {"name": "errors", "select": ["count(*)"], "from_expr": "\"collection\" = '.traces'",
+    "where": "$span.status_code = 'STATUS_CODE_ERROR'", "groups": ["$service.name"],
+    "aggregation": [{"time": "count", "reduce_to": "avg"}]},
+   {"name": "total", "select": ["count(*)"], "from_expr": "\"collection\" = '.traces'",
+    "where": "", "groups": ["$service.name"],
+    "aggregation": [{"time": "count", "reduce_to": "avg"}]}],
+ "formulas": [{"name": "error_rate", "expression": "errors / total * 100"}]}
+EOF
+
+bronto metrics definitions create --input definition.json
+```
+
+## bronto metrics definitions delete
+
+Delete a metric definition
+
+```sh
+bronto metrics definitions delete <id> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--yes` |  | bool |  | skip the confirmation prompt |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto metrics definitions delete <id> --yes
+```
+
+## bronto metrics definitions get
+
+Get a metric definition by ID
+
+```sh
+bronto metrics definitions get <id> [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto metrics definitions get <id>
+```
+
+## bronto metrics definitions list
+
+List metric definitions
+
+```sh
+bronto metrics definitions list [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto metrics definitions list
+```
+
+## bronto metrics definitions query
+
+Evaluates a saved metric definition over a time range (GET /timeseries/&#123;id&#125;)
+and prints one row per series: each query and formula, or each group of a
+grouped one, with its value over the range and a sparkline of the buckets.
+This is the data a widget built on the definition shows. -o json prints the
+raw API response.
+
+The definition can be an id or a unique name. A warning on stderr says when
+every series is zero: usually the from\_expr or where matches nothing.
+
+```sh
+bronto metrics definitions query <definition> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--from` |  | string |  | absolute start (RFC3339) |
+| `--limit` |  | int |  | maximum groups per grouped query, 1-1000 (default: the API's 100) |
+| `--since` |  | string |  | relative lookback: 30m, 24h, 7d, 1h30m (default 24h) |
+| `--slices` |  | int | `24` | time buckets per series (the TREND sparkline's resolution) |
+| `--time-range` |  | string |  | relative range in the API's words, e.g. "Last 24 hours" (instead of --since) |
+| `--to` |  | string |  | absolute end (RFC3339), requires --from |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto metrics definitions query "checkout-service requests"
+bronto metrics definitions query <id> --since 7d --slices 48
+bronto metrics definitions query <id> --time-range "Last 24 hours" -o json
+```
 
 ## bronto metrics get
 

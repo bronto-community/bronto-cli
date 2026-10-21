@@ -62,6 +62,7 @@ var flagClasses = map[string]argClass{
 	"service":       argValue,
 	"since":         argValue,
 	"storage-class": argValue,
+	"time-range":    argValue,
 	"to":            argValue, // RFC3339 time
 	"window":        argValue,
 
@@ -100,6 +101,7 @@ var argPlaceholders = map[string]argClass{
 	"METHOD":         argValue,
 	"dashboard":      argValue,
 	"dataset":        argValue,
+	"definition":     argValue,
 	"forward-config": argValue,
 	"group":          argValue,
 	"id":             argValue,

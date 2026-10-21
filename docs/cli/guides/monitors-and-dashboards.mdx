@@ -214,3 +214,75 @@ prints the updated dashboard with `-o json`:
 bronto dashboards update "Checkout overview" -f name="Checkout health" -o json
 bronto dashboards update "Checkout health" --input layout.json
 ```
+
+## Build a widget from a metric definition
+
+A widget plots one or more metric definitions: saved queries, with optional formulas over
+them, listed in the widget's `metric_ids`. These are not the ingested metrics that
+`bronto metrics list` shows. `bronto metrics definitions` manages them, and
+`bronto metrics definitions query` evaluates one, so you can check that a widget will show
+data before you build it. The `/metrics/definitions` endpoint isn't in Bronto's published
+API reference.
+
+{/* test: tty */}
+```console
+$ bronto metrics definitions list
+NAME                          DESCRIPTION              QUERIES  FORMULAS  CREATED     ID
+checkout-service requests     Server spans per bucket  1        0         2026-06-09  6c1e9a2b-3d4f-4a5b-8c7d-9e0f1a2b3c51
+checkout-service p95 latency                           1        0         2026-06-09  7d2fab3c-4e5a-4b6c-9d8e-0f1a2b3c4d52
+$ bronto metrics definitions query "checkout-service p95 latency"
+SERIES       GROUP               STAT  VALUE    TREND
+p95_latency  POST /api/checkout  p95   640 ms   ▂▂▂█▂▂▂▂
+p95_latency  GET /api/cart       p95   95.0 ms  ▇▇▇█▇▇▇▇
+```
+
+`query` prints one row per series: each query and formula, or each group of a grouped
+query, with its value over the range and a sparkline of the time buckets. The range is
+`--since` (default `24h`), `--from`/`--to`, or `--time-range "Last 7 days"`, and `--slices`
+sets the number of buckets. A time `unit_config` on the query makes the value read
+`640 ms` instead of `640000000`. If every series is zero, a warning on stderr says so: the
+query's `from_expr` or `where` most likely matches nothing. For data ingested in the last
+few minutes, Bronto can keep answering a cached zero for a query it evaluated before the
+data arrived. A new definition whose query differs, even only in its `where`, is
+evaluated fresh. `-o json` prints the raw
+[timeseries response](https://docs.bronto.io/api-reference/timeseries/retrieve-the-timeseries-for-a-metric-definition).
+
+From definition to dashboard:
+
+```sh
+# 1. A definition: p95 latency of checkout-service's server spans, per operation
+bronto metrics definitions create --input - <<'EOF'
+{"name": "checkout-service p95 latency",
+ "queries": [{"name": "p95_latency", "select": ["p95($span.duration_nano)"],
+   "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'",
+   "where": "$span.kind = 'SPAN_KIND_SERVER'", "groups": ["$span.name"],
+   "aggregation": [{"time": "p95", "reduce_to": "avg"}],
+   "unit_config": {"type": "time", "input": "nanoseconds", "output": "auto"}}]}
+EOF
+
+# 2. Check that it returns data
+bronto metrics definitions query "checkout-service p95 latency" --since 24h
+
+# 3. A line widget that plots it
+def=$(bronto metrics definitions get "checkout-service p95 latency" -o json --jq .id -r)
+bronto widgets create -f name="Checkout p95 latency" -f type=line -f "metric_ids=[\"$def\"]"
+
+# 4. Attach it to a dashboard, and check every definition the widget plots
+bronto dashboards attach-widgets "Checkout overview" --widget-ids "Checkout p95 latency"
+bronto widgets query "Checkout p95 latency"
+```
+
+Each query needs a `name`, a `select`, a `where` (`""` for no filter), and `from_expr`,
+such as `"collection" = '.traces' AND "dataset" = 'checkout-service'` for a trace dataset.
+`from`, a list of dataset ids, also works, but `from_expr` doesn't depend on ids.
+`bronto metrics definitions create` refuses a query without `where` or `from_expr`, which
+the API would reject with a bare 400. A definition takes up to six queries. A formula such
+as `{"name": "error_rate", "expression": "errors / total * 100"}` refers to queries by
+name, and when a definition has one, the web UI plots only the formula.
+`bronto metrics definitions create --help` has examples for a request count, a grouped
+p95 latency, and an error-rate formula.
+
+Definitions can't be updated, because the API has no update endpoint. Create a new
+definition, set the widget's `metric_ids` to it with `bronto widgets update`, and delete
+the old one with `bronto metrics definitions delete`. Deleting a widget doesn't delete its
+definitions.

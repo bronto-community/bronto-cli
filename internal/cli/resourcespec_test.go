@@ -159,12 +159,18 @@ var specIDBaseExceptions = map[string]bool{}
 // organizations was never in any vendored spec: `search --url/--open` reads
 // the active org from it to build the web-UI link (live-verified
 // 2026-10-02).
+//
+// metrics/definitions (bronto metrics definitions) has never been in a
+// published spec, which has only an empty metric-definitions tag: list,
+// get, create and delete live-verified 2026-10-21 (EU), and covered on
+// every PR by integration TestMetricDefinitionsLive.
 var specLiveButUndocumented = map[string]bool{
-	"/dashboards":     true,
-	"/saved-searches": true,
-	"/parsers":        true,
-	"/usage":          true,
-	"/organizations":  true,
+	"/metrics/definitions": true,
+	"/dashboards":          true,
+	"/saved-searches":      true,
+	"/parsers":             true,
+	"/usage":               true,
+	"/organizations":       true,
 }
 
 // normalizeParams rewrites every {param} segment to a bare {} so patterns

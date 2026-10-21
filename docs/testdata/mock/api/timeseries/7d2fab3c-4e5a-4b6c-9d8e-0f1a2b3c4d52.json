@@ -1,0 +1,57 @@
+{
+  "p95_latency": {
+    "name": "p95_latency",
+    "formulas": [],
+    "queries": [
+      {
+        "name": "p95_latency",
+        "select": ["p95($span.duration_nano)"],
+        "where": "$span.kind = 'SPAN_KIND_SERVER'",
+        "groups": ["$span.name"],
+        "aggregation": [{"time": "p95", "reduce_to": "avg"}],
+        "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'",
+        "unit_config": {"type": "time", "input": "nanoseconds", "output": "auto"}
+      }
+    ],
+    "aggregates": [{"function": "COUNT", "value": 1840}, {"function": "P95", "value": 412000000.0}],
+    "is_exact": true,
+    "series": [
+      {"@time": "Sun Jul 19 00:00:00 UTC 2026", "@timestamp": "1784419200000", "count": "220", "value": "180000000.0"},
+      {"@time": "Sun Jul 19 03:00:00 UTC 2026", "@timestamp": "1784430000000", "count": "190", "value": "175000000.0"},
+      {"@time": "Sun Jul 19 06:00:00 UTC 2026", "@timestamp": "1784440800000", "count": "240", "value": "190000000.0"},
+      {"@time": "Sun Jul 19 09:00:00 UTC 2026", "@timestamp": "1784451600000", "count": "300", "value": "640000000.0"},
+      {"@time": "Sun Jul 19 12:00:00 UTC 2026", "@timestamp": "1784462400000", "count": "260", "value": "230000000.0"},
+      {"@time": "Sun Jul 19 15:00:00 UTC 2026", "@timestamp": "1784473200000", "count": "230", "value": "200000000.0"},
+      {"@time": "Sun Jul 19 18:00:00 UTC 2026", "@timestamp": "1784484000000", "count": "210", "value": "185000000.0"},
+      {"@time": "Sun Jul 19 21:00:00 UTC 2026", "@timestamp": "1784494800000", "count": "190", "value": "170000000.0"}
+    ],
+    "groups_series": [
+      {
+        "key": "$span.name", "name": "POST /api/checkout", "count": 1040, "stat": "P95", "value": 640000000.0,
+        "timeseries": [
+          {"@timestamp": 1784419200000, "count": 120, "value": 210000000.0},
+          {"@timestamp": 1784430000000, "count": 110, "value": 205000000.0},
+          {"@timestamp": 1784440800000, "count": 140, "value": 220000000.0},
+          {"@timestamp": 1784451600000, "count": 170, "value": 1250000000.0},
+          {"@timestamp": 1784462400000, "count": 150, "value": 260000000.0},
+          {"@timestamp": 1784473200000, "count": 130, "value": 230000000.0},
+          {"@timestamp": 1784484000000, "count": 120, "value": 215000000.0},
+          {"@timestamp": 1784494800000, "count": 100, "value": 200000000.0}
+        ]
+      },
+      {
+        "key": "$span.name", "name": "GET /api/cart", "count": 800, "stat": "P95", "value": 95000000.0,
+        "timeseries": [
+          {"@timestamp": 1784419200000, "count": 100, "value": 90000000.0},
+          {"@timestamp": 1784430000000, "count": 80, "value": 88000000.0},
+          {"@timestamp": 1784440800000, "count": 100, "value": 92000000.0},
+          {"@timestamp": 1784451600000, "count": 130, "value": 98000000.0},
+          {"@timestamp": 1784462400000, "count": 110, "value": 95000000.0},
+          {"@timestamp": 1784473200000, "count": 100, "value": 93000000.0},
+          {"@timestamp": 1784484000000, "count": 90, "value": 91000000.0},
+          {"@timestamp": 1784494800000, "count": 90, "value": 89000000.0}
+        ]
+      }
+    ]
+  }
+}
