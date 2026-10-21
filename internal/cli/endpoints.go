@@ -63,7 +63,7 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/users/{*}/deactivate", Command: "bronto users deactivate"},
 	{Pattern: "/users/{*}/reactivate", Command: "bronto users reactivate"},
 	{Pattern: "/users/{*}/resend-invite", Command: "bronto users resend-invite"},
-	{Pattern: "/dashboards/{*}/detach-from-template", Command: "bronto dashboards detach-from-template"},
+	{Pattern: "/dashboards/{*}/detach-from-template", Command: "bronto dashboards detach-from-template / dashboards apply"},
 	{Pattern: "/dashboards/{*}/widgets", Command: "bronto dashboards attach-widgets"},
 	{Pattern: "/dashboards/{*}/widgets/{*}", Command: "bronto dashboards remove-widget"},
 	{Pattern: "/widgets/{*}/widgets", Command: "bronto widgets attach-widgets"},
@@ -79,6 +79,18 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/dashboards/templates/{*}", Command: "bronto dashboards templates show / dashboards create"},
 	{Pattern: "/dashboards/templates/{*}/preview", Command: "bronto dashboards templates show"},
 	{Pattern: "/dashboards/templates/{*}/instance", Command: "bronto dashboards create"},
+	// dashboards apply/export/validate read the dashboard, every widget and
+	// every metric definition, and apply writes all three plus the
+	// ownership tags; validate --live runs queries ad hoc.
+	{Pattern: "/logs", Command: "bronto dashboards apply / dashboards validate"},
+	{Pattern: "/widgets", Command: "bronto dashboards apply / dashboards export / dashboards validate"},
+	{Pattern: "/widgets/{*}", Command: "bronto dashboards apply"},
+	{Pattern: "/metrics/definitions", Command: "bronto dashboards apply / dashboards export"},
+	{Pattern: "/metrics/definitions/{*}", Command: "bronto dashboards apply"},
+	{Pattern: "/dashboards/{*}/widgets", Command: "bronto dashboards apply"},
+	{Pattern: "/dashboards/{*}/widgets/{*}", Command: "bronto dashboards apply"},
+	{Pattern: "/tags", Command: "bronto dashboards apply"},
+	{Pattern: "/timeseries/search", Command: "bronto dashboards validate"},
 }
 
 // EndpointInventory returns every management-API path pattern the CLI

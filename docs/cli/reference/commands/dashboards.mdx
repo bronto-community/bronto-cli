@@ -21,17 +21,115 @@ bronto dashboards <command> [flags]
 
 | Command | Description |
 | --- | --- |
+| [`bronto dashboards apply`](/cli/reference/commands/dashboards#bronto-dashboards-apply) | Create or update dashboards from manifest files |
 | [`bronto dashboards attach-widgets`](/cli/reference/commands/dashboards#bronto-dashboards-attach-widgets) | Attach widgets to a dashboard |
 | [`bronto dashboards create`](/cli/reference/commands/dashboards#bronto-dashboards-create) | Create a dashboard |
 | [`bronto dashboards delete`](/cli/reference/commands/dashboards#bronto-dashboards-delete) | Delete a dashboard |
 | [`bronto dashboards detach-from-template`](/cli/reference/commands/dashboards#bronto-dashboards-detach-from-template) | Detach a dashboard from its template |
+| [`bronto dashboards export`](/cli/reference/commands/dashboards#bronto-dashboards-export) | Write a dashboard as a manifest for 'dashboards apply' |
 | [`bronto dashboards get`](/cli/reference/commands/dashboards#bronto-dashboards-get) | Get a dashboard by ID |
 | [`bronto dashboards list`](/cli/reference/commands/dashboards#bronto-dashboards-list) | List dashboards |
 | [`bronto dashboards remove-widget`](/cli/reference/commands/dashboards#bronto-dashboards-remove-widget) | Remove a widget from a dashboard |
 | [`bronto dashboards templates`](/cli/reference/commands/dashboards#bronto-dashboards-templates) | Manage dashboard templates |
 | [`bronto dashboards update`](/cli/reference/commands/dashboards#bronto-dashboards-update) | Update a dashboard |
+| [`bronto dashboards validate`](/cli/reference/commands/dashboards#bronto-dashboards-validate) | Check dashboard manifests, offline or against the account |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+## bronto dashboards apply
+
+Makes the account match dashboard manifests, like kubectl apply: creates
+the dashboard if no dashboard has the manifest's name, then creates, updates
+or deletes its widgets and their metric definitions until they match the
+file. Run it again with an unchanged file and it makes no API writes.
+
+```text
+How apply decides:
+- The dashboard's name is its identity. Two dashboards with the name is an
+error that lists both; apply never deletes a dashboard.
+- Inline widgets, and the metric definition each one plots, belong to the
+dashboard. Apply tags the widgets it creates (managed-by: bronto-cli,
+bronto-cli-owner: <dashboard id>) and matches them by name. Remove a
+widget from the file and the next apply deletes it and its definition.
+- A changed query gets a new definition (the API can't update one): apply
+creates it, points the widget at it, then deletes the old one.
+- ref: widgets are attached and never changed or deleted. A widget on the
+dashboard that the file doesn't mention, and that apply doesn't own, is
+detached.
+- An inline widget that's on the dashboard but wasn't created by apply
+(export a dashboard built in the web UI, then apply it) is adopted:
+apply tags it and manages it from then on.
+- A dashboard made from a template can't be changed until it's detached
+from the template, so apply detaches it first when it has a change to
+make (the plan says so), and leaves it linked otherwise.
+```
+
+--dry-run prints what apply would create, change, detach and delete, and
+writes nothing. -f takes a file, a directory (every .yaml and .yml file in
+it) or - for stdin, and can be repeated.
+
+Manifest format (YAML or JSON, one dashboard per file):
+
+```text
+name: Checkout API health          # required: the dashboard's identity
+description: Requests, latency and errors   # set when the dashboard is created
+tags: {team: checkout}             # optional; when present, the dashboard's full tag set
+widgets:
+  - name: Request rate             # required, unique in the file
+    type: line                     # line (default), bar, score, top-list, area, table, ...
+    queries:
+      - name: requests             # default q1, q2, ...; formulas refer to it
+        dataset: .traces/checkout-api   # name, collection/name or id; or a list
+        select: count(*)
+        where: "$span.kind = 'SPAN_KIND_SERVER'"   # default "" (everything)
+  - name: p95 latency
+    unit: nanoseconds              # nanoseconds|microseconds|milliseconds|seconds|bytes|...
+    queries:
+      - {name: p95, dataset: .traces/checkout-api, select: $span.duration_nano, agg: p95,
+         where: "$span.kind = 'SPAN_KIND_SERVER'", group_by: [$span.name]}
+  - name: Error rate %
+    queries:
+      - {name: errors, dataset: .traces/checkout-api, select: count(*),
+         where: "$span.status_code = 'STATUS_CODE_ERROR'"}
+      - {name: total, dataset: .traces/checkout-api, select: count(*)}
+    formula: errors / total * 100  # one formula over the queries (the widget plots it)
+  - ref: Shared widget             # an existing widget, by name or id: attached, never owned
+```
+
+Query fields: name, dataset | from\_expr | from (dataset ids), select (count(\*),
+p95(field), or a field with agg), agg (count, sum, avg, min, max, p50, p75, p90,
+p95, p99, rate, ...; default from the select, "none" for no aggregation),
+reduce\_to (avg (default), sum, min, max), agg\_params, where, group\_by (up to 5),
+unit or unit\_config. A widget takes up to 6 queries, and formula: or formulas:
+\[&#123;name, expression&#125;\]. Trace fields: $service.name, $span.name,
+$span.kind = 'SPAN\_KIND\_SERVER', $span.duration\_nano (nanoseconds),
+$span.status\_code = 'STATUS\_CODE\_ERROR'.
+
+A field you leave out (description, tags, layout, a widget's type,
+description or aux) is left as it is. Without a layout the web UI lays the
+widgets out in two columns, ordered by widget id; a layout: list of
+&#123;widget, x, y, w, h&#125; entries sets positions.
+
+```sh
+bronto dashboards apply -f <file|dir|-> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--filename` | `-f` | stringArray |  | manifest file, directory of .yaml/.yml files, or - for stdin (repeatable) |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto dashboards apply -f dashboard.yaml --dry-run
+bronto dashboards apply -f dashboard.yaml
+bronto dashboards apply -f dashboards/
+bronto dashboards export "Checkout API health" > dashboard.yaml
+```
 
 ## bronto dashboards attach-widgets
 
@@ -131,6 +229,35 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto dashboards detach-from-template <dashboard>
+```
+
+## bronto dashboards export
+
+Writes a dashboard as a manifest (YAML by default, -o json for JSON) that
+'bronto dashboards apply' re-applies without changes: like kubectl get -o
+yaml, it turns a dashboard built in the web UI into a file.
+
+Each widget becomes an inline widget, with dataset: references for queries
+over a collection and dataset. Inline widgets belong to the dashboard, so
+applying the export of a dashboard apply didn't create takes ownership of
+its widgets (a note on stderr says so): from then on, removing one from the
+file deletes it. Widgets the manifest can't express (group widgets, widgets
+with several definitions, widgets another manifest owns) are written as
+ref: entries, which apply only attaches.
+
+The dashboard can be an id or a unique name.
+
+```sh
+bronto dashboards export <dashboard> [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto dashboards export "Checkout API health" > dashboard.yaml
+bronto dashboards export <id> -o json
 ```
 
 ## bronto dashboards get
@@ -288,4 +415,79 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 ```sh
 bronto dashboards update <id> -f name=<name>
 bronto dashboards update <id> --input body.json
+```
+
+## bronto dashboards validate
+
+Checks dashboard manifests without changing anything: the YAML, every
+field, query and formula, with the file:line of each problem. It exits 2 on
+a problem and 0 when every file is valid.
+
+With --live it also resolves the datasets and widget refs against the
+account and runs each widget's queries once (POST /timeseries/search, which
+saves nothing). A widget whose series are all zero over --since gets a
+warning, not an error: usually its where or dataset matches nothing. A
+query the API rejects is an error (exit 1).
+
+Manifest format (YAML or JSON, one dashboard per file):
+
+```text
+name: Checkout API health          # required: the dashboard's identity
+description: Requests, latency and errors   # set when the dashboard is created
+tags: {team: checkout}             # optional; when present, the dashboard's full tag set
+widgets:
+  - name: Request rate             # required, unique in the file
+    type: line                     # line (default), bar, score, top-list, area, table, ...
+    queries:
+      - name: requests             # default q1, q2, ...; formulas refer to it
+        dataset: .traces/checkout-api   # name, collection/name or id; or a list
+        select: count(*)
+        where: "$span.kind = 'SPAN_KIND_SERVER'"   # default "" (everything)
+  - name: p95 latency
+    unit: nanoseconds              # nanoseconds|microseconds|milliseconds|seconds|bytes|...
+    queries:
+      - {name: p95, dataset: .traces/checkout-api, select: $span.duration_nano, agg: p95,
+         where: "$span.kind = 'SPAN_KIND_SERVER'", group_by: [$span.name]}
+  - name: Error rate %
+    queries:
+      - {name: errors, dataset: .traces/checkout-api, select: count(*),
+         where: "$span.status_code = 'STATUS_CODE_ERROR'"}
+      - {name: total, dataset: .traces/checkout-api, select: count(*)}
+    formula: errors / total * 100  # one formula over the queries (the widget plots it)
+  - ref: Shared widget             # an existing widget, by name or id: attached, never owned
+```
+
+Query fields: name, dataset | from\_expr | from (dataset ids), select (count(\*),
+p95(field), or a field with agg), agg (count, sum, avg, min, max, p50, p75, p90,
+p95, p99, rate, ...; default from the select, "none" for no aggregation),
+reduce\_to (avg (default), sum, min, max), agg\_params, where, group\_by (up to 5),
+unit or unit\_config. A widget takes up to 6 queries, and formula: or formulas:
+\[&#123;name, expression&#125;\]. Trace fields: $service.name, $span.name,
+$span.kind = 'SPAN\_KIND\_SERVER', $span.duration\_nano (nanoseconds),
+$span.status\_code = 'STATUS\_CODE\_ERROR'.
+
+A field you leave out (description, tags, layout, a widget's type,
+description or aux) is left as it is. Without a layout the web UI lays the
+widgets out in two columns, ordered by widget id; a layout: list of
+&#123;widget, x, y, w, h&#125; entries sets positions.
+
+```sh
+bronto dashboards validate -f <file|dir|-> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--filename` | `-f` | stringArray |  | manifest file, directory of .yaml/.yml files, or - for stdin (repeatable) |
+| `--live` |  | bool |  | also resolve datasets and refs, and run every query once |
+| `--since` |  | string | `24h` | with --live: the window the queries run over |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto dashboards validate -f dashboard.yaml
+bronto dashboards validate -f dashboards/ --live --since 7d
 ```

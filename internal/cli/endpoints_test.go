@@ -104,6 +104,9 @@ var endpointProbes = map[string][][]string{
 	"bronto dashboards templates show":       {{"dashboards", "templates", "show", probeID}, {"dashboards", "templates", "show", "t1"}},
 	"bronto dashboards create": {{"dashboards", "create", "--template", probeID},
 		{"dashboards", "create", "--template", "t1"}},
+	"bronto dashboards apply":    {{"dashboards", "apply", "-f", "@MANIFEST"}},
+	"bronto dashboards export":   {{"dashboards", "export", probeID}},
+	"bronto dashboards validate": {{"dashboards", "validate", "-f", "@MANIFEST", "--live"}},
 }
 
 // unprobedCommands can't be driven in-process; their inventory entries are
@@ -194,9 +197,13 @@ func recordRequests(t *testing.T, args []string) []string {
 	if err := os.WriteFile(monitor, []byte(`{"name":"m","log_ids":["`+probeDataset+`"]}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	manifest := filepath.Join(dir, "dashboard.yaml")
+	if err := os.WriteFile(manifest, []byte("name: d\nwidgets:\n  - {name: w, queries: [{dataset: ds, select: count(*)}]}\n  - {ref: w1}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	full := make([]string, 0, len(args)+4)
 	for _, a := range args {
-		full = append(full, strings.ReplaceAll(a, "@MONITOR", monitor))
+		full = append(full, strings.NewReplacer("@MONITOR", monitor, "@MANIFEST", manifest).Replace(a))
 	}
 	full = append(full, "--base-url", srv.URL, "--api-key", "k")
 

@@ -70,6 +70,7 @@ var flagClasses = map[string]argClass{
 	"bucket":     argName, // S3 bucket name
 	"download":   argName, // local path
 	"exclude":    argName, // regex
+	"filename":   argName, // local path
 	"groups":     argName, // ids or names
 	"highlight":  argName, // regex
 	"include":    argName, // regex
@@ -137,13 +138,13 @@ const (
 var placeholderRE = regexp.MustCompile(`^[<\[]([A-Za-z][A-Za-z-]*)(?:\.\.\.)?[>\]]$`)
 
 // usePlaceholders returns the positional placeholder names in c.Use,
-// skipping flag placeholders such as "--widget-ids <id,...>".
+// skipping flag placeholders such as "--widget-ids <id,...>" or "-f <file|dir|->".
 func usePlaceholders(c *cobra.Command) []string {
 	fields := strings.Fields(c.Use)
 	var names []string
 	for i := 1; i < len(fields); i++ {
 		f := fields[i]
-		if strings.HasPrefix(f, "--") || strings.HasPrefix(f, "[--") {
+		if strings.HasPrefix(f, "-") || strings.HasPrefix(f, "[-") {
 			i++ // the flag's own value placeholder
 			continue
 		}

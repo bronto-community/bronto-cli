@@ -1,6 +1,6 @@
 ---
 title: Monitors and dashboards
-description: Inspect, mute, and lint monitors, schedule downtimes, and assemble dashboards from widgets or templates.
+description: Inspect, mute, and lint monitors, schedule downtimes, and build dashboards from manifest files with bronto dashboards apply, or from templates and widgets.
 ---
 
 Monitors and dashboards follow the [shared resource pattern](/cli/guides/resources). This
@@ -131,10 +131,174 @@ bronto monitors check --input monitors/checkout-5xx.json --input monitors/paymen
 `bronto monitors create --input <file>` so a broken definition fails the build instead of
 being created.
 
+## Declarative dashboards
+
+Describe a dashboard in a YAML file and `bronto dashboards apply` builds it: the metric
+definitions, the widgets that plot them, and the dashboard, with no ids to copy between
+commands. Run it again after editing the file and it changes only what you changed, like
+`kubectl apply`. This is the way to build a dashboard; the commands in the next sections
+are the pieces it uses.
+
+A dashboard for a service's traces, with a request rate, a p95 latency in milliseconds,
+and an error rate:
+
+```yaml checkout.yaml
+name: Checkout API health
+description: Request rate, latency and errors for checkout-service
+tags: {team: checkout}
+widgets:
+  - name: Request rate
+    type: line
+    queries:
+      - name: requests
+        dataset: .traces/checkout-service
+        select: count(*)
+        where: $span.kind = 'SPAN_KIND_SERVER'
+  - name: p95 latency
+    type: line
+    unit: nanoseconds          # $span.duration_nano is in ns; the web UI shows "640 ms"
+    queries:
+      - name: p95
+        dataset: .traces/checkout-service
+        select: $span.duration_nano
+        agg: p95
+        where: $span.kind = 'SPAN_KIND_SERVER'
+        group_by: [$span.name]  # one line per operation
+  - name: Error rate %
+    type: line
+    queries:
+      - name: errors
+        dataset: .traces/checkout-service
+        select: count(*)
+        where: $span.status_code = 'STATUS_CODE_ERROR'
+      - name: total
+        dataset: .traces/checkout-service
+        select: count(*)
+    formula: errors / total * 100
+```
+
+Check it, preview the changes, apply, and look at the data:
+
+```sh
+bronto dashboards validate -f checkout.yaml --live   # runs every query once, warns on an empty widget
+bronto dashboards apply -f checkout.yaml --dry-run    # what would be created, changed or deleted
+bronto dashboards apply -f checkout.yaml
+bronto widgets query "p95 latency"
+```
+
+`bronto dashboards validate` without `--live` checks the file offline and reports each
+problem with its file and line. With `--live`, it also resolves the datasets and runs each
+widget's queries once, without saving anything. `-f` takes a file, a directory (every
+`.yaml` and `.yml` file in it, one dashboard per file), or `-` for stdin.
+
+`bronto dashboards export` goes the other way: it writes an existing dashboard as a
+manifest that `apply` re-applies without changes, so a dashboard built in the web UI can
+move into a file and into version control:
+
+{/* test: tty */}
+```console
+$ bronto dashboards export "Checkout overview" > dashboard.yaml
+$ cat dashboard.yaml
+name: Checkout overview
+description: Request rate, 5xx errors and latency for the checkout flow
+tags:
+  team: checkout
+widgets:
+  - name: Checkout requests
+    type: line
+    queries:
+      - name: requests
+        dataset: .traces/checkout-service
+        select: count(*)
+        where: $span.kind = 'SPAN_KIND_SERVER'
+  - name: Checkout p95 latency
+    type: line
+    unit: nanoseconds
+    queries:
+      - name: p95_latency
+        dataset: .traces/checkout-service
+        select: p95($span.duration_nano)
+        where: $span.kind = 'SPAN_KIND_SERVER'
+        group_by:
+          - $span.name
+  - name: Checkout error rate
+    type: line
+    queries:
+      - name: errors
+        dataset: .traces/checkout-service
+        select: count(*)
+        where: $span.status_code = 'STATUS_CODE_ERROR'
+      - name: total
+        dataset: .traces/checkout-service
+        select: count(*)
+    formula: errors / total * 100
+$ bronto dashboards validate -f dashboard.yaml 2>&1
+✓ dashboard.yaml: dashboard "Checkout overview", 3 widgets
+```
+
+### How apply decides
+
+- **The name is the identity.** `apply` updates the dashboard with the manifest's
+  `name`, or creates one. If two dashboards have the name, it stops and lists both. It
+  never deletes a dashboard.
+- **Inline widgets belong to the dashboard.** `apply` tags each widget it creates with
+  `managed-by: bronto-cli` and `bronto-cli-owner: <dashboard id>`, and finds it by name
+  next time. Remove a widget from the file and the next `apply` deletes the widget and
+  its metric definition.
+- **A changed query gets a new definition.** Bronto can't update a metric definition, so
+  `apply` creates a new one, points the widget at it, and then deletes the old one. If a
+  run stops halfway, run it again: it picks up where it stopped.
+- **`ref:` widgets are only attached.** `- ref: <widget name or id>` attaches an existing
+  widget that something else manages. `apply` never changes or deletes it, and detaches it
+  when you remove the `ref:`. Turn an inline widget into a `ref:` and `apply` stops
+  managing it (it drops the ownership tags). A widget on the dashboard that the file doesn't mention, and
+  that `apply` didn't create, is detached too.
+- **Applying an export adopts.** Export a dashboard that `apply` didn't create and every
+  widget becomes inline (a note on stderr says so). Applying that file tags them, and from
+  then on `apply` manages them: leave one out and it's deleted. Group widgets and widgets
+  with several definitions are exported as `ref:` entries.
+- **A dashboard made from a template is detached first.** Bronto rejects changes to such a
+  dashboard, so when `apply` has to change its tags, layout or widgets, it detaches the
+  dashboard from its template first; the plan says so. With nothing to change, it stays
+  linked.
+- **A field you leave out is left alone.** Without `description`, `tags` or `layout`, or a
+  widget's `type` or `description`, `apply` keeps the current value. With `tags:`, the file
+  holds the dashboard's whole tag set. Bronto can't change a dashboard's description after
+  creation, so `apply` warns instead.
+- **An unchanged file makes no API writes.** `--dry-run` prints the plan and writes
+  nothing; `-o json` prints it as JSON, with a `writes` count.
+
+### Manifest fields
+
+| Field | Meaning |
+| --- | --- |
+| `name` | The dashboard's name and identity. Required. |
+| `description`, `tags` | Set on the dashboard. The description can only be set when the dashboard is created. |
+| `widgets[].name` | The widget's name, unique in the file. |
+| `widgets[].type` | `line` (the default), `bar`, `area`, `score`, `top-list`, `table`, `pie`, `donut`, `treemap`, `geomap`, `events-list`. |
+| `widgets[].unit` | `nanoseconds`, `microseconds`, `milliseconds`, `seconds`, or a data size such as `bytes`, for every query and formula of the widget. `unit_config` takes the API's object instead. |
+| `widgets[].queries` | Up to six queries; the widget's metric definition. |
+| `widgets[].formula` | One formula over the queries by name, such as `errors / total * 100`. When a widget has a formula, the web UI plots only the formula. `formulas: [{name, expression}]` sets several, or names one. |
+| `widgets[].ref` | An existing widget, by name or id, to attach. Takes no other field. |
+| `queries[].name` | Default `q1`, `q2`, …; formulas refer to it, so no spaces. |
+| `queries[].dataset` | A dataset as `-d` takes it (`name`, `collection/name` or id), or a list. Becomes the query's `from_expr`. `from_expr:` sets one directly, and `from:` takes dataset ids. |
+| `queries[].select` | `count(*)`, a function such as `p95($span.duration_nano)`, or a field with `agg`. |
+| `queries[].agg` | The aggregation: `count`, `sum`, `avg`, `min`, `max`, `p50`, `p75`, `p90`, `p95`, `p99`, `rate`, and more. Defaults from `select` (`count(*)` counts); a bare field needs it. |
+| `queries[].where` | A filter in the [query language](https://docs.bronto.io/core-features/log-search/query-syntax). Default `""`, everything. |
+| `queries[].group_by` | Up to five fields; one series per group. |
+| `queries[].reduce_to` | How the series becomes one number: `avg` (the default), `sum`, `min`, `max`. |
+| `layout` | Optional `[{widget, x, y, w, h}]` positions. Without it, the web UI lays the widgets out in two columns, ordered by widget id. |
+
+The trace fields that dashboards use most: `$service.name`, `$span.name` (the operation),
+`$span.kind = 'SPAN_KIND_SERVER'` (requests a service handled), `$span.duration_nano`
+(nanoseconds, so set `unit: nanoseconds`), and
+`$span.status_code = 'STATUS_CODE_ERROR'`.
+
 ## Dashboards and widgets
 
 [Dashboards](https://docs.bronto.io/Search-and-Visualize/Dashboards) are built from
-widgets. Create the widgets first, then attach them to a dashboard. The API reference
+widgets. To build one from a file, use [`bronto dashboards apply`](#declarative-dashboards).
+By hand, create the widgets first, then attach them to a dashboard. The API reference
 covers [dashboards](https://docs.bronto.io/api-reference/dashboards/get-all-dashboards-for-an-organisation) and
 [widgets](https://docs.bronto.io/api-reference/widgets/retrieve-all-the-widgets).
 
@@ -319,6 +483,7 @@ $ bronto metrics definitions list
 NAME                          DESCRIPTION              QUERIES  FORMULAS  CREATED     ID
 checkout-service requests     Server spans per bucket  1        0         2026-06-09  6c1e9a2b-3d4f-4a5b-8c7d-9e0f1a2b3c51
 checkout-service p95 latency                           1        0         2026-06-09  7d2fab3c-4e5a-4b6c-9d8e-0f1a2b3c4d52
+Checkout error rate                                    2        1         2026-06-09  8e3b0c4d-5f6a-4c7d-8e9f-1a2b3c4d5e53
 $ bronto metrics definitions query "checkout-service p95 latency"
 SERIES       GROUP               STAT  VALUE    TREND
 p95_latency  POST /api/checkout  p95   640 ms   ▂▂▂█▂▂▂▂
