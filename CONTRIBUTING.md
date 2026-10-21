@@ -86,6 +86,21 @@ BRONTO_IT_MGMT_KEY=... BRONTO_IT_INGEST_KEY=... make it
 - Reuse the seed fixture (`seededData` / `seededLogID` / `seededProbes` in `seed_test.go`) instead of seeding and waiting on your own data. One batch is seeded per test binary, its `log_id` is resolved once, and one readiness poll covers the batch plus the ride-along probe events.
 - Poll through `PollUntil` (`harness.go`) so your wait inherits the shared backoff (first delay, then ×1.5 up to a 20s ceiling). Fixed short cadences against Bronto's ingest-to-search eventual consistency spend most of their requests asking a question that cannot yet be answered — an earlier flat-5s version of these polls, plus a flat-3s `exports --wait`, was most of a ~300-request run.
 
+## Local test environment
+
+To try a change against a real Bronto org, through the CLI or the web app, use a **test org**: one where creating and deleting things is fine. That's the shared CI test org (ask a maintainer for access) or a [free-trial org](https://bronto.io) of your own. Never your production org.
+
+1. **Credentials:** `cp .env.local.example .env.local` and fill it in. `.env.local` is gitignored. It needs the org's region and id, plus a management key (`AdminApi` + `SearchApi` + `IngestionApi`). The ingestion-only key is optional.
+2. **CLI and integration tests:** prefix commands with `scripts/test-env`, which points the bronto CLI at the test org whatever your shell or config says:
+   ```sh
+   scripts/test-env bronto dashboards list
+   make it-local            # the integration suite against the test org
+   ```
+   It sets `BRONTO_API_KEY` from `.env.local` and ignores profiles, so it never reads or writes the OS keychain.
+3. **Web app:** `make browser` starts Chrome with its own profile (`.local/chrome-test`, gitignored) and remote debugging on `127.0.0.1:9222`. Log into the test org in that window once; the session is kept across restarts. Coding agents drive this window through the Chrome DevTools MCP server configured in `.mcp.json` (Claude Code asks you to approve it the first time). It's separate from your everyday browser, so an agent only ever sees the test org.
+
+[`AGENTS.md`](./AGENTS.md) lists the rules for working in the test org. They apply to people too.
+
 ## Deferred work gets a fix or an issue — never a sentence
 
 When you notice something out of scope while working, it goes one of two ways: **fix it now**, or **open an issue**. Never a third way — a "not done" note in a PR description, a "we should probably…" line in a review comment, a `TODO` with no ticket. Those read as diligence and behave as forgetting: PR bodies are unsearchable in practice, and nobody re-reads a merged one.

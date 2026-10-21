@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# test-env runs a command against the local test org configured in
+# .env.local (copy .env.local.example to start):
+#
+#   scripts/test-env bronto datasets list
+#   scripts/test-env make it
+#
+# It exports everything in .env.local, then points the bronto CLI at the
+# test org: BRONTO_API_KEY and BRONTO_REGION come from BRONTO_IT_MGMT_KEY
+# and BRONTO_IT_REGION, and BRONTO_PROFILE / BRONTO_BASE_URL /
+# BRONTO_INGEST_URL are unset. An API key in your shell or a default
+# profile in your config can't redirect a test run to another org.
+#
+# It never touches the OS keychain or the bronto config file.
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+env_file="${BRONTO_TEST_ENV_FILE:-$root/.env.local}"
+
+if [[ ! -f "$env_file" ]]; then
+  echo "test-env: $env_file not found." >&2
+  echo "Run: cp .env.local.example .env.local, then fill it in (CONTRIBUTING.md#local-test-environment)." >&2
+  exit 2
+fi
+if [[ $# -eq 0 ]]; then
+  echo "usage: scripts/test-env <command> [args...]" >&2
+  exit 2
+fi
+
+set -a
+# shellcheck source=/dev/null
+. "$env_file"
+set +a
+
+if [[ -z "${BRONTO_IT_MGMT_KEY:-}" ]]; then
+  echo "test-env: BRONTO_IT_MGMT_KEY is empty in $env_file." >&2
+  exit 2
+fi
+
+unset BRONTO_PROFILE BRONTO_BASE_URL BRONTO_INGEST_URL
+export BRONTO_API_KEY="$BRONTO_IT_MGMT_KEY"
+export BRONTO_REGION="${BRONTO_IT_REGION:-eu}"
+export BRONTO_IT_REGION="$BRONTO_REGION"
+
+echo "test-env: org ${BRONTO_IT_ORG_ID:-<BRONTO_IT_ORG_ID unset>} (${BRONTO_REGION})" >&2
+exec "$@"
