@@ -78,9 +78,12 @@ it:
 	go test -count=1 -timeout 20m ./integration/
 
 # it-local runs the integration suite against the local test org in
-# .env.local (see CONTRIBUTING.md#local-test-environment).
+# .env.local (see CONTRIBUTING.md#local-test-environment). It skips
+# TestAuthLoginKeyStdin, the one test that runs `auth login`/`logout`:
+# on a developer machine that writes the real OS keychain. CI's `make it`
+# still runs it.
 it-local:
-	scripts/test-env go test -count=1 -timeout 20m ./integration/
+	scripts/test-env go test -count=1 -timeout 20m -skip '^TestAuthLoginKeyStdin$$' ./integration/
 
 # browser starts the test browser (Chrome with its own profile and remote
 # debugging) that agents drive through .mcp.json.

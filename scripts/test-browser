@@ -30,9 +30,20 @@ if [[ -n "${BRONTO_IT_ORG_ID:-}" ]]; then
   url="https://app.${region}.bronto.io/org/${BRONTO_IT_ORG_ID}/dashboards"
 fi
 
+# Something already listens on the port: reuse it only if it's this
+# checkout's test browser. Any other debugging browser would hand agents
+# a session that isn't the test org's.
 if curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
-  echo "test-browser: already running on 127.0.0.1:${port}"
-  exit 0
+  # ps + fixed-string grep, not pgrep: pgrep takes a regex, and the
+  # profile path may contain regex metacharacters.
+  # shellcheck disable=SC2009
+  if ps -ax -o command= | grep -F -- "--remote-debugging-port=${port}" | grep -qF -- "--user-data-dir=${profile}"; then
+    echo "test-browser: already running on 127.0.0.1:${port}"
+    exit 0
+  fi
+  echo "test-browser: port ${port} is used by something other than this checkout's test browser." >&2
+  echo "Close it, or set BRONTO_TEST_CDP_PORT in .env.local and the port in .mcp.json to a free one." >&2
+  exit 1
 fi
 
 chrome="${CHROME:-}"
