@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/itchyny/gojq"
@@ -49,6 +50,10 @@ type App struct {
 	// JQ is the compiled --jq expression, or nil. Compiled here (before any
 	// network call) so a bad expression fails fast as a usage error.
 	JQ *gojq.Code
+	// JQListHint is set when the --jq expression starts with .[]: list
+	// output runs --jq once per item, so the printer hints that the
+	// leading .[] is almost certainly a mistake (see output.JQListHint).
+	JQListHint bool
 	// RawOutput is --raw-output/-r: string --jq results print unquoted.
 	RawOutput bool
 
@@ -160,6 +165,7 @@ func newApp(cmd *cobra.Command, opts appOptions) (*App, error) {
 	}
 	ttyNow := stdoutIsTTY()
 	var jqCode *gojq.Code
+	var jqListHint bool
 	if f := cmd.Flags().Lookup("jq"); f != nil && f.Changed && f.Value.String() != "" {
 		// Reject a --jq/-o mismatch up front — before compiling the
 		// expression or running any command (a mutation must never execute
@@ -187,6 +193,7 @@ func newApp(cmd *cobra.Command, opts appOptions) (*App, error) {
 			return nil, err
 		}
 		jqCode = code
+		jqListHint = strings.HasPrefix(strings.TrimSpace(f.Value.String()), ".[]")
 	}
 	rawOutput, _ := cmd.Flags().GetBool("raw-output")
 	if rawOutput && jqCode == nil {
@@ -236,6 +243,7 @@ func newApp(cmd *cobra.Command, opts appOptions) (*App, error) {
 		FieldFilter:     fieldFilter,
 		ListFieldsOnly:  listFieldsOnly,
 		JQ:              jqCode,
+		JQListHint:      jqListHint,
 		RawOutput:       rawOutput,
 		SecretLookupErr: secretLookupErr,
 		Color:           output.ColorEnabled(noColor, ttyNow, os.Getenv),
@@ -291,6 +299,7 @@ func (a *App) PrinterFor(format output.Format) (*output.Printer, error) {
 	}
 	if a.JQ != nil {
 		p.SetJQ(a.JQ)
+		p.SetJQListHint(a.JQListHint)
 		p.SetRawOutput(a.RawOutput)
 	}
 	return p, nil

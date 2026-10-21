@@ -34,7 +34,10 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ## bronto dashboards attach-widgets
 
-Attach widgets to a dashboard
+Attach widgets to a dashboard. The dashboard and each widget resolve by id or unique name.
+
+The API answers with no body, so the command confirms on stderr. With -o json,
+-o jsonl or --jq it prints the updated dashboard instead.
 
 ```sh
 bronto dashboards attach-widgets <dashboard> --widget-ids <id,...> [flags]
@@ -150,7 +153,10 @@ bronto dashboards list
 
 ## bronto dashboards remove-widget
 
-Remove a widget from a dashboard
+Remove a widget from a dashboard. The dashboard and each widget resolve by id or unique name.
+
+The API answers with no body, so the command confirms on stderr. With -o json,
+-o jsonl or --jq it prints the updated dashboard instead.
 
 ```sh
 bronto dashboards remove-widget <dashboard> <widget> [flags]

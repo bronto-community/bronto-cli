@@ -244,3 +244,30 @@ func TestEventColumnsByFrequencyNullPaddingIgnored(t *testing.T) {
 		t.Fatalf("got %v want %v", got, want)
 	}
 }
+
+func TestQuoteGroupKey(t *testing.T) {
+	for in, want := range map[string]string{
+		"$span.events.0.exception.type":   `"$span.events.0.exception.type"`,
+		"attrs.1st":                       `"attrs.1st"`,
+		"$service.name":                   "$service.name",
+		"host":                            "host",
+		"$http2.status":                   "$http2.status",
+		`"$span.events.0.exception.type"`: `"$span.events.0.exception.type"`,
+		"0":                               `"0"`,
+		"lower($a.0)":                     "lower($a.0)",
+		"":                                "",
+		"$":                               "$",
+	} {
+		if got := QuoteGroupKey(in); got != want {
+			t.Errorf("QuoteGroupKey(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestBodyQuotesDigitGroupKeys(t *testing.T) {
+	b := SearchRequest{Groups: []string{"$service.name", "$span.events.0.exception.type"}}.Body()
+	want := []string{"$service.name", `"$span.events.0.exception.type"`}
+	if !reflect.DeepEqual(b["groups"], want) {
+		t.Fatalf("groups = %v, want %v", b["groups"], want)
+	}
+}

@@ -15,6 +15,24 @@ app's trace views, [Explore Traces](https://docs.bronto.io/tracing/explore-trace
 All subcommands take `--since` for the lookback. The default is `15m`, except for
 `show` and `shape`, which default to `1h`.
 
+## Trace fields
+
+Spans in `.traces` carry OpenTelemetry fields under `$`-prefixed names. These are the
+ones most queries need, for `bronto search` on a traces dataset or in a dashboard query:
+
+| Field | What it holds |
+| --- | --- |
+| `$service.name` | the service that emitted the span |
+| `$span.name` | the operation, such as `POST /charge` |
+| `$span.kind` | `SPAN_KIND_SERVER`, `SPAN_KIND_CLIENT`, and so on; `$span.kind = 'SPAN_KIND_SERVER'` keeps entry spans |
+| `$span.duration_nano` | span duration in nanoseconds; `p95($span.duration_nano)` for latency |
+| `$span.status_code` | `STATUS_CODE_ERROR` on failed spans: `$span.status_code = 'STATUS_CODE_ERROR'` |
+
+`bronto fields` samples recent spans, so a rare value such as `STATUS_CODE_ERROR` can be
+missing from its output even when error spans exist. Exception details sit under
+`$span.events.<n>.*`; double-quote those keys in a WHERE clause, because of the digit
+segment (`-g` quotes them for you).
+
 ## Start wide: services and operations
 
 `bronto traces services` shows span counts and latency per service:

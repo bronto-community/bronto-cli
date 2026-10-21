@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"sort"
 	"strconv"
@@ -23,8 +24,13 @@ func newFieldsCmd() *cobra.Command {
 		Short: "List the field names (top keys) in a dataset",
 		Long: "Lists the field names (top keys) in a dataset, with a sample of the values\n" +
 			"seen for each. Pass a name-filter to keep only fields whose name contains it\n" +
-			"(case-insensitive). Use it to find the exact spelling of a field before you\n" +
-			"write a search query.",
+			"(case-insensitive); the dataset always goes in -d. Use it to find the exact\n" +
+			"spelling of a field before you write a search query.\n\n" +
+			"Both the field list and the values come from a sample of recent events, not\n" +
+			"from every event: a rare value (such as STATUS_CODE_ERROR in\n" +
+			"$span.status_code) or a rarely set field (such as $span.events.*) can be\n" +
+			"missing. Widen --since, or check with a search, before you conclude a field\n" +
+			"or value doesn't exist.",
 		Example: "  bronto fields -d <dataset> --since 1h\n" +
 			"  bronto fields -d <dataset> model      # fields with \"model\" in the name\n" +
 			"  bronto fields --since 15m -n 20",
@@ -39,6 +45,11 @@ func newFieldsCmd() *cobra.Command {
 				return err
 			}
 			params := url.Values{"time_range": []string{spec.TimeRange}}
+			if dataset == "" && len(args) > 0 {
+				if err := refuseDatasetAsFilter(cmd.Context(), app, args[0]); err != nil {
+					return err
+				}
+			}
 			if dataset != "" {
 				logID, err := resolveDatasetRef(cmd.Context(), app, dataset)
 				if err != nil {
@@ -74,6 +85,24 @@ func newFieldsCmd() *cobra.Command {
 	// tree-wide by applyCompletions.
 	cmd.ValidArgsFunction = completeFieldsOrHints
 	return cmd
+}
+
+// refuseDatasetAsFilter rejects `bronto fields <dataset>` without -d: the
+// positional argument is a field-name filter, so a dataset name there
+// silently filters every field out and prints []. It only refuses when
+// the argument names a dataset (by name, collection/name, or id); a failed
+// dataset lookup never blocks the command.
+func refuseDatasetAsFilter(ctx context.Context, app *App, arg string) error {
+	// A failed lookup is ignored (ds stays nil): the check is advisory.
+	ds, _ := listDatasets(ctx, app)
+	for _, d := range ds {
+		if arg == d.name || arg == d.qualified() || arg == d.id {
+			return clierr.New("usage_dataset_as_filter",
+				fmt.Sprintf("%q is a dataset, but the fields argument is a field-name filter", arg)).
+				WithHint(fmt.Sprintf("Pass the dataset with -d: bronto fields -d %s", arg))
+		}
+	}
+	return nil
 }
 
 // resolveRelativeSince parses --since into a single-unit relative range for

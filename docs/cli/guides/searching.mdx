@@ -145,7 +145,13 @@ status  76     number  message  200, 502
 ```
 
 Leave out `-d` to scan all datasets. `--since` (default `1h`) sets how far back to look
-and `-n` caps the number of fields.
+and `-n` caps the number of fields. The positional argument is always a name filter, never
+the dataset: `bronto fields prod/checkout-service` fails with a hint to pass it as `-d`.
+
+The fields and values come from a sample of recent events, not from every event. A rare
+value, such as `STATUS_CODE_ERROR` in a traces dataset, or a field that few events carry,
+such as `$span.events.*`, can be missing from the list. Widen `--since` or check with a
+search before you conclude that a field or value doesn't exist.
 
 `bronto query check` validates an expression locally, without calling the API, and points
 a caret at the problem:
@@ -188,6 +194,21 @@ COUNT  GROUP  STAT     VALUE
 ```
 
 For timeseries aggregates, `--slices` sets the number of time buckets.
+
+Percentiles have two spellings: the shorthand `p95(duration_ms)` (also `p50`, `p75`,
+`p90`, `p99`), and `percentile(duration_ms, 0.95)`, which takes a fraction. The API
+answers `percentile(duration_ms, 95)` with a bare server error; the CLI adds a hint
+naming the call.
+
+```sh
+bronto search --select "p95(duration_ms)" -g service -d prod/checkout-service
+bronto search --select "percentile(duration_ms, 0.95)" -d prod/checkout-service
+```
+
+A group key with a path segment that starts with a digit, such as
+`$span.events.0.exception.type`, only works double-quoted in the query language.
+`-g` adds those quotes for you. In a WHERE clause or in a saved query's `groups`, write
+them yourself: `"$span.events.0.exception.type"`.
 
 ## Summaries
 

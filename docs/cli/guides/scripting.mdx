@@ -117,6 +117,12 @@ $ bronto search "status >= 500" -d prod/checkout-service --since 1h -o jsonl --f
 
 Differences from the `jq` CLI:
 
+- On list output, such as `list` commands, `search` and `bronto fields`, the expression
+  runs once per item, not once over the whole array. Write `--jq .name`, not
+  `--jq '.[] | .name'`: a leading `.[]` iterates over each item's fields, so the CLI
+  prints a hint on stderr. For an expression over the whole array, such as `length` or
+  `sort_by(.name)`, pipe `-o json` into `jq`. A single object, as from `get`, is one
+  document.
 - A value that makes the expression fail is skipped, and the other rows still print.
 - `-r` is the only jq option. It needs `--jq`.
 - At a terminal the default format is a table, so add `-o json` or `-o jsonl`. Piped,

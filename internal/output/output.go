@@ -63,6 +63,8 @@ type Printer struct {
 	fields     []string // SetFieldFilter: table/csv column override, json/jsonl key filter
 	jq         *gojq.Code
 	rawOutput  bool                              // SetRawOutput: jq string results print unquoted (jq -r)
+	jqListHint bool                              // SetJQListHint: warn once that --jq runs per list item
+	jqHinted   bool                              // the jqListHint notice has been printed
 	fallback   string                            // SetFieldFallbackPrefix: --fields name -> prefix+name when name is absent
 	listFields bool                              // SetListFields: print field names instead of data
 	seenFields map[string]struct{}               // streaming PrintRow "?" mode: keys already printed
@@ -97,6 +99,25 @@ func (p *Printer) SetFieldFilter(fields []string) { p.fields = fields }
 // rejecting this combination with table/csv/raw formats (spec: --jq
 // requires -o json or jsonl).
 func (p *Printer) SetJQ(code *gojq.Code) { p.jq = code }
+
+// JQListHint is the one-line notice printed when a --jq expression that
+// starts with .[] filters list output: --jq runs once per item, so .[]
+// iterates each item's fields instead of the list (usually empty or null).
+const JQListHint = "hint: --jq runs once per list item; drop the leading .[] (or pipe -o json to jq for whole-array expressions)"
+
+// SetJQListHint makes the first list document --jq filters (PrintRows,
+// PrintRow) print JQListHint to the notice writer. The CLI sets it when the
+// expression starts with .[]; PrintJSON (one whole document) never hints.
+func (p *Printer) SetJQListHint(on bool) { p.jqListHint = on }
+
+// hintJQList prints JQListHint once, when enabled and --jq is active.
+func (p *Printer) hintJQList() {
+	if !p.jqListHint || p.jqHinted || p.jq == nil || p.notice == nil {
+		return
+	}
+	p.jqHinted = true
+	_, _ = fmt.Fprintln(p.notice, JQListHint)
+}
 
 // SetRawOutput mirrors jq's -r: string results of the --jq expression
 // print without JSON quotes; every other value still prints as compact
@@ -241,6 +262,7 @@ func (p *Printer) PrintRows(columns []string, rows []map[string]any) error {
 			filtered = []map[string]any{}
 		}
 		if p.jq != nil {
+			p.hintJQList()
 			for _, r := range filtered {
 				if err := runJQ(p.w, p.jq, r, p.rawOutput); err != nil {
 					return err
@@ -325,6 +347,7 @@ func (p *Printer) PrintRow(columns []string, row map[string]any) error {
 			r = p.filterRow(row)
 		}
 		if p.jq != nil {
+			p.hintJQList()
 			return runJQ(p.w, p.jq, r, p.rawOutput)
 		}
 		return newEncoder(p.w).Encode(r)

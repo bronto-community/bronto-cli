@@ -173,7 +173,9 @@ replaces the whole widget. Pass `metric_ids`, `widget_ids`, or `aux` as JSON val
 bronto widgets create --input widget.json
 ```
 
-Then attach, remove, or detach:
+Then attach, remove, or detach. `bronto dashboards create` can't attach widgets in the
+same call: the API ignores `widget_ids` there, so the CLI refuses a create body that
+carries them and points you to `attach-widgets`.
 
 ```sh
 bronto dashboards attach-widgets "Checkout overview" --widget-ids <widget>,<widget>
@@ -187,16 +189,28 @@ bronto dashboards detach-from-template "Checkout overview"
 - `bronto dashboards detach-from-template` unlinks a dashboard created from a template,
   and prints the updated dashboard.
 
-Widgets can contain other widgets. `bronto widgets attach-widgets` and
-`bronto widgets remove-widget` work the same way, with a parent widget in place of the
+`attach-widgets` and `remove-widget` confirm on stderr, because the API answers them
+with no body. With `-o json`, `-o jsonl` or `--jq` they print the updated dashboard
+instead, so `--jq .widget_ids` shows what is attached now.
+
+Only group widgets (type `group`) contain other widgets. `bronto widgets attach-widgets`
+and `bronto widgets remove-widget` work the same way, with a group widget in place of the
 dashboard:
 
 ```sh
-bronto widgets attach-widgets <parent-widget> --widget-ids <widget>
-bronto widgets remove-widget <parent-widget> <widget>
+bronto widgets attach-widgets <group-widget> --widget-ids <widget>
+bronto widgets remove-widget <group-widget> <widget>
 ```
 
-The dashboard, parent widget, and widgets can each be an id or a unique name. All of these
+The dashboard, group widget, and widgets can each be an id or a unique name. All of these
 commands support `--dry-run`.
 
-`bronto dashboards update` needs `name` (or a `layout`), and ignores a `description`.
+`bronto dashboards update` changes either the `name` or the `layout`, one per call: the
+API accepts exactly one of them. The CLI refuses a body with both, or with neither (a
+`description` alone changes nothing), before sending it. Like the widget commands, it
+prints the updated dashboard with `-o json`:
+
+```sh
+bronto dashboards update "Checkout overview" -f name="Checkout health" -o json
+bronto dashboards update "Checkout health" --input layout.json
+```
