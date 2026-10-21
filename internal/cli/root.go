@@ -43,6 +43,7 @@ func NewRootCmd() *cobra.Command {
 	pf.Bool("no-color", false, "disable color output")
 	pf.Bool("quiet", false, "suppress non-data messages on stderr")
 	pf.String("jq", "", "jq expression applied to json/jsonl output (each result prints on its own line); "+
+		"on list output it runs once per item, so write '.name', not '.[] | .name'; "+
 		"values that fail the expression are skipped")
 	pf.BoolP("raw-output", "r", false, "with --jq, print string results without JSON quotes (like jq -r); other values stay compact JSON")
 	pf.StringSlice("fields", nil, "select specific fields (comma-separated); use '?' to list available field names")

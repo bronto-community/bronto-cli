@@ -540,8 +540,10 @@ func TestExpansionResourcesRouteCorrectly(t *testing.T) {
 }
 
 // TestResourceUpdateNoContentConfirmsOnStderr: updateWidget answers 204 with
-// no body. update must confirm on stderr and keep stdout empty, like delete,
-// instead of printing a bare "null".
+// no body. Without an explicit -o json/jsonl or --jq, update must confirm on
+// stderr and keep stdout empty, like delete, instead of printing a bare
+// "null" (with one, it prints the GET of the updated resource; see
+// TestDashboardMutationsPrintJSON).
 func TestResourceUpdateNoContentConfirmsOnStderr(t *testing.T) {
 	const id = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000e2"
 	out, errOut, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
@@ -549,7 +551,7 @@ func TestResourceUpdateNoContentConfirmsOnStderr(t *testing.T) {
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
 		w.WriteHeader(http.StatusNoContent)
-	}, "", "widgets", "update", id, "-f", "name=x", "-f", "type=line", "-o", "json")
+	}, "", "widgets", "update", id, "-f", "name=x", "-f", "type=line")
 	if err != nil {
 		t.Fatal(err)
 	}

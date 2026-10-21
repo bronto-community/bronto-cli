@@ -46,7 +46,7 @@ type resourceDesc struct {
 	// a limit have no cursor or offset, so a full page means rows may be
 	// missing: list warns, and name resolution says so on a miss.
 	ListLimit int
-	Columns     []string // table/csv columns; nil = auto via bronto.EventColumns
+	Columns   []string // table/csv columns; nil = auto via bronto.EventColumns
 
 	// ListTransform, if set, enriches list rows for the human formats
 	// (table/csv) only — e.g. deriving a readable last_activity column.
@@ -95,6 +95,12 @@ type resourceDesc struct {
 	// successful create: api-keys warns that the response is the only
 	// time the full key is shown.
 	CreateNotice string
+
+	// CheckBody, if set, validates a create ("create") or update
+	// ("update") body before any request is made, for request shapes the
+	// API rejects unhelpfully or accepts and silently ignores. obj is nil
+	// when the body isn't a JSON object.
+	CheckBody func(verb string, obj map[string]any) error
 }
 
 func (d resourceDesc) nameKeys() []string {
@@ -198,8 +204,11 @@ var resourceRegistry = []resourceDesc{
 	// No widget count column: list rows carry an empty widget_ids even
 	// when get shows attached widgets (live-verified 2026-10-15), so the
 	// count always read 0. PATCH takes one of name or layout (spec oneOf;
-	// live it ignores a description and 400s without either).
-	{Name: "dashboards", Base: "/dashboards",
+	// live it ignores a description, 400s without either, and answers
+	// both with "400: More than one schema valid"), so checkDashboardBody
+	// refuses those client-side, plus a create carrying widget_ids, which
+	// the API silently drops (live-verified 2026-10-21).
+	{Name: "dashboards", Base: "/dashboards", CheckBody: checkDashboardBody,
 		Columns: []string{"name", "description", "created", "id"}},
 	// updateWidget is PUT (204, no body) and a full replacement: the API
 	// rejects a create or update without both `name` and `type` (live-
@@ -828,6 +837,9 @@ func newResourceCreateCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if err := checkBody(desc, "create", body); err != nil {
+				return err
+			}
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
@@ -872,6 +884,9 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 			if err := checkUpdateRequires(desc, body); err != nil {
 				return err
 			}
+			if err := checkBody(desc, "update", body); err != nil {
+				return err
+			}
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
@@ -884,9 +899,14 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			// A 204 update (widgets) has no body to print: confirm on
-			// stderr like delete does, rather than a bare "null" on stdout.
+			// A 204 update (widgets, dashboards) has no body to print.
+			// With -o json/jsonl or --jq, print the updated resource
+			// instead; otherwise confirm on stderr like delete does,
+			// rather than a bare "null" on stdout.
 			if payload == nil {
+				if wantsJSONResult(app) && !desc.NoGet {
+					return printFetched(cmd.Context(), app, desc.idBase()+"/"+url.PathEscape(id))
+				}
 				app.Notef("Updated %s %s.\n", desc.singular(), args[0])
 				return nil
 			}
@@ -900,6 +920,74 @@ func newResourceUpdateCmd(desc resourceDesc) *cobra.Command {
 	cmd.Flags().StringArrayVarP(&fields, "field", "f", nil, "request body field as key=value; values parse as JSON when possible (repeatable)")
 	cmd.Flags().StringVar(&input, "input", "", "read the request body from a file, or - for stdin")
 	return cmd
+}
+
+// checkBody runs desc.CheckBody, if any, on a create/update body.
+func checkBody(desc resourceDesc, verb string, body []byte) error {
+	if desc.CheckBody == nil {
+		return nil
+	}
+	var obj map[string]any
+	_ = json.Unmarshal(body, &obj)
+	return desc.CheckBody(verb, obj)
+}
+
+// checkDashboardBody refuses dashboard bodies the API mishandles: create
+// drops widget_ids without a word, and PATCH takes exactly one of name or
+// layout per call (a oneOf; both fail with "More than one schema valid").
+func checkDashboardBody(verb string, obj map[string]any) error {
+	if obj == nil {
+		return nil // not a JSON object: let the API report it
+	}
+	switch verb {
+	case "create":
+		if _, ok := obj["widget_ids"]; ok {
+			return clierr.New("usage_unsupported_field",
+				"dashboards create can't attach widgets: the API ignores widget_ids on create").
+				WithHint("Create the dashboard without widget_ids, then run " +
+					"'bronto dashboards attach-widgets <dashboard> --widget-ids <id>,<id>'.")
+		}
+	case "update":
+		_, hasName := obj["name"]
+		_, hasLayout := obj["layout"]
+		switch {
+		case hasName && hasLayout:
+			return clierr.New("usage_conflicting_fields",
+				"dashboards update takes either name or layout, not both: one call carries one of them").
+				WithHint("Run two updates: one with -f name=<name>, one with -f layout=<json> or --input.")
+		case !hasName && !hasLayout:
+			return clierr.New("usage_missing_fields",
+				"dashboards update needs name or layout (the API changes nothing else)").
+				WithHint("Example: bronto dashboards update <dashboard> -f name=<name>")
+		}
+	}
+	return nil
+}
+
+// wantsJSONResult reports whether the user asked for machine output
+// explicitly (-o json/jsonl, or --jq): commands whose API call returns no
+// body then print the resulting object instead of a stderr sentence.
+func wantsJSONResult(app *App) bool {
+	if app.JQ != nil {
+		return true
+	}
+	f, err := output.ParseFormat(app.OutputFlag)
+	return err == nil && (f == output.FormatJSON || f == output.FormatJSONL)
+}
+
+// printFetched GETs path and prints it through the output engine: the
+// JSON result for verbs whose API call answers 204 (dashboards update,
+// attach-widgets, remove-widget).
+func printFetched(ctx context.Context, app *App, path string) error {
+	payload, err := doJSONRequest(ctx, app, http.MethodGet, path, nil)
+	if err != nil {
+		return err
+	}
+	p, err := app.Printer(false)
+	if err != nil {
+		return err
+	}
+	return p.PrintJSON(payload)
 }
 
 // checkUpdateRequires rejects an update body missing a field in

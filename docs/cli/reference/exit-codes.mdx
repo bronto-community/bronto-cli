@@ -76,6 +76,7 @@ Every code `bronto` emits is listed below. Scripts should match on `code`.
 | `usage_ambiguous_dataset` | 2 | a dataset name exists in more than one collection |
 | `usage_ambiguous_<kind>` | 2 | a name matches several resources of that kind, for example `usage_ambiguous_monitor` or `usage_ambiguous_api_key`; pass the id instead |
 | `usage_unknown_field`, `usage_ambiguous_field` | 2 | a filter flag names a field that doesn't exist or matches several |
+| `usage_dataset_as_filter` | 2 | `bronto fields <name>` got a dataset as its name filter; pass the dataset with `-d` |
 | `usage_invalid_query` | 2 | the WHERE expression doesn't parse |
 | `usage_invalid_dataset` | 2 | `bronto send -d` isn't `<dataset>` or `<collection>/<dataset>` |
 | `usage_confirmation_required` | 2 | a destructive command ran without a terminal and without `--yes` |
@@ -100,7 +101,9 @@ Every code `bronto` emits is listed below. Scripts should match on `code`.
 | `usage_missing_body` | 2 | `create` or `update` got neither `--input` nor `-f` |
 | `usage_invalid_body` | 2 | the `--input` body is empty or isn't a JSON object or array |
 | `usage_input_file` | 2 | an input file can't be read, or isn't valid JSON |
-| `usage_missing_fields` | 2 | an `update` that replaces the whole resource is missing required fields |
+| `usage_missing_fields` | 2 | an `update` is missing required fields, such as `bronto dashboards update` without `name` or `layout` |
+| `usage_conflicting_fields` | 2 | a body combines fields the API takes one at a time, such as `name` and `layout` in `bronto dashboards update` |
+| `usage_unsupported_field` | 2 | a body carries a field the API would ignore, such as `widget_ids` in `bronto dashboards create` |
 | `usage_invalid_method` | 2 | `bronto api` got an unsupported HTTP method |
 | `usage_invalid_region` | 2 | `--region` isn't `eu` or `us` |
 | `usage_invalid_tag` | 2 | a `bronto send --tag` isn't `key=value` with a non-empty key |

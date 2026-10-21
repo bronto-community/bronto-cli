@@ -45,7 +45,11 @@ func (r SearchRequest) Body() map[string]any {
 		b["select"] = r.Select
 	}
 	if len(r.Groups) > 0 {
-		b["groups"] = r.Groups
+		groups := make([]string, len(r.Groups))
+		for i, g := range r.Groups {
+			groups[i] = QuoteGroupKey(g)
+		}
+		b["groups"] = groups
 	}
 	if r.Limit > 0 {
 		b["limit"] = r.Limit
@@ -287,4 +291,40 @@ func EventColumnsByFrequency(rows []map[string]any, max int) []string {
 		cols = append(cols, "@raw")
 	}
 	return cols
+}
+
+// QuoteGroupKey double-quotes a bare group-by key that has a path segment
+// starting with a digit, such as $span.events.0.exception.type: unquoted,
+// the API reads ".0" as a number and rejects the search ("Invalid query.",
+// live-verified 2026-10-21), while the double-quoted key works. Anything
+// that isn't a plain dotted key (already quoted, an expression, spaces) is
+// left alone, so only keys that would certainly fail are rewritten.
+func QuoteGroupKey(key string) string {
+	if !plainDottedKey(key) {
+		return key
+	}
+	for _, seg := range strings.Split(strings.TrimLeft(key, "$@"), ".") {
+		if seg != "" && seg[0] >= '0' && seg[0] <= '9' {
+			return "\"" + key + "\""
+		}
+	}
+	return key
+}
+
+// plainDottedKey reports whether k is an optional $ or @ prefix followed
+// by letters, digits, underscores, hyphens and dots only.
+func plainDottedKey(k string) bool {
+	k = strings.TrimPrefix(strings.TrimPrefix(k, "$"), "@")
+	if k == "" {
+		return false
+	}
+	for _, c := range k {
+		switch {
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9',
+			c == '_', c == '-', c == '.':
+		default:
+			return false
+		}
+	}
+	return true
 }

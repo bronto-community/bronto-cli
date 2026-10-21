@@ -8,8 +8,14 @@ description: "List the field names (top keys) in a dataset"
 
 Lists the field names (top keys) in a dataset, with a sample of the values
 seen for each. Pass a name-filter to keep only fields whose name contains it
-(case-insensitive). Use it to find the exact spelling of a field before you
-write a search query.
+(case-insensitive); the dataset always goes in -d. Use it to find the exact
+spelling of a field before you write a search query.
+
+Both the field list and the values come from a sample of recent events, not
+from every event: a rare value (such as STATUS\_CODE\_ERROR in
+$span.status\_code) or a rarely set field (such as $span.events.\*) can be
+missing. Widen --since, or check with a search, before you conclude a field
+or value doesn't exist.
 
 <Tip>
 - **Platform docs:** [docs.bronto.io/Search-and-Visualize/Log-Search](https://docs.bronto.io/Search-and-Visualize/Log-Search)

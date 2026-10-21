@@ -27,6 +27,29 @@ func singularKind(kind string) string {
 	return strings.TrimSuffix(kind, "s")
 }
 
+// parentNoun names the parent in help text: a dashboard, or a group
+// widget, since only widgets of type group hold other widgets.
+func parentNoun(kind string) string {
+	if kind == "widgets" {
+		return "group widget"
+	}
+	return singularKind(kind)
+}
+
+// widgetActionLong is the Long help shared by attach-widgets and
+// remove-widget: what the parent is, and what -o json prints.
+func widgetActionLong(kind, verb string) string {
+	noun := parentNoun(kind)
+	long := strings.ToUpper(verb[:1]) + verb[1:] + " a " + noun + ". The " + noun +
+		" and each widget resolve by id or unique name."
+	if kind == "widgets" {
+		long += "\n\nThis applies only to group widgets (type group), which hold other widgets.\n" +
+			"To put widgets on a dashboard, use 'bronto dashboards attach-widgets'."
+	}
+	return long + "\n\nThe API answers with no body, so the command confirms on stderr. With -o json,\n" +
+		"-o jsonl or --jq it prints the updated " + singularKind(kind) + " instead."
+}
+
 // newAttachWidgetsCmd builds "<kind> attach-widgets <parent> --widget-ids …":
 // POST /<kind>/{id}/widgets with {"widget_ids": [...]} (204). Each widget
 // resolves by id or unique name, like the parent.
@@ -35,7 +58,8 @@ func newAttachWidgetsCmd(kind string) *cobra.Command {
 	sing := singularKind(kind)
 	cmd := &cobra.Command{
 		Use:               "attach-widgets <" + sing + "> --widget-ids <id,...>",
-		Short:             "Attach widgets to a " + sing,
+		Short:             "Attach widgets to a " + parentNoun(kind),
+		Long:              widgetActionLong(kind, "attach widgets to"),
 		Example:           "  bronto " + kind + " attach-widgets <" + sing + "> --widget-ids <id>,<id>",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeKindRef(kind),
@@ -69,6 +93,9 @@ func newAttachWidgetsCmd(kind string) *cobra.Command {
 			if isDryRunPlan(payload) {
 				return printDryRunPlan(app, payload)
 			}
+			if wantsJSONResult(app) {
+				return printFetched(cmd.Context(), app, "/"+kind+"/"+url.PathEscape(id))
+			}
 			app.Notef("Attached %d widget(s) to %s %s.\n", len(widgetIDs), sing, args[0])
 			return nil
 		},
@@ -100,7 +127,8 @@ func newRemoveWidgetCmd(kind string) *cobra.Command {
 	sing := singularKind(kind)
 	return &cobra.Command{
 		Use:               "remove-widget <" + sing + "> <widget>",
-		Short:             "Remove a widget from a " + sing,
+		Short:             "Remove a widget from a " + parentNoun(kind),
+		Long:              widgetActionLong(kind, "remove a widget from"),
 		Example:           "  bronto " + kind + " remove-widget <" + sing + "> <widget>",
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: completeRemoveWidget(kind),
@@ -124,6 +152,9 @@ func newRemoveWidgetCmd(kind string) *cobra.Command {
 			}
 			if isDryRunPlan(payload) {
 				return printDryRunPlan(app, payload)
+			}
+			if wantsJSONResult(app) {
+				return printFetched(cmd.Context(), app, "/"+kind+"/"+url.PathEscape(id))
 			}
 			app.Notef("Removed widget %s from %s %s.\n", args[1], sing, args[0])
 			return nil

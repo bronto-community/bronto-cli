@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -245,7 +246,7 @@ func newSearchCmd() *cobra.Command {
 			client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
 			resp, err := client.Search(cmd.Context(), req)
 			if err != nil {
-				return enrichQueryError(err, where)
+				return enrichQueryError(err, where, effSelect)
 			}
 			if showPatterns {
 				return printPatterns(app, resp.EventRows())
@@ -617,9 +618,22 @@ func patternLine(ev map[string]any) string {
 // server-side 400 when our parser also rejects the query. Advisory only:
 // the local grammar is narrower than the server's, so parse failures
 // never block a request — they just explain a rejection after the fact.
-func enrichQueryError(err error, where string) error {
+//
+// It also names the one select mistake known to come back as a bare 500:
+// percentile(x, 95). The percentile is a fraction, so the second argument
+// is checked syntactically, never guessed from the error.
+func enrichQueryError(err error, where string, selects []string) error {
 	var ce *clierr.Error
-	if where == "" || !errors.As(err, &ce) || ce.Code != "api_error" {
+	if !errors.As(err, &ce) {
+		return err
+	}
+	if strings.HasPrefix(ce.Code, "api_") {
+		if bad := percentileOverOne(selects); bad != "" {
+			return ce.WithHint(fmt.Sprintf("%s: percentile takes a fraction between 0 and 1, "+
+				"e.g. percentile(x, 0.95), or use the shorthand p95(x).", bad))
+		}
+	}
+	if where == "" || ce.Code != "api_error" {
 		return err
 	}
 	if _, perr := query.Parse(where); perr != nil {
@@ -630,4 +644,21 @@ func enrichQueryError(err error, where string) error {
 		}
 	}
 	return err
+}
+
+// percentileArgRe matches percentile(<field>, <number>) and captures the
+// number.
+var percentileArgRe = regexp.MustCompile(`(?i)\bpercentile\s*\(\s*[^,()]+,\s*([0-9]+(?:\.[0-9]+)?)\s*\)`)
+
+// percentileOverOne returns the first percentile(x, n) call in selects
+// whose n is above 1 (a percent, not a fraction), or "".
+func percentileOverOne(selects []string) string {
+	for _, sel := range selects {
+		for _, m := range percentileArgRe.FindAllStringSubmatch(sel, -1) {
+			if n, err := strconv.ParseFloat(m[1], 64); err == nil && n > 1 {
+				return m[0]
+			}
+		}
+	}
+	return ""
 }
