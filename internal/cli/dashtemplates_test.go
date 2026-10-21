@@ -163,6 +163,23 @@ Widgets (2):
 	}
 }
 
+// TestTemplateSummaryEscapesTerminalSequences: API strings (and --param
+// values substituted into queries) must not reach the terminal raw.
+func TestTemplateSummaryEscapesTerminalSequences(t *testing.T) {
+	var b strings.Builder
+	renderTemplateSummary(&b, map[string]any{
+		"name": "evil\x1b]0;title\x07", "id": "x", "description": "line1\x1b[2J",
+		"parameters": map[string]any{"k\x1b[31m": map[string]any{"type": "string"}},
+		"widgets": []any{map[string]any{"name": "w\r", "type": "line", "metrics": []any{map[string]any{
+			"queries":  []any{map[string]any{"name": "q", "select": []any{"count(*)"}, "where": "a\x1b[0m", "from_expr": "x\ny"}},
+			"formulas": []any{map[string]any{"name": "f", "expression": "\x1b[1m"}},
+		}}}},
+	})
+	if out := b.String(); strings.ContainsAny(out, "\x1b\x07\r") {
+		t.Fatalf("summary printed raw control characters: %q", out)
+	}
+}
+
 func TestDashboardTemplatesShowJSONAndParam(t *testing.T) {
 	s := &templateServer{}
 	out, _, err := runResource(t, s.handler(t), "", "dashboards", "templates", "show", tmplNginx,

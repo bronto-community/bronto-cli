@@ -15,6 +15,7 @@ import (
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/output"
+	"github.com/bronto-community/bronto-cli/internal/termsafe"
 )
 
 // Dashboard templates are Bronto's shared, read-only dashboard catalog
@@ -292,14 +293,23 @@ func newDashboardTemplateShowCmd(desc resourceDesc) *cobra.Command {
 	return cmd
 }
 
+// safeField is m[k] as a string, made safe to print on a terminal: API
+// strings (and --param values substituted into queries) could carry
+// escape sequences or line breaks.
+func safeField(m map[string]any, k string) string {
+	s, _ := m[k].(string)
+	return termsafe.Line(s)
+}
+
 // renderTemplateSummary prints a rendered template for people: its
-// parameters, then each widget with its queries and formulas.
+// parameters, then each widget with its queries and formulas. Every API
+// string goes through termsafe; -o json prints the payload unchanged.
 func renderTemplateSummary(w io.Writer, preview map[string]any) {
-	str := func(m map[string]any, k string) string { s, _ := m[k].(string); return s }
+	str := safeField
 	_, _ = fmt.Fprintf(w, "%s\n", str(preview, "name"))
 	_, _ = fmt.Fprintf(w, "id: %s\n", str(preview, "id"))
-	if d := str(preview, "description"); d != "" {
-		_, _ = fmt.Fprintf(w, "%s\n", d)
+	if d, _ := preview["description"].(string); d != "" {
+		_, _ = fmt.Fprintf(w, "%s\n", termsafe.Text(d))
 	}
 	params, _ := preview["parameters"].(map[string]any)
 	if len(params) == 0 {
@@ -308,7 +318,7 @@ func renderTemplateSummary(w io.Writer, preview map[string]any) {
 		_, _ = fmt.Fprintf(w, "\nParameters (pass with --param key=value):\n")
 		for _, k := range slices.Sorted(maps.Keys(params)) {
 			spec, _ := params[k].(map[string]any)
-			line := "  " + k
+			line := "  " + termsafe.Line(k)
 			if t := str(spec, "type"); t != "" {
 				line += "  " + t
 			}
@@ -324,7 +334,7 @@ func renderTemplateSummary(w io.Writer, preview map[string]any) {
 }
 
 func renderTemplateWidgets(w io.Writer, widgets []any, indent string) {
-	str := func(m map[string]any, k string) string { s, _ := m[k].(string); return s }
+	str := safeField
 	for _, raw := range widgets {
 		widget, _ := raw.(map[string]any)
 		if widget == nil {
@@ -361,9 +371,9 @@ func renderTemplateWidgets(w io.Writer, widgets []any, indent string) {
 }
 
 func renderTemplateQuery(w io.Writer, query map[string]any, indent string) {
-	name, _ := query["name"].(string)
-	_, _ = fmt.Fprintf(w, "%squery %s\n", indent, name)
+	_, _ = fmt.Fprintf(w, "%squery %s\n", indent, safeField(query, "name"))
 	field := func(label, value string) {
+		value = termsafe.Line(value)
 		if value == "" {
 			value = "(none)"
 		}

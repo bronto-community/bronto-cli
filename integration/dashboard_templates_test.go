@@ -1,9 +1,11 @@
 package integration
 
 import (
+	"context"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestDashboardTemplatesLive covers the template catalog end to end (#197):
@@ -79,13 +81,17 @@ func TestDashboardTemplatesLive(t *testing.T) {
 		t.Fatalf("dashboards create --template response missing id: %+v", created)
 	}
 	widgetIDs, defIDs := templateInstanceIDs(created)
+	// t.Context() is already canceled when cleanups run, so these use
+	// their own (bestEffortDelete uses context.Background()).
 	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
 		bestEffortDelete(r, "dashboards", dash)
 		for _, w := range widgetIDs {
 			bestEffortDelete(r, "widgets", w)
 		}
 		for _, d := range defIDs {
-			_, _ = r.Run(t.Context(), "", "api", "DELETE", "/metrics/definitions/"+d)
+			_, _ = r.Run(ctx, "", "api", "DELETE", "/metrics/definitions/"+d)
 		}
 	})
 	if len(widgetIDs) == 0 {
