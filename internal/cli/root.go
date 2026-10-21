@@ -93,7 +93,7 @@ func NewRootCmd() *cobra.Command {
 			rc = newResourceCmd(d, newDetachFromTemplateCmd(),
 				newAttachWidgetsCmd("dashboards"), newRemoveWidgetCmd("dashboards"))
 		case "widgets":
-			rc = newResourceCmd(d, newAttachWidgetsCmd("widgets"), newRemoveWidgetCmd("widgets"))
+			rc = newResourceCmd(d, newAttachWidgetsCmd("widgets"), newRemoveWidgetCmd("widgets"), newWidgetQueryCmd())
 		case "users":
 			rc = newResourceCmd(d,
 				newUserActionCmd("deactivate", "Deactivate a user"),
@@ -122,7 +122,11 @@ func NewRootCmd() *cobra.Command {
 		if !ok {
 			panic("resource " + d.Name + " attaches to unknown command " + d.AttachTo)
 		}
-		parent.AddCommand(newResourceCmd(d))
+		var extras []*cobra.Command
+		if d.Name == "definitions" {
+			extras = []*cobra.Command{newDefinitionGetCmd(d), newDefinitionQueryCmd()}
+		}
+		parent.AddCommand(newResourceCmd(d, extras...))
 	}
 
 	rejectUnknownSubcommands(cmd)

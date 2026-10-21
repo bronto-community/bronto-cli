@@ -101,6 +101,13 @@ type resourceDesc struct {
 	// API rejects unhelpfully or accepts and silently ignores. obj is nil
 	// when the body isn't a JSON object.
 	CheckBody func(verb string, obj map[string]any) error
+	// Long is the resource command's help text, for resources that need
+	// more than the generated Short (e.g. an endpoint missing from the
+	// spec, or no update verb and what to do instead).
+	Long string
+	// CreateExample replaces the create Example generated from
+	// CreateFields, for bodies too nested to write as -f flags.
+	CreateExample string
 }
 
 func (d resourceDesc) nameKeys() []string {
@@ -351,6 +358,24 @@ var resourceRegistry = []resourceDesc{
 		NoCreate: true, NoUpdate: true, NoDelete: true,
 		IDKey: "metric_id", NameKeys: []string{"metric_name"},
 		Columns: []string{"metric_name", "type", "unit", "description", "metric_id"}},
+	// Metric definitions are the saved queries widgets plot (a widget's
+	// metric_ids). /metrics/definitions is not in the vendored spec, nor
+	// upstream. Live-verified 2026-10-21 (EU): list, get, create and
+	// delete work; there is no update (PUT and PATCH on /{id} and on the
+	// collection, and POST /{id}, all answer 405, and a POST with an id in
+	// the body creates a new definition); names are not unique; a GET of
+	// a missing id answers 500 (see newDefinitionGetCmd), while DELETE of
+	// one answers 204. Deleting a widget leaves its definitions in place.
+	// from: [log_id] and from_expr returned identical data over established
+	// datasets; the zeros #195 saw come from Bronto caching a saved query
+	// by its content (see printTimeseries' zero warning).
+	{Name: "definitions", AttachTo: "metrics", Base: "/metrics/definitions",
+		Singular: "metric definition", NoUpdate: true,
+		ListRowKeys: []string{"definitions"}, ListTransform: definitionListRows,
+		Columns:       []string{"name", "description", "queries", "formulas", "created", "id"},
+		Long:          definitionsLong,
+		CreateExample: definitionCreateExample,
+		CheckBody:     checkDefinitionBody},
 	// exports has no update verb; its create is hand-written (exports.go) to
 	// support the convenience flags / --wait / --download workflow and
 	// replaces the generic factory create (see newResourceCmd's extras
@@ -603,6 +628,7 @@ func newResourceCmd(desc resourceDesc, extras ...*cobra.Command) *cobra.Command 
 	cmd := &cobra.Command{
 		Use:   desc.Name,
 		Short: fmt.Sprintf("Manage %s", desc.plural()),
+		Long:  desc.Long,
 	}
 
 	replaced := map[string]bool{}
@@ -826,12 +852,16 @@ func newResourceGetCmd(desc resourceDesc) *cobra.Command {
 func newResourceCreateCmd(desc resourceDesc) *cobra.Command {
 	var fields []string
 	var input string
+	example := "  bronto " + desc.display() + " create" + exampleFieldArgs(desc.CreateFields) + "\n" +
+		"  bronto " + desc.display() + " create --input body.json"
+	if desc.CreateExample != "" {
+		example = desc.CreateExample
+	}
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: fmt.Sprintf("Create %s", desc.aSingular()),
-		Example: "  bronto " + desc.display() + " create" + exampleFieldArgs(desc.CreateFields) + "\n" +
-			"  bronto " + desc.display() + " create --input body.json",
-		Args: cobra.NoArgs,
+		Use:     "create",
+		Short:   fmt.Sprintf("Create %s", desc.aSingular()),
+		Example: example,
+		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			body, err := resourceRequestBody(cmd, input, fields)
 			if err != nil {

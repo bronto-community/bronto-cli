@@ -60,7 +60,7 @@ $ bronto monitors get "High 5xx rate on checkout"
 At a terminal, `list` prints a table of the main columns and `get` prints the whole
 object as JSON.
 
-Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `metrics`, `exports`.
+Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `metrics`, `metrics definitions`, `exports`.
 `collections`, `log-views`, and `permissions` are list-only, and `metrics` is read-only
 (`list` and `get`, plus `top-keys`). The generated
 [command reference](/cli/reference/commands) lists the exact verbs for each resource.
@@ -72,7 +72,7 @@ Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `
 | log views (list-only) | `bronto log-views list` |  | [Logs](https://docs.bronto.io/api-reference/logs/retrieve-a-list-of-log-views) |
 | parsers | `bronto parsers list` | [Custom Parser](https://docs.bronto.io/core-features/custom-parser) |  |
 | monitors, templates, downtimes ([guide](/cli/guides/monitors-and-dashboards)) | `bronto monitors list` | [Monitors](https://docs.bronto.io/core-features/monitors) | [Monitors](https://docs.bronto.io/api-reference/monitors/retrieve-monitors) |
-| dashboards and widgets ([guide](/cli/guides/monitors-and-dashboards)) | `bronto dashboards list` | [Dashboards](https://docs.bronto.io/Search-and-Visualize/Dashboards) | [Dashboards](https://docs.bronto.io/api-reference/dashboards/get-all-dashboards-for-an-organisation) |
+| dashboards, widgets, metric definitions ([guide](/cli/guides/monitors-and-dashboards)) | `bronto dashboards list` | [Dashboards](https://docs.bronto.io/Search-and-Visualize/Dashboards) | [Dashboards](https://docs.bronto.io/api-reference/dashboards/get-all-dashboards-for-an-organisation) |
 | saved searches | `bronto saved-searches list` | [Saved Searches](https://docs.bronto.io/Search-and-Visualize/Saved-Searches) |  |
 | export jobs ([guide](/cli/guides/exports)) | `bronto exports list` |  | [Exports](https://docs.bronto.io/api-reference/exports/retrieve-a-list-of-exports) |
 | metrics and their attribute keys | `bronto metrics list` | [Explore Metrics](https://docs.bronto.io/metrics/explore-metrics) | [Metrics](https://docs.bronto.io/api-reference/metrics/retrieve-the-list-of-metrics-metadata-sent-to-bronto) |
@@ -186,6 +186,7 @@ A few resources have extra verbs:
 | `bronto monitors mute`, `bronto monitors check` | mute a monitor, lint definitions in CI | [Monitors](/cli/guides/monitors-and-dashboards#monitors) |
 | `bronto dashboards attach-widgets`, `bronto dashboards remove-widget`, `bronto dashboards detach-from-template` | assemble dashboards | [Dashboards](/cli/guides/monitors-and-dashboards#dashboards-and-widgets) |
 | `bronto widgets attach-widgets`, `bronto widgets remove-widget` | nest widgets | [Dashboards](/cli/guides/monitors-and-dashboards#dashboards-and-widgets) |
+| `bronto metrics definitions query`, `bronto widgets query` | check that a widget's queries return data | [Dashboards](/cli/guides/monitors-and-dashboards#build-a-widget-from-a-metric-definition) |
 | `bronto groups members`, `bronto groups add-members`, `bronto groups remove-members` | group membership | [Access management](/cli/guides/access-management) |
 | `bronto users groups`, `bronto users deactivate`, `bronto users reactivate`, `bronto users resend-invite` | user lifecycle | [Access management](/cli/guides/access-management) |
 | `bronto datasets parser get`, `bronto datasets parser set`, `bronto datasets parser unset` | assign a parser to a dataset | below |

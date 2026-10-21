@@ -26,6 +26,7 @@ bronto widgets <command> [flags]
 | [`bronto widgets delete`](/cli/reference/commands/widgets#bronto-widgets-delete) | Delete a widget |
 | [`bronto widgets get`](/cli/reference/commands/widgets#bronto-widgets-get) | Get a widget by ID |
 | [`bronto widgets list`](/cli/reference/commands/widgets#bronto-widgets-list) | List widgets |
+| [`bronto widgets query`](/cli/reference/commands/widgets#bronto-widgets-query) | Evaluate the metric definitions a widget plots |
 | [`bronto widgets remove-widget`](/cli/reference/commands/widgets#bronto-widgets-remove-widget) | Remove a widget from a group widget |
 | [`bronto widgets update`](/cli/reference/commands/widgets#bronto-widgets-update) | Update a widget |
 
@@ -135,6 +136,39 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto widgets list
+```
+
+## bronto widgets query
+
+Evaluates every metric definition in a widget's metric\_ids, like
+'bronto metrics definitions query' does for one, and prints their series in
+one table with a DEFINITION column. -o json prints an object mapping each
+definition id to its raw /timeseries response.
+
+The widget can be an id or a unique name.
+
+```sh
+bronto widgets query <widget> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--from` |  | string |  | absolute start (RFC3339) |
+| `--limit` |  | int |  | maximum groups per grouped query, 1-1000 (default: the API's 100) |
+| `--since` |  | string |  | relative lookback: 30m, 24h, 7d, 1h30m (default 24h) |
+| `--slices` |  | int | `24` | time buckets per series (the TREND sparkline's resolution) |
+| `--time-range` |  | string |  | relative range in the API's words, e.g. "Last 24 hours" (instead of --since) |
+| `--to` |  | string |  | absolute end (RFC3339), requires --from |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto widgets query "Checkout requests"
+bronto widgets query <id> --since 7d -o json
 ```
 
 ## bronto widgets remove-widget

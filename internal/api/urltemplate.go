@@ -18,6 +18,9 @@ import (
 // a path the CLI calls has no template.
 var undocumentedURLTemplates = []string{
 	"/logs/{logId}", // the spec documents only the nested /logs/{logId}/... paths
+	// The literal "definitions" outranks the spec's /metrics/{metric_id}.
+	"/metrics/definitions",
+	"/metrics/definitions/{definitionId}",
 	"/organizations",
 	"/parsers",
 	"/parsers/{parserId}",

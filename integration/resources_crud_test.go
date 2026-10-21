@@ -424,7 +424,7 @@ func mustRunJSONArray(t *testing.T, r *Runner, args ...string) []map[string]any 
 
 func assertListContainsName(t *testing.T, r *Runner, kind, name string) {
 	t.Helper()
-	rows := mustRunJSONArray(t, r, kind, "list", "-o", "json")
+	rows := mustRunJSONArray(t, r, append(strings.Fields(kind), "list", "-o", "json")...)
 	for _, row := range rows {
 		if n, _ := row["name"].(string); n == name {
 			return
@@ -436,7 +436,7 @@ func assertListContainsName(t *testing.T, r *Runner, kind, name string) {
 // bestEffortDelete is used from t.Cleanup: the resource may already be
 // deleted by the test body itself, in which case this 404s harmlessly.
 func bestEffortDelete(r *Runner, kind, id string) {
-	_, _ = r.Run(context.Background(), "", kind, "delete", id, "--yes")
+	_, _ = r.Run(context.Background(), "", append(strings.Fields(kind), "delete", id, "--yes")...)
 }
 
 // redactSecrets returns a shallow copy of m with every key/token-like field
