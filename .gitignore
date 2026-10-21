@@ -8,3 +8,8 @@
 /coverage.filtered.txt
 /coverage.html
 /bronto.itest
+# Local test environment (see CONTRIBUTING.md#local-test-environment)
+.env.local
+/.local/
+# Agent worktrees (Claude Code)
+/.claude/worktrees/

@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# test-browser-login logs the test browser (scripts/test-browser) into the
+# test org with email and password. A PERSON runs this, never an agent:
+# agents ask you to run it when the browser's session has expired, e.g.
+# by typing `! scripts/test-browser-login` in Claude Code.
+#
+# The email comes from BRONTO_TEST_LOGIN_EMAIL in .env.local. The password
+# never touches the repo, .env.local or the command line: it is read from
+# the OS keychain (macOS `security`, or `secret-tool` on Linux) and handed
+# to the browser over the local debugging connection. Store it once:
+#
+#   macOS: security add-generic-password -s bronto-test-login -a <email> -w
+#   Linux: secret-tool store --label="Bronto test login" service bronto-test-login account <email>
+#
+# Exit codes: 0 logged in (or already was), 1 login failed, 2 setup missing.
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+env_file="${BRONTO_TEST_ENV_FILE:-$root/.env.local}"
+if [[ -f "$env_file" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  . "$env_file"
+  set +a
+fi
+
+email="${BRONTO_TEST_LOGIN_EMAIL:-}"
+if [[ -z "$email" ]]; then
+  echo "test-browser-login: set BRONTO_TEST_LOGIN_EMAIL in .env.local." >&2
+  exit 2
+fi
+
+port="${BRONTO_TEST_CDP_PORT:-9222}"
+if ! curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
+  echo "test-browser-login: the test browser isn't running; start it with: make browser" >&2
+  exit 2
+fi
+
+password=""
+if command -v security >/dev/null 2>&1; then
+  password="$(security find-generic-password -s bronto-test-login -a "$email" -w 2>/dev/null || true)"
+elif command -v secret-tool >/dev/null 2>&1; then
+  password="$(secret-tool lookup service bronto-test-login account "$email" 2>/dev/null || true)"
+fi
+if [[ -z "$password" ]]; then
+  echo "test-browser-login: no password for $email in the keychain (service bronto-test-login)." >&2
+  echo "Store it once; see the comment at the top of scripts/test-browser-login." >&2
+  exit 2
+fi
+
+BRONTO_TEST_LOGIN_PASSWORD="$password" \
+BRONTO_TEST_LOGIN_EMAIL="$email" \
+BRONTO_TEST_CDP_PORT="$port" \
+BRONTO_IT_REGION="${BRONTO_IT_REGION:-eu}" \
+  exec node "$root/scripts/test-browser-login.mjs"

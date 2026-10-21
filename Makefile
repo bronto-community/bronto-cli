@@ -1,4 +1,4 @@
-.PHONY: build test lint check-spec spec-baseline lint-workflows check-actions release-dry snapshot coverage coverage-baseline it vuln mutation
+.PHONY: build test lint check-spec spec-baseline lint-workflows check-actions release-dry snapshot coverage coverage-baseline it it-local browser vuln mutation
 
 build:
 	CGO_ENABLED=0 go build -o bronto ./cmd/bronto
@@ -76,6 +76,19 @@ coverage-baseline:
 # Bronto test account (see integration/).
 it:
 	go test -count=1 -timeout 20m ./integration/
+
+# it-local runs the integration suite against the local test org in
+# .env.local (see CONTRIBUTING.md#local-test-environment). It skips
+# TestAuthLoginKeyStdin, the one test that runs `auth login`/`logout`:
+# on a developer machine that writes the real OS keychain. CI's `make it`
+# still runs it.
+it-local:
+	scripts/test-env go test -count=1 -timeout 20m -skip '^TestAuthLoginKeyStdin$$' ./integration/
+
+# browser starts the test browser (Chrome with its own profile and remote
+# debugging) that agents drive through .mcp.json.
+browser:
+	scripts/test-browser
 
 # release-dry validates the goreleaser config without building anything.
 # Pinned to the same version release.yml runs, so what's validated locally

@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# test-env runs a command against the local test org configured in
+# .env.local (copy .env.local.example to start):
+#
+#   scripts/test-env bronto datasets list
+#   scripts/test-env make it
+#
+# It exports everything in .env.local, then pins the bronto CLI to the
+# test org with environment variables, which take precedence over any
+# saved profile or project file: the API key, region, org id, and the
+# API, ingestion and app URLs all come from .env.local. BRONTO_IT_* and
+# BRONTO_TEST_* values already in your shell are cleared first, so a key
+# missing from the file fails instead of leaking in from elsewhere.
+#
+# It never touches the OS keychain or the bronto config file.
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+env_file="${BRONTO_TEST_ENV_FILE:-$root/.env.local}"
+
+if [[ ! -f "$env_file" ]]; then
+  echo "test-env: $env_file not found." >&2
+  echo "Run: cp .env.local.example .env.local, then fill it in (CONTRIBUTING.md#local-test-environment)." >&2
+  exit 2
+fi
+if [[ $# -eq 0 ]]; then
+  echo "usage: scripts/test-env <command> [args...]" >&2
+  exit 2
+fi
+
+# Only .env.local may supply the test settings.
+while IFS= read -r name; do
+  unset "$name"
+done < <(compgen -e | grep -E '^BRONTO_(IT|TEST)_' || true)
+
+set -a
+# shellcheck source=/dev/null
+. "$env_file"
+set +a
+
+for required in BRONTO_IT_MGMT_KEY BRONTO_IT_ORG_ID; do
+  if [[ -z "${!required:-}" ]]; then
+    echo "test-env: $required is empty in $env_file." >&2
+    exit 2
+  fi
+done
+region="${BRONTO_IT_REGION:-eu}"
+if [[ "$region" != "eu" && "$region" != "us" ]]; then
+  echo "test-env: BRONTO_IT_REGION must be eu or us, got '$region'." >&2
+  exit 2
+fi
+
+unset BRONTO_PROFILE
+export BRONTO_API_KEY="$BRONTO_IT_MGMT_KEY"
+export BRONTO_REGION="$region"
+export BRONTO_IT_REGION="$region"
+export BRONTO_ORG_ID="$BRONTO_IT_ORG_ID"
+export BRONTO_BASE_URL="https://api.${region}.bronto.io"
+export BRONTO_INGEST_URL="https://ingestion.${region}.bronto.io"
+export BRONTO_APP_URL="https://app.${region}.bronto.io"
+
+echo "test-env: org ${BRONTO_ORG_ID} (${region})" >&2
+exec "$@"

@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# test-browser starts the test browser: Chrome with its own profile in
+# .local/chrome-test (gitignored) and remote debugging on 127.0.0.1, so
+# agents can drive it through the Chrome DevTools MCP server in .mcp.json.
+#
+# The profile is separate from your everyday Chrome: it only holds the
+# login for the test org. Log in by hand the first time; the session then
+# survives restarts. Agents never type credentials into it.
+#
+#   make browser        # or scripts/test-browser
+#
+# Reads BRONTO_IT_REGION, BRONTO_IT_ORG_ID and BRONTO_TEST_CDP_PORT from
+# .env.local when it exists. Set CHROME to use a different binary.
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+env_file="${BRONTO_TEST_ENV_FILE:-$root/.env.local}"
+if [[ -f "$env_file" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  . "$env_file"
+  set +a
+fi
+
+port="${BRONTO_TEST_CDP_PORT:-9222}"
+region="${BRONTO_IT_REGION:-eu}"
+profile="$root/.local/chrome-test"
+url="https://app.${region}.bronto.io/"
+if [[ -n "${BRONTO_IT_ORG_ID:-}" ]]; then
+  url="https://app.${region}.bronto.io/org/${BRONTO_IT_ORG_ID}/dashboards"
+fi
+
+# Something already listens on the port: reuse it only if it's this
+# checkout's test browser. Any other debugging browser would hand agents
+# a session that isn't the test org's.
+if curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
+  # ps + fixed-string grep, not pgrep: pgrep takes a regex, and the
+  # profile path may contain regex metacharacters.
+  # shellcheck disable=SC2009
+  if ps -ax -o command= | grep -F -- "--remote-debugging-port=${port}" | grep -qF -- "--user-data-dir=${profile}"; then
+    echo "test-browser: already running on 127.0.0.1:${port}"
+    exit 0
+  fi
+  echo "test-browser: port ${port} is used by something other than this checkout's test browser." >&2
+  echo "Close it, or set BRONTO_TEST_CDP_PORT in .env.local and the port in .mcp.json to a free one." >&2
+  exit 1
+fi
+
+chrome="${CHROME:-}"
+if [[ -z "$chrome" ]]; then
+  for c in \
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+    "$(command -v google-chrome 2>/dev/null || true)" \
+    "$(command -v google-chrome-stable 2>/dev/null || true)" \
+    "$(command -v chromium 2>/dev/null || true)"; do
+    if [[ -n "$c" && -x "$c" ]]; then
+      chrome="$c"
+      break
+    fi
+  done
+fi
+if [[ -z "$chrome" ]]; then
+  echo "test-browser: Chrome not found; set CHROME=/path/to/chrome." >&2
+  exit 1
+fi
+
+mkdir -p "$profile"
+# A non-default --user-data-dir is required: Chrome refuses remote
+# debugging on the everyday profile.
+nohup "$chrome" \
+  --user-data-dir="$profile" \
+  --remote-debugging-address=127.0.0.1 \
+  --remote-debugging-port="$port" \
+  --no-first-run \
+  --no-default-browser-check \
+  "$url" >/dev/null 2>&1 &
+
+for _ in $(seq 1 30); do
+  if curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
+    echo "test-browser: running on 127.0.0.1:${port} (profile .local/chrome-test)"
+    echo "First time? Log into the test org in that window; the session is kept."
+    exit 0
+  fi
+  sleep 0.5
+done
+echo "test-browser: Chrome started but port ${port} didn't answer; is another Chrome using this profile?" >&2
+exit 1
