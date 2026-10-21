@@ -83,6 +83,9 @@ How apply decides:
   - An inline widget that's on the dashboard but wasn't created by apply
     (export a dashboard built in the web UI, then apply it) is adopted:
     apply tags it and manages it from then on.
+  - A dashboard made from a template can't be changed until it's detached
+    from the template, so apply detaches it first when it has a change to
+    make (the plan says so), and leaves it linked otherwise.
 
 --dry-run prints what apply would create, change, detach and delete, and
 writes nothing. -f takes a file, a directory (every .yaml and .yml file in
@@ -411,9 +414,7 @@ func validateLive(ctx context.Context, app *App, out io.Writer, manifests []*man
 	var widgets []liveWidget
 	needRefs := false
 	for _, m := range manifests {
-		for _, w := range m.Widgets {
-			needRefs = needRefs || w.Ref != ""
-		}
+		needRefs = needRefs || m.hasRefs()
 	}
 	if needRefs {
 		st := &liveState{}
@@ -440,9 +441,26 @@ func validateLive(ctx context.Context, app *App, out io.Writer, manifests []*man
 			_, _ = fmt.Fprintf(out, "  %s\n", strings.ReplaceAll(strings.TrimPrefix(err.Error(), "invalid dashboard manifest:\n  "), "\n", "\n  "))
 			continue
 		}
+		// Refs resolve the way apply resolves them: a name several widgets
+		// share is fine when exactly one of them is on this dashboard.
+		var attached map[string]bool
+		if m.hasRefs() {
+			dash, err := findDashboardByName(ctx, app, m.Name)
+			if err != nil {
+				problems++
+				_, _ = fmt.Fprintf(out, "✗ %s: dashboard %q\n  %v\n", m.File, m.Name, err)
+				continue
+			}
+			if dash != nil {
+				attached = map[string]bool{}
+				for _, id := range dash.WidgetIDs {
+					attached[id] = true
+				}
+			}
+		}
 		for _, w := range want.Widgets {
 			if w.Ref != "" {
-				if _, err := matchRef(w.Ref, widgets, nil); err != nil {
+				if _, err := matchRef(w.Ref, widgets, attached); err != nil {
 					problems++
 					mark = "✗"
 					lines = append(lines, fmt.Sprintf("✗ %s: %s", w.Pos, err))
@@ -461,7 +479,7 @@ func validateLive(ctx context.Context, app *App, out io.Writer, manifests []*man
 				lines = append(lines, fmt.Sprintf("✗ widget %q (%s): the API rejected its queries: %v", w.Name, w.Pos, err))
 				continue
 			}
-			rows := timeseriesRows(payload, "")
+			rows := plottedRows(timeseriesRows(payload, ""), w.Def)
 			switch {
 			case len(rows) == 0 || allZero(rows):
 				warnings++
@@ -485,4 +503,32 @@ func validateLive(ctx context.Context, app *App, out io.Writer, manifests []*man
 		return clierr.New("dashboard_check_failed", fmt.Sprintf("%s in the dashboard manifests", countPhrase(problems, "problem", "problems")))
 	}
 	return nil
+}
+
+func (m *manifest) hasRefs() bool {
+	for _, w := range m.Widgets {
+		if w.Ref != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// plottedRows keeps the series a widget shows: with a formula the web UI
+// plots only the formulas, so nonzero inputs don't make it non-empty.
+func plottedRows(rows []map[string]any, def apiDef) []map[string]any {
+	if len(def.Formulas) == 0 {
+		return rows
+	}
+	formulas := map[string]bool{}
+	for _, f := range def.Formulas {
+		formulas[f.Name] = true
+	}
+	var out []map[string]any
+	for _, r := range rows {
+		if name, _ := r["series"].(string); formulas[name] {
+			out = append(out, r)
+		}
+	}
+	return out
 }

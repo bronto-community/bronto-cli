@@ -250,12 +250,17 @@ $ bronto dashboards validate -f dashboard.yaml 2>&1
   run stops halfway, run it again: it picks up where it stopped.
 - **`ref:` widgets are only attached.** `- ref: <widget name or id>` attaches an existing
   widget that something else manages. `apply` never changes or deletes it, and detaches it
-  when you remove the `ref:`. A widget on the dashboard that the file doesn't mention, and
+  when you remove the `ref:`. Turn an inline widget into a `ref:` and `apply` stops
+  managing it (it drops the ownership tags). A widget on the dashboard that the file doesn't mention, and
   that `apply` didn't create, is detached too.
 - **Applying an export adopts.** Export a dashboard that `apply` didn't create and every
   widget becomes inline (a note on stderr says so). Applying that file tags them, and from
   then on `apply` manages them: leave one out and it's deleted. Group widgets and widgets
   with several definitions are exported as `ref:` entries.
+- **A dashboard made from a template is detached first.** Bronto rejects changes to such a
+  dashboard, so when `apply` has to change its tags, layout or widgets, it detaches the
+  dashboard from its template first; the plan says so. With nothing to change, it stays
+  linked.
 - **A field you leave out is left alone.** Without `description`, `tags` or `layout`, or a
   widget's `type` or `description`, `apply` keeps the current value. With `tags:`, the file
   holds the dashboard's whole tag set. Bronto can't change a dashboard's description after

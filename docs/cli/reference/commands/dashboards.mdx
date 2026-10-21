@@ -59,6 +59,9 @@ detached.
 - An inline widget that's on the dashboard but wasn't created by apply
 (export a dashboard built in the web UI, then apply it) is adopted:
 apply tags it and manages it from then on.
+- A dashboard made from a template can't be changed until it's detached
+from the template, so apply detaches it first when it has a change to
+make (the plan says so), and leaves it linked otherwise.
 ```
 
 --dry-run prints what apply would create, change, detach and delete, and

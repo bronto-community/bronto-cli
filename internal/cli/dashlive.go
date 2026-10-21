@@ -49,9 +49,17 @@ type liveDashboard struct {
 	Description string            `json:"description"`
 	Tags        map[string]string `json:"tags"`
 	WidgetIDs   []string          `json:"widget_ids"`
-	Layout      struct {
+	// Template is set on a dashboard made from a template. Live
+	// (2026-10-21, #207) such a dashboard can't be modified (PATCH
+	// answers 404) until POST /dashboards/{id}/detach-from-template.
+	Template *dashTemplateRef `json:"template"`
+	Layout   struct {
 		WidgetLayouts []liveLayout `json:"widget_layouts"`
 	} `json:"layout"`
+}
+
+type dashTemplateRef struct {
+	ID string `json:"id"`
 }
 
 type liveWidget struct {

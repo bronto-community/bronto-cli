@@ -324,13 +324,18 @@ func parseManifest(file string, data []byte) (*manifest, error) {
 		return nil, clierr.New("usage_invalid_manifest", fmt.Sprintf("%s: not valid YAML: %v", file, err))
 	}
 	var extra yaml.Node
-	if err := dec.Decode(&extra); err == nil {
+	switch err := dec.Decode(&extra); {
+	case err == nil:
 		line := extra.Line
 		if len(extra.Content) > 0 {
 			line = extra.Content[0].Line
 		}
 		return nil, clierr.New("usage_invalid_manifest",
 			fmt.Sprintf("%s:%d: a manifest holds one dashboard; put each dashboard in its own file", file, line))
+	case !errors.Is(err, io.EOF):
+		// A broken second document must not leave apply reconciling
+		// only the first one.
+		return nil, clierr.New("usage_invalid_manifest", fmt.Sprintf("%s: not valid YAML: %v", file, err))
 	}
 	root := &doc
 	if root.Kind == yaml.DocumentNode && len(root.Content) == 1 {
@@ -515,6 +520,15 @@ func parseQuery(e *manifestErrors, n *yaml.Node) manQuery {
 		e.at(n, "%s needs a dataset (or from_expr, or from)", label)
 	case len(sources) > 1:
 		e.at(sources[1], "%s: use one of dataset, from_expr or from", label)
+	case len(q.Datasets) == 0 && strings.TrimSpace(q.FromExpr) == "" && len(q.From) == 0 && n.Kind == yaml.MappingNode:
+		// The key is there but empty (dataset: [], from_expr: ''): the
+		// API would reject the definition after apply had started writing.
+		e.at(sources[0], "%s: %s is empty", label, sources[0].Value)
+	}
+	for _, f := range q.From {
+		if strings.TrimSpace(f) == "" {
+			e.at(n, "%s: a from entry is empty", label)
+		}
 	}
 	if n.Kind == yaml.MappingNode && q.Select == "" {
 		e.at(n, "%s needs a select, e.g. count(*) or $span.duration_nano", label)

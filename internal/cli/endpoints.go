@@ -63,7 +63,7 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/users/{*}/deactivate", Command: "bronto users deactivate"},
 	{Pattern: "/users/{*}/reactivate", Command: "bronto users reactivate"},
 	{Pattern: "/users/{*}/resend-invite", Command: "bronto users resend-invite"},
-	{Pattern: "/dashboards/{*}/detach-from-template", Command: "bronto dashboards detach-from-template"},
+	{Pattern: "/dashboards/{*}/detach-from-template", Command: "bronto dashboards detach-from-template / dashboards apply"},
 	{Pattern: "/dashboards/{*}/widgets", Command: "bronto dashboards attach-widgets"},
 	{Pattern: "/dashboards/{*}/widgets/{*}", Command: "bronto dashboards remove-widget"},
 	{Pattern: "/widgets/{*}/widgets", Command: "bronto widgets attach-widgets"},

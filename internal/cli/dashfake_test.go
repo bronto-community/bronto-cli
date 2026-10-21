@@ -26,7 +26,8 @@ type fakeOrg struct {
 	defs       map[string]map[string]any
 	datasets   []map[string]any
 	writes     []string // "METHOD path" of every non-GET request
-	series     float64  // the value /timeseries/search returns
+	series     float64  // the value /timeseries/search returns for queries
+	formula    *float64 // and for formulas (nil: series)
 	searchErr  bool
 }
 
@@ -113,6 +114,10 @@ func (f *fakeOrg) handler(w http.ResponseWriter, r *http.Request) {
 		case http.MethodGet:
 			reply(200, d)
 		case http.MethodPatch:
+			if d["template"] != nil { // live (#207): template dashboards reject changes
+				reply(404, nil)
+				return
+			}
 			if _, ok := body["layout"]; ok && body["name"] == nil {
 				d["layout"] = body["layout"]
 				reply(200, d)
@@ -122,8 +127,15 @@ func (f *fakeOrg) handler(w http.ResponseWriter, r *http.Request) {
 		default:
 			reply(405, nil)
 		}
+	case len(parts) == 3 && parts[0] == "dashboards" && parts[2] == "detach-from-template" && r.Method == http.MethodPost:
+		f.dashboards[parts[1]]["template"] = nil
+		reply(204, nil)
 	case len(parts) == 3 && parts[0] == "dashboards" && parts[2] == "widgets" && r.Method == http.MethodPost:
 		d := f.dashboards[parts[1]]
+		if d["template"] != nil {
+			reply(404, nil)
+			return
+		}
 		ids := strs(d["widget_ids"])
 		for _, wid := range strs(body["widget_ids"]) {
 			if f.widgets[wid] == nil {
@@ -261,6 +273,17 @@ func (f *fakeOrg) handler(w http.ResponseWriter, r *http.Request) {
 			out[name] = map[string]any{"name": name,
 				"aggregates": []any{map[string]any{"function": "COUNT", "value": f.series}},
 				"series":     []any{map[string]any{"value": fmt.Sprint(f.series)}}}
+		}
+		formulas, _ := body["formulas"].([]any)
+		fv := f.series
+		if f.formula != nil {
+			fv = *f.formula
+		}
+		for _, fm := range formulas {
+			name := fm.(map[string]any)["name"].(string)
+			out[name] = map[string]any{"name": name,
+				"aggregates": []any{map[string]any{"function": "AVG", "value": fv}},
+				"series":     []any{map[string]any{"value": fmt.Sprint(fv)}}}
 		}
 		reply(200, out)
 	default:

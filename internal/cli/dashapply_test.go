@@ -2,10 +2,13 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 const testManifest = `name: Checkout API health
@@ -85,6 +88,15 @@ func TestParseManifestErrors(t *testing.T) {
 		{"space in query name with formula", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {name: my q, dataset: a/b, select: count(*)}\n    formula: x",
 			`query name "my q" has a space`},
 		{"ref with extra key", "name: x\nwidgets:\n  - {ref: Shared, type: line}", `unknown field "type" in a ref widget`},
+		{"broken second document", "name: a\nwidgets: []\n---\nname: [b", "not valid YAML"},
+		{"empty dataset list", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {dataset: [], select: count(*)}",
+			`d.yaml:5:10: a query: dataset is empty`},
+		{"null dataset", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {dataset: null, select: count(*)}",
+			"dataset is empty"},
+		{"empty from_expr", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {from_expr: '', select: count(*)}",
+			"from_expr is empty"},
+		{"empty from", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {from: [], select: count(*)}",
+			"from is empty"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -385,6 +397,53 @@ func TestComputePlan(t *testing.T) {
 			actions: "Requests:unchanged Errors:update", writes: 1,
 		},
 		{
+			// The run stopped after POST /widgets, before attach and tags:
+			// the widget is recognized by its marked definition, not
+			// created again.
+			name: "a widget an interrupted run created is finished, not duplicated", manifest: planManifestSrc,
+			live: func(t *testing.T) *liveState {
+				l := liveFor(t)
+				l.Dashboard.WidgetIDs = []string{pW1}
+				l.Widgets[1].Tags = nil
+				d := l.Defs[pD2]
+				d.Description = definitionMarker(pDash)
+				l.Defs[pD2] = d
+				return l
+			},
+			actions: "Requests:unchanged Errors:update", writes: 3, // two tags and the attach
+			check: func(t *testing.T, p *dashPlan) {
+				if ch := p.Widgets[1]; !ch.Adopt || !ch.Attach || ch.NewDefinition || ch.ID != pW2 {
+					t.Errorf("errors change = %+v", ch)
+				}
+			},
+		},
+		{
+			// It can't be told apart from a released ref widget someone
+			// detached, so it is never deleted.
+			name:     "an interrupted run's widget is left alone when the manifest drops it",
+			manifest: "name: D\nwidgets:\n  - name: Requests\n    queries: [{name: r, from_expr: x, select: count(*)}]\n",
+			live: func(t *testing.T) *liveState {
+				l := liveFor(t)
+				l.Dashboard.WidgetIDs = []string{pW1}
+				l.Widgets[1].Tags = nil
+				d := l.Defs[pD2]
+				d.Description = definitionMarker(pDash)
+				l.Defs[pD2] = d
+				return l
+			},
+			actions: "Requests:unchanged", writes: 0,
+		},
+		{
+			name:     "an owned widget turned into a ref is released, not kept owned",
+			manifest: "name: D\nwidgets:\n  - name: Requests\n    queries: [{name: r, from_expr: x, select: count(*)}]\n  - ref: Errors\n",
+			live:     liveFor, actions: "Requests:unchanged Errors:update", writes: 2,
+			check: func(t *testing.T, p *dashPlan) {
+				if ch := p.Widgets[1]; !ch.Ref || !ch.Release || len(ch.DeleteDefinitions) != 0 {
+					t.Errorf("ref change = %+v", ch)
+				}
+			},
+		},
+		{
 			name: "an orphaned definition from an interrupted run is deleted", manifest: planManifestSrc,
 			live: func(t *testing.T) *liveState {
 				l := liveFor(t)
@@ -411,6 +470,34 @@ func TestComputePlan(t *testing.T) {
 				got := compactJSON(p.Dashboard.Tags)
 				if got != `[{"name":"team","value":"a","op":"update"},{"name":"old","op":"delete"}]` {
 					t.Errorf("tags = %s", got)
+				}
+			},
+		},
+		{
+			name: "a dashboard made from a template is detached before it changes", manifest: planManifestSrc + "  - ref: Shared\n",
+			live: func(t *testing.T) *liveState {
+				l := liveFor(t)
+				l.Dashboard.Template = &dashTemplateRef{ID: "tmpl-1"}
+				return l
+			},
+			actions: "Requests:unchanged Errors:unchanged Shared:attach", writes: 2,
+			check: func(t *testing.T, p *dashPlan) {
+				if p.Dashboard.DetachTemplate != "tmpl-1" || !strings.Contains(p.Dashboard.Details[0], "detach from template tmpl-1") {
+					t.Errorf("dashboard = %+v", p.Dashboard)
+				}
+			},
+		},
+		{
+			name: "a template dashboard with nothing to change stays attached to its template", manifest: planManifestSrc,
+			live: func(t *testing.T) *liveState {
+				l := liveFor(t)
+				l.Dashboard.Template = &dashTemplateRef{ID: "tmpl-1"}
+				return l
+			},
+			actions: "Requests:unchanged Errors:unchanged", writes: 0,
+			check: func(t *testing.T, p *dashPlan) {
+				if p.Dashboard.DetachTemplate != "" {
+					t.Errorf("detached without a change: %+v", p.Dashboard)
 				}
 			},
 		},
@@ -745,5 +832,116 @@ func TestExportOutputFormats(t *testing.T) {
 	}
 	if _, _, err := runResource(t, f.handler, "", "dashboards", "export", "Checkout API health", "-o", "csv"); err == nil {
 		t.Fatal("export -o csv should fail")
+	}
+}
+
+// A dashboard made from a template rejects changes until it is detached
+// (live, #207): apply detaches it first, and only when it changes it.
+func TestApplyDetachesTemplateDashboard(t *testing.T) {
+	f := newFakeOrg(t)
+	dashID := "aaaaaaaa-aaaa-aaaa-aaaa-0000000000e9"
+	f.dashboards[dashID] = map[string]any{"id": dashID, "name": "From template", "description": "",
+		"tags": map[string]any{tagManagedBy: tagManagedByValue}, "widget_ids": []any{},
+		"template": map[string]any{"id": "tmpl-1", "arguments": map[string]any{}}}
+	applyJSON(t, f, writeManifest(t, "name: From template\nwidgets: []\n"))
+	if f.writeCount() != 0 {
+		t.Fatalf("nothing to change, but wrote %v", f.writes)
+	}
+	doc := applyJSON(t, f, writeManifest(t,
+		"name: From template\nwidgets:\n  - {name: w, queries: [{dataset: checkout-api, select: count(*)}]}\n"))
+	if f.writes[0] != "POST /dashboards/"+dashID+"/detach-from-template" ||
+		doc["dashboard"].(map[string]any)["detach_template"] != "tmpl-1" {
+		t.Fatalf("writes = %v, plan = %v", f.writes, doc["dashboard"])
+	}
+	if len(strs(f.dashboards[dashID]["widget_ids"])) != 1 {
+		t.Fatal("widget not attached after the detach")
+	}
+}
+
+// Turning an inline widget into a ref releases it: removing the ref later
+// only detaches the widget.
+func TestApplyRefReleasesOwnership(t *testing.T) {
+	f := newFakeOrg(t)
+	applyJSON(t, f, writeManifest(t, testManifest))
+	errW := f.widgetByName("Error rate %")
+	asRef := strings.SplitN(testManifest, "  - name: Error rate %", 2)[0] + "  - ref: Error rate %\n"
+	f.resetWrites()
+	applyJSON(t, f, writeManifest(t, asRef))
+	if got := strings.Join(f.writes, ", "); got != "DELETE /tags, DELETE /tags" {
+		t.Fatalf("release writes = %s", got)
+	}
+	f.resetWrites()
+	applyJSON(t, f, writeManifest(t, strings.SplitN(testManifest, "  - name: Error rate %", 2)[0]))
+	if got := strings.Join(f.writes, ", "); f.widgetByName("Error rate %") == nil || len(strs(errW["metric_ids"])) != 1 ||
+		got != "DELETE /dashboards/"+f.dashboardByName("Checkout API health")["id"].(string)+"/widgets/"+errW["id"].(string) {
+		t.Fatalf("removing the ref should only detach: %s", got)
+	}
+}
+
+func TestLeftoverDefinitionHint(t *testing.T) {
+	err := leftoverDefinition(clierr.New("api_server_error", "Bronto API returned 500"), "d-1")
+	var ce *clierr.Error
+	if !errors.As(err, &ce) || ce.Code != "api_server_error" ||
+		!strings.Contains(ce.Hint, "bronto metrics definitions delete d-1 --yes") {
+		t.Fatalf("err = %#v", err)
+	}
+}
+
+func TestValidateLiveFormulasAndRefs(t *testing.T) {
+	f := newFakeOrg(t)
+	applyJSON(t, f, writeManifest(t, testManifest))
+	// The inputs have data, the plotted formula is zero: warn.
+	zero := 0.0
+	f.formula = &zero
+	_, stderr, err := runResource(t, f.handler, "", "dashboards", "validate", "-f", writeManifest(t, testManifest), "--live")
+	if err != nil || !strings.Contains(stderr, `! widget "Error rate %"`) || !strings.Contains(stderr, "1 warning") {
+		t.Fatalf("formula zero: %v\n%s", err, stderr)
+	}
+	// Two widgets named Shared, one on the dashboard: the ref resolves
+	// to that one, as apply does.
+	for _, id := range []string{"aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1", "aaaaaaaa-aaaa-aaaa-aaaa-0000000000a2"} {
+		f.widgets[id] = map[string]any{"id": id, "name": "Shared", "type": "line", "tags": map[string]any{}, "metric_ids": []any{}}
+	}
+	d := f.dashboardByName("Checkout API health")
+	d["widget_ids"] = append(d["widget_ids"].([]any), "aaaaaaaa-aaaa-aaaa-aaaa-0000000000a1")
+	f.formula = nil
+	_, stderr, err = runResource(t, f.handler, "", "dashboards", "validate", "-f", writeManifest(t, testManifest+"  - ref: Shared\n"), "--live")
+	if err != nil || strings.Contains(stderr, "2 widgets are named") {
+		t.Fatalf("ref with one attached namesake: %v\n%s", err, stderr)
+	}
+}
+
+func TestExportEdgeCases(t *testing.T) {
+	f := newFakeOrg(t)
+	applyJSON(t, f, writeManifest(t, "name: Empty\nwidgets: []\n"))
+	out, _, err := runResource(t, f.handler, "", "dashboards", "export", "Empty", "-o", "json")
+	if err != nil || !strings.Contains(out, `"widgets": []`) {
+		t.Fatalf("empty export: %v\n%s", err, out)
+	}
+	f.resetWrites()
+	applyJSON(t, f, writeManifest(t, out))
+	if f.writeCount() != 0 {
+		t.Fatalf("empty export -> apply wrote %v", f.writes)
+	}
+
+	// Two attached widgets with one name become id refs; a namesake that
+	// isn't on the dashboard doesn't matter.
+	applyJSON(t, f, writeManifest(t, testManifest))
+	d := f.dashboardByName("Checkout API health")
+	dup := "aaaaaaaa-aaaa-aaaa-aaaa-0000000000b7"
+	f.widgets[dup] = clone(f.widgetByName("Request rate"))
+	f.widgets[dup]["id"] = dup
+	d["widget_ids"] = append(d["widget_ids"].([]any), dup)
+	other := "aaaaaaaa-aaaa-aaaa-aaaa-0000000000b8"
+	f.widgets[other] = map[string]any{"id": other, "name": "p95 latency", "type": "line", "tags": map[string]any{}, "metric_ids": []any{}}
+	out, stderr, err := runResource(t, f.handler, "", "dashboards", "export", "Checkout API health")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "ref: "+dup) || strings.Contains(out, "name: Request rate") || !strings.Contains(out, "name: p95 latency") {
+		t.Fatalf("duplicate names export:\n%s\n%s", out, stderr)
+	}
+	if _, err := parseManifest("x.yaml", []byte(out)); err != nil {
+		t.Fatalf("export doesn't parse: %v\n%s", err, out)
 	}
 }

@@ -3,9 +3,12 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
 // executePlan makes the plan's writes. Every step is ordered so that a
@@ -73,6 +76,13 @@ func executePlan(ctx context.Context, app *App, p *dashPlan) (string, int, error
 		}
 		p.Dashboard.ID = dashID
 	}
+	if p.Dashboard.DetachTemplate != "" {
+		// A dashboard made from a template rejects changes until it is
+		// detached; computePlan asks for this only when apply changes it.
+		if _, err := do(http.MethodPost, "/dashboards/"+url.PathEscape(dashID)+"/detach-from-template", nil); err != nil {
+			return dashID, writes, err
+		}
+	}
 	for _, t := range p.Dashboard.Tags {
 		if err := tag("dashboard", dashID, t); err != nil {
 			return dashID, writes, err
@@ -99,11 +109,22 @@ func executePlan(ctx context.Context, app *App, p *dashPlan) (string, int, error
 
 	for i := range p.Widgets {
 		ch := &p.Widgets[i]
-		switch ch.Action {
-		case actAttach:
-			if err := attach(ch.ID); err != nil {
-				return dashID, writes, err
+		if ch.Ref {
+			if ch.Release {
+				for _, t := range releaseTags(ch.live) {
+					if err := tag("widget", ch.ID, t); err != nil {
+						return dashID, writes, err
+					}
+				}
 			}
+			if ch.Attach {
+				if err := attach(ch.ID); err != nil {
+					return dashID, writes, err
+				}
+			}
+			continue
+		}
+		switch ch.Action {
 		case actDetach:
 			if _, err := do(http.MethodDelete, "/dashboards/"+url.PathEscape(dashID)+"/widgets/"+url.PathEscape(ch.ID), nil); err != nil {
 				return dashID, writes, err
@@ -151,10 +172,13 @@ func executePlan(ctx context.Context, app *App, p *dashPlan) (string, int, error
 					return dashID, writes, err
 				}
 			}
-			// Only now does nothing point at the old definitions.
+			// Only now does nothing point at the old definitions. If a
+			// delete fails, nothing references the definition any more and
+			// an adopted widget's old one carries no marker, so no later run
+			// can find it: say which one to delete.
 			for _, d := range ch.DeleteDefinitions {
 				if _, err := do(http.MethodDelete, "/metrics/definitions/"+url.PathEscape(d), nil); err != nil {
-					return dashID, writes, err
+					return dashID, writes, leftoverDefinition(err, d)
 				}
 			}
 			if ch.Attach {
@@ -188,6 +212,19 @@ func executePlan(ctx context.Context, app *App, p *dashPlan) (string, int, error
 		}
 	}
 	return dashID, writes, nil
+}
+
+// leftoverDefinition adds the cleanup command to a failed delete of a
+// definition that the widget no longer plots.
+func leftoverDefinition(err error, id string) error {
+	var ce *clierr.Error
+	if !errors.As(err, &ce) {
+		return err
+	}
+	cp := *ce
+	cp.Hint = fmt.Sprintf("The widget already plots its new definition; the old one, %s, is unused. "+
+		"Delete it with 'bronto metrics definitions delete %s --yes'.", id, id)
+	return &cp
 }
 
 // widgetBody is the full create/PUT body of an inline widget. Fields the

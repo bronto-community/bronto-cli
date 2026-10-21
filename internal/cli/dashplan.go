@@ -32,8 +32,11 @@ type widgetChange struct {
 	Ref    bool   `json:"ref,omitempty"`
 	// Adopt: an attached widget apply didn't create gets the ownership
 	// tags (export, then apply, takes ownership like kubectl apply).
-	Adopt  bool `json:"adopt,omitempty"`
-	Attach bool `json:"attach,omitempty"`
+	Adopt bool `json:"adopt,omitempty"`
+	// Release: an owned widget the manifest now names as a ref loses its
+	// ownership tags.
+	Release bool `json:"release,omitempty"`
+	Attach  bool `json:"attach,omitempty"`
 	// NewDefinition: the queries changed. Definitions can't be updated
 	// (the API answers 405), so apply creates a new one, repoints the
 	// widget, and deletes the old one.
@@ -53,12 +56,15 @@ type tagChange struct {
 }
 
 type dashChange struct {
-	Action  string      `json:"action"` // create, update, unchanged
-	Name    string      `json:"name"`
-	ID      string      `json:"id,omitempty"`
-	Tags    []tagChange `json:"tags,omitempty"`
-	Layout  bool        `json:"layout,omitempty"`
-	Details []string    `json:"details,omitempty"`
+	Action string      `json:"action"` // create, update, unchanged
+	Name   string      `json:"name"`
+	ID     string      `json:"id,omitempty"`
+	Tags   []tagChange `json:"tags,omitempty"`
+	Layout bool        `json:"layout,omitempty"`
+	// DetachTemplate is the template the dashboard is detached from
+	// before apply changes it (see liveDashboard.Template).
+	DetachTemplate string   `json:"detach_template,omitempty"`
+	Details        []string `json:"details,omitempty"`
 }
 
 type dashPlan struct {
@@ -77,7 +83,7 @@ type dashPlan struct {
 
 // computePlan diffs a resolved manifest against the live state.
 func computePlan(want *wantDashboard, live *liveState) (*dashPlan, error) {
-	p := &dashPlan{File: want.File, want: want, live: live}
+	p := &dashPlan{File: want.File, Widgets: []widgetChange{}, want: want, live: live}
 	dash := live.Dashboard
 	dashID := ""
 	var attached map[string]bool
@@ -110,6 +116,25 @@ func computePlan(want *wantDashboard, live *liveState) (*dashPlan, error) {
 		}
 		return out
 	}
+	// interrupted reports whether w is a widget an interrupted apply
+	// created for this dashboard but stopped before attaching and tagging:
+	// untagged, not on the dashboard, and every definition it plots
+	// carries this dashboard's definitionMarker. apply finishes such a
+	// widget when the manifest still names it, and otherwise leaves it:
+	// a released ref widget someone detached by hand looks the same, and
+	// apply never deletes a widget it can't show is its own.
+	marker := definitionMarker(dashID)
+	interrupted := func(w *liveWidget) bool {
+		if dashID == "" || attached[w.ID] || len(w.MetricIDs) == 0 || len(w.Tags) > 0 {
+			return false
+		}
+		for _, m := range w.MetricIDs {
+			if live.Defs[m].Description != marker {
+				return false
+			}
+		}
+		return true
+	}
 
 	var errs []string
 	claimed := map[string]bool{}
@@ -126,6 +151,13 @@ func computePlan(want *wantDashboard, live *liveState) (*dashPlan, error) {
 			if !attached[w.ID] {
 				ch.Action, ch.Attach = actAttach, true
 			}
+			if w.ownedBy(dashID) {
+				// An inline widget turned into a ref: drop the ownership
+				// tags, or removing the ref later would delete the widget.
+				ch.Release = true
+				ch.Action = actUpdate
+				ch.Details = append(ch.Details, "release ownership: as a ref it is attached but no longer managed")
+			}
 			p.Widgets = append(p.Widgets, ch)
 			continue
 		}
@@ -139,7 +171,7 @@ func computePlan(want *wantDashboard, live *liveState) (*dashPlan, error) {
 			switch {
 			case w.ownedBy(dashID):
 				owned = append(owned, w)
-			case attached[w.ID] && !w.ownedElsewhere(dashID):
+			case attached[w.ID] && !w.ownedElsewhere(dashID), interrupted(w):
 				adoptable = append(adoptable, w)
 			}
 		}
@@ -172,7 +204,10 @@ func computePlan(want *wantDashboard, live *liveState) (*dashPlan, error) {
 		claimed[match.ID] = true
 		ch := widgetChange{Action: actUnchanged, Name: ww.Name, ID: match.ID, Adopt: adopt, Attach: !attached[match.ID],
 			want: ww, live: match}
-		if adopt {
+		switch {
+		case adopt && interrupted(match):
+			ch.Details = append(ch.Details, "finish an interrupted apply: tag the widget it created")
+		case adopt:
 			ch.Details = append(ch.Details, "take ownership: it was attached but not created by apply")
 		}
 		if ww.Type != "" && ww.Type != match.Type {
@@ -247,7 +282,6 @@ func computePlan(want *wantDashboard, live *liveState) (*dashPlan, error) {
 					Details: []string{"not in the manifest and not owned by it: detach it (the widget is kept)"}})
 			}
 		}
-		marker := definitionMarker(dashID)
 		for id, d := range live.Defs {
 			if d.Description == marker && refCount[id] == 0 {
 				p.Orphans = append(p.Orphans, id)
@@ -260,7 +294,13 @@ func computePlan(want *wantDashboard, live *liveState) (*dashPlan, error) {
 	if p.Dashboard.Layout {
 		p.Dashboard.Details = append(p.Dashboard.Details, fmt.Sprintf("layout: set %d widget position(s)", len(want.Layout)))
 	}
-	if p.Dashboard.Action == actUnchanged && (len(p.Dashboard.Tags) > 0 || p.Dashboard.Layout) {
+	if dash != nil && dash.Template != nil && p.changesDashboard() {
+		p.Dashboard.DetachTemplate = orDefault(dash.Template.ID, "?")
+		p.Dashboard.Details = append([]string{fmt.Sprintf(
+			"detach from template %s first: the API can't change a dashboard made from a template", p.Dashboard.DetachTemplate)},
+			p.Dashboard.Details...)
+	}
+	if p.Dashboard.Action == actUnchanged && (len(p.Dashboard.Tags) > 0 || p.Dashboard.Layout || p.Dashboard.DetachTemplate != "") {
 		p.Dashboard.Action = actUpdate
 	}
 	p.Writes = p.plannedWrites()
@@ -404,9 +444,27 @@ func sameLayout(a, b []liveLayout) bool {
 	return reflect.DeepEqual(norm(a), norm(b))
 }
 
+// changesDashboard reports whether the plan writes to the dashboard
+// itself: its tags, its layout, or which widgets are attached. Widget
+// and definition writes don't count.
+func (p *dashPlan) changesDashboard() bool {
+	if len(p.Dashboard.Tags) > 0 || p.Dashboard.Layout {
+		return true
+	}
+	for _, ch := range p.Widgets {
+		if ch.Attach || ch.Action == actDetach {
+			return true
+		}
+	}
+	return false
+}
+
 // plannedWrites counts the API writes executePlan makes for p.
 func (p *dashPlan) plannedWrites() int {
 	n := len(p.Dashboard.Tags) + len(p.Orphans)
+	if p.Dashboard.DetachTemplate != "" {
+		n++
+	}
 	if p.Dashboard.Action == actCreate {
 		n++
 	}
@@ -414,6 +472,15 @@ func (p *dashPlan) plannedWrites() int {
 		n++
 	}
 	for _, ch := range p.Widgets {
+		if ch.Ref {
+			if ch.Release {
+				n += len(releaseTags(ch.live))
+			}
+			if ch.Attach {
+				n++
+			}
+			continue
+		}
 		switch ch.Action {
 		case actCreate:
 			n += 5 // definition, widget, attach, two ownership tags
@@ -431,13 +498,24 @@ func (p *dashPlan) plannedWrites() int {
 			if ch.Attach {
 				n++
 			}
-		case actAttach, actDetach:
+		case actDetach:
 			n++
 		case actDelete:
 			n += 1 + len(ch.DeleteDefinitions)
 		}
 	}
 	return n
+}
+
+// releaseTags are the ownership tags a released widget carries.
+func releaseTags(w *liveWidget) []tagChange {
+	var out []tagChange
+	for _, k := range []string{tagManagedBy, tagOwner} {
+		if _, ok := w.Tags[k]; ok {
+			out = append(out, tagChange{Name: k, Op: "delete"})
+		}
+	}
+	return out
 }
 
 // adoptTags are the ownership tags an adopted widget is missing.

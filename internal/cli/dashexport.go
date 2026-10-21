@@ -67,7 +67,7 @@ type exFormula struct {
 // stderr lines about widgets exported as refs or about to be adopted.
 func exportManifest(live *liveState) (exManifest, []string) {
 	dash := live.Dashboard
-	m := exManifest{Name: dash.Name, Description: dash.Description}
+	m := exManifest{Name: dash.Name, Description: dash.Description, Widgets: []exWidget{}}
 	for k, v := range dash.Tags {
 		if isManagedTag(k) {
 			continue
@@ -78,11 +78,16 @@ func exportManifest(live *liveState) (exManifest, []string) {
 		m.Tags[k] = v
 	}
 	byID := map[string]*liveWidget{}
-	names := map[string]int{}
 	for i := range live.Widgets {
-		w := &live.Widgets[i]
-		byID[w.ID] = w
-		names[w.Name]++
+		byID[live.Widgets[i].ID] = &live.Widgets[i]
+	}
+	// Names are counted among the attached widgets: apply matches inline
+	// widgets and resolves a ref's name there first (matchRef).
+	names := map[string]int{}
+	for _, id := range dash.WidgetIDs {
+		if w := byID[id]; w != nil {
+			names[w.Name]++
+		}
 	}
 	var notes []string
 	var adopted []string
@@ -94,8 +99,12 @@ func exportManifest(live *liveState) (exManifest, []string) {
 			continue
 		}
 		ex, reason := exportWidget(w, live.Defs)
-		if reason == "" && w.ownedElsewhere(dash.ID) {
+		switch {
+		case reason != "":
+		case w.ownedElsewhere(dash.ID):
 			reason = "it belongs to another dashboard's manifest"
+		case names[w.Name] > 1:
+			reason = fmt.Sprintf("%d widgets on the dashboard are named %q (an inline widget's name must be unique)", names[w.Name], w.Name)
 		}
 		if reason != "" {
 			ref := w.Name
