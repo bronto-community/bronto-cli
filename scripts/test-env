@@ -8,9 +8,10 @@
 # It exports everything in .env.local, then pins the bronto CLI to the
 # test org with environment variables, which take precedence over any
 # saved profile or project file: the API key, region, org id, and the
-# API, ingestion and app URLs all come from .env.local. BRONTO_IT_* and
-# BRONTO_TEST_* values already in your shell are cleared first, so a key
-# missing from the file fails instead of leaking in from elsewhere.
+# API, ingestion and app URLs all come from .env.local. The settings
+# .env.local owns (the keys in .env.local.example) are cleared from your
+# shell first, so a key missing from the file fails instead of leaking in
+# from elsewhere. Other variables, such as BRONTO_IT_BIN, pass through.
 #
 # It never touches the OS keychain or the bronto config file.
 set -euo pipefail
@@ -28,10 +29,10 @@ if [[ $# -eq 0 ]]; then
   exit 2
 fi
 
-# Only .env.local may supply the test settings.
+# Only .env.local may supply the settings it owns.
 while IFS= read -r name; do
   unset "$name"
-done < <(compgen -e | grep -E '^BRONTO_(IT|TEST)_' || true)
+done < <(sed -nE 's/^(BRONTO_[A-Z0-9_]+)=.*/\1/p' "$root/.env.local.example")
 
 set -a
 # shellcheck source=/dev/null
