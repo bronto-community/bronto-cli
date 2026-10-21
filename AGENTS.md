@@ -7,7 +7,7 @@ Instructions for coding agents working on this repo. [CONTRIBUTING.md](./CONTRIB
 All live testing goes to the **test org** in `.env.local`, never anywhere else. Setup: [CONTRIBUTING.md#local-test-environment](./CONTRIBUTING.md#local-test-environment).
 
 - **CLI:** run live commands through `scripts/test-env`, e.g. `scripts/test-env bronto dashboards list`. Don't use `--profile`, a default profile, or an API key from the environment: those may point at a real org.
-- **Browser:** use only the test browser (`make browser`, driven through the `bronto-test-browser` MCP server in `.mcp.json`). If it isn't logged in, ask the person to log in. Never type passwords, API keys or other credentials into a page.
+- **Browser:** use only the test browser (`make browser`, driven through the `bronto-test-browser` MCP server in `.mcp.json`). If it isn't logged in, ask the person to run `scripts/test-browser-login` (or log in by hand). Never run that script yourself, and never type passwords, API keys or other credentials into a page.
 - **Name what you create** with a `cli-test-` prefix, and delete only objects you created in this session. Never change or delete anything else in the org.
 - **API keys:** never create, update or delete them. When you need an id from a command's output, take it with `--jq`, never by parsing text with `sed`/`grep`: a parsing slip once deleted the CI key.
 - **Credentials store:** never run `bronto auth login`, `logout` or `switch`, never write to the OS keychain, and never point `HOME` at a fake directory in tests.
