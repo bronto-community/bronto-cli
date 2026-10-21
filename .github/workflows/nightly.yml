@@ -121,3 +121,39 @@ jobs:
                  /Test efficacy:/ {eff=$3}
                  /Mutator coverage:/ {print "| " pkg " | " eff " | " $3 " |"}' /tmp/mutation.log
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # report-failure turns a red nightly into an issue, so API drift, a dead
+  # key or a new vulnerability doesn't sit unnoticed in the Actions tab.
+  # One open issue collects every failure: a new failure comments on it
+  # instead of opening another. Close the issue once the cause is fixed.
+  # mutation-nightly is advisory (continue-on-error) and not watched here.
+  report-failure:
+    needs: [integration-nightly, vuln-nightly]
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - name: Open or update the nightly-failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          INTEGRATION: ${{ needs.integration-nightly.result }}
+          VULN: ${{ needs.vuln-nightly.result }}
+        run: |
+          body=$(printf 'Nightly run failed: %s\n\n| Job | Result |\n| --- | --- |\n| integration-nightly | %s |\n| vuln-nightly | %s |\n' \
+            "$RUN_URL" "$INTEGRATION" "$VULN")
+          gh label create nightly-failure --color B60205 \
+            --description "The scheduled nightly workflow failed" 2>/dev/null || true
+          existing=$(gh issue list --label nightly-failure --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "Nightly workflow failed" --label nightly-failure --body "$body"
+          fi
