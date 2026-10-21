@@ -8,7 +8,7 @@
     "validate": "mint validate"
   },
   "devDependencies": {
-    "mint": "4.2.952"
+    "mint": "4.2.1085"
   },
   "engines": {
     "node": "24.x"
