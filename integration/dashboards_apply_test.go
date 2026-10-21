@@ -36,21 +36,39 @@ func TestDashboardsApplyLive(t *testing.T) {
 	}
 	dsA, dsB := ".traces/"+serviceA, ".traces/"+serviceB
 
-	// Wait until the spans are searchable. Bronto caches a query's result
-	// by its content (#205), so a query evaluated before the data shows
-	// keeps answering zero; each attempt's where differs, and the
-	// dashboard's own queries are first evaluated after this.
+	// Wait until all three seeded spans, and the one error, are searchable
+	// in both datasets. Waiting for only some of them isn't enough: the
+	// dashboard's queries would then be evaluated on partial data, and
+	// Bronto caches a query's result by its content (#205), so they'd keep
+	// answering the partial count. Each attempt's where differs so the
+	// probe itself never reads a cached answer.
 	attempt := 0
 	PollUntil(t, seedPollBudget(), 10*time.Second, func() (bool, error) {
 		attempt++
-		probe := write("probe.yaml", fmt.Sprintf("name: probe\nwidgets:\n  - name: p\n    queries:\n"+
-			"      - {dataset: %s, select: count(*), where: \"$span.name != 'attempt-%d'\"}\n", dsA, attempt))
-		res, err := r.Run(t.Context(), "", "dashboards", "validate", "-f", probe, "--live", "--since", "1h")
+		res, err := r.Run(t.Context(), "", "search", fmt.Sprintf("$span.name != 'attempt-%d'", attempt),
+			"-d", dsA, "-d", dsB, "--since", "1h", "--select", "count(*)", "-g", "$span.status_code", "-o", "json")
 		if err != nil {
 			return false, err
 		}
-		if res.ExitCode != 0 || strings.Contains(res.Stderr, "every series is zero") {
+		if res.ExitCode != 0 {
 			return false, fmt.Errorf("attempt %d: exit %d: %s", attempt, res.ExitCode, res.Stderr)
+		}
+		var groups []struct {
+			Group string  `json:"group"`
+			Count float64 `json:"count"`
+		}
+		if err := json.Unmarshal([]byte(res.Stdout), &groups); err != nil {
+			return false, fmt.Errorf("attempt %d: %v", attempt, err)
+		}
+		total, errs := 0.0, 0.0
+		for _, g := range groups {
+			total += g.Count
+			if g.Group == "STATUS_CODE_ERROR" {
+				errs += g.Count
+			}
+		}
+		if total != 3 || errs != 1 {
+			return false, fmt.Errorf("attempt %d: %v spans, %v errors searchable; want 3 and 1", attempt, total, errs)
 		}
 		return true, nil
 	})

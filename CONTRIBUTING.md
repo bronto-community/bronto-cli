@@ -81,7 +81,7 @@ Two API keys drive it, with deliberately different scopes:
 BRONTO_IT_MGMT_KEY=... BRONTO_IT_INGEST_KEY=... make it
 ```
 
-**Be frugal with the shared account.** The suite is tuned to roughly 90–110 API requests per full run, and new tests are expected to hold that line:
+**Be frugal with the shared account.** A full run makes about 320 API requests (measured 2026-10-21, with the dashboard, metric definition and template tests), and the suite should stay under 350. A new test that would push it past that needs a reason in its PR. To measure, point `BRONTO_IT_BIN` at a wrapper that runs the real binary with `--debug` and counts its `* GET` / `* POST` / … lines. The rules that keep the count down:
 
 - Reuse the seed fixture (`seededData` / `seededLogID` / `seededProbes` in `seed_test.go`) instead of seeding and waiting on your own data. One batch is seeded per test binary, its `log_id` is resolved once, and one readiness poll covers the batch plus the ride-along probe events.
 - Poll through `PollUntil` (`harness.go`) so your wait inherits the shared backoff (first delay, then ×1.5 up to a 20s ceiling). Fixed short cadences against Bronto's ingest-to-search eventual consistency spend most of their requests asking a question that cannot yet be answered — an earlier flat-5s version of these polls, plus a flat-3s `exports --wait`, was most of a ~300-request run.
