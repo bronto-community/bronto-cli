@@ -60,9 +60,11 @@ $ bronto monitors get "High 5xx rate on checkout"
 At a terminal, `list` prints a table of the main columns and `get` prints the whole
 object as JSON.
 
-Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `metrics`, `metrics definitions`, `exports`.
+Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `dashboards templates`, `widgets templates`, `metrics`, `metrics definitions`, `exports`.
 `collections`, `log-views`, and `permissions` are list-only, and `metrics` is read-only
-(`list` and `get`, plus `top-keys`). The generated
+(`list` and `get`, plus `top-keys`). Bronto's template catalogs are read-only too:
+`bronto dashboards templates` (`list`, `get`, and `show`) and `bronto widgets templates`
+(`list` and `get`). The generated
 [command reference](/cli/reference/commands) lists the exact verbs for each resource.
 
 | Resource | Try | Platform docs | API reference |
@@ -72,7 +74,7 @@ Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `
 | log views (list-only) | `bronto log-views list` |  | [Logs](https://docs.bronto.io/api-reference/logs/retrieve-a-list-of-log-views) |
 | parsers | `bronto parsers list` | [Custom Parser](https://docs.bronto.io/core-features/custom-parser) |  |
 | monitors, templates, downtimes ([guide](/cli/guides/monitors-and-dashboards)) | `bronto monitors list` | [Monitors](https://docs.bronto.io/core-features/monitors) | [Monitors](https://docs.bronto.io/api-reference/monitors/retrieve-monitors) |
-| dashboards, widgets, metric definitions ([guide](/cli/guides/monitors-and-dashboards)) | `bronto dashboards list` | [Dashboards](https://docs.bronto.io/Search-and-Visualize/Dashboards) | [Dashboards](https://docs.bronto.io/api-reference/dashboards/get-all-dashboards-for-an-organisation) |
+| dashboards, widgets, metric definitions, and their templates ([guide](/cli/guides/monitors-and-dashboards)) | `bronto dashboards list` | [Dashboards](https://docs.bronto.io/Search-and-Visualize/Dashboards) | [Dashboards](https://docs.bronto.io/api-reference/dashboards/get-all-dashboards-for-an-organisation) |
 | saved searches | `bronto saved-searches list` | [Saved Searches](https://docs.bronto.io/Search-and-Visualize/Saved-Searches) |  |
 | export jobs ([guide](/cli/guides/exports)) | `bronto exports list` |  | [Exports](https://docs.bronto.io/api-reference/exports/retrieve-a-list-of-exports) |
 | metrics and their attribute keys | `bronto metrics list` | [Explore Metrics](https://docs.bronto.io/metrics/explore-metrics) | [Metrics](https://docs.bronto.io/api-reference/metrics/retrieve-the-list-of-metrics-metadata-sent-to-bronto) |

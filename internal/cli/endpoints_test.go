@@ -101,6 +101,9 @@ var endpointProbes = map[string][][]string{
 	"bronto widgets remove-widget":           {{"widgets", "remove-widget", probeID, probeID}},
 	"bronto metrics definitions query":       {{"metrics", "definitions", "query", probeID}, {"metrics", "definitions", "query", "d1"}},
 	"bronto widgets query":                   {{"widgets", "query", probeID}},
+	"bronto dashboards templates show":       {{"dashboards", "templates", "show", probeID}, {"dashboards", "templates", "show", "t1"}},
+	"bronto dashboards create": {{"dashboards", "create", "--template", probeID},
+		{"dashboards", "create", "--template", "t1"}},
 }
 
 // unprobedCommands can't be driven in-process; their inventory entries are
@@ -172,6 +175,10 @@ func recordRequests(t *testing.T, args []string) []string {
 			_, _ = fmt.Fprintf(w, `{"definitions":[{"id":%q,"name":"d1"}]}`, probeID)
 		case "/widgets/" + probeID:
 			_, _ = fmt.Fprintf(w, `{"id":%q,"name":"w1","metric_ids":[%q]}`, probeID, probeID)
+		case "/dashboards/templates":
+			_, _ = fmt.Fprintf(w, `{"templates":[{"id":%q,"name":"t1","parameters":{}}]}`, probeID)
+		case "/dashboards/templates/" + probeID:
+			_, _ = fmt.Fprintf(w, `{"id":%q,"name":"t1","parameters":{}}`, probeID)
 		case "/forward-configs":
 			_, _ = fmt.Fprintf(w, `{"forward_configs":[{"id":%q,"name":"f1","destination":{"bucket":"b"}}]}`, probeID)
 		default:

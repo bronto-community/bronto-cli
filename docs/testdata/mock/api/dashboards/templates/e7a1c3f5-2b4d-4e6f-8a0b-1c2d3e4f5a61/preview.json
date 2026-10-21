@@ -1,0 +1,73 @@
+{
+  "id": "00000000-0000-4000-8000-0000000000aa",
+  "name": "HTTP service overview",
+  "description": "Request volume and 5xx errors for an HTTP service",
+  "template": {
+    "id": "e7a1c3f5-2b4d-4e6f-8a0b-1c2d3e4f5a61",
+    "arguments": {"fromExpr": {"literal": "{{fromExpr}}"}}
+  },
+  "widget_ids": ["00000000-0000-4000-8000-0000000000ab", "00000000-0000-4000-8000-0000000000ac"],
+  "widgets": [
+    {
+      "id": "00000000-0000-4000-8000-0000000000ab",
+      "name": "Requests",
+      "type": "line",
+      "metric_ids": ["00000000-0000-4000-8000-0000000000ad"],
+      "metrics": [
+        {
+          "id": "00000000-0000-4000-8000-0000000000ad",
+          "name": "Requests",
+          "formulas": [],
+          "queries": [
+            {
+              "name": "requests",
+              "select": ["count(*)"],
+              "where": "",
+              "groups": [],
+              "aggregation": [{"time": "count", "reduce_to": "avg"}],
+              "from_expr": "{{fromExpr}}"
+            }
+          ]
+        }
+      ],
+      "widgets": [],
+      "aux": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000000ac",
+      "name": "5xx rate by path",
+      "type": "top-list",
+      "metric_ids": ["00000000-0000-4000-8000-0000000000ae"],
+      "metrics": [
+        {
+          "id": "00000000-0000-4000-8000-0000000000ae",
+          "name": "5xx rate by path",
+          "formulas": [{"name": "error_rate", "expression": "errors / total * 100"}],
+          "queries": [
+            {
+              "name": "errors",
+              "select": ["count(*)"],
+              "where": "status >= 500",
+              "groups": ["path"],
+              "aggregation": [{"time": "count", "reduce_to": "avg"}],
+              "from_expr": "{{fromExpr}}"
+            },
+            {
+              "name": "total",
+              "select": ["count(*)"],
+              "where": "",
+              "groups": ["path"],
+              "aggregation": [{"time": "count", "reduce_to": "avg"}],
+              "from_expr": "{{fromExpr}}"
+            }
+          ]
+        }
+      ],
+      "widgets": [],
+      "aux": {}
+    }
+  ],
+  "layout": {"widget_layouts": []},
+  "tags": {},
+  "metadata": {"created_at": 1777890000000}
+}

@@ -104,6 +104,8 @@ Every code `bronto` emits is listed below. Scripts should match on `code`.
 | `usage_missing_fields` | 2 | an `update` is missing required fields, such as `bronto dashboards update` without `name` or `layout` |
 | `usage_conflicting_fields` | 2 | a body combines fields the API takes one at a time, such as `name` and `layout` in `bronto dashboards update` |
 | `usage_unsupported_field` | 2 | a body carries a field the API would ignore, such as `widget_ids` in `bronto dashboards create` |
+| `usage_invalid_param` | 2 | a `--param` value isn't `key=value`, or repeats a key |
+| `usage_unknown_param`, `usage_missing_param` | 2 | a `--param` key the dashboard template doesn't declare, or one of its parameters has no value |
 | `usage_invalid_method` | 2 | `bronto api` got an unsupported HTTP method |
 | `usage_invalid_region` | 2 | `--region` isn't `eu` or `us` |
 | `usage_invalid_tag` | 2 | a `bronto send --tag` isn't `key=value` with a non-empty key |
@@ -126,6 +128,7 @@ Every code `bronto` emits is listed below. Scripts should match on `code`.
 | `network_error` | 1 | the host couldn't be reached (retryable) |
 | `api_server_error` | 1 | the API returned a 5xx (retryable) |
 | `api_error` | 1 | any other API error status |
+| `api_unexpected_response` | 1 | the API answered with a body the command can't read |
 | `query_unknown_field` | 1 | `bronto query check --strict` found unknown fields |
 | `monitor_check_failed` | 1 | `bronto monitors check` found problems |
 | `forward_destination_failed` | 1 | `bronto forward-configs test` found that Bronto can't write to the S3 destination |

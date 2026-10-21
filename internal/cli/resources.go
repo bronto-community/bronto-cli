@@ -310,6 +310,20 @@ var resourceRegistry = []resourceDesc{
 		CreateFields: append(templateExampleFields("threshold=\"1000\""), "this_template_tags=<json>"),
 		UpdateFields: templateExampleFields("threshold=1000"),
 		Columns:      []string{"name", "description", "monitor_type", "window", "threshold", "id"}},
+	// Bronto's shared template catalogs: read-only, not in the spec,
+	// live-verified 2026-10-21 (EU). GET /dashboards/templates lists 30
+	// full templates under "templates" and /widgets/templates 345 under
+	// "widgets"; GET /{id} works for both. dashboards templates also has
+	// a hand-written show, and dashboards create --template instantiates
+	// one (dashtemplates.go).
+	{Name: "templates", AttachTo: "dashboards", Base: "/dashboards/templates",
+		Singular: "dashboard template", NoCreate: true, NoUpdate: true, NoDelete: true,
+		ListRowKeys: []string{"templates"}, ListTransform: templateListRows,
+		Columns: []string{"name", "parameters", "widgets", "id"}},
+	{Name: "templates", AttachTo: "widgets", Base: "/widgets/templates",
+		Singular: "widget template", NoCreate: true, NoUpdate: true, NoDelete: true,
+		ListRowKeys: []string{"widgets"}, ListTransform: templateListRows,
+		Columns: []string{"name", "type", "parameters", "id"}},
 	// Create and update need one of the spec's oneOf variants: name,
 	// description, from (monitor ids) and a static_time_range or
 	// dynamic_time_range. Live rows carry downtime_id, though the spec's

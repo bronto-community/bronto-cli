@@ -17,6 +17,12 @@ import (
 // step with that set; TestEveryInventoriedEndpointHasURLTemplate fails if
 // a path the CLI calls has no template.
 var undocumentedURLTemplates = []string{
+	// Template catalogs, verified live 2026-10-21. The literal "templates"
+	// outranks the spec's /dashboards/{dashboardId} and /widgets/{id}.
+	"/dashboards/templates",
+	"/dashboards/templates/{templateId}",
+	"/dashboards/templates/{templateId}/instance",
+	"/dashboards/templates/{templateId}/preview",
 	"/logs/{logId}", // the spec documents only the nested /logs/{logId}/... paths
 	// The literal "definitions" outranks the spec's /metrics/{metric_id}.
 	"/metrics/definitions",
@@ -27,6 +33,8 @@ var undocumentedURLTemplates = []string{
 	"/saved-searches",
 	"/saved-searches/{savedSearchId}",
 	"/usage",
+	"/widgets/templates",
+	"/widgets/templates/{templateId}",
 }
 
 // urlTemplates holds every known template, split into path segments and

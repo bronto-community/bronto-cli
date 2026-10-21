@@ -185,8 +185,13 @@ func newDetachFromTemplateCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			// Success returns the updated Dashboard; --dry-run returns the
-			// request plan. Print either through the normal engine.
+			// Live (2026-10-21) success is a 204 with no body: confirm on
+			// stderr instead of printing "null". A body (the updated
+			// dashboard) or the --dry-run plan prints through the engine.
+			if payload == nil {
+				app.Notef("Detached dashboard %s from its template.\n", args[0])
+				return nil
+			}
 			p, err := app.Printer(false)
 			if err != nil {
 				return err

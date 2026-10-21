@@ -63,6 +63,7 @@ var flagClasses = map[string]argClass{
 	"since":         argValue,
 	"storage-class": argValue,
 	"time-range":    argValue,
+	"template":      argValue, // id or name
 	"to":            argValue, // RFC3339 time
 	"window":        argValue,
 
@@ -87,6 +88,7 @@ var flagClasses = map[string]argClass{
 	"eq": argPairs, "ne": argPairs, "gt": argPairs, "ge": argPairs,
 	"lt": argPairs, "le": argPairs, "match": argPairs, "nmatch": argPairs,
 	"field": argPairs,
+	"param": argPairs, // values are query expressions
 	"tag":   argPairs,
 
 	"base-url":   argURL,
@@ -110,6 +112,7 @@ var argPlaceholders = map[string]argClass{
 	"name-filter":    argValue,
 	"parser":         argValue,
 	"profile":        argValue,
+	"template":       argValue,
 	"trace-id":       argValue,
 	"widget":         argValue,
 
