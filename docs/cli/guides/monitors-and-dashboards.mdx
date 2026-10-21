@@ -1,6 +1,6 @@
 ---
 title: Monitors and dashboards
-description: Inspect, mute, and lint monitors, schedule downtimes, and assemble dashboards from widgets.
+description: Inspect, mute, and lint monitors, schedule downtimes, and assemble dashboards from widgets or templates.
 ---
 
 Monitors and dashboards follow the [shared resource pattern](/cli/guides/resources). This
@@ -186,8 +186,8 @@ bronto dashboards detach-from-template "Checkout overview"
 - `bronto dashboards attach-widgets` adds widgets by id or unique name. `--widget-ids`
   takes a comma-separated list or can be repeated.
 - `bronto dashboards remove-widget` takes the dashboard and one widget.
-- `bronto dashboards detach-from-template` unlinks a dashboard created from a template,
-  and prints the updated dashboard.
+- `bronto dashboards detach-from-template` unlinks a dashboard created from a
+  [template](#start-from-a-template) and confirms on stderr.
 
 `attach-widgets` and `remove-widget` confirm on stderr, because the API answers them
 with no body. With `-o json`, `-o jsonl` or `--jq` they print the updated dashboard
@@ -214,6 +214,95 @@ prints the updated dashboard with `-o json`:
 bronto dashboards update "Checkout overview" -f name="Checkout health" -o json
 bronto dashboards update "Checkout health" --input layout.json
 ```
+
+### Start from a template
+
+Bronto ships ready-made dashboard templates, for example for AWS services, Nginx, or
+OpenTelemetry host metrics. They are shared, read-only content. List them, then show one
+to see what it would create: its parameters, its widgets, and the queries behind each
+widget.
+
+{/* test: tty */}
+```console
+$ bronto dashboards templates list
+NAME                   PARAMETERS  WIDGETS  ID
+HTTP service overview  fromExpr    2        e7a1c3f5-2b4d-4e6f-8a0b-1c2d3e4f5a61
+AWS Lambda                         3        b0d4f6c8-5e7a-4b9c-9d3e-4f5a6b7c8d91
+$ bronto dashboards templates show "HTTP service overview"
+HTTP service overview
+id: e7a1c3f5-2b4d-4e6f-8a0b-1c2d3e4f5a61
+Request volume and 5xx errors for an HTTP service
+
+Parameters (pass with --param key=value):
+  fromExpr  string  metric fromExpr
+
+Widgets (2):
+
+  Requests (line)
+    query requests
+      select:    count(*)
+      where:     (none)
+      from_expr: {{fromExpr}}
+      groups:    (none)
+
+  5xx rate by path (top-list)
+    query errors
+      select:    count(*)
+      where:     status >= 500
+      from_expr: {{fromExpr}}
+      groups:    path
+    query total
+      select:    count(*)
+      where:     (none)
+      from_expr: {{fromExpr}}
+      groups:    path
+    formula error_rate: errors / total * 100
+```
+
+`bronto dashboards templates show` takes an id or a unique name. Bronto renders the
+template without saving anything. A parameter you don't pass shows as a `{{name}}`
+placeholder, here in each query's `from_expr`. Pass `--param key=value` to see the
+queries with your value filled in. With `-o json` the command prints the whole rendered
+template, with the template's `parameters` added.
+
+To create the dashboard, pass the template and a value for each parameter:
+
+{/* test: tty */}
+```console
+$ bronto dashboards create --template "HTTP service overview" --param fromExpr="\"collection\" = 'prod' AND \"dataset\" = 'checkout-service'" --dry-run
+{
+  "body": {
+    "arguments": {
+      "fromExpr": {
+        "literal": "\"collection\" = 'prod' AND \"dataset\" = 'checkout-service'"
+      }
+    }
+  },
+  "dry_run": true,
+  "method": "POST",
+  "path": "/dashboards/templates/e7a1c3f5-2b4d-4e6f-8a0b-1c2d3e4f5a61/instance"
+}
+```
+
+Drop `--dry-run` to create it.
+
+Bronto copies the template's widgets and metric definitions into new objects and links the
+dashboard to the template, which `bronto dashboards get` shows as `template.id`. A few
+things to know:
+
+- `--param` keys must be parameters the template declares, and each parameter needs a
+  value. Otherwise the command lists the valid keys and exits with code 2. Some templates
+  ignore a parameter and query fixed datasets; `show` tells you which.
+- The dashboard takes the template's name. There's no name override, and a dashboard
+  linked to a template can't be renamed. Run `bronto dashboards detach-from-template`
+  first, then `bronto dashboards update <dashboard> -f name=<name>`.
+- Deleting the dashboard leaves the copied widgets and metric definitions in place. To
+  remove them too, note the widget ids from the `create` output first, then delete each
+  with `bronto widgets delete`, and its definitions (the widget's `metric_ids`) with
+  `bronto metrics definitions delete`.
+
+`bronto widgets templates list` and `bronto widgets templates get <id>` show the
+individual widget templates the dashboard templates are built from.
 
 ## Build a widget from a metric definition
 

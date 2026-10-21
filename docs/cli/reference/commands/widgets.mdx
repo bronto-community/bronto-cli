@@ -28,6 +28,7 @@ bronto widgets <command> [flags]
 | [`bronto widgets list`](/cli/reference/commands/widgets#bronto-widgets-list) | List widgets |
 | [`bronto widgets query`](/cli/reference/commands/widgets#bronto-widgets-query) | Evaluate the metric definitions a widget plots |
 | [`bronto widgets remove-widget`](/cli/reference/commands/widgets#bronto-widgets-remove-widget) | Remove a widget from a group widget |
+| [`bronto widgets templates`](/cli/reference/commands/widgets#bronto-widgets-templates) | Manage widget templates |
 | [`bronto widgets update`](/cli/reference/commands/widgets#bronto-widgets-update) | Update a widget |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
@@ -191,6 +192,55 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto widgets remove-widget <widget> <widget>
+```
+
+## bronto widgets templates
+
+Manage widget templates
+
+```sh
+bronto widgets templates <command> [flags]
+```
+
+#### Subcommands
+
+| Command | Description |
+| --- | --- |
+| [`bronto widgets templates get`](/cli/reference/commands/widgets#bronto-widgets-templates-get) | Get a widget template by ID |
+| [`bronto widgets templates list`](/cli/reference/commands/widgets#bronto-widgets-templates-list) | List widget templates |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+## bronto widgets templates get
+
+Get a widget template by ID
+
+```sh
+bronto widgets templates get <id> [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto widgets templates get <id>
+```
+
+## bronto widgets templates list
+
+List widget templates
+
+```sh
+bronto widgets templates list [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto widgets templates list
 ```
 
 ## bronto widgets update

@@ -73,6 +73,12 @@ var handWrittenEndpoints = []EndpointPattern{
 	// definitions through the definitions list.
 	{Pattern: "/widgets/{*}", Command: "bronto widgets query"},
 	{Pattern: "/metrics/definitions", Command: "bronto widgets query"},
+	// templates show and create --template read the template (by id, or
+	// through the list for a name) for its parameters.
+	{Pattern: "/dashboards/templates", Command: "bronto dashboards templates show / dashboards create"},
+	{Pattern: "/dashboards/templates/{*}", Command: "bronto dashboards templates show / dashboards create"},
+	{Pattern: "/dashboards/templates/{*}/preview", Command: "bronto dashboards templates show"},
+	{Pattern: "/dashboards/templates/{*}/instance", Command: "bronto dashboards create"},
 }
 
 // EndpointInventory returns every management-API path pattern the CLI

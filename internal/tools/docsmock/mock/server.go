@@ -242,6 +242,7 @@ var idKeys = []string{"id", "log_id", "group_id", "role_id", "metric_id", "expor
 //	GET    /a/b         -> api/a/b.json
 //	GET    /a/<id>      -> the row of api/a.json whose id is <id>
 //	POST   /a           -> 201, body echoed back with a fixed new id
+//	POST   /a/<id>/preview -> 200, api/a/<id>/preview.json
 //	PUT/PATCH /a/<id>   -> 200, the row merged with the body
 //	DELETE /a/<id>      -> 204
 //	POST/PUT/PATCH a sub-resource of a known row (/monitors/<id>/status,
@@ -254,6 +255,14 @@ func (s *Server) serveResource(w http.ResponseWriter, r *http.Request) {
 	}
 	file := filepath.Join(s.dir, "api", filepath.FromSlash(clean)+".json")
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
+		if doc, err := s.loadFixture(file); err == nil {
+			writeJSON(w, http.StatusOK, doc)
+			return
+		}
+	}
+	// A read-only POST with a fixture of its own, such as
+	// /dashboards/templates/<id>/preview, answers with that fixture.
+	if r.Method == http.MethodPost && strings.HasSuffix(clean, "/preview") {
 		if doc, err := s.loadFixture(file); err == nil {
 			writeJSON(w, http.StatusOK, doc)
 			return

@@ -206,3 +206,18 @@ func TestUnhandledAndAuth(t *testing.T) {
 		t.Errorf("last_heartbeat_at = %v, want epoch millis", meta["last_heartbeat_at"])
 	}
 }
+
+// TestTemplatePreview pins the read-only POST route behind
+// `bronto dashboards templates show`: the preview answers with its own
+// fixture instead of echoing the body back as a create.
+func TestTemplatePreview(t *testing.T) {
+	s, _ := newTestServer(t)
+	code, body := do(t, s, http.MethodPost, "/dashboards/templates/e7a1c3f5-2b4d-4e6f-8a0b-1c2d3e4f5a61/preview",
+		map[string]any{"arguments": map[string]any{}})
+	if code != http.StatusOK || body["name"] != "HTTP service overview" {
+		t.Fatalf("preview = %d %v", code, body)
+	}
+	if ws, _ := body["widgets"].([]any); len(ws) != 2 {
+		t.Fatalf("preview widgets = %v", body["widgets"])
+	}
+}

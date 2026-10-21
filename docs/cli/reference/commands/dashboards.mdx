@@ -28,6 +28,7 @@ bronto dashboards <command> [flags]
 | [`bronto dashboards get`](/cli/reference/commands/dashboards#bronto-dashboards-get) | Get a dashboard by ID |
 | [`bronto dashboards list`](/cli/reference/commands/dashboards#bronto-dashboards-list) | List dashboards |
 | [`bronto dashboards remove-widget`](/cli/reference/commands/dashboards#bronto-dashboards-remove-widget) | Remove a widget from a dashboard |
+| [`bronto dashboards templates`](/cli/reference/commands/dashboards#bronto-dashboards-templates) | Manage dashboard templates |
 | [`bronto dashboards update`](/cli/reference/commands/dashboards#bronto-dashboards-update) | Update a dashboard |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
@@ -59,7 +60,17 @@ bronto dashboards attach-widgets <dashboard> --widget-ids <id>,<id>
 
 ## bronto dashboards create
 
-Create a dashboard
+Create a dashboard from a request body (-f fields or --input), or from one of
+Bronto's dashboard templates with --template.
+
+With --template (an id or unique name, see 'bronto dashboards templates list'),
+Bronto copies the template's widgets and metric definitions into new objects
+and links the dashboard to the template. Pass a value for each of the template's
+parameters with --param key=value ('bronto dashboards templates show' lists them).
+The dashboard takes the template's name: the API has no name override, and a
+dashboard linked to a template can't be renamed until you run
+'bronto dashboards detach-from-template'. Deleting the dashboard later leaves
+the copied widgets and metric definitions in place.
 
 ```sh
 bronto dashboards create [flags]
@@ -71,6 +82,8 @@ bronto dashboards create [flags]
 | --- | --- | --- | --- | --- |
 | `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
 | `--input` |  | string |  | read the request body from a file, or - for stdin |
+| `--param` |  | stringArray |  | with --template: template parameter as key=value (repeatable) |
+| `--template` |  | string |  | create the dashboard from this dashboard template (id or unique name) |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
 
@@ -79,6 +92,7 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 ```sh
 bronto dashboards create -f name=<name>
 bronto dashboards create --input body.json
+bronto dashboards create --template "Nginx Overview" --param fromExpr="\"collection\" = 'nginx'"
 ```
 
 ## bronto dashboards delete
@@ -168,6 +182,88 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto dashboards remove-widget <dashboard> <widget>
+```
+
+## bronto dashboards templates
+
+Manage dashboard templates
+
+```sh
+bronto dashboards templates <command> [flags]
+```
+
+#### Subcommands
+
+| Command | Description |
+| --- | --- |
+| [`bronto dashboards templates get`](/cli/reference/commands/dashboards#bronto-dashboards-templates-get) | Get a dashboard template by ID |
+| [`bronto dashboards templates list`](/cli/reference/commands/dashboards#bronto-dashboards-templates-list) | List dashboard templates |
+| [`bronto dashboards templates show`](/cli/reference/commands/dashboards#bronto-dashboards-templates-show) | Show a dashboard template with its widgets and queries |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+## bronto dashboards templates get
+
+Get a dashboard template by ID
+
+```sh
+bronto dashboards templates get <id> [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto dashboards templates get <id>
+```
+
+## bronto dashboards templates list
+
+List dashboard templates
+
+```sh
+bronto dashboards templates list [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto dashboards templates list
+```
+
+## bronto dashboards templates show
+
+Show a dashboard template, by id or unique name, as the dashboard it would create:
+its parameters, each widget and each widget's queries and formulas.
+
+The template is rendered by Bronto's preview, which saves nothing. A parameter
+you don't pass with --param shows as a &#123;&#123;name&#125;&#125; placeholder in the queries.
+Pass the same --param values to 'bronto dashboards create --template'.
+
+-o json prints the preview response, with the template's id and its parameters
+added. The widget and metric definition ids inside it are placeholders.
+
+```sh
+bronto dashboards templates show <template> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--param` |  | stringArray |  | template parameter as key=value, filled into the queries (repeatable) |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto dashboards templates show "Nginx Overview"
+bronto dashboards templates show "Nginx Overview" --param fromExpr="\"collection\" = 'nginx'"
+bronto dashboards templates show <id> -o json
 ```
 
 ## bronto dashboards update

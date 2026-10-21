@@ -164,13 +164,22 @@ var specIDBaseExceptions = map[string]bool{}
 // published spec, which has only an empty metric-definitions tag: list,
 // get, create and delete live-verified 2026-10-21 (EU), and covered on
 // every PR by integration TestMetricDefinitionsLive.
+//
+// The template catalogs (dashboards templates, widgets templates, and
+// dashboards create --template) have never been in a published spec:
+// GET /dashboards/templates[/{id}], POST /dashboards/templates/{id}/preview
+// and /instance, and GET /widgets/templates[/{id}] verified live
+// 2026-10-21 (EU), and covered on every PR by integration
+// TestDashboardTemplatesLive.
 var specLiveButUndocumented = map[string]bool{
-	"/metrics/definitions": true,
-	"/dashboards":          true,
-	"/saved-searches":      true,
-	"/parsers":             true,
-	"/usage":               true,
-	"/organizations":       true,
+	"/metrics/definitions":  true,
+	"/dashboards":           true,
+	"/dashboards/templates": true,
+	"/saved-searches":       true,
+	"/parsers":              true,
+	"/usage":                true,
+	"/organizations":        true,
+	"/widgets/templates":    true,
 }
 
 // normalizeParams rewrites every {param} segment to a bare {} so patterns

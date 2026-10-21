@@ -1,0 +1,33 @@
+{
+  "templates": [
+    {
+      "id": "e7a1c3f5-2b4d-4e6f-8a0b-1c2d3e4f5a61",
+      "name": "HTTP service overview",
+      "description": "Request volume and 5xx errors for an HTTP service",
+      "parameters": {"fromExpr": {"type": "string", "description": "metric fromExpr"}},
+      "widgets": [
+        {"id": "f8b2d4a6-3c5e-4f7a-9b1c-2d3e4f5a6b71", "arguments": {"from": {"input": "fromExpr"}}},
+        {"id": "a9c3e5b7-4d6f-4a8b-8c2d-3e4f5a6b7c81", "arguments": {"from": {"input": "fromExpr"}}}
+      ],
+      "layout": {"widget_layouts": []},
+      "tags": {},
+      "this_template_tags": {"log_type": "http"},
+      "metadata": {"created_at": 1777890000000}
+    },
+    {
+      "id": "b0d4f6c8-5e7a-4b9c-9d3e-4f5a6b7c8d91",
+      "name": "AWS Lambda",
+      "description": "Invocations, errors and duration from CloudWatch",
+      "parameters": {},
+      "widgets": [
+        {"id": "c1e5a7d9-6f8b-4cad-8e4f-5a6b7c8d9ea1", "arguments": {}},
+        {"id": "d2f6b8ea-7a9c-4dbe-9f5a-6b7c8d9eafb1", "arguments": {}},
+        {"id": "e3a7c9fb-8bad-4ecf-8a6b-7c8d9eafb0c1", "arguments": {}}
+      ],
+      "layout": {"widget_layouts": []},
+      "tags": {},
+      "this_template_tags": {},
+      "metadata": {"created_at": 1777890000000}
+    }
+  ]
+}
