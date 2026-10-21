@@ -58,7 +58,7 @@ func TestDashboardsApplyLive(t *testing.T) {
 			Count float64 `json:"count"`
 		}
 		if err := json.Unmarshal([]byte(res.Stdout), &groups); err != nil {
-			return false, fmt.Errorf("attempt %d: %v", attempt, err)
+			return false, fmt.Errorf("attempt %d: %w", attempt, err)
 		}
 		total, errs := 0.0, 0.0
 		for _, g := range groups {
