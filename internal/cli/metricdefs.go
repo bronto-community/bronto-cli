@@ -502,11 +502,14 @@ func seriesOrder(entries map[string]any) []string {
 			}
 		}
 	}
+	// Not every entry carries the definition's queries and formulas (live,
+	// often only one does), so scan all of them, in sorted key order to
+	// stay deterministic; add skips names it has already placed.
+	keys := sortedKeys(entries)
 	for _, key := range []string{"queries", "formulas"} {
-		for _, e := range entries {
-			if m, ok := e.(map[string]any); ok {
+		for _, k := range keys {
+			if m, ok := entries[k].(map[string]any); ok {
 				add(m[key])
-				break
 			}
 		}
 	}
@@ -520,21 +523,32 @@ func seriesOrder(entries map[string]any) []string {
 	return append(order, rest...)
 }
 
-// unitConfig returns the unit_config of the query named name, from
-// whichever entry carries the definition's queries.
+// unitConfig returns the unit_config of the query or formula named name,
+// from whichever entry carries the definition's queries and formulas.
 func unitConfig(entries map[string]any, name string) map[string]any {
-	for _, e := range entries {
-		entry, _ := e.(map[string]any)
-		qs, _ := entry["queries"].([]any)
-		for _, q := range qs {
-			m, _ := q.(map[string]any)
-			if n, _ := m["name"].(string); n == name {
-				u, _ := m["unit_config"].(map[string]any)
-				return u
+	for _, k := range sortedKeys(entries) {
+		entry, _ := entries[k].(map[string]any)
+		for _, key := range []string{"queries", "formulas"} {
+			list, _ := entry[key].([]any)
+			for _, item := range list {
+				m, _ := item.(map[string]any)
+				if n, _ := m["name"].(string); n == name {
+					u, _ := m["unit_config"].(map[string]any)
+					return u
+				}
 			}
 		}
 	}
 	return nil
+}
+
+func sortedKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func seriesPoints(v any) []float64 {

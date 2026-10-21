@@ -46,20 +46,41 @@ func TestTimeseriesRowsFollowDefinitionOrder(t *testing.T) {
 	if err := json.Unmarshal([]byte(liveTimeseries), &payload); err != nil {
 		t.Fatal(err)
 	}
-	rows := timeseriesRows(payload, "")
-	var got []string
-	for _, r := range rows {
-		got = append(got, r["series"].(string)+"/"+r["group"].(string)+"/"+r["stat"].(string))
-	}
+	// Only one entry carries queries/formulas, and map iteration order is
+	// random: repeat so a first-entry-only scan can't pass by luck.
+	var rows []map[string]any
 	want := []string{"requests//count", "latency/GET /logs/p95", "latency/POST /pay/p95", "rate//avg"}
-	if strings.Join(got, ",") != strings.Join(want, ",") {
-		t.Fatalf("rows = %v, want %v", got, want)
+	for range 50 {
+		rows = timeseriesRows(payload, "")
+		var got []string
+		for _, r := range rows {
+			got = append(got, r["series"].(string)+"/"+r["group"].(string)+"/"+r["stat"].(string))
+		}
+		if strings.Join(got, ",") != strings.Join(want, ",") {
+			t.Fatalf("rows = %v, want %v", got, want)
+		}
 	}
 	if rows[0]["value"] != 204.0 || rows[0]["trend"] != "█▁▄" {
 		t.Fatalf("requests row = %v", rows[0])
 	}
 	if rows[1]["unit"] == nil || rows[0]["unit"] != nil {
 		t.Fatalf("unit_config should attach to latency only: %v / %v", rows[0], rows[1])
+	}
+}
+
+// A formula's own unit_config applies to its series, like a query's.
+func TestTimeseriesRowsFormulaUnit(t *testing.T) {
+	src := strings.Replace(liveTimeseries,
+		`{"name": "rate", "expression": "requests / 60"}`,
+		`{"name": "rate", "expression": "requests / 60", "unit_config": {"type": "time", "input": "nanoseconds"}}`, 1)
+	var payload any
+	if err := json.Unmarshal([]byte(src), &payload); err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range timeseriesRows(payload, "") {
+		if r["series"] == "rate" && r["unit"] == nil {
+			t.Fatalf("formula unit_config not applied: %v", r)
+		}
 	}
 }
 
