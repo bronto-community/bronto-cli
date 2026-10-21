@@ -36,6 +36,32 @@
         }
       ],
       "metadata": {"created_at": 1781023500000, "created_by": {"id": "ada@example.com", "type": "USER"}}
+    },
+    {
+      "id": "8e3b0c4d-5f6a-4c7d-8e9f-1a2b3c4d5e53",
+      "name": "Checkout error rate",
+      "description": "",
+      "metric_type": "METRIC_TYPE_UNSPECIFIED",
+      "formulas": [{"name": "checkout_error_rate", "expression": "errors / total * 100", "aggregation": {"reduce_to": "avg"}}],
+      "queries": [
+        {
+          "name": "errors",
+          "select": ["count(*)"],
+          "where": "$span.status_code = 'STATUS_CODE_ERROR'",
+          "groups": [],
+          "aggregation": [{"time": "count", "reduce_to": "avg"}],
+          "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'"
+        },
+        {
+          "name": "total",
+          "select": ["count(*)"],
+          "where": "",
+          "groups": [],
+          "aggregation": [{"time": "count", "reduce_to": "avg"}],
+          "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'"
+        }
+      ],
+      "metadata": {"created_at": 1781023500000, "created_by": {"id": "ada@example.com", "type": "USER"}}
     }
   ]
 }

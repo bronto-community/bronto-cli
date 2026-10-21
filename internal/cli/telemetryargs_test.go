@@ -42,7 +42,7 @@ func TestTelemetryClassifiesEveryArg(t *testing.T) {
 		fields := strings.Fields(c.Use)
 		for i := 1; i < len(fields); i++ {
 			f := fields[i]
-			if strings.HasPrefix(f, "--") || strings.HasPrefix(f, "[--") {
+			if strings.HasPrefix(f, "-") || strings.HasPrefix(f, "[-") {
 				i++
 				continue
 			}

@@ -101,6 +101,8 @@ Every code `bronto` emits is listed below. Scripts should match on `code`.
 | `usage_missing_body` | 2 | `create` or `update` got neither `--input` nor `-f` |
 | `usage_invalid_body` | 2 | the `--input` body is empty or isn't a JSON object or array |
 | `usage_input_file` | 2 | an input file can't be read, or isn't valid JSON |
+| `usage_invalid_manifest` | 2 | a `bronto dashboards apply` or `validate` manifest can't be read or is invalid; the message lists each problem with its file and line |
+| `usage_manifest_conflict` | 2 | a manifest can't be applied to the account as it is, for example a `ref:` names no widget or several |
 | `usage_missing_fields` | 2 | an `update` is missing required fields, such as `bronto dashboards update` without `name` or `layout` |
 | `usage_conflicting_fields` | 2 | a body combines fields the API takes one at a time, such as `name` and `layout` in `bronto dashboards update` |
 | `usage_unsupported_field` | 2 | a body carries a field the API would ignore, such as `widget_ids` in `bronto dashboards create` |
@@ -131,6 +133,7 @@ Every code `bronto` emits is listed below. Scripts should match on `code`.
 | `api_unexpected_response` | 1 | the API answered with a body the command can't read |
 | `query_unknown_field` | 1 | `bronto query check --strict` found unknown fields |
 | `monitor_check_failed` | 1 | `bronto monitors check` found problems |
+| `dashboard_check_failed` | 1 | `bronto dashboards validate --live` found problems: a missing dataset or widget, or a query the API rejected |
 | `forward_destination_failed` | 1 | `bronto forward-configs test` found that Bronto can't write to the S3 destination |
 | `export_failed`, `export_wait_timeout` | 1 | an export job failed, or `--wait` gave up |
 | `export_no_id`, `export_no_location` | 1 | an export response had no id or download location |

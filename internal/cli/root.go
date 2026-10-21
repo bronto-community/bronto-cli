@@ -90,7 +90,7 @@ func NewRootCmd() *cobra.Command {
 		case "exports":
 			rc = newResourceCmd(d, newExportsCreateCmd())
 		case "dashboards":
-			rc = newResourceCmd(d, newDashboardCreateCmd(d), newDetachFromTemplateCmd(),
+			rc = newResourceCmd(d, newDashboardCreateCmd(d), newDetachFromTemplateCmd(), newDashboardApplyCmd(), newDashboardExportCmd(), newDashboardValidateCmd(),
 				newAttachWidgetsCmd("dashboards"), newRemoveWidgetCmd("dashboards"))
 		case "widgets":
 			rc = newResourceCmd(d, newAttachWidgetsCmd("widgets"), newRemoveWidgetCmd("widgets"), newWidgetQueryCmd())

@@ -1,0 +1,91 @@
+{
+  "widgets": [
+    {
+      "id": "3e5a7c9b-1d2f-4e6a-8b0c-2d4f6a8c0e11",
+      "name": "Checkout requests",
+      "description": "",
+      "type": "line",
+      "aux": {},
+      "metric_ids": [
+        "6c1e9a2b-3d4f-4a5b-8c7d-9e0f1a2b3c51"
+      ],
+      "sources": [
+        {
+          "type": "metric",
+          "id": "6c1e9a2b-3d4f-4a5b-8c7d-9e0f1a2b3c51"
+        }
+      ],
+      "widget_ids": [],
+      "metric_labels": {},
+      "layout": {
+        "widget_layouts": []
+      },
+      "tags": {
+        "managed-by": "bronto-cli",
+        "bronto-cli-owner": "d4c6e2b5-7e91-42b4-af50-1b8e6d3c4f04"
+      },
+      "metadata": {
+        "created_at": 1781023500000,
+        "modified_at": 1781023500000
+      }
+    },
+    {
+      "id": "4f6b8d0c-2e3a-4f7b-9c1d-3e5a7b9d1f12",
+      "name": "Checkout p95 latency",
+      "description": "",
+      "type": "line",
+      "aux": {},
+      "metric_ids": [
+        "7d2fab3c-4e5a-4b6c-9d8e-0f1a2b3c4d52"
+      ],
+      "sources": [
+        {
+          "type": "metric",
+          "id": "7d2fab3c-4e5a-4b6c-9d8e-0f1a2b3c4d52"
+        }
+      ],
+      "widget_ids": [],
+      "metric_labels": {},
+      "layout": {
+        "widget_layouts": []
+      },
+      "tags": {
+        "managed-by": "bronto-cli",
+        "bronto-cli-owner": "d4c6e2b5-7e91-42b4-af50-1b8e6d3c4f04"
+      },
+      "metadata": {
+        "created_at": 1781023500000,
+        "modified_at": 1781023500000
+      }
+    },
+    {
+      "id": "5a7c9e1d-3f4b-4a8c-8d2e-4f6b8c0e2a13",
+      "name": "Checkout error rate",
+      "description": "",
+      "type": "line",
+      "aux": {},
+      "metric_ids": [
+        "8e3b0c4d-5f6a-4c7d-8e9f-1a2b3c4d5e53"
+      ],
+      "sources": [
+        {
+          "type": "metric",
+          "id": "8e3b0c4d-5f6a-4c7d-8e9f-1a2b3c4d5e53"
+        }
+      ],
+      "widget_ids": [],
+      "metric_labels": {},
+      "layout": {
+        "widget_layouts": []
+      },
+      "tags": {
+        "managed-by": "bronto-cli",
+        "bronto-cli-owner": "d4c6e2b5-7e91-42b4-af50-1b8e6d3c4f04"
+      },
+      "metadata": {
+        "created_at": 1781023500000,
+        "modified_at": 1781023500000
+      }
+    }
+  ]
+}
