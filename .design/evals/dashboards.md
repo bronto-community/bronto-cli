@@ -7,11 +7,11 @@ Re-run it after changes to `dashboards apply`, the metric definition commands, t
 ## Setup
 
 1. A local test environment (CONTRIBUTING.md, "Local test environment") pointing at the CI org.
-2. Traffic: `make demo-traces ARGS="-burst 300 -for 2h -rate 60"`. Start it at least 10 minutes before the agents, so every service has data.
+2. Traffic (`make demo-traces` arrived with #211; for an older commit under test, run it from a newer checkout): `make demo-traces ARGS="-burst 300 -for 2h -rate 60"`. Start it at least 10 minutes before the agents, so every service has data.
 3. A binary built from the commit under test, e.g. `go build -o <scratch>/eval/bronto ./cmd/bronto`.
 4. One empty working directory per run: `<scratch>/eval/work-<run>`. Agents running in parallel must not share one.
 
-Run each task twice (runs `1a`, `1b`, `2a`, …), each in its own agent. Name objects `<prefix>-<run>`, with a prefix that's new for this round (the second round used `eval2`).
+Run each task twice (runs `1a`, `1b`, `2a`, …), each in its own agent. `<PREFIX>` is `cli-test-eval<round>-<run>`, e.g. `cli-test-eval3-1a`: AGENTS.md requires the `cli-test-` prefix for everything created in the test org, and the round number keeps rounds apart. (Rounds 1 and 2 used `eval-` and `eval2-`, before that rule existed.)
 
 ## Tasks
 
