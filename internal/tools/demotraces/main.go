@@ -9,7 +9,8 @@
 //
 // Four services each land in their own .traces dataset: storefront-web,
 // checkout-api, catalog-api and payments-gateway. A checkout request
-// crosses all four; browse requests stop at catalog-api. Spans carry the
+// crosses all four; browse requests stop at catalog-api; refunds and
+// health checks give payments-gateway more than one operation. Spans carry the
 // OpenTelemetry HTTP attributes, and about 2% of payments fail (502 from
 // the gateway, which makes the checkout a 500).
 //
@@ -89,10 +90,14 @@ func main() {
 	for left := *burst; left > 0; left -= 200 {
 		send(min(left, 200))
 	}
+	// Batches run on a fixed wall-clock schedule, so a slow ingestion
+	// request delays a batch but doesn't lower the overall rate.
 	const tick = 10 * time.Second
 	perTick := float64(*rate) * tick.Seconds() / 60
 	carry := 0.0
-	for end := time.Now().Add(*duration); time.Now().Before(end); time.Sleep(tick) {
+	start := time.Now()
+	for next := start; next.Before(start.Add(*duration)); next = next.Add(tick) {
+		time.Sleep(time.Until(next))
 		carry += perTick
 		n := int(carry)
 		carry -= float64(n)
@@ -106,34 +111,50 @@ type generator struct {
 	rng     *mrand.Rand
 }
 
-// trace adds one user request to b and reports whether it failed.
+// trace adds one request to b and reports whether it failed. Most traces
+// are user requests to storefront-web; a few are refunds started by
+// checkout-api and load-balancer health checks on payments-gateway, so
+// payments-gateway serves more than one operation.
 func (g *generator) trace(b *batchBuilder, at time.Time) bool {
 	t := &traceCtx{b: b, id: randHex(16)}
 	switch r := g.rng.Float64(); {
 	case r < 0.25:
 		return g.checkout(t, at)
-	case r < 0.75:
-		g.browse(t, at, "GET /products/{id}")
+	case r < 0.70:
+		g.browse(t, at, "/products/{id}")
+	case r < 0.92:
+		g.browse(t, at, "/products")
+	case r < 0.96:
+		g.refund(t, at)
 	default:
-		g.browse(t, at, "GET /products")
+		t.span("payments-gateway", "", "GET", "/health", kindServer, at, g.ms(1, 3), 200)
 	}
 	return false
 }
 
+// Timing: every server span lies inside the client span that called it
+// (one network hop of 1-2 ms each way), and every client span inside the
+// server span that made the call. Durations are computed bottom-up from
+// the leaf services' own work, then the spans are emitted top-down.
+
 // browse: storefront-web serves a page and reads from catalog-api.
 func (g *generator) browse(t *traceCtx, at time.Time, route string) {
+	net := g.ms(1, 2)
 	catalog := g.ms(8, 30)
-	total := catalog + g.ms(10, 40)
-	root := t.span("storefront-web", "", "GET "+strings.TrimPrefix(route, "GET "), kindServer, at, total, 200, route)
-	call := t.span("storefront-web", root, route, kindClient, at.Add(g.ms(1, 3)), catalog+g.ms(1, 2), 200, route)
-	t.span("catalog-api", call, route, kindServer, at.Add(g.ms(2, 4)), catalog, 200, route)
+	call := catalog + 2*net
+	pre, post := g.ms(2, 6), g.ms(3, 10)
+	root := t.span("storefront-web", "", "GET", route, kindServer, at, pre+call+post, 200)
+	c := t.span("storefront-web", root, "GET", route, kindClient, at.Add(pre), call, 200)
+	t.span("catalog-api", c, "GET", route, kindServer, at.Add(pre+net), catalog, 200)
 }
 
-// checkout: storefront-web -> checkout-api -> catalog-api (stock check)
-// and payments-gateway (charge). A failed charge is a 502 from the
-// gateway and a 500 from checkout-api and the storefront.
+// checkout: storefront-web -> checkout-api, which checks stock with
+// catalog-api and then charges through payments-gateway. A failed charge
+// is a 502 from the gateway and a 500 from checkout-api and the
+// storefront.
 func (g *generator) checkout(t *traceCtx, at time.Time) bool {
 	failed := g.rng.Float64() < g.errRate
+	net := g.ms(1, 2)
 	stock := g.ms(6, 20)
 	charge := g.ms(80, 160)
 	if g.rng.Float64() < 0.05 {
@@ -142,21 +163,38 @@ func (g *generator) checkout(t *traceCtx, at time.Time) bool {
 	if failed {
 		charge = g.ms(1000, 3000) // payment provider timeout
 	}
-	checkout := stock + charge + g.ms(10, 30)
-	total := checkout + g.ms(15, 40)
 	code, gw := 200, 200
 	if failed {
 		code, gw = 500, 502
 	}
-	root := t.span("storefront-web", "", "POST /checkout", kindServer, at, total, code, "/checkout")
-	c1 := t.span("storefront-web", root, "POST /api/checkout", kindClient, at.Add(g.ms(2, 5)), checkout+g.ms(1, 3), code, "/api/checkout")
-	srv := t.span("checkout-api", c1, "POST /api/checkout", kindServer, at.Add(g.ms(3, 6)), checkout, code, "/api/checkout")
-	c2 := t.span("checkout-api", srv, "GET /stock/{sku}", kindClient, at.Add(g.ms(4, 8)), stock+g.ms(1, 2), 200, "/stock/{sku}")
-	t.span("catalog-api", c2, "GET /stock/{sku}", kindServer, at.Add(g.ms(5, 9)), stock, 200, "/stock/{sku}")
-	payAt := at.Add(stock + g.ms(10, 15))
-	c3 := t.span("checkout-api", srv, "POST /charge", kindClient, payAt, charge+g.ms(1, 3), gw, "/charge")
-	t.span("payments-gateway", c3, "POST /charge", kindServer, payAt.Add(g.ms(1, 2)), charge, gw, "/charge")
+	stockCall, chargeCall := stock+2*net, charge+2*net
+	pre2, gap, post2 := g.ms(2, 5), g.ms(3, 8), g.ms(5, 15)
+	srv := pre2 + stockCall + gap + chargeCall + post2
+	apiCall := srv + 2*net
+	pre1, post1 := g.ms(3, 8), g.ms(5, 20)
+
+	root := t.span("storefront-web", "", "POST", "/checkout", kindServer, at, pre1+apiCall+post1, code)
+	c1 := t.span("storefront-web", root, "POST", "/api/checkout", kindClient, at.Add(pre1), apiCall, code)
+	srvAt := at.Add(pre1 + net)
+	s := t.span("checkout-api", c1, "POST", "/api/checkout", kindServer, srvAt, srv, code)
+	stockAt := srvAt.Add(pre2)
+	c2 := t.span("checkout-api", s, "GET", "/stock/{sku}", kindClient, stockAt, stockCall, 200)
+	t.span("catalog-api", c2, "GET", "/stock/{sku}", kindServer, stockAt.Add(net), stock, 200)
+	payAt := stockAt.Add(stockCall + gap)
+	c3 := t.span("checkout-api", s, "POST", "/charge", kindClient, payAt, chargeCall, gw)
+	t.span("payments-gateway", c3, "POST", "/charge", kindServer, payAt.Add(net), charge, gw)
 	return failed
+}
+
+// refund: checkout-api refunds an order through payments-gateway.
+func (g *generator) refund(t *traceCtx, at time.Time) {
+	net := g.ms(1, 2)
+	refund := g.ms(100, 250)
+	call := refund + 2*net
+	pre, post := g.ms(2, 5), g.ms(3, 8)
+	s := t.span("checkout-api", "", "POST", "/api/refunds", kindServer, at, pre+call+post, 200)
+	c := t.span("checkout-api", s, "POST", "/refunds", kindClient, at.Add(pre), call, 200)
+	t.span("payments-gateway", c, "POST", "/refunds", kindServer, at.Add(pre+net), refund, 200)
 }
 
 // ms returns a random duration between lo and hi milliseconds.
@@ -169,12 +207,12 @@ type traceCtx struct {
 	id string
 }
 
-// span adds a span and returns its id. Status follows the HTTP code: an
-// error for 5xx on a server span, as the OpenTelemetry HTTP conventions
-// say, and for any 5xx a client sees.
-func (t *traceCtx) span(service, parent, name string, kind int, start time.Time, dur time.Duration, code int, route string) string {
+// span adds a span named "<method> <route>" and returns its id; the
+// http.route attribute holds the route alone. Status follows the HTTP
+// code: an error for any 5xx, on the server and on the client that saw it.
+func (t *traceCtx) span(service, parent, method, route string, kind int, start time.Time, dur time.Duration, code int) string {
 	id := randHex(8)
-	method, _, _ := strings.Cut(name, " ")
+	name := method + " " + route
 	status := statusOK
 	s := map[string]any{
 		"traceId": t.id, "spanId": id, "name": name, "kind": kind,

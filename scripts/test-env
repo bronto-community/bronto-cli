@@ -60,5 +60,8 @@ export BRONTO_BASE_URL="https://api.${region}.bronto.io"
 export BRONTO_INGEST_URL="https://ingestion.${region}.bronto.io"
 export BRONTO_APP_URL="https://app.${region}.bronto.io"
 
-echo "test-env: org ${BRONTO_ORG_ID} (${region})" >&2
+# Only at a terminal: in a pipe, 2>&1 would mix it into the data.
+if [[ -t 2 ]]; then
+  echo "test-env: org ${BRONTO_ORG_ID} (${region})" >&2
+fi
 exec "$@"
