@@ -199,6 +199,13 @@ jobs:
             VERSION=${{ steps.meta.outputs.version }}
             COMMIT=${{ steps.meta.outputs.commit }}
           tags: ${{ steps.meta.outputs.scratch_tags }}
+          # The Dockerfile LABELs land in each platform's image config, but
+          # registries read a multi-arch image's metadata from the index:
+          # without these, ghcr.io shows "No description provided".
+          annotations: |
+            index:org.opencontainers.image.description=Community CLI for the Bronto observability platform
+            index:org.opencontainers.image.source=https://github.com/bronto-community/bronto-cli
+            index:org.opencontainers.image.licenses=MIT
           provenance: true
           sbom: true
 
@@ -213,6 +220,11 @@ jobs:
             VERSION=${{ steps.meta.outputs.version }}
             COMMIT=${{ steps.meta.outputs.commit }}
           tags: ${{ steps.meta.outputs.distroless_tags }}
+          # Index annotations, as for the scratch image above.
+          annotations: |
+            index:org.opencontainers.image.description=Community CLI for the Bronto observability platform (distroless)
+            index:org.opencontainers.image.source=https://github.com/bronto-community/bronto-cli
+            index:org.opencontainers.image.licenses=MIT
           provenance: true
           sbom: true
 
