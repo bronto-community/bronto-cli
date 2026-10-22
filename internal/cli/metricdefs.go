@@ -564,16 +564,26 @@ func seriesPoints(v any) []float64 {
 // timeUnitNanos are the unit_config inputs for type "time", in nanoseconds.
 var timeUnitNanos = map[string]float64{
 	"nanoseconds": 1, "microseconds": 1e3, "milliseconds": 1e6, "seconds": 1e9,
+	"minutes": 60e9, "hours": 3600e9, "days": 86400e9,
 }
 
 // formatSeriesValue renders a value for the table: a time-typed
 // unit_config ({type: time, input: nanoseconds}) becomes "413 ms", the way
-// the web UI shows it; anything else is a plain number.
+// the web UI shows it, and a percentage "12.5%" (input fraction is 0 to
+// 1, percent 0 to 100); anything else is a plain number.
 func formatSeriesValue(v float64, unit map[string]any) string {
-	if t, _ := unit["type"].(string); t == "time" {
-		in, _ := unit["input"].(string)
+	in, _ := unit["input"].(string)
+	switch t, _ := unit["type"].(string); t {
+	case "time":
 		if f, ok := timeUnitNanos[in]; ok {
 			return humanNanos(v * f)
+		}
+	case "percentage":
+		switch in {
+		case "fraction":
+			return formatAggValue(v*100) + "%"
+		case "percent":
+			return formatAggValue(v) + "%"
 		}
 	}
 	return formatAggValue(v)

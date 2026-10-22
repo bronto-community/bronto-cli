@@ -232,12 +232,13 @@ func leftoverDefinition(err error, id string) error {
 // whole widget); a new widget defaults to a line chart.
 func widgetBody(want *wantWidget, live *liveWidget, metricIDs []string) map[string]any {
 	body := map[string]any{"name": want.Name, "metric_ids": metricIDs}
-	typ, desc, aux := want.Type, "", want.Aux
+	typ, desc, aux := want.Type, "", want.aux(nil)
 	if live != nil {
 		desc = live.Description
 		if typ == "" {
 			typ = live.Type
 		}
+		aux = want.aux(live.Aux)
 		if aux == nil {
 			aux = live.Aux
 		}

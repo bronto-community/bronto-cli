@@ -218,9 +218,13 @@ func computePlan(want *wantDashboard, live *liveState) (*dashPlan, error) {
 			ch.UpdateWidget = true
 			ch.Details = append(ch.Details, fmt.Sprintf("description: %q -> %q", match.Description, *ww.Description))
 		}
-		if ww.Aux != nil && !sameJSON(ww.Aux, nonNilMap(match.Aux)) {
+		if aux := ww.aux(match.Aux); aux != nil && !sameJSON(aux, nonNilMap(match.Aux)) {
 			ch.UpdateWidget = true
-			ch.Details = append(ch.Details, fmt.Sprintf("aux: %s -> %s", compactJSON(nonNilMap(match.Aux)), compactJSON(ww.Aux)))
+			if ww.Aux == nil {
+				ch.Details = append(ch.Details, "sort: "+ww.Sort.String())
+			} else {
+				ch.Details = append(ch.Details, fmt.Sprintf("aux: %s -> %s", compactJSON(nonNilMap(match.Aux)), compactJSON(aux)))
+			}
 		}
 		var cur *apiDef
 		if len(match.MetricIDs) == 1 {

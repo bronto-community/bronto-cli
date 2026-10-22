@@ -106,22 +106,28 @@ widgets:
     queries:
       - name: requests                 # default q1, q2…; no spaces when a formula uses it
         dataset: .traces/checkout-service   # like -d: name, collection/name or id; or a list [a, b]
-        select: count(*)               # agg defaults from select: count(*) -> count, p95(x) -> p95
+        select: count(*)               # count(*)/p95(x) aggregate with their function; don't set a different agg
         where: $span.kind = 'SPAN_KIND_SERVER'   # default "" (everything)
   - name: p95 latency
-    unit: nanoseconds                  # nanoseconds|microseconds|milliseconds|seconds|bytes…; the UI shows "640 ms"
+    unit: nanoseconds                  # see units below; the UI shows "640 ms"
     queries:
       - {name: p95, dataset: .traces/checkout-service, select: $span.duration_nano, agg: p95,
          where: "$span.kind = 'SPAN_KIND_SERVER'", group_by: [$span.name]}   # a bare field needs agg
   - name: Error rate %
+    unit: percent                      # values 0-100 (fraction: 0-1), shown as a percentage
     queries:
       - {name: errors, dataset: .traces/checkout-service, select: count(*), where: "$span.status_code = 'STATUS_CODE_ERROR'"}
       - {name: total, dataset: .traces/checkout-service, select: count(*)}
-    formula: errors / total * 100      # the widget then plots only the formula
+    formula: errors / total * 100      # plotted alone, legend "value"; or {name: rate, expression: …}
+  - name: Busiest operations
+    type: top-list
+    sort: value desc                   # default; value asc | name asc | name desc. Shows every group (no limit setting)
+    queries:
+      - {dataset: .traces/checkout-service, select: count(*), group_by: [$span.name]}
   - ref: Some shared widget            # existing widget by name or id: attached, never changed or deleted
 ```
 
-Other query fields: `from_expr` (instead of `dataset`), `from` (dataset ids), `reduce_to` (avg default, sum, min, max), `agg: none`, `agg_params`, `unit_config`; widget fields `description`, `aux`, `unit_config`, `formulas: [{name, expression}]`; dashboard `layout: [{widget, x, y, w, h}]` (leave it out: the web UI lays widgets out in two columns, ordered by widget id). Trace fields: `$service.name`, `$span.name` (operation), `$span.kind = 'SPAN_KIND_SERVER'`, `$span.duration_nano` (ns), `$span.status_code = 'STATUS_CODE_ERROR'`; trace datasets are `.traces/<service.name>`. Ownership: apply tags the widgets it creates (`managed-by: bronto-cli`, `bronto-cli-owner: <dashboard id>`); remove an inline widget from the file and the next apply deletes it and its definition; a changed query gets a new definition (repoint, then delete the old one); a `ref:` or any other widget apply didn't create is only detached (an inline widget turned into a `ref:` loses its ownership tags); apply never deletes a dashboard. Applying the export of a dashboard apply didn't create adopts its widgets (a stderr note says so). Two dashboards with the manifest's name is an error listing both. A dashboard made from a template is detached from it (shown in the plan) before apply changes the dashboard, because the API rejects changes until then. A field left out (description, tags, layout, a widget's type/description/aux) is kept as it is.
+Other query fields: `from_expr` (instead of `dataset`), `from` (dataset ids), `agg_params` (rate/histogram only), `unit_config`; widget fields `description`, `aux`, `unit_config`, `formulas: [{name, expression}]`; units: `nanoseconds` `microseconds` `milliseconds` `seconds` `minutes` `hours` `days`, `bytes` `kilobytes`…`yottabytes`, `kibibytes`…`yobibytes`, `percent` (0-100), `fraction` (0-1). No `reduce_to` but avg and no `agg: none` (the API never keeps them; validate refuses). A score widget shows the range total and the change vs the previous period. A formula over grouped queries has series only for groups every query returns: a service with zero errors gets no error-rate line, not 0% (the API has no fill option); dashboard `layout: [{widget, x, y, w, h}]` (leave it out: the web UI lays widgets out in two columns, ordered by widget id). Trace fields: `$service.name`, `$span.name` (operation), `$span.kind = 'SPAN_KIND_SERVER'`, `$span.duration_nano` (ns), `$span.status_code = 'STATUS_CODE_ERROR'`; trace datasets are `.traces/<service.name>`. Ownership: apply tags the widgets it creates (`managed-by: bronto-cli`, `bronto-cli-owner: <dashboard id>`); remove an inline widget from the file and the next apply deletes it and its definition; a changed query gets a new definition (repoint, then delete the old one); a `ref:` or any other widget apply didn't create is only detached (an inline widget turned into a `ref:` loses its ownership tags); apply never deletes a dashboard. Applying the export of a dashboard apply didn't create adopts its widgets (a stderr note says so). Two dashboards with the manifest's name is an error listing both. A dashboard made from a template is detached from it (shown in the plan) before apply changes the dashboard, because the API rejects changes until then. A field left out (description, tags, layout, a widget's type/description/sort/aux) is kept as it is.
 
 The pieces apply uses, for one-off changes: a widget plots the metric definitions in its `metric_ids`. `metrics definitions create --input def.json` (see `--help` for count, grouped p95 latency and error-rate formula bodies); each query needs `name`, `select`, `where` (`""` for none) and `from_expr`, e.g. `"collection" = '.traces' AND "dataset" = 'checkout-service'`. `metrics definitions query <definition> [--since 24h|--time-range "Last 7 days"] [--slices 24]` evaluates one (one row per series/group with value and sparkline; a stderr warning when everything is zero — for data ingested minutes ago that can be a cached zero, and a definition whose query differs, even only in `where`, is evaluated fresh; `-o json` is the raw /timeseries response); `widgets query <widget>` evaluates every definition a widget plots. Definitions have no update (the API has none): create a new one, repoint the widget, delete the old. Deleting a widget leaves its definitions. `/metrics/definitions` is not in the published OpenAPI spec.
 

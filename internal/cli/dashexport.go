@@ -7,9 +7,9 @@ import (
 
 // The manifest export writes, in apply's format. Field order is the
 // order a reader expects; empty fields are left out, and apply reads a
-// left-out field as its default (where "", reduce_to avg, agg from the
-// select) or as "keep the current value" (description, aux), so the
-// export of a dashboard re-applies with zero writes.
+// left-out field as its default (where "", agg from the select, formula
+// name value) or as "keep the current value" (description, aux, sort), so
+// the export of a dashboard re-applies with zero writes.
 
 type exManifest struct {
 	Name        string            `yaml:"name" json:"name"`
@@ -35,8 +35,9 @@ type exWidget struct {
 	Unit        string         `yaml:"unit,omitempty" json:"unit,omitempty"`
 	UnitConfig  map[string]any `yaml:"unit_config,omitempty" json:"unit_config,omitempty"`
 	Queries     []exQuery      `yaml:"queries,omitempty" json:"queries,omitempty"`
-	Formula     string         `yaml:"formula,omitempty" json:"formula,omitempty"`
+	Formula     any            `yaml:"formula,omitempty" json:"formula,omitempty"` // an expression, or an exFormula
 	Formulas    []exFormula    `yaml:"formulas,omitempty" json:"formulas,omitempty"`
+	Sort        string         `yaml:"sort,omitempty" json:"sort,omitempty"`
 	Aux         map[string]any `yaml:"aux,omitempty" json:"aux,omitempty"`
 }
 
@@ -47,7 +48,6 @@ type exQuery struct {
 	From       []string       `yaml:"from,omitempty" json:"from,omitempty"`
 	Select     string         `yaml:"select" json:"select"`
 	Agg        string         `yaml:"agg,omitempty" json:"agg,omitempty"`
-	ReduceTo   string         `yaml:"reduce_to,omitempty" json:"reduce_to,omitempty"`
 	AggParams  []string       `yaml:"agg_params,omitempty" json:"agg_params,omitempty"`
 	Where      string         `yaml:"where,omitempty" json:"where,omitempty"`
 	GroupBy    []string       `yaml:"group_by,omitempty" json:"group_by,omitempty"`
@@ -58,7 +58,6 @@ type exQuery struct {
 type exFormula struct {
 	Name       string         `yaml:"name" json:"name"`
 	Expression string         `yaml:"expression" json:"expression"`
-	ReduceTo   string         `yaml:"reduce_to,omitempty" json:"reduce_to,omitempty"`
 	Unit       string         `yaml:"unit,omitempty" json:"unit,omitempty"`
 	UnitConfig map[string]any `yaml:"unit_config,omitempty" json:"unit_config,omitempty"`
 }
@@ -154,8 +153,18 @@ func exportWidget(w *liveWidget, defs map[string]apiDef) (exWidget, string) {
 	}
 	def = def.normalized()
 	ex := exWidget{Name: w.Name, Type: w.Type, Description: w.Description}
-	if len(w.Aux) > 0 {
-		ex.Aux = w.Aux
+	ex.Aux = w.Aux
+	if s, ok := sortFromAux(w.Aux); ok && w.Type == "top-list" {
+		ex.Sort = s.String()
+		ex.Aux = map[string]any{}
+		for k, v := range w.Aux {
+			if k != auxSortBy && k != auxSortDirection {
+				ex.Aux[k] = v
+			}
+		}
+	}
+	if len(ex.Aux) == 0 {
+		ex.Aux = nil
 	}
 	if len(def.Queries) == 0 {
 		return exWidget{}, "its definition has no queries"
@@ -201,16 +210,10 @@ func exportWidget(w *liveWidget, defs map[string]apiDef) (exWidget, string) {
 		}
 		qnames[q.Name] = true
 		eq := exQuery{Name: q.Name, Select: q.Select[0], Where: q.Where, GroupBy: q.Groups, From: q.From}
-		switch {
-		case len(q.Aggregation) == 0:
-			eq.Agg = "none"
-		default:
+		if len(q.Aggregation) == 1 {
 			a := q.Aggregation[0]
 			if a.Time != defaultAgg(eq.Select) {
 				eq.Agg = a.Time
-			}
-			if a.ReduceTo != "avg" {
-				eq.ReduceTo = a.ReduceTo
 			}
 			eq.AggParams = a.Params
 		}
@@ -242,18 +245,19 @@ func exportWidget(w *liveWidget, defs map[string]apiDef) (exWidget, string) {
 			return exWidget{}, fmt.Sprintf("its formula %q can't be written as a manifest formula", f.Name)
 		}
 		ef := exFormula{Name: f.Name, Expression: f.Expression}
-		if f.Aggregation != nil && f.Aggregation.ReduceTo != "avg" {
-			ef.ReduceTo = f.Aggregation.ReduceTo
-		}
 		ef.Unit, ef.UnitConfig = unitOf(f.UnitConfig)
 		ex.Formulas = append(ex.Formulas, ef)
 	}
-	// The formula: shorthand when apply would name the formula the same.
+	// One formula is written as formula:, as its expression alone when
+	// apply would give it the same name.
 	if len(ex.Formulas) == 1 {
 		f := ex.Formulas[0]
-		if f.Name == formulaName(w.Name, mqs) && f.ReduceTo == "" && f.Unit == "" && f.UnitConfig == nil {
-			ex.Formula, ex.Formulas = f.Expression, nil
+		if f.Name == formulaName(mqs) && f.Unit == "" && f.UnitConfig == nil {
+			ex.Formula = f.Expression
+		} else {
+			ex.Formula = f
 		}
+		ex.Formulas = nil
 	}
 	return ex, ""
 }
@@ -276,9 +280,11 @@ func expressible(q apiQuery, hasFormulas bool) bool {
 	}
 	if len(q.Aggregation) == 1 {
 		a := q.Aggregation[0]
-		return contains(timeFunctions, a.Time) && contains(reduceTos, a.ReduceTo)
+		fn := defaultAgg(q.Select[0])
+		return contains(timeFunctions, a.Time) && contains(reduceTos, a.ReduceTo) && (fn == "" || fn == a.Time) &&
+			(len(a.Params) == 0 || contains(paramAggs, a.Time))
 	}
-	return true
+	return defaultAgg(q.Select[0]) != "" // apply aggregates with the select's function
 }
 
 func quoteAll(ss []string) []string {

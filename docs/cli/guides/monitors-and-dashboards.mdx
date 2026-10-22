@@ -166,6 +166,7 @@ widgets:
         group_by: [$span.name]  # one line per operation
   - name: Error rate %
     type: line
+    unit: percent              # the values are 0-100; the web UI shows "2.5%"
     queries:
       - name: errors
         dataset: .traces/checkout-service
@@ -175,6 +176,13 @@ widgets:
         dataset: .traces/checkout-service
         select: count(*)
     formula: errors / total * 100
+  - name: Busiest operations
+    type: top-list
+    sort: value desc           # the default; or value asc, name asc, name desc
+    queries:
+      - dataset: .traces/checkout-service
+        select: count(*)
+        group_by: [$span.name]
 ```
 
 Check it, preview the changes, apply, and look at the data:
@@ -262,7 +270,7 @@ $ bronto dashboards validate -f dashboard.yaml 2>&1
   dashboard from its template first; the plan says so. With nothing to change, it stays
   linked.
 - **A field you leave out is left alone.** Without `description`, `tags` or `layout`, or a
-  widget's `type` or `description`, `apply` keeps the current value. With `tags:`, the file
+  widget's `type`, `description`, `sort` or `aux`, `apply` keeps the current value. With `tags:`, the file
   holds the dashboard's whole tag set. Bronto can't change a dashboard's description after
   creation, so `apply` warns instead.
 - **An unchanged file makes no API writes.** `--dry-run` prints the plan and writes
@@ -276,23 +284,48 @@ $ bronto dashboards validate -f dashboard.yaml 2>&1
 | `description`, `tags` | Set on the dashboard. The description can only be set when the dashboard is created. |
 | `widgets[].name` | The widget's name, unique in the file. |
 | `widgets[].type` | `line` (the default), `bar`, `area`, `score`, `top-list`, `table`, `pie`, `donut`, `treemap`, `geomap`, `events-list`. |
-| `widgets[].unit` | `nanoseconds`, `microseconds`, `milliseconds`, `seconds`, or a data size such as `bytes`, for every query and formula of the widget. `unit_config` takes the API's object instead. |
+| `widgets[].unit` | What the values are in, for every query and formula of the widget; see [Units](#units). `unit_config` takes the API's object instead. A query or formula can set its own `unit`. |
 | `widgets[].queries` | Up to six queries; the widget's metric definition. |
-| `widgets[].formula` | One formula over the queries by name, such as `errors / total * 100`. When a widget has a formula, the web UI plots only the formula. `formulas: [{name, expression}]` sets several, or names one. |
+| `widgets[].formula` | One formula over the queries by name, such as `errors / total * 100`. When a widget has a formula, the web UI plots only the formula, and labels it with the formula's name: `value` unless you name it with `formula: {name: rate, expression: errors / total * 100}`. `formulas: [{name, expression}]` sets several. |
+| `widgets[].sort` | A top-list's order: `value desc` (the default, largest first), `value asc`, `name asc` or `name desc`. A top-list shows every group; the web UI has no setting to show only the top few. |
 | `widgets[].ref` | An existing widget, by name or id, to attach. Takes no other field. |
 | `queries[].name` | Default `q1`, `q2`, …; formulas refer to it, so no spaces. |
 | `queries[].dataset` | A dataset as `-d` takes it (`name`, `collection/name` or id), or a list. Becomes the query's `from_expr`. `from_expr:` sets one directly, and `from:` takes dataset ids. |
 | `queries[].select` | `count(*)`, a function such as `p95($span.duration_nano)`, or a field with `agg`. |
-| `queries[].agg` | The aggregation: `count`, `sum`, `avg`, `min`, `max`, `p50`, `p75`, `p90`, `p95`, `p99`, `rate`, and more. Defaults from `select` (`count(*)` counts); a bare field needs it. |
+| `queries[].agg` | The aggregation of a bare field: `count`, `sum`, `avg`, `min`, `max`, `p50`, `p75`, `p90`, `p95`, `p99`, and more. A select such as `count(*)` or `p95(field)` already aggregates with its function, and Bronto ignores a different `agg`, so leave it out there. |
 | `queries[].where` | A filter in the [query language](https://docs.bronto.io/core-features/log-search/query-syntax). Default `""`, everything. |
 | `queries[].group_by` | Up to five fields; one series per group. |
-| `queries[].reduce_to` | How the series becomes one number: `avg` (the default), `sum`, `min`, `max`. |
 | `layout` | Optional `[{widget, x, y, w, h}]` positions. Without it, the web UI lays the widgets out in two columns, ordered by widget id. |
 
 The trace fields that dashboards use most: `$service.name`, `$span.name` (the operation),
 `$span.kind = 'SPAN_KIND_SERVER'` (requests a service handled), `$span.duration_nano`
 (nanoseconds, so set `unit: nanoseconds`), and
 `$span.status_code = 'STATUS_CODE_ERROR'`.
+
+### Units
+
+`unit:` says what a widget's values are in, so the web UI can show them readably:
+
+| Kind | Units |
+| --- | --- |
+| Time | `nanoseconds`, `microseconds`, `milliseconds`, `seconds`, `minutes`, `hours`, `days`. The web UI picks the display unit: 640000000 nanoseconds shows as "640 ms". |
+| Data size | `bytes`, `kilobytes`, `megabytes`, `gigabytes`, `terabytes`, `petabytes`, `exabytes`, `zettabytes`, `yottabytes` (1000-based). |
+| Binary data size | `kibibytes`, `mebibytes`, `gibibytes`, `tebibytes`, `pebibytes`, `exbibytes`, `zebibytes`, `yobibytes` (1024-based). |
+| Percentage | `percent` for values from 0 to 100, such as `errors / total * 100`; `fraction` for values from 0 to 1, such as `errors / total`. Both show as a percentage. |
+
+For anything else, such as a rate per second, set `unit_config` to the API's object
+(`QueryUnitConfig` in the [API reference](https://docs.bronto.io/api-reference)).
+
+### What a widget shows
+
+- **A score widget** shows the total over the dashboard's time range, and the change
+  against the previous period. A query has no setting for it: Bronto stores only
+  `reduce_to: avg`, so `validate` refuses `sum`, `min` and `max`, which `apply` could
+  never make stick.
+- **A formula over grouped queries** has a series only for the groups that every query
+  returns. In an error rate grouped by `$service.name`, a service with no errors has no
+  `errors` series, so it gets no error-rate line rather than a line at 0%. Bronto has no
+  option to fill the missing group with zero.
 
 ## Dashboards and widgets
 

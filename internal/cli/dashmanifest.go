@@ -50,6 +50,7 @@ type manWidget struct {
 	HasDesc     bool
 	Aux         map[string]any
 	HasAux      bool
+	Sort        *topListSort // nil: leave the sort as it is
 	Unit        string
 	UnitConfig  map[string]any
 	Queries     []manQuery
@@ -66,7 +67,7 @@ type manQuery struct {
 	FromExpr   string
 	From       []string
 	GroupBy    []string
-	Agg        string // "" = default from Select; "none" = no aggregation
+	Agg        string // "" = default from Select
 	ReduceTo   string
 	AggParams  []string
 	Unit       string
@@ -108,30 +109,53 @@ var widgetTypes = []string{"area", "bar", "donut", "events-list", "geomap", "lin
 var timeFunctions = []string{"sum", "avg", "average", "min", "max", "mean", "count", "median",
 	"p25", "p50", "p75", "p90", "p95", "p99", "p999", "histogram", "rate"}
 
-var reduceTos = []string{"avg", "sum", "min", "max"}
+// reduceTos are the reduce_to values the manifest accepts. The API's
+// ReduceTo also lists sum, min and max, but the metric definitions API
+// stores avg whatever it is sent (live 2026-10-22, queries and formulas
+// alike), so another value would make every apply replace the definition
+// (#212). A score widget shows the total over the time range from the
+// response's aggregates, not a reduction of the buckets, so avg loses
+// nothing there.
+var reduceTos = []string{"avg"}
 
-// unitNames maps the manifest's `unit:` shorthand to a unit_config type.
+// paramAggs are the aggregations that keep agg_params: the API drops
+// time_function_params from the others (live 2026-10-22).
+var paramAggs = []string{"rate", "histogram"}
+
+// unitNames maps the manifest's `unit:` shorthand to a unit_config type:
+// QueryUnitConfig in the spec, which the web UI's unit picker offers as
+// Data Volume, Binary Data Volume, Duration and Percentage. "bytes" is a
+// data_size (1000-based) unit; kibibytes and up are binary (1024-based).
+// percent is a value from 0 to 100, fraction one from 0 to 1; both show
+// as a percentage.
 var unitNames = map[string]string{
 	"nanoseconds": "time", "microseconds": "time", "milliseconds": "time", "seconds": "time",
+	"minutes": "time", "hours": "time", "days": "time",
 	"bytes": "data_size", "kilobytes": "data_size", "megabytes": "data_size",
 	"gigabytes": "data_size", "terabytes": "data_size", "petabytes": "data_size",
+	"exabytes": "data_size", "zettabytes": "data_size", "yottabytes": "data_size",
+	"kibibytes": "binary_data_size", "mebibytes": "binary_data_size", "gibibytes": "binary_data_size",
+	"tebibytes": "binary_data_size", "pebibytes": "binary_data_size", "exbibytes": "binary_data_size",
+	"zebibytes": "binary_data_size", "yobibytes": "binary_data_size",
+	"percent": "percentage", "fraction": "percentage",
 }
 
-func sortedUnitNames() []string {
-	names := make([]string, 0, len(unitNames))
-	for n := range unitNames {
-		names = append(names, n)
-	}
-	sort.Strings(names)
-	return names
-}
+// unitGroups lists the unit shorthands by kind, for help text and errors.
+const unitGroups = "time: nanoseconds, microseconds, milliseconds, seconds, minutes, hours, days; " +
+	"data size: bytes, kilobytes … yottabytes; binary data size: kibibytes … yobibytes; " +
+	"percentage: percent (values 0-100), fraction (values 0-1)"
 
 // unitConfigFor expands a unit shorthand: nanoseconds becomes {type: time,
 // input: nanoseconds, output: auto}, which the web UI renders as "800 ms".
+// A percentage has no output (the spec has none; the web UI saves
+// {type: percentage, input: percent}).
 func unitConfigFor(unit string) map[string]any {
 	t, ok := unitNames[unit]
 	if !ok {
 		return nil
+	}
+	if t == "percentage" {
+		return map[string]any{"type": t, "input": unit}
 	}
 	return map[string]any{"type": t, "input": unit, "output": "auto"}
 }
@@ -139,15 +163,56 @@ func unitConfigFor(unit string) map[string]any {
 // unitNameFor is unitConfigFor's inverse: the shorthand for a unit_config
 // it could have produced, or "".
 func unitNameFor(uc map[string]any) string {
-	if len(uc) != 3 {
-		return ""
-	}
 	in, _ := uc["input"].(string)
-	t, _ := uc["type"].(string)
-	if out, _ := uc["output"].(string); out != "auto" || unitNames[in] != t || t == "" {
+	if in == "" || !sameJSON(uc, unitConfigFor(in)) {
 		return ""
 	}
 	return in
+}
+
+// topListSort is how a top-list orders its groups: the web UI's "Sort
+// groups by" (value or name) and "Sort direction", saved in the widget's
+// aux as sortBy and sortDirection (read back from a widget edited in the
+// web UI, 2026-10-22). The web UI has no setting for how many groups a
+// top-list shows: it lists every group.
+type topListSort struct {
+	By, Direction string
+}
+
+const (
+	auxSortBy        = "sortBy"
+	auxSortDirection = "sortDirection"
+)
+
+// parseSort reads `sort: name`, `sort: value desc`: by value or name,
+// then asc or desc. The direction defaults to desc for value (largest
+// first, the web UI's default) and asc for name.
+func parseSort(s string) (*topListSort, bool) {
+	f := strings.Fields(strings.ToLower(s))
+	if len(f) == 0 || len(f) > 2 || (f[0] != "value" && f[0] != "name") {
+		return nil, false
+	}
+	t := &topListSort{By: f[0], Direction: map[string]string{"value": "desc", "name": "asc"}[f[0]]}
+	if len(f) == 2 {
+		if f[1] != "asc" && f[1] != "desc" {
+			return nil, false
+		}
+		t.Direction = f[1]
+	}
+	return t, true
+}
+
+func (t topListSort) String() string { return t.By + " " + t.Direction }
+
+// sortFromAux is the sort a widget's aux sets, when it sets both keys to
+// values the manifest's sort: can say.
+func sortFromAux(aux map[string]any) (*topListSort, bool) {
+	by, _ := aux[auxSortBy].(string)
+	dir, _ := aux[auxSortDirection].(string)
+	if (by != "value" && by != "name") || (dir != "asc" && dir != "desc") {
+		return nil, false
+	}
+	return &topListSort{By: by, Direction: dir}, true
 }
 
 // manifestErrors collects every problem in a file, so one validate run
@@ -423,9 +488,9 @@ func parseWidget(e *manifestErrors, n *yaml.Node) manWidget {
 			}
 		}
 	}
-	var formulaNode, formulasNode *yaml.Node
+	var formulaNode, formulasNode, sortNode, auxNode *yaml.Node
 	for _, p := range e.fields(n, "a widget", "name", "type", "description", "unit", "unit_config",
-		"queries", "formula", "formulas", "aux", "ref") {
+		"queries", "formula", "formulas", "sort", "aux", "ref") {
 		switch p.key {
 		case "name":
 			w.Name = strings.TrimSpace(e.scalar(p.v, "name"))
@@ -439,7 +504,15 @@ func parseWidget(e *manifestErrors, n *yaml.Node) manWidget {
 		case "unit_config":
 			w.UnitConfig = e.anyMap(p.v, "unit_config")
 		case "aux":
-			w.Aux, w.HasAux = e.anyMap(p.v, "aux"), true
+			w.Aux, w.HasAux, auxNode = e.anyMap(p.v, "aux"), true, p.k
+		case "sort":
+			sortNode = p.k
+			s := e.scalar(p.v, "sort")
+			if t, ok := parseSort(s); ok {
+				w.Sort = t
+			} else {
+				e.at(p.v, "sort %q: use value or name, optionally followed by asc or desc (e.g. sort: value desc)", s)
+			}
 		case "queries":
 			if p.v.Kind != yaml.SequenceNode {
 				e.at(p.v, "queries must be a list")
@@ -450,6 +523,10 @@ func parseWidget(e *manifestErrors, n *yaml.Node) manWidget {
 			}
 		case "formula":
 			formulaNode = p.v
+			if p.v.Kind == yaml.MappingNode {
+				w.Formulas = append(w.Formulas, parseFormula(e, p.v, false))
+				continue
+			}
 			expr := strings.TrimSpace(e.scalar(p.v, "formula"))
 			w.Formulas = append(w.Formulas, manFormula{Pos: e.pos(p.v), Expression: expr})
 		case "formulas":
@@ -459,15 +536,26 @@ func parseWidget(e *manifestErrors, n *yaml.Node) manWidget {
 				continue
 			}
 			for _, fn := range p.v.Content {
-				w.Formulas = append(w.Formulas, parseFormula(e, fn))
+				w.Formulas = append(w.Formulas, parseFormula(e, fn, true))
 			}
 		}
 	}
 	if formulaNode != nil && formulasNode != nil {
 		e.at(formulasNode, "use formula (one expression) or formulas (a list), not both")
 	}
-	if formulaNode != nil && len(w.Formulas) == 1 {
-		w.Formulas[0].Name = formulaName(w.Name, w.Queries)
+	if formulaNode != nil && len(w.Formulas) == 1 && w.Formulas[0].Name == "" {
+		w.Formulas[0].Name = formulaName(w.Queries)
+	}
+	if sortNode != nil && w.Type != "" && w.Type != "top-list" {
+		e.at(sortNode, "sort is a top-list setting; this widget is a %s", w.Type)
+	}
+	if sortNode != nil && w.Aux != nil {
+		for _, k := range []string{auxSortBy, auxSortDirection} {
+			if _, ok := w.Aux[k]; ok {
+				e.at(auxNode, "aux sets %s, which sort sets too; use one of them", k)
+				break
+			}
+		}
 	}
 	if w.Unit != "" && w.UnitConfig != nil {
 		e.at(n, "use unit or unit_config, not both")
@@ -536,17 +624,26 @@ func parseQuery(e *manifestErrors, n *yaml.Node) manQuery {
 	if q.Unit != "" && q.UnitConfig != nil {
 		e.at(n, "%s: use unit or unit_config, not both", label)
 	}
-	if q.Agg != "" && q.Agg != "none" && !contains(timeFunctions, q.Agg) {
-		e.at(n, "%s: unknown agg %q (one of %s, or none)", label, q.Agg, strings.Join(timeFunctions, ", "))
+	fn := defaultAgg(q.Select)
+	switch {
+	case q.Agg == "none":
+		e.at(n, "%s: agg: none isn't possible: the API always aggregates (a select such as count(*) or p95(x) "+
+			"aggregates with its function; a field needs agg)", label)
+	case q.Agg != "" && !contains(timeFunctions, q.Agg):
+		e.at(n, "%s: unknown agg %q (one of %s)", label, q.Agg, strings.Join(timeFunctions, ", "))
+	case q.Agg != "" && fn != "" && q.Agg != fn:
+		// The API replaces the aggregation with the select's function
+		// (live 2026-10-22: p95(x) with agg max is stored as p95), so
+		// apply would replace the definition every time.
+		e.at(n, "%s: select %q already aggregates with %s, and the API ignores a different agg; leave agg out, "+
+			"or select the field and set agg: %s", label, q.Select, fn, q.Agg)
 	}
-	if q.ReduceTo != "" && !contains(reduceTos, q.ReduceTo) {
-		e.at(n, "%s: unknown reduce_to %q (one of %s)", label, q.ReduceTo, strings.Join(reduceTos, ", "))
-	}
-	if q.Select != "" && q.Agg == "" && defaultAgg(q.Select) == "" {
+	checkReduceTo(e, n, label, q.ReduceTo)
+	if q.Select != "" && q.Agg == "" && fn == "" {
 		e.at(n, "%s: select %q is a field, so set agg to say how to aggregate it (e.g. agg: p95, avg, sum or max)", label, q.Select)
 	}
-	if q.Agg == "none" && (q.ReduceTo != "" || len(q.AggParams) > 0) {
-		e.at(n, "%s: agg: none can't have reduce_to or agg_params", label)
+	if agg := orDefault(q.Agg, fn); len(q.AggParams) > 0 && agg != "" && !contains(paramAggs, agg) {
+		e.at(n, "%s: agg_params only work with agg: rate or histogram; the API drops them for %s", label, agg)
 	}
 	if len(q.GroupBy) > maxQueryGroups {
 		e.at(n, "%s: group_by takes at most %d fields, got %d", label, maxQueryGroups, len(q.GroupBy))
@@ -562,7 +659,10 @@ func parseQuery(e *manifestErrors, n *yaml.Node) manQuery {
 	return q
 }
 
-func parseFormula(e *manifestErrors, n *yaml.Node) manFormula {
+// parseFormula reads a formulas: entry, or formula: written as a mapping,
+// whose name is optional (needName false): it then defaults like a
+// formula: expression's.
+func parseFormula(e *manifestErrors, n *yaml.Node, needName bool) manFormula {
 	f := manFormula{Pos: e.pos(n)}
 	for _, p := range e.fields(n, "a formula", "name", "expression", "reduce_to", "unit", "unit_config") {
 		switch p.key {
@@ -579,63 +679,72 @@ func parseFormula(e *manifestErrors, n *yaml.Node) manFormula {
 			f.UnitConfig = e.anyMap(p.v, "unit_config")
 		}
 	}
-	if n.Kind == yaml.MappingNode && (f.Name == "" || f.Expression == "") {
+	switch {
+	case n.Kind != yaml.MappingNode:
+	case needName && (f.Name == "" || f.Expression == ""):
 		e.at(n, "a formula needs a name and an expression")
+	case f.Expression == "":
+		e.at(n, "a formula needs an expression")
 	}
-	if f.ReduceTo != "" && !contains(reduceTos, f.ReduceTo) {
-		e.at(n, "formula %q: unknown reduce_to %q (one of %s)", f.Name, f.ReduceTo, strings.Join(reduceTos, ", "))
+	if f.Unit != "" && f.UnitConfig != nil {
+		e.at(n, "a formula: use unit or unit_config, not both")
 	}
+	checkReduceTo(e, n, "a formula", f.ReduceTo)
 	return f
+}
+
+// checkReduceTo refuses a reduce_to the API doesn't keep (#212).
+func checkReduceTo(e *manifestErrors, n *yaml.Node, label, reduceTo string) {
+	if reduceTo == "" || contains(reduceTos, reduceTo) {
+		return
+	}
+	e.at(n, "%s: reduce_to %q isn't possible: the API stores only avg (it saves any other value as avg, so every apply "+
+		"would replace the definition). Leave reduce_to out; a score widget shows the total over the time range anyway", label, reduceTo)
 }
 
 func checkUnit(e *manifestErrors, n *yaml.Node, unit string) {
 	if _, ok := unitNames[unit]; !ok {
-		e.at(n, "unknown unit %q (one of %s; or set unit_config)", unit, strings.Join(sortedUnitNames(), ", "))
+		e.at(n, "unknown unit %q (%s; or set unit_config)", unit, unitGroups)
 	}
 }
 
 var (
 	selectFuncRe = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9]*)\s*\(.*\)$`)
 	identRe      = regexp.MustCompile(`[A-Za-z_][A-Za-z0-9_]*`)
-	slugRe       = regexp.MustCompile(`[^a-z0-9]+`)
 )
 
 // defaultAgg is the aggregation a select implies: count(*) counts,
 // p95(x) takes the p95, sum(x) sums. A bare field has none, so the
-// manifest must say. AVERAGE(x), common in Bronto's templates, is avg.
+// manifest must say. It is the function's name in lower case, which is
+// what the API stores: AVERAGE(x), common in Bronto's templates, is
+// stored as average, not avg (live 2026-10-22).
 func defaultAgg(sel string) string {
 	m := selectFuncRe.FindStringSubmatch(strings.TrimSpace(sel))
 	if m == nil {
 		return ""
 	}
 	fn := strings.ToLower(m[1])
-	if fn == "average" {
-		fn = "avg"
-	}
 	if !contains(timeFunctions, fn) {
 		return ""
 	}
 	return fn
 }
 
-// formulaName names the formula `formula:` creates after the widget:
-// "Error rate %" becomes error_rate. The name is the series' label in the
-// web UI; it must not contain spaces or clash with a query name.
-func formulaName(widget string, queries []manQuery) string {
-	name := strings.Trim(slugRe.ReplaceAllString(strings.ToLower(widget), "_"), "_")
-	if name == "" || (name[0] >= '0' && name[0] <= '9') {
-		name = "formula_" + name
-		name = strings.TrimSuffix(name, "_")
-	}
-	if len(name) > maxFormulaLen {
-		name = name[:maxFormulaLen]
-	}
+// defaultFormulaName is the name a formula gets when the manifest gives
+// none. The web UI labels the formula's series with it, followed by the
+// group for a grouped query ("value payments-gateway"), so it is short
+// and the same for every widget rather than derived from the widget's
+// name.
+const defaultFormulaName = "value"
+
+// formulaName is the default formula name, unless a query has it.
+func formulaName(queries []manQuery) string {
 	for _, q := range queries {
-		if q.Name == name {
-			return name + "_formula"
+		if q.Name == defaultFormulaName {
+			return defaultFormulaName + "_formula"
 		}
 	}
-	return name
+	return defaultFormulaName
 }
 
 // checkManifest runs the cross-field checks: unique names, query names a
