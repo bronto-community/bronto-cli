@@ -228,7 +228,7 @@ func (w *wantWidget) aux(current map[string]any) map[string]any {
 	if base == nil {
 		base = current
 	}
-	out := make(map[string]any, len(base)+2)
+	out := map[string]any{}
 	for k, v := range base {
 		out[k] = v
 	}

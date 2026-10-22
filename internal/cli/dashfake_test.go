@@ -215,7 +215,13 @@ func (f *fakeOrg) handler(w http.ResponseWriter, r *http.Request) {
 			sel, _ := m["select"].([]any)
 			if len(sel) == 1 {
 				if fn := selectFuncRe.FindStringSubmatch(fmt.Sprint(sel[0])); fn != nil {
-					m["aggregation"] = []any{map[string]any{"time": strings.ToLower(fn[1])}}
+					agg := map[string]any{"time": strings.ToLower(fn[1])}
+					if old, _ := m["aggregation"].([]any); len(old) == 1 {
+						if p := old[0].(map[string]any)["time_function_params"]; p != nil {
+							agg["time_function_params"] = p
+						}
+					}
+					m["aggregation"] = []any{agg}
 				}
 			}
 			aggs, _ := m["aggregation"].([]any)

@@ -1046,6 +1046,38 @@ widgets:
 	if f.writeCount() != 0 {
 		t.Fatalf("export -> apply wrote %v\n%s", f.writes, out)
 	}
+
+	// With type left out, sort: needs the widget to be a top-list
+	// already: the existing one is, an existing line chart and a new
+	// widget (a line chart) are not.
+	noType := strings.Replace(strings.Replace(src, "    type: top-list\n", "", 1), "sort: name", "sort: value desc", 1)
+	f.resetWrites()
+	applyJSON(t, f, writeManifest(t, noType))
+	if f.writeCount() != 0 {
+		t.Fatalf("sort on an existing top-list without type wrote %v", f.writes)
+	}
+	for name, extra := range map[string]string{
+		"existing line chart": "    sort: name\n",
+		"new widget":          "",
+	} {
+		manifest := strings.Replace(noType, "  - name: Mean latency\n", "  - name: Mean latency\n"+extra, 1)
+		if extra == "" {
+			manifest += "  - name: Fresh\n    sort: name\n    queries:\n      - {dataset: .traces/checkout-api, select: count(*), group_by: [$span.name]}\n"
+		}
+		_, stderr, err := runResource(t, f.handler, "", "dashboards", "apply", "-f", writeManifest(t, manifest))
+		if err == nil || !strings.Contains(err.Error(), "sort is a top-list setting, and the widget is a line; set type: top-list") {
+			t.Errorf("%s: err %v\n%s", name, err, stderr)
+		}
+	}
+}
+
+func TestDefaultFormulaNameAvoidsQueries(t *testing.T) {
+	m := mustParse(t, "name: x\nwidgets:\n  - name: Ratio\n    queries:\n"+
+		"      - {name: value, dataset: a/b, select: count(*)}\n      - {name: value_formula, dataset: a/b, select: count(*)}\n"+
+		"    formula: value / value_formula\n")
+	if got := m.Widgets[0].Formulas[0].Name; got != "value_formula_formula" {
+		t.Fatalf("formula name = %q", got)
+	}
 }
 
 func TestUnitShorthands(t *testing.T) {

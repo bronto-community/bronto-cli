@@ -737,14 +737,18 @@ func defaultAgg(sel string) string {
 // name.
 const defaultFormulaName = "value"
 
-// formulaName is the default formula name, unless a query has it.
+// formulaName is the default formula name, with _formula appended until
+// no query has it.
 func formulaName(queries []manQuery) string {
+	used := map[string]bool{}
 	for _, q := range queries {
-		if q.Name == defaultFormulaName {
-			return defaultFormulaName + "_formula"
-		}
+		used[q.Name] = true
 	}
-	return defaultFormulaName
+	name := defaultFormulaName
+	for used[name] {
+		name += "_formula"
+	}
+	return name
 }
 
 // checkManifest runs the cross-field checks: unique names, query names a
