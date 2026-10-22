@@ -99,6 +99,8 @@ To try a change against a real Bronto org, through the CLI or the web app, use a
    It pins the API key, region, org id, and the API, ingestion and app URLs to `.env.local` through environment variables, which take precedence over any saved profile, so it never reads or writes the OS keychain. `make it-local` skips the one integration test that runs `auth login`, since locally that writes your real keychain.
 3. **Web app:** `make browser` starts Chrome with its own profile (`.local/chrome-test`, gitignored) and remote debugging on `127.0.0.1:9222`. Log into the test org in that window once; the session is kept across restarts. To log in again without typing, store the password in your OS keychain once and run `scripts/test-browser-login` (details in its header). Only a person runs it: when the session has expired, an agent asks you to, e.g. as `! scripts/test-browser-login` in Claude Code. Coding agents drive this window through the Chrome DevTools MCP server configured in `.mcp.json` (Claude Code asks you to approve it the first time). It's separate from your everyday browser, so an agent only ever sees the test org.
 
+4. **Data:** `make demo-traces` sends synthetic traces for a small shop (`storefront-web`, `checkout-api`, `catalog-api`, `payments-gateway`, each its own `.traces` dataset) for an hour, about 2% of them failed payments. Bronto stamps spans with their arrival time, so it keeps running to give charts a shape; `ARGS="-for 3h -rate 120"` changes duration and rate.
+
 [`AGENTS.md`](./AGENTS.md) lists the rules for working in the test org. They apply to people too.
 
 ## Deferred work gets a fix or an issue — never a sentence

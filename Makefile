@@ -1,4 +1,4 @@
-.PHONY: build test lint check-spec spec-baseline lint-workflows check-actions release-dry snapshot coverage coverage-baseline it it-local browser vuln mutation
+.PHONY: build test lint check-spec spec-baseline lint-workflows check-actions release-dry snapshot coverage coverage-baseline it it-local browser demo-traces vuln mutation
 
 build:
 	CGO_ENABLED=0 go build -o bronto ./cmd/bronto
@@ -84,6 +84,12 @@ it:
 # still runs it.
 it-local:
 	scripts/test-env go test -count=1 -timeout 20m -skip '^TestAuthLoginKeyStdin$$' ./integration/
+
+# demo-traces sends synthetic shop traces (four services) to the test org
+# in .env.local for an hour, so dashboards have data to show. Pass flags
+# with ARGS, e.g. make demo-traces ARGS="-for 3h -rate 120".
+demo-traces:
+	scripts/test-env go run ./internal/tools/demotraces $(ARGS)
 
 # browser starts the test browser (Chrome with its own profile and remote
 # debugging) that agents drive through .mcp.json.
