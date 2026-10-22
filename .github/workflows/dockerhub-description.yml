@@ -1,23 +1,27 @@
 name: Docker Hub description
 
 # Syncs DOCKERHUB.md to the Docker Hub repository page (Overview tab and short
-# description). It follows stable releases, like the official docs, so the
-# page never describes images that aren't published yet. It's a separate
-# workflow so a failed sync can't fail a release. To fix the page between
-# releases, run it manually from the latest release tag.
+# description). It follows stable releases, like the official docs: release.yml
+# calls it once its release job has published the images, so the page never
+# describes images that aren't out (release approval pending, or a failed
+# publish). release.yml sets soft-fail, so a failed sync only warns and can't
+# fail a release. To fix the page between releases, run it manually.
 on:
-  push:
-    tags:
-      - "v*"
-      - "!v*-*" # pre-releases (-rc.1, ...) don't move :latest, so don't touch the page either
+  workflow_call:
+    inputs:
+      soft-fail:
+        description: Report a failed sync as a warning instead of failing the run.
+        type: boolean
+        default: false
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: false
+      DOCKERHUB_TOKEN:
+        required: false
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: dockerhub-description
-  cancel-in-progress: true
 
 jobs:
   sync:
@@ -28,12 +32,15 @@ jobs:
         with:
           egress-policy: audit
 
+      # Called from release.yml, github.sha is the released tag's commit, so
+      # the page matches the images that were just published.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Read short description
         id: desc
+        continue-on-error: ${{ inputs.soft-fail == true }}
         env:
           # Only checked for presence, never printed.
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -64,6 +71,7 @@ jobs:
       # scope.
       - uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5.0.0
         if: steps.desc.outputs.sync == 'true'
+        continue-on-error: ${{ inputs.soft-fail == true }}
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
