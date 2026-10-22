@@ -1,0 +1,72 @@
+name: Docker Hub description
+
+# Syncs DOCKERHUB.md to the Docker Hub repository page (Overview tab and short
+# description). It follows stable releases, like the official docs, so the
+# page never describes images that aren't published yet. It's a separate
+# workflow so a failed sync can't fail a release. To fix the page between
+# releases, run it manually from the latest release tag.
+on:
+  push:
+    tags:
+      - "v*"
+      - "!v*-*" # pre-releases (-rc.1, ...) don't move :latest, so don't touch the page either
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dockerhub-description
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read short description
+        id: desc
+        env:
+          # Only checked for presence, never printed.
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          # The short description is the marker comment on the first line of
+          # DOCKERHUB.md, so both texts change in the same reviewed file.
+          short=$(sed -n 's/^<!-- short-description: \(.*\) -->$/\1/p' DOCKERHUB.md)
+          if [ -z "$short" ]; then
+            echo "::error file=DOCKERHUB.md::missing <!-- short-description: ... --> marker"
+            exit 1
+          fi
+          # Docker Hub caps it at 100 bytes; fail instead of letting it truncate.
+          bytes=$(printf '%s' "$short" | wc -c)
+          if [ "$bytes" -gt 100 ]; then
+            echo "::error file=DOCKERHUB.md::short description is ${bytes} bytes, Docker Hub allows 100"
+            exit 1
+          fi
+          echo "short=${short}" >> "$GITHUB_OUTPUT"
+          if [ -n "$DOCKERHUB_TOKEN" ]; then
+            echo "sync=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::DOCKERHUB_TOKEN is not set; skipping the Docker Hub update."
+          fi
+
+      # The same brontoio token the release job pushes with (see release.yml).
+      # The action documents Read, Write, Delete scope for description
+      # updates; if this step fails with an auth error, the token needs that
+      # scope.
+      - uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5.0.0
+        if: steps.desc.outputs.sync == 'true'
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: brontoio/bronto-cli
+          short-description: ${{ steps.desc.outputs.short }}
+          readme-filepath: ./DOCKERHUB.md
