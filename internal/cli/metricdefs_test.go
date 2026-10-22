@@ -292,15 +292,43 @@ func TestDefinitionQueryFormulaRangeValue(t *testing.T) {
 	}
 }
 
+// An empty group name is a group: its range value comes from its own
+// groups_series entry, not from the formula's overall series.
+func TestRangeValueEmptyGroupName(t *testing.T) {
+	e := map[string]any{
+		"series": []any{map[string]any{"value": "60"}},
+		"groups_series": []any{
+			map[string]any{"name": "", "value": 100.0},
+			map[string]any{"name": "web", "value": 20.0},
+		},
+	}
+	if v, ok := rangeValue(e, ""); !ok || v != 100 {
+		t.Fatalf("empty group = %v, %v; want 100", v, ok)
+	}
+	if _, ok := rangeValue(e, "missing"); ok {
+		t.Fatal("a group the response lacks must keep its own value")
+	}
+	if v, ok := rangeValue(map[string]any{"series": []any{map[string]any{"value": "60"}}}, ""); !ok || v != 60 {
+		t.Fatalf("ungrouped = %v, %v; want 60", v, ok)
+	}
+}
+
 // --slices 1 already is the range: no second call. A definition without
 // formulas needs none either.
 func TestDefinitionQueryFormulaNoExtraCall(t *testing.T) {
-	s := &timeseriesServer{series: map[string]string{mDef: liveFormulaUngroupedWhole}}
-	if _, _, err := runResource(t, s.handler(t), "", "metrics", "definitions", "query", mDef, "--slices", "1", "-o", "table"); err != nil {
+	oneSlice := strings.Replace(liveFormulaUngroupedWhole, `"error_rate": {"name": "error_rate", "queries": [], "formulas": [],`,
+		`"error_rate": {"name": "error_rate", "queries": [], "formulas": [{"name": "error_rate", "expression": "errors / total * 100"}],`, 1)
+	s := &timeseriesServer{series: map[string]string{mDef: oneSlice}}
+	out, _, err := runResource(t, s.handler(t), "", "metrics", "definitions", "query", mDef, "--slices", "1", "-o", "table")
+	if err != nil {
 		t.Fatal(err)
 	}
 	if len(s.queries) != 1 {
 		t.Fatalf("--slices 1: timeseries calls = %d", len(s.queries))
+	}
+	// The one bucket already is the range: labeled formula all the same.
+	if got := tableRow(out, "error_rate"); !strings.HasPrefix(got, "error_rate formula 2.82") {
+		t.Fatalf("--slices 1 formula row = %q\n%s", got, out)
 	}
 	noFormula := `{"q":{"name":"q","queries":[{"name":"q"}],"formulas":[],"aggregates":[{"function":"COUNT","value":3}],` +
 		`"series":[{"value":"1.0"},{"value":"2.0"}],"groups_series":[]}}`

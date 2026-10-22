@@ -126,24 +126,22 @@ func runFieldValues(ctx context.Context, app *App, dataset, since, field string,
 	if err != nil {
 		return err
 	}
-	var refs []string
-	if dataset != "" {
-		refs = []string{dataset}
-	}
-	ids, expr, err := resolveDataset(ctx, app, refs, "")
+	ids, err := fieldValuesScope(ctx, app, dataset)
 	if err != nil {
 		return err
 	}
 	client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
 	resp, err := client.Search(ctx, bronto.SearchRequest{
-		From: ids, FromExpr: expr, Time: spec,
+		From: ids, Time: spec,
 		Select: []string{"count(*)"}, Groups: []string{field}, Limit: limit,
 	})
 	if err != nil {
 		return enrichQueryError(err, "", []string{"count(*)"})
 	}
-	rows := fieldValueRows(resp.GroupRows())
-	if len(rows) == 1 && rows[0]["value"] == nil {
+	rows := fieldValueRows(resp.Groups, field)
+	// With -n 1 the missing-field group can fill the only slot even when
+	// values exist, so only conclude the field is absent when there was room.
+	if len(rows) == 1 && rows[0]["value"] == nil && limit > 1 {
 		app.Notef("No event in the range has %s: check its spelling with 'bronto fields -d <dataset> <name>', or widen --since.\n", field)
 	}
 	format, err := app.DetectFormat(false)
@@ -164,15 +162,39 @@ func runFieldValues(ctx context.Context, app *App, dataset, since, field string,
 	return p.PrintRows([]string{"value", "count"}, rows)
 }
 
-// fieldValueRows turns grouped count rows into {value, count} rows in the
-// API's order (most frequent first); the "null" group becomes a nil value.
-func fieldValueRows(groups []map[string]any) []map[string]any {
+// fieldValuesScope returns the dataset ids --values searches: the -d
+// dataset, or, like `fields` without -d, every dataset in the account.
+func fieldValuesScope(ctx context.Context, app *App, dataset string) ([]string, error) {
+	if dataset != "" {
+		id, err := resolveDatasetRef(ctx, app, dataset)
+		if err != nil {
+			return nil, err
+		}
+		return []string{id}, nil
+	}
+	ds, err := listDatasets(ctx, app)
+	if err != nil {
+		return nil, err
+	}
+	if len(ds) == 0 {
+		return nil, clierr.New("usage_missing_dataset", "this account has no datasets yet")
+	}
+	ids := make([]string, 0, len(ds))
+	for _, d := range ds {
+		ids = append(ids, d.id)
+	}
+	return ids, nil
+}
+
+// fieldValueRows turns the raw grouped count rows into {value, count} rows
+// in the API's order (most frequent first). Live, a group is the value in
+// one pair of brackets ("[502]", "[null]" for events without the field);
+// only that pair is removed, so the value stays usable in a query. An
+// object-shaped group ({"<field>": value}) yields its field's value.
+func fieldValueRows(groups []map[string]any, field string) []map[string]any {
 	rows := make([]map[string]any, 0, len(groups))
 	for _, g := range groups {
-		var value any = fmt.Sprint(g["group"])
-		if value == "null" || g["group"] == nil {
-			value = nil
-		}
+		value := groupValue(g["group"], field)
 		n := g["value"]
 		if n == nil {
 			n = g["count"]
@@ -180,6 +202,40 @@ func fieldValueRows(groups []map[string]any) []map[string]any {
 		rows = append(rows, map[string]any{"value": value, "count": toNumber(n)})
 	}
 	return rows
+}
+
+// groupValue decodes one raw group of a single-key grouping; nil means
+// the events lack the field.
+func groupValue(raw any, field string) any {
+	switch g := raw.(type) {
+	case nil:
+		return nil
+	case map[string]any:
+		if v, ok := g[field]; ok {
+			return groupValue(v, field)
+		}
+		if len(g) == 1 {
+			for _, v := range g {
+				return groupValue(v, field)
+			}
+		}
+		return nil
+	case []any:
+		if len(g) == 1 {
+			return groupValue(g[0], field)
+		}
+		return fmt.Sprint(g)
+	case string:
+		if len(g) >= 2 && g[0] == '[' && g[len(g)-1] == ']' {
+			g = g[1 : len(g)-1]
+		}
+		if g == "null" {
+			return nil
+		}
+		return g
+	default:
+		return fmt.Sprint(g)
+	}
 }
 
 // refuseDatasetAsFilter rejects `bronto fields <dataset>` without -d: the

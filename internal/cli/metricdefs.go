@@ -245,7 +245,12 @@ func queryDefinition(ctx context.Context, app *App, id string, params url.Values
 	rows := timeseriesRows(payload, label)
 	entries, _ := payload.(map[string]any)
 	formulas := formulaNames(entries)
-	if len(formulas) == 0 || params.Get("num_of_slices") == "1" || !printsRows(app) {
+	if len(formulas) == 0 || !printsRows(app) {
+		return payload, rows, nil
+	}
+	if params.Get("num_of_slices") == "1" {
+		// Already the range: label it so, without another request.
+		applyRangeValues(rows, payload, formulas)
 		return payload, rows, nil
 	}
 	whole := url.Values{}
@@ -305,10 +310,10 @@ func applyRangeValues(rows []map[string]any, rangePayload any, formulas map[stri
 }
 
 // rangeValue reads the single bucket of a one-slice series: the group's
-// value for a grouped formula, else the series' only point.
+// value for a grouped formula (an empty group name is a valid group),
+// else the series' only point.
 func rangeValue(e map[string]any, group string) (float64, bool) {
-	if group != "" {
-		groups, _ := e["groups_series"].([]any)
+	if groups, _ := e["groups_series"].([]any); len(groups) > 0 {
 		for _, g := range groups {
 			gm, _ := g.(map[string]any)
 			if gm != nil && fmt.Sprint(gm["name"]) == group {
