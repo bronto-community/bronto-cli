@@ -216,6 +216,22 @@ jobs:
           provenance: true
           sbom: true
 
+  # dockerhub-description syncs DOCKERHUB.md to the Docker Hub page once the
+  # images are published. Pre-releases don't move :latest, so they don't
+  # touch the page either. soft-fail turns a failed sync into a warning, so
+  # it can't fail the release.
+  dockerhub-description:
+    needs: release
+    if: ${{ !contains(github.ref_name, '-') }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/dockerhub-description.yml
+    with:
+      soft-fail: true
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
   # verify-release installs the release just published the way users do, with
   # the project's own GitHub Action (bronto-community/setup-bronto-cli), on
   # every runner OS/arch the release ships for. That covers the published
