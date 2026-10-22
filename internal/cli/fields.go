@@ -17,11 +17,11 @@ import (
 )
 
 func newFieldsCmd() *cobra.Command {
-	var dataset, since string
+	var dataset, since, valuesOf string
 	var limit int
 	cmd := &cobra.Command{
 		Use:   "fields [name-filter]",
-		Short: "List the field names (top keys) in a dataset",
+		Short: "List the field names (top keys) in a dataset, or one field's values",
 		Long: "Lists the field names (top keys) in a dataset, with a sample of the values\n" +
 			"seen for each. Pass a name-filter to keep only fields whose name contains it\n" +
 			"(case-insensitive); the dataset always goes in -d. Use it to find the exact\n" +
@@ -30,15 +30,29 @@ func newFieldsCmd() *cobra.Command {
 			"from every event: a rare value (such as STATUS_CODE_ERROR in\n" +
 			"$span.status_code) or a rarely set field (such as $span.events.*) can be\n" +
 			"missing. Widen --since, or check with a search, before you conclude a field\n" +
-			"or value doesn't exist.",
+			"or value doesn't exist.\n\n" +
+			"--values <field> lists one field's distinct values instead, counted over\n" +
+			"every event in the range (a grouped count search), most frequent first:\n" +
+			"rare values the sample misses show up there. -n sets how many values\n" +
+			"(default 20). Pass the field as a query spells it, e.g. $span.status_code;\n" +
+			"(none) counts the events without the field.",
 		Example: "  bronto fields -d <dataset> --since 1h\n" +
 			"  bronto fields -d <dataset> model      # fields with \"model\" in the name\n" +
-			"  bronto fields --since 15m -n 20",
+			"  bronto fields --since 15m -n 20\n" +
+			"  bronto fields -d .traces/checkout-api --values '$span.status_code' --since 24h",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
+			}
+			if cmd.Flags().Changed("values") {
+				if len(args) > 0 {
+					return clierr.New("usage_invalid_flags",
+						"--values lists one field's values and takes no name-filter argument").
+						WithHint("Drop the argument, or drop --values to list field names.")
+				}
+				return runFieldValues(cmd.Context(), app, dataset, since, valuesOf, limit)
 			}
 			spec, err := resolveRelativeSince(since, "Last 1 hour", "fields", "/top-keys")
 			if err != nil {
@@ -79,12 +93,149 @@ func newFieldsCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset name or UUID (omit to cover all datasets)")
 	cmd.Flags().StringVar(&since, "since", "1h", "relative lookback (single unit: 30s, 15m, 1h, 2d)")
-	cmd.Flags().IntVarP(&limit, "limit", "n", 0, "maximum keys to return")
+	cmd.Flags().IntVarP(&limit, "limit", "n", 0, "maximum keys to return (with --values: values, default 20)")
+	cmd.Flags().StringVar(&valuesOf, "values", "", "list this field's distinct values with counts over the range, e.g. '$span.status_code'")
 	// The positional name-filter completes to the dataset's own field names
 	// (or flag hints when no -d is set yet); --dataset completion is wired
 	// tree-wide by applyCompletions.
 	cmd.ValidArgsFunction = completeFieldsOrHints
 	return cmd
+}
+
+// defaultValuesLimit is how many values `fields --values` lists by default.
+const defaultValuesLimit = 20
+
+// runFieldValues lists a field's distinct values with their event counts:
+// one count(*) search grouped by the field, which covers every event in
+// the range, unlike the /top-keys sample. The API returns the groups most
+// frequent first and caps them at the search limit (live, EU 2026-10-22);
+// events without the field form a group named "null", shown as (none).
+func runFieldValues(ctx context.Context, app *App, dataset, since, field string, limit int) error {
+	field = strings.TrimSpace(field)
+	if field == "" {
+		return clierr.New("usage_invalid_flags", "--values needs a field name, e.g. --values '$span.status_code'").
+			WithHint("List the field names with 'bronto fields -d <dataset>'.")
+	}
+	if limit == 0 {
+		limit = defaultValuesLimit
+	}
+	if limit < 1 || limit > 10000 {
+		return clierr.New("usage_invalid_limit", fmt.Sprintf("-n must be between 1 and 10000, got %d", limit))
+	}
+	spec, err := timerange.Resolve(since, "", "", nil)
+	if err != nil {
+		return err
+	}
+	ids, err := fieldValuesScope(ctx, app, dataset)
+	if err != nil {
+		return err
+	}
+	client := bronto.NewClient(app.HTTPClient, app.Config.BaseURL())
+	resp, err := client.Search(ctx, bronto.SearchRequest{
+		From: ids, Time: spec,
+		Select: []string{"count(*)"}, Groups: []string{field}, Limit: limit,
+	})
+	if err != nil {
+		return enrichQueryError(err, "", []string{"count(*)"})
+	}
+	rows := fieldValueRows(resp.Groups, field)
+	// With -n 1 the missing-field group can fill the only slot even when
+	// values exist, so only conclude the field is absent when there was room.
+	if len(rows) == 1 && rows[0]["value"] == nil && limit > 1 {
+		app.Notef("No event in the range has %s: check its spelling with 'bronto fields -d <dataset> <name>', or widen --since.\n", field)
+	}
+	format, err := app.DetectFormat(false)
+	if err != nil {
+		return err
+	}
+	if format == output.FormatTable || format == output.FormatCSV {
+		for _, r := range rows {
+			if r["value"] == nil {
+				r["value"] = "(none)"
+			}
+		}
+	}
+	p, err := app.PrinterFor(format)
+	if err != nil {
+		return err
+	}
+	return p.PrintRows([]string{"value", "count"}, rows)
+}
+
+// fieldValuesScope returns the dataset ids --values searches: the -d
+// dataset, or, like `fields` without -d, every dataset in the account.
+func fieldValuesScope(ctx context.Context, app *App, dataset string) ([]string, error) {
+	if dataset != "" {
+		id, err := resolveDatasetRef(ctx, app, dataset)
+		if err != nil {
+			return nil, err
+		}
+		return []string{id}, nil
+	}
+	ds, err := listDatasets(ctx, app)
+	if err != nil {
+		return nil, err
+	}
+	if len(ds) == 0 {
+		return nil, clierr.New("usage_missing_dataset", "this account has no datasets yet")
+	}
+	ids := make([]string, 0, len(ds))
+	for _, d := range ds {
+		ids = append(ids, d.id)
+	}
+	return ids, nil
+}
+
+// fieldValueRows turns the raw grouped count rows into {value, count} rows
+// in the API's order (most frequent first). Live, a group is the value in
+// one pair of brackets ("[502]", "[null]" for events without the field);
+// only that pair is removed, so the value stays usable in a query. An
+// object-shaped group ({"<field>": value}) yields its field's value.
+func fieldValueRows(groups []map[string]any, field string) []map[string]any {
+	rows := make([]map[string]any, 0, len(groups))
+	for _, g := range groups {
+		value := groupValue(g["group"], field)
+		n := g["value"]
+		if n == nil {
+			n = g["count"]
+		}
+		rows = append(rows, map[string]any{"value": value, "count": toNumber(n)})
+	}
+	return rows
+}
+
+// groupValue decodes one raw group of a single-key grouping; nil means
+// the events lack the field.
+func groupValue(raw any, field string) any {
+	switch g := raw.(type) {
+	case nil:
+		return nil
+	case map[string]any:
+		if v, ok := g[field]; ok {
+			return groupValue(v, field)
+		}
+		if len(g) == 1 {
+			for _, v := range g {
+				return groupValue(v, field)
+			}
+		}
+		return nil
+	case []any:
+		if len(g) == 1 {
+			return groupValue(g[0], field)
+		}
+		return fmt.Sprint(g)
+	case string:
+		if len(g) >= 2 && g[0] == '[' && g[len(g)-1] == ']' {
+			g = g[1 : len(g)-1]
+		}
+		if g == "null" {
+			return nil
+		}
+		return g
+	default:
+		return fmt.Sprint(g)
+	}
 }
 
 // refuseDatasetAsFilter rejects `bronto fields <dataset>` without -d: the

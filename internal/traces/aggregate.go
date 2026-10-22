@@ -99,12 +99,17 @@ func parseGroup(v any) []string {
 	}
 }
 
-func (a *Aggregator) Services(ctx context.Context, errorsOnly bool, limit int) ([]map[string]any, error) {
-	where := ""
-	if errorsOnly {
-		where = ErrorsClause
+// Services aggregates spans per service; a non-empty service keeps only
+// that one.
+func (a *Aggregator) Services(ctx context.Context, service string, errorsOnly bool, limit int) ([]map[string]any, error) {
+	var svcClause, errClause string
+	if service != "" {
+		svcClause = "$service.name = " + Quote(service)
 	}
-	return a.threeWayRows(ctx, []string{"$service.name"}, where, limit,
+	if errorsOnly {
+		errClause = ErrorsClause
+	}
+	return a.threeWayRows(ctx, []string{"$service.name"}, AndJoin(svcClause, errClause), limit,
 		func(vals []string) map[string]any {
 			return map[string]any{"service": at(vals, 0)}
 		})

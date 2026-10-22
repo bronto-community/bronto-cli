@@ -3,10 +3,10 @@ KEY     COUNT  TYPE    SOURCE   VALUES
 status  76     number  message  200, 502
 > bronto search "status >= 500" -d prod/checkout-service --since 1h -g host --select "count(*)"
 Execution time: 12 ms
-COUNT  GROUP  STAT      VALUE
-6      web-2  count(*)  6
-4      web-3  count(*)  4
-3      web-1  count(*)  3
+GROUP  STAT      VALUE  COUNT  TREND
+web-2  count(*)  6      6
+web-3  count(*)  4      4
+web-1  count(*)  3      3
 >
 ────────────────────────────────────────────────────────────────────────────────
 > bronto search "status >= 500" -d prod/checkout-service --since 1h --patterns

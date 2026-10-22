@@ -10,6 +10,10 @@ Runs a query (a Bronto WHERE expression) against one or more datasets.
 Without a time flag or a saved search's range it searches the last 15 minutes.
 Pass '-' as the query to read it from stdin.
 
+With -g/--group-by the table has one row per group: its value over the range,
+the event count and a sparkline. Piped output is the full JSON, every bucket
+included: for a readable summary in scripts or agents, add -o table.
+
 <Tip>
 - **Platform docs:** [docs.bronto.io/query-syntax/search-syntax](https://docs.bronto.io/query-syntax/search-syntax)
 - **API reference:** [docs.bronto.io/api-reference/search/execute-a-query](https://docs.bronto.io/api-reference/search/execute-a-query)
@@ -62,5 +66,7 @@ bronto search "status >= 500" --since 1h
 bronto search "level = 'error'" -d <dataset-uuid> --limit 50
 bronto search -d <dataset> --eq model=claude-fable-5 --gt duration_ms=1000
 bronto search --select "count()" -g host --since 15m
+# A readable summary in scripts or agents (piped output is JSON otherwise)
+bronto search -d <dataset> -g host --since 1h -o table
 bronto search --explain-only --since 1d
 ```

@@ -2,8 +2,10 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
@@ -60,21 +62,78 @@ func tracesAgg(cmd *cobra.Command, since, defaultSince string) (*App, *traces.Ag
 	return app, agg, nil
 }
 
+// serviceFlags is the -s/--service filter of the traces subcommands, with
+// -d/--dataset as an alias: Bronto stores each service's spans in the
+// dataset .traces/<service>, so `-d .traces/checkout-api` is the same
+// filter as `-s checkout-api`.
+const tracesCollection = ".traces"
+
+type serviceFlags struct {
+	service, dataset string
+}
+
+func (s *serviceFlags) register(f *pflag.FlagSet) {
+	f.StringVarP(&s.service, "service", "s", "", "filter by service name")
+	f.StringVarP(&s.dataset, "dataset", "d", "", "filter by trace dataset, .traces/<service> or <service> (the same as -s)")
+}
+
+// resolve returns the service to filter by. A dataset maps to its service
+// (.traces/<service>, or the bare name); bare .traces means every
+// service. A dataset in another collection, or a dataset id, is a usage
+// error: these commands only read .traces.
+func (s *serviceFlags) resolve() (string, error) {
+	d := strings.TrimSpace(s.dataset)
+	if d == "" {
+		return s.service, nil
+	}
+	notTraces := func(msg string) error {
+		return clierr.New("usage_invalid_flags", msg).
+			WithHint("Pass a trace dataset as -d .traces/<service> (or -s <service>); " +
+				"'bronto traces services' lists the services. To query any other dataset, use 'bronto search -d " + d + "'.")
+	}
+	svc := d
+	switch {
+	case d == tracesCollection:
+		svc = ""
+	case strings.HasPrefix(d, tracesCollection+"/"):
+		svc = strings.TrimPrefix(d, tracesCollection+"/")
+	case strings.Contains(d, "/"):
+		return "", notTraces(fmt.Sprintf("-d %s is not a trace dataset: traces commands read only the %s collection",
+			d, tracesCollection))
+	case uuidRe.MatchString(d):
+		return "", notTraces(fmt.Sprintf("-d takes a trace dataset's name, not an id (%s)", d))
+	}
+	if s.service != "" && svc != s.service {
+		return "", clierr.New("usage_conflicting_flags",
+			fmt.Sprintf("-s %s and -d %s name different services", s.service, d)).
+			WithHint("Pass one of them.")
+	}
+	return svc, nil
+}
+
 func newTracesServicesCmd() *cobra.Command {
 	var since string
+	var sf serviceFlags
 	var errorsOnly bool
 	var limit int
 	cmd := &cobra.Command{
-		Use:     "services",
-		Short:   "Show span counts and latency per service",
-		Example: "  bronto traces services --since 15m\n  bronto traces services --errors",
-		Args:    cobra.NoArgs,
+		Use:   "services",
+		Short: "Show span counts and latency per service",
+		Long: "Shows span counts and latency per service over the .traces collection.\n" +
+			"-s <service> (or -d .traces/<service>) keeps one service.",
+		Example: "  bronto traces services --since 15m\n  bronto traces services --errors\n" +
+			"  bronto traces services -d .traces/checkout-api",
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			service, err := sf.resolve()
+			if err != nil {
+				return err
+			}
 			app, agg, err := tracesAgg(cmd, since, "15m")
 			if err != nil {
 				return err
 			}
-			rows, err := agg.Services(cmd.Context(), errorsOnly, limit)
+			rows, err := agg.Services(cmd.Context(), service, errorsOnly, limit)
 			if err != nil {
 				return err
 			}
@@ -86,22 +145,31 @@ func newTracesServicesCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&since, "since", "", "relative lookback (default 15m)")
+	sf.register(cmd.Flags())
 	cmd.Flags().BoolVar(&errorsOnly, "errors", false, "only error spans")
 	cmd.Flags().IntVarP(&limit, "limit", "n", 50, "max services")
 	return cmd
 }
 
 func newTracesOperationsCmd() *cobra.Command {
-	var since, service string
+	var since string
+	var sf serviceFlags
 	var errorsOnly bool
 	var limit int
 	cmd := &cobra.Command{
 		Use:   "operations",
 		Short: "Show span counts and latency per service and operation",
+		Long: "Shows span counts and latency per service and operation (span name) over\n" +
+			"the .traces collection. -s <service> (or -d .traces/<service>) keeps one service.",
 		Example: "  bronto traces operations --since 15m\n" +
-			"  bronto traces operations -s checkout-service --errors -n 10",
+			"  bronto traces operations -s checkout-service --errors -n 10\n" +
+			"  bronto traces operations -d .traces/checkout-service",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			service, err := sf.resolve()
+			if err != nil {
+				return err
+			}
 			app, agg, err := tracesAgg(cmd, since, "15m")
 			if err != nil {
 				return err
@@ -119,7 +187,7 @@ func newTracesOperationsCmd() *cobra.Command {
 	}
 	f := cmd.Flags()
 	f.StringVar(&since, "since", "", "relative lookback (default 15m)")
-	f.StringVarP(&service, "service", "s", "", "filter by service name")
+	sf.register(f)
 	f.BoolVar(&errorsOnly, "errors", false, "only error spans")
 	f.IntVarP(&limit, "limit", "n", 25, "max operations")
 	return cmd
@@ -127,7 +195,8 @@ func newTracesOperationsCmd() *cobra.Command {
 
 func newTracesAggregateCmd() *cobra.Command {
 	var (
-		since, service, kind, where string
+		since, kind, where string
+		sf                 serviceFlags
 		by                          []string
 		errorsOnly, includeEmpty    bool
 		rootOnly, allSpans          bool
@@ -145,6 +214,10 @@ func newTracesAggregateCmd() *cobra.Command {
 					WithHint("Example: --by http.route")
 			}
 			if err := validatePositive("limit", limit); err != nil {
+				return err
+			}
+			service, err := sf.resolve()
+			if err != nil {
 				return err
 			}
 			app, agg, err := tracesAgg(cmd, since, "15m")
@@ -180,7 +253,7 @@ func newTracesAggregateCmd() *cobra.Command {
 	f.BoolVar(&rootOnly, "root-only", true, "only consider root spans")
 	f.BoolVar(&allSpans, "all-spans", false, "consider all spans, not just roots")
 	cmd.MarkFlagsMutuallyExclusive("root-only", "all-spans")
-	f.StringVarP(&service, "service", "s", "", "filter by service name")
+	sf.register(f)
 	f.StringVarP(&kind, "kind", "k", "", "filter by span kind, e.g. server or client")
 	f.BoolVar(&errorsOnly, "errors", false, "only error spans")
 	f.StringVarP(&where, "where", "w", "", "additional raw WHERE clause")
@@ -191,7 +264,8 @@ func newTracesAggregateCmd() *cobra.Command {
 }
 
 func newTracesListCmd() *cobra.Command {
-	var since, service, operation string
+	var since, operation string
+	var sf serviceFlags
 	var minDurationMS float64
 	var errorsOnly bool
 	var limit int
@@ -203,6 +277,10 @@ func newTracesListCmd() *cobra.Command {
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validatePositive("limit", limit); err != nil {
+				return err
+			}
+			service, err := sf.resolve()
+			if err != nil {
 				return err
 			}
 			app, agg, err := tracesAgg(cmd, since, "15m")
@@ -227,7 +305,7 @@ func newTracesListCmd() *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
-	f.StringVarP(&service, "service", "s", "", "filter by service name")
+	sf.register(f)
 	f.StringVar(&operation, "operation", "", "filter by operation (span) name")
 	f.Float64Var(&minDurationMS, "min-duration-ms", 0, "only spans at least this many milliseconds long")
 	f.BoolVar(&errorsOnly, "errors", false, "only error spans")
@@ -344,7 +422,8 @@ func rejectFieldsForCustomRender(app *App) error {
 
 func newTracesShapeCmd() *cobra.Command {
 	var (
-		since, service, operation, where string
+		since, operation, where string
+		sf                        serviceFlags
 		errorsOnly                       bool
 		minDurationMS                    float64
 		entry, anySpan                   bool
@@ -364,6 +443,10 @@ func newTracesShapeCmd() *cobra.Command {
 				return err
 			}
 			if err := validateBarWidth(barWidth); err != nil {
+				return err
+			}
+			service, err := sf.resolve()
+			if err != nil {
 				return err
 			}
 			app, agg, err := tracesAgg(cmd, since, "1h")
@@ -437,7 +520,7 @@ func newTracesShapeCmd() *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
-	f.StringVarP(&service, "service", "s", "", "filter by service name")
+	sf.register(f)
 	f.StringVar(&operation, "operation", "", "filter by operation (span) name")
 	f.StringVarP(&where, "where", "w", "", "additional raw WHERE clause")
 	f.BoolVar(&errorsOnly, "errors", false, "only error spans/traces")

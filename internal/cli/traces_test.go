@@ -366,6 +366,64 @@ func TestTracesRejectsBadLimitAndBarWidth(t *testing.T) {
 	}
 }
 
+func TestServiceFlagsResolve(t *testing.T) {
+	ok := []struct{ service, dataset, want string }{
+		{"cart", "", "cart"},
+		{"", ".traces/checkout-api", "checkout-api"},
+		{"", "checkout-api", "checkout-api"},
+		{"", ".traces", ""},
+		{"checkout-api", ".traces/checkout-api", "checkout-api"},
+	}
+	for _, c := range ok {
+		got, err := (&serviceFlags{service: c.service, dataset: c.dataset}).resolve()
+		if err != nil || got != c.want {
+			t.Errorf("-s %q -d %q = %q, %v; want %q", c.service, c.dataset, got, err, c.want)
+		}
+	}
+	bad := map[[2]string]string{
+		{"", "web/nginx"}: "usage_invalid_flags",
+		{"", "11111111-1111-1111-1111-111111111111"}: "usage_invalid_flags",
+		{"cart", ".traces/checkout-api"}:              "usage_conflicting_flags",
+	}
+	for in, code := range bad {
+		_, err := (&serviceFlags{service: in[0], dataset: in[1]}).resolve()
+		if got := codeOf(err); got != code {
+			t.Errorf("-s %q -d %q: code = %q (%v), want %q", in[0], in[1], got, err, code)
+		}
+	}
+}
+
+// -d .traces/<service> filters operations and services like -s does; a
+// dataset outside .traces fails before any request.
+func TestTracesDatasetAlias(t *testing.T) {
+	for _, sub := range []string{"operations", "services"} {
+		var wheres []string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			where, _ := body["where"].(string)
+			wheres = append(wheres, where)
+			_, _ = w.Write([]byte(`{"groups":[]}`))
+		}))
+		if _, err := runTraces(t, srv, sub, "-d", ".traces/checkout-api", "-o", "json"); err != nil {
+			t.Fatalf("%s: %v", sub, err)
+		}
+		srv.Close()
+		if len(wheres) == 0 || wheres[0] != "$service.name = 'checkout-api'" {
+			t.Errorf("%s -d: wheres = %q", sub, wheres)
+		}
+
+		srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			t.Errorf("%s: no request expected for a non-trace dataset", sub)
+		}))
+		_, err := runTraces(t, srv, sub, "-d", "web/nginx")
+		srv.Close()
+		if codeOf(err) != "usage_invalid_flags" || !strings.Contains(err.Error(), ".traces") {
+			t.Errorf("%s -d web/nginx: %v", sub, err)
+		}
+	}
+}
+
 func TestShapeSampleWhereMinDurationIsInclusive(t *testing.T) {
 	where, err := shapeSampleWhere(false, "", "", false, 500, "")
 	if err != nil {

@@ -108,7 +108,10 @@ func TestHumanNanos(t *testing.T) {
 // timeseriesServer serves the definitions list, one widget and
 // /timeseries for the ids in series, recording each timeseries query.
 type timeseriesServer struct {
-	series  map[string]string
+	series map[string]string
+	// whole, when it has the id, answers num_of_slices=1 requests: the
+	// one-slice evaluation that formula range values come from.
+	whole   map[string]string
 	queries []url.Values
 	paths   []string
 }
@@ -124,7 +127,11 @@ func (s *timeseriesServer) handler(t *testing.T) http.HandlerFunc {
 			_, _ = w.Write([]byte(`{"id":"` + mWidget + `","name":"w","metric_ids":["` + mDef + `","` + mDef2 + `"]}`))
 		case strings.HasPrefix(r.URL.Path, "/timeseries/"):
 			s.queries = append(s.queries, r.URL.Query())
-			body, ok := s.series[strings.TrimPrefix(r.URL.Path, "/timeseries/")]
+			id := strings.TrimPrefix(r.URL.Path, "/timeseries/")
+			body, ok := s.series[id]
+			if w1, has := s.whole[id]; has && r.URL.Query().Get("num_of_slices") == "1" {
+				body = w1
+			}
 			if !ok {
 				w.WriteHeader(http.StatusNotFound)
 				_, _ = w.Write([]byte(`{"code":404,"details":"Metric definition not found"}`))
@@ -144,12 +151,17 @@ func TestDefinitionQueryTable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(s.queries) != 1 {
+	// The definition has a formula: a second, one-slice call for its range
+	// value, over the same range.
+	if len(s.queries) != 2 {
 		t.Fatalf("timeseries calls = %d", len(s.queries))
 	}
 	q := s.queries[0]
 	if q.Get("time_range") != "Last 24 hours" || q.Get("num_of_slices") != "24" || q.Has("limit") {
 		t.Fatalf("default params = %v", q)
+	}
+	if q1 := s.queries[1]; q1.Get("num_of_slices") != "1" || q1.Get("time_range") != "Last 24 hours" {
+		t.Fatalf("range call params = %v", q1)
 	}
 	for _, want := range []string{"SERIES", "TREND", "requests", "204", "█▁▄", "GET /logs", "413 ms", "80.0 ms", "rate", "1.50"} {
 		if !strings.Contains(out, want) {
@@ -158,6 +170,174 @@ func TestDefinitionQueryTable(t *testing.T) {
 	}
 	if strings.Contains(stderr, "zero") {
 		t.Errorf("unexpected zero warning: %q", stderr)
+	}
+}
+
+// liveFormulaBuckets and liveFormulaWhole are trimmed GET /timeseries/{id}
+// responses (EU, 2026-10-22) for errors / total * 100 grouped by
+// $service.name, over the same hour with 4 slices and with 1. In the
+// 4-slice one the formula's values are the mean of its per-bucket rates:
+// svc-b's one span was an error, in the last bucket, so it reads 25, and
+// payments-gateway reads 2.84 for 23 errors in 816 spans (2.82%).
+const liveFormulaBuckets = `{
+ "total": {"name": "total",
+   "queries": [{"name": "errors", "select": ["count(*)"], "groups": ["$service.name"]},
+               {"name": "total", "select": ["count(*)"], "groups": ["$service.name"]}],
+   "formulas": [{"name": "error_rate", "expression": "errors / total * 100"}],
+   "aggregates": [{"function": "COUNT", "value": 817}, {"function": "COUNT", "value": 817.0}],
+   "series": [{"value": "155.0"}, {"value": "222.0"}, {"value": "215.0"}, {"value": "225.0"}],
+   "groups_series": [
+     {"key": "$service.name", "name": "payments-gateway", "stat": "COUNT", "value": 816.0,
+      "timeseries": [{"value": 155.0}, {"value": 222.0}, {"value": 215.0}, {"value": 224.0}]},
+     {"key": "$service.name", "name": "svc-b", "stat": "COUNT", "value": 1.0,
+      "timeseries": [{"value": 0.0}, {"value": 0.0}, {"value": 0.0}, {"value": 1.0}]}]},
+ "errors": {"name": "errors", "queries": [], "formulas": [],
+   "aggregates": [{"function": "COUNT", "value": 24}, {"function": "COUNT", "value": 24.0}],
+   "series": [{"value": "5.0"}, {"value": "6.0"}, {"value": "5.0"}, {"value": "8.0"}],
+   "groups_series": [
+     {"key": "$service.name", "name": "payments-gateway", "stat": "COUNT", "value": 23.0,
+      "timeseries": [{"value": 5.0}, {"value": 6.0}, {"value": 5.0}, {"value": 7.0}]},
+     {"key": "$service.name", "name": "svc-b", "stat": "COUNT", "value": 1.0,
+      "timeseries": [{"value": 0.0}, {"value": 0.0}, {"value": 0.0}, {"value": 1.0}]}]},
+ "error_rate": {"name": "error_rate", "queries": [], "formulas": [],
+   "aggregates": [{"function": "COUNT", "value": 8}, {"function": "AVG", "value": 13.92}],
+   "series": [{"value": "1.6"}, {"value": "1.35"}, {"value": "1.16"}, {"value": "52.0"}],
+   "groups_series": [
+     {"key": "$service.name", "name": "svc-b", "stat": "AVG", "value": 25,
+      "timeseries": [{"value": 0}, {"value": 0}, {"value": 0}, {"value": 100}]},
+     {"key": "$service.name", "name": "payments-gateway", "stat": "AVG", "value": 2.844772637416111,
+      "timeseries": [{"value": 3.225806451612903}, {"value": 2.7027027027027026}, {"value": 2.3255813953488373}, {"value": 3.125}]}]}
+}`
+
+const liveFormulaWhole = `{
+ "error_rate": {"name": "error_rate", "queries": [], "formulas": [],
+   "aggregates": [{"function": "COUNT", "value": 2}, {"function": "AVG", "value": 51.41}],
+   "series": [{"value": "51.41"}],
+   "groups_series": [
+     {"key": "$service.name", "name": "svc-b", "stat": "AVG", "value": 100,
+      "timeseries": [{"value": 100}]},
+     {"key": "$service.name", "name": "payments-gateway", "stat": "AVG", "value": 2.8186274509803924,
+      "timeseries": [{"value": 2.8186274509803924}]}]}
+}`
+
+// liveFormulaUngrouped is the ungrouped variant (errors / total * 100 over
+// payments-gateway only), 4 slices then 1: AVG 2.84 against 2.82.
+const (
+	liveFormulaUngrouped = `{
+ "errors": {"name": "errors",
+   "queries": [{"name": "errors"}, {"name": "total"}],
+   "formulas": [{"name": "error_rate", "expression": "errors / total * 100"}],
+   "aggregates": [{"function": "COUNT", "value": 23}, {"function": "COUNT", "value": 23}],
+   "series": [{"value": "5.0"}, {"value": "6.0"}, {"value": "5.0"}, {"value": "7.0"}]},
+ "total": {"name": "total", "queries": [], "formulas": [],
+   "aggregates": [{"function": "COUNT", "value": 816}, {"function": "COUNT", "value": 816}],
+   "series": [{"value": "155.0"}, {"value": "222.0"}, {"value": "215.0"}, {"value": "224.0"}]},
+ "error_rate": {"name": "error_rate", "queries": [], "formulas": [],
+   "aggregates": [{"function": "COUNT", "value": 4}, {"function": "AVG", "value": 2.844772637416111}],
+   "series": [{"value": "3.225806451612903"}, {"value": "2.7027027027027026"}, {"value": "2.3255813953488373"}, {"value": "3.125"}]}
+}`
+	liveFormulaUngroupedWhole = `{
+ "error_rate": {"name": "error_rate", "queries": [], "formulas": [],
+   "aggregates": [{"function": "COUNT", "value": 1}, {"function": "AVG", "value": 2.8186274509803924}],
+   "series": [{"value": "2.8186274509803924"}]}
+}`
+)
+
+// tableRow returns the whitespace-normalized table line that starts with
+// the given fields.
+func tableRow(out, prefix string) string {
+	for _, line := range strings.Split(out, "\n") {
+		norm := strings.Join(strings.Fields(line), " ")
+		if strings.HasPrefix(norm, prefix) {
+			return norm
+		}
+	}
+	return ""
+}
+
+func TestDefinitionQueryFormulaRangeValue(t *testing.T) {
+	s := &timeseriesServer{
+		series: map[string]string{mDef: liveFormulaBuckets, mDef2: liveFormulaUngrouped},
+		whole:  map[string]string{mDef: liveFormulaWhole, mDef2: liveFormulaUngroupedWhole},
+	}
+	out, _, err := runResource(t, s.handler(t), "", "metrics", "definitions", "query", mDef, "--slices", "4", "-o", "table")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for prefix, want := range map[string]string{
+		// Formula rows: the range value, labeled formula, trend per bucket.
+		"error_rate svc-b":            "error_rate svc-b formula 100 ▁▁▁█",
+		"error_rate payments-gateway": "error_rate payments-gateway formula 2.82",
+		// Query rows keep their own range aggregate.
+		"errors payments-gateway": "errors payments-gateway count 23",
+		"total svc-b":             "total svc-b count 1 ▁▁▁█",
+	} {
+		if got := tableRow(out, prefix); !strings.HasPrefix(got, want) {
+			t.Errorf("row %q = %q, want prefix %q\n%s", prefix, got, want, out)
+		}
+	}
+	if len(s.queries) != 2 || s.queries[0].Get("num_of_slices") != "4" || s.queries[1].Get("num_of_slices") != "1" {
+		t.Fatalf("queries = %v", s.queries)
+	}
+
+	out, _, err = runResource(t, s.handler(t), "", "metrics", "definitions", "query", mDef2, "--slices", "4", "-o", "table")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := tableRow(out, "error_rate"); !strings.HasPrefix(got, "error_rate formula 2.82") {
+		t.Errorf("ungrouped formula row = %q\n%s", got, out)
+	}
+	if got := tableRow(out, "total"); !strings.HasPrefix(got, "total count 816") {
+		t.Errorf("query row = %q\n%s", got, out)
+	}
+}
+
+// An empty group name is a group: its range value comes from its own
+// groups_series entry, not from the formula's overall series.
+func TestRangeValueEmptyGroupName(t *testing.T) {
+	e := map[string]any{
+		"series": []any{map[string]any{"value": "60"}},
+		"groups_series": []any{
+			map[string]any{"name": "", "value": 100.0},
+			map[string]any{"name": "web", "value": 20.0},
+		},
+	}
+	if v, ok := rangeValue(e, ""); !ok || v != 100 {
+		t.Fatalf("empty group = %v, %v; want 100", v, ok)
+	}
+	if _, ok := rangeValue(e, "missing"); ok {
+		t.Fatal("a group the response lacks must keep its own value")
+	}
+	if v, ok := rangeValue(map[string]any{"series": []any{map[string]any{"value": "60"}}}, ""); !ok || v != 60 {
+		t.Fatalf("ungrouped = %v, %v; want 60", v, ok)
+	}
+}
+
+// --slices 1 already is the range: no second call. A definition without
+// formulas needs none either.
+func TestDefinitionQueryFormulaNoExtraCall(t *testing.T) {
+	oneSlice := strings.Replace(liveFormulaUngroupedWhole, `"error_rate": {"name": "error_rate", "queries": [], "formulas": [],`,
+		`"error_rate": {"name": "error_rate", "queries": [], "formulas": [{"name": "error_rate", "expression": "errors / total * 100"}],`, 1)
+	s := &timeseriesServer{series: map[string]string{mDef: oneSlice}}
+	out, _, err := runResource(t, s.handler(t), "", "metrics", "definitions", "query", mDef, "--slices", "1", "-o", "table")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.queries) != 1 {
+		t.Fatalf("--slices 1: timeseries calls = %d", len(s.queries))
+	}
+	// The one bucket already is the range: labeled formula all the same.
+	if got := tableRow(out, "error_rate"); !strings.HasPrefix(got, "error_rate formula 2.82") {
+		t.Fatalf("--slices 1 formula row = %q\n%s", got, out)
+	}
+	noFormula := `{"q":{"name":"q","queries":[{"name":"q"}],"formulas":[],"aggregates":[{"function":"COUNT","value":3}],` +
+		`"series":[{"value":"1.0"},{"value":"2.0"}],"groups_series":[]}}`
+	s = &timeseriesServer{series: map[string]string{mDef: noFormula}}
+	if _, _, err := runResource(t, s.handler(t), "", "metrics", "definitions", "query", mDef, "-o", "table"); err != nil {
+		t.Fatal(err)
+	}
+	if len(s.queries) != 1 {
+		t.Fatalf("no formula: timeseries calls = %d", len(s.queries))
 	}
 }
 
@@ -175,7 +355,8 @@ func TestDefinitionQueryJSONIsRaw(t *testing.T) {
 	if _, ok := latency["groups_series"]; !ok {
 		t.Fatalf("-o json is not the raw response: %s", out)
 	}
-	// A UUID needs no name lookup: only the timeseries call.
+	// A UUID needs no name lookup, and -o json prints the raw response, so
+	// the formula needs no range call: only the one timeseries call.
 	if len(s.paths) != 1 {
 		t.Fatalf("requests = %v", s.paths)
 	}
@@ -248,8 +429,8 @@ func TestWidgetQueryRunsEveryDefinition(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(s.queries) != 2 {
-		t.Fatalf("timeseries calls = %d, want one per metric id", len(s.queries))
+	if len(s.queries) != 4 {
+		t.Fatalf("timeseries calls = %d, want two per metric id (both have a formula)", len(s.queries))
 	}
 	if !strings.Contains(out, "DEFINITION") || !strings.Contains(out, "checkout requests") || !strings.Contains(out, "errors") {
 		t.Fatalf("table:\n%s", out)

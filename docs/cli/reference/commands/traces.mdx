@@ -43,6 +43,7 @@ bronto traces aggregate [flags]
 | --- | --- | --- | --- | --- |
 | `--all-spans` |  | bool |  | consider all spans, not just roots |
 | `--by` | `-b` | stringArray |  | attribute to group by (repeatable, required) |
+| `--dataset` | `-d` | string |  | filter by trace dataset, .traces/&lt;service&gt; or &lt;service&gt; (the same as -s) |
 | `--errors` |  | bool |  | only error spans |
 | `--include-empty` |  | bool |  | include rows where an attribute is missing |
 | `--kind` | `-k` | string |  | filter by span kind, e.g. server or client |
@@ -73,6 +74,7 @@ bronto traces list [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
+| `--dataset` | `-d` | string |  | filter by trace dataset, .traces/&lt;service&gt; or &lt;service&gt; (the same as -s) |
 | `--errors` |  | bool |  | only error spans |
 | `--limit` | `-n` | int | `50` | max spans |
 | `--min-duration-ms` |  | float |  | only spans at least this many milliseconds long |
@@ -91,7 +93,8 @@ bronto traces list --min-duration-ms 500 -n 20
 
 ## bronto traces operations
 
-Show span counts and latency per service and operation
+Shows span counts and latency per service and operation (span name) over
+the .traces collection. -s &lt;service&gt; (or -d .traces/&lt;service&gt;) keeps one service.
 
 ```sh
 bronto traces operations [flags]
@@ -101,6 +104,7 @@ bronto traces operations [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
+| `--dataset` | `-d` | string |  | filter by trace dataset, .traces/&lt;service&gt; or &lt;service&gt; (the same as -s) |
 | `--errors` |  | bool |  | only error spans |
 | `--limit` | `-n` | int | `25` | max operations |
 | `--service` | `-s` | string |  | filter by service name |
@@ -113,11 +117,13 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 ```sh
 bronto traces operations --since 15m
 bronto traces operations -s checkout-service --errors -n 10
+bronto traces operations -d .traces/checkout-service
 ```
 
 ## bronto traces services
 
-Show span counts and latency per service
+Shows span counts and latency per service over the .traces collection.
+-s &lt;service&gt; (or -d .traces/&lt;service&gt;) keeps one service.
 
 ```sh
 bronto traces services [flags]
@@ -127,8 +133,10 @@ bronto traces services [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
+| `--dataset` | `-d` | string |  | filter by trace dataset, .traces/&lt;service&gt; or &lt;service&gt; (the same as -s) |
 | `--errors` |  | bool |  | only error spans |
 | `--limit` | `-n` | int | `50` | max services |
+| `--service` | `-s` | string |  | filter by service name |
 | `--since` |  | string |  | relative lookback (default 15m) |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
@@ -138,6 +146,7 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 ```sh
 bronto traces services --since 15m
 bronto traces services --errors
+bronto traces services -d .traces/checkout-api
 ```
 
 ## bronto traces shape
@@ -154,6 +163,7 @@ bronto traces shape [flags]
 | --- | --- | --- | --- | --- |
 | `--any-span` |  | bool |  | sample by any matching span, not just entries |
 | `--bar-width` |  | int | `50` | waterfall bar width in characters (min 10) |
+| `--dataset` | `-d` | string |  | filter by trace dataset, .traces/&lt;service&gt; or &lt;service&gt; (the same as -s) |
 | `--entry` |  | bool | `true` | sample by entry (server) spans |
 | `--errors` |  | bool |  | only error spans/traces |
 | `--min-duration-ms` |  | float |  | only entry spans at least this many milliseconds long |

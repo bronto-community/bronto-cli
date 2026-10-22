@@ -177,8 +177,17 @@ bronto metrics definitions list
 Evaluates a saved metric definition over a time range (GET /timeseries/&#123;id&#125;)
 and prints one row per series: each query and formula, or each group of a
 grouped one, with its value over the range and a sparkline of the buckets.
-This is the data a widget built on the definition shows. -o json prints the
-raw API response.
+This is the data a widget built on the definition shows.
+
+A formula's VALUE is the formula over the whole range (STAT "formula"), as
+the web UI shows it: errors / total \* 100 over all errors and spans in the
+range. That takes one more request, with one slice. The TREND stays per
+bucket.
+
+-o json prints the raw API response. There, a formula's aggregates are the
+mean of its per-bucket values, not the range value; add --slices 1 to get
+the range value in JSON. Piped output is JSON: for a readable summary in
+scripts or agents, add -o table.
 
 The definition can be an id or a unique name. A warning on stderr says when
 every series is zero: usually the from\_expr or where matches nothing.
@@ -205,6 +214,8 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 ```sh
 bronto metrics definitions query "checkout-service requests"
 bronto metrics definitions query <id> --since 7d --slices 48
+# A readable summary in scripts or agents (piped output is JSON otherwise)
+bronto metrics definitions query <id> -o table
 bronto metrics definitions query <id> --time-range "Last 24 hours" -o json
 ```
 

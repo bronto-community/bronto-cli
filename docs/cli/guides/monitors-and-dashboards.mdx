@@ -501,6 +501,17 @@ data arrived. A new definition whose query differs, even only in its `where`, is
 evaluated fresh. `-o json` prints the raw
 [timeseries response](https://docs.bronto.io/api-reference/timeseries/retrieve-the-timeseries-for-a-metric-definition).
 
+A formula's value is the formula over the whole range, the number the web UI shows, with
+the stat `formula`: `errors / total * 100` divides all errors by all spans in the range.
+The CLI asks Bronto for it with one more request, evaluated as a single bucket, while the
+sparkline stays per bucket. In the raw JSON, a formula's aggregate is the average of its
+bucket values instead, which can be far off (a service with one failed request in the
+last of 24 buckets averages 4.2%, not 100%). Add `--slices 1` to get the range value
+in JSON.
+
+Piped, `query` prints the raw JSON. For a readable summary in a script or an agent,
+add `-o table`, as with `bronto widgets query`.
+
 From definition to dashboard:
 
 ```sh

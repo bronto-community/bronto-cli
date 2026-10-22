@@ -29,7 +29,8 @@ ones most queries need, for `bronto search` on a traces dataset or in a dashboar
 | `$span.status_code` | `STATUS_CODE_ERROR` on failed spans: `$span.status_code = 'STATUS_CODE_ERROR'` |
 
 `bronto fields` samples recent spans, so a rare value such as `STATUS_CODE_ERROR` can be
-missing from its output even when error spans exist. Exception details sit under
+missing from its output even when error spans exist. To count every value over the whole
+range instead, run `bronto fields -d .traces/<service> --values '$span.status_code'`. Exception details sit under
 `$span.events.<n>.*`; double-quote those keys in a WHERE clause, because of the digit
 segment (`-g` quotes them for you).
 
@@ -61,6 +62,11 @@ checkout-service  SELECT cart_items   24     5.25ms   9.00ms
 ```
 
 Both take `--errors` to count only error spans, and `-n` to cap the number of rows.
+
+Bronto keeps each service's spans in its own dataset, `.traces/<service>`. So `-s` has an
+alias, `-d`: `-d .traces/checkout-service` (or `-d checkout-service`) is the same filter
+as `-s checkout-service`, in every `traces` subcommand that takes `-s`. A dataset outside
+the `.traces` collection is a usage error; search it with `bronto search -d` instead.
 
 ## Find spans
 
