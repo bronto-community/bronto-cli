@@ -32,26 +32,47 @@ const manifestFormatHelp = `Manifest format (YAML or JSON, one dashboard per fil
           select: count(*)
           where: "$span.kind = 'SPAN_KIND_SERVER'"   # default "" (everything)
     - name: p95 latency
-      unit: nanoseconds              # nanoseconds|microseconds|milliseconds|seconds|bytes|...
+      unit: nanoseconds              # what the values are in; the web UI shows "640 ms"
       queries:
         - {name: p95, dataset: .traces/checkout-api, select: $span.duration_nano, agg: p95,
            where: "$span.kind = 'SPAN_KIND_SERVER'", group_by: [$span.name]}
     - name: Error rate %
+      unit: percent                  # values from 0 to 100, shown as a percentage
       queries:
         - {name: errors, dataset: .traces/checkout-api, select: count(*),
            where: "$span.status_code = 'STATUS_CODE_ERROR'"}
         - {name: total, dataset: .traces/checkout-api, select: count(*)}
       formula: errors / total * 100  # one formula over the queries (the widget plots it)
+    - name: Busiest operations
+      type: top-list
+      sort: value desc               # value desc (default) | value asc | name asc | name desc
+      queries:
+        - {dataset: .traces/checkout-api, select: count(*), group_by: [$span.name]}
     - ref: Shared widget             # an existing widget, by name or id: attached, never owned
 
 Query fields: name, dataset | from_expr | from (dataset ids), select (count(*),
 p95(field), or a field with agg), agg (count, sum, avg, min, max, p50, p75, p90,
-p95, p99, rate, ...; default from the select, "none" for no aggregation),
-reduce_to (avg (default), sum, min, max), agg_params, where, group_by (up to 5),
-unit or unit_config. A widget takes up to 6 queries, and formula: or formulas:
-[{name, expression}]. Trace fields: $service.name, $span.name,
+p95, p99, ...; a field needs one, a select such as p95(x) already has it),
+agg_params (rate and histogram only), where, group_by (up to 5), unit or
+unit_config. A widget takes up to 6 queries, and formula: (an expression, or
+{name, expression}) or formulas: [{name, expression}]. formula: names its
+formula "value", which the web UI shows in the legend (with the group, for a
+grouped query). Trace fields: $service.name, $span.name,
 $span.kind = 'SPAN_KIND_SERVER', $span.duration_nano (nanoseconds),
 $span.status_code = 'STATUS_CODE_ERROR'.
+
+Units (unit: on a widget, query or formula; unit_config takes the API's
+object instead): nanoseconds, microseconds, milliseconds, seconds, minutes,
+hours, days; bytes, kilobytes, megabytes, gigabytes, terabytes, petabytes,
+exabytes, zettabytes, yottabytes; kibibytes, mebibytes, gibibytes, tebibytes,
+pebibytes, exbibytes, zebibytes, yobibytes; percent (values 0-100) and
+fraction (values 0-1), both shown as a percentage.
+
+A score widget shows the total over the time range and the change against the
+previous period. There is no reduce_to other than avg: the API stores avg
+whatever it is sent. A top-list shows every group; the web UI has no limit
+setting. A formula over grouped queries has a series only for the groups every
+query returns: a service with no errors gets no error-rate series, not 0%.
 
 A field you leave out (description, tags, layout, a widget's type,
 description or aux) is left as it is. Without a layout the web UI lays the

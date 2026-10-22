@@ -212,7 +212,28 @@ type wantWidget struct {
 	Type        string
 	Description *string
 	Aux         map[string]any
+	Sort        *topListSort // nil: leave aux's sortBy/sortDirection alone
 	Def         apiDef
+}
+
+// aux is the aux the widget should have, given its current one (nil for
+// a new widget), or nil when the manifest leaves aux as it is. sort:
+// sets its two keys on top of the manifest's aux, or of the current aux
+// when the manifest has none.
+func (w *wantWidget) aux(current map[string]any) map[string]any {
+	if w.Sort == nil {
+		return w.Aux
+	}
+	base := w.Aux
+	if base == nil {
+		base = current
+	}
+	out := map[string]any{}
+	for k, v := range base {
+		out[k] = v
+	}
+	out[auxSortBy], out[auxSortDirection] = w.Sort.By, w.Sort.Direction
+	return out
 }
 
 // wantDashboard is a manifest resolved for planning.
@@ -269,7 +290,7 @@ func (m *manifest) resolve(lookup datasetLookup) (*wantDashboard, error) {
 			want.Widgets = append(want.Widgets, wantWidget{Pos: w.Pos, Ref: w.Ref})
 			continue
 		}
-		ww := wantWidget{Pos: w.Pos, Name: w.Name, Type: w.Type}
+		ww := wantWidget{Pos: w.Pos, Name: w.Name, Type: w.Type, Sort: w.Sort}
 		if w.HasDesc {
 			d := w.Description
 			ww.Description = &d
@@ -321,10 +342,8 @@ func (q manQuery) resolve(i int, lookup datasetLookup, widgetUnit map[string]any
 	if aq.Groups == nil {
 		aq.Groups = []string{}
 	}
-	if q.Agg != "none" {
-		aq.Aggregation = []apiAgg{{Time: orDefault(q.Agg, defaultAgg(q.Select)),
-			ReduceTo: orDefault(q.ReduceTo, "avg"), Params: q.AggParams}}
-	}
+	aq.Aggregation = []apiAgg{{Time: orDefault(q.Agg, defaultAgg(q.Select)),
+		ReduceTo: orDefault(q.ReduceTo, "avg"), Params: q.AggParams}}
 	switch {
 	case len(q.Datasets) > 0:
 		ds := make([]datasetInfo, 0, len(q.Datasets))

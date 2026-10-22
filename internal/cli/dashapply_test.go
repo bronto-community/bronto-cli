@@ -69,8 +69,27 @@ func TestParseManifestErrors(t *testing.T) {
 			`select "$span.duration_nano" is a field, so set agg`},
 		{"unknown agg", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {dataset: a/b, select: x, agg: p42}",
 			`unknown agg "p42"`},
-		{"unknown unit", "name: x\nwidgets:\n  - name: w\n    unit: hours\n    queries:\n      - {dataset: a/b, select: count(*)}",
-			`d.yaml:4:11: unknown unit "hours"`},
+		{"unknown unit", "name: x\nwidgets:\n  - name: w\n    unit: percentage\n    queries:\n      - {dataset: a/b, select: count(*)}",
+			`d.yaml:4:11: unknown unit "percentage" (time: nanoseconds`},
+		// #212: the API stores avg whatever reduce_to it is sent.
+		{"reduce_to sum", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {dataset: a/b, select: count(*), reduce_to: sum}",
+			`d.yaml:5:9: a query: reduce_to "sum" isn't possible: the API stores only avg`},
+		{"formula reduce_to max", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {name: a, dataset: a/b, select: count(*)}\n    formulas:\n      - {name: f, expression: a * 2, reduce_to: max}",
+			`d.yaml:7:9: a formula: reduce_to "max" isn't possible`},
+		{"agg differs from the select's function", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {dataset: a/b, select: p95(x), agg: max}",
+			`select "p95(x)" already aggregates with p95, and the API ignores a different agg`},
+		{"agg none", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {dataset: a/b, select: count(*), agg: none}",
+			"agg: none isn't possible"},
+		{"agg_params without rate", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {dataset: a/b, select: x, agg: p90, agg_params: [count]}",
+			"agg_params only work with agg: rate or histogram; the API drops them for p90"},
+		{"sort on a line chart", "name: x\nwidgets:\n  - name: w\n    type: line\n    sort: value\n    queries:\n      - {dataset: a/b, select: count(*)}",
+			`d.yaml:5:5: sort is a top-list setting; this widget is a line`},
+		{"bad sort", "name: x\nwidgets:\n  - name: w\n    sort: biggest\n    queries:\n      - {dataset: a/b, select: count(*)}",
+			`d.yaml:4:11: sort "biggest": use value or name`},
+		{"sort and aux sortBy", "name: x\nwidgets:\n  - name: w\n    sort: name\n    aux: {sortBy: value}\n    queries:\n      - {dataset: a/b, select: count(*)}",
+			"aux sets sortBy, which sort sets too"},
+		{"formula mapping without expression", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {name: a, dataset: a/b, select: count(*)}\n    formula: {name: rate}",
+			"a formula needs an expression"},
 		{"unknown type", "name: x\nwidgets:\n  - name: w\n    type: lines\n    queries:\n      - {dataset: a/b, select: count(*)}",
 			`d.yaml:3:5: widget "w": unknown type "lines"`},
 		{"duplicate widget", "name: x\nwidgets:\n  - {name: w, queries: [{dataset: a/b, select: count(*)}]}\n  - {name: w, queries: [{dataset: a/b, select: count(*)}]}",
@@ -140,7 +159,7 @@ func TestResolveDefaults(t *testing.T) {
 		t.Fatalf("p95 query = %+v", p95)
 	}
 	errs := want.Widgets[2].Def
-	if len(errs.Formulas) != 1 || errs.Formulas[0].Name != "error_rate" || errs.Formulas[0].Expression != "errors / total * 100" ||
+	if len(errs.Formulas) != 1 || errs.Formulas[0].Name != "value" || errs.Formulas[0].Expression != "errors / total * 100" ||
 		errs.Formulas[0].Aggregation.ReduceTo != "avg" || errs.Queries[1].Where != "" {
 		t.Fatalf("error rate = %+v", errs)
 	}
@@ -151,7 +170,7 @@ func TestResolveDefaults(t *testing.T) {
 
 func TestDefaultAgg(t *testing.T) {
 	for sel, want := range map[string]string{
-		"count(*)": "count", "p95($span.duration_nano)": "p95", "AVERAGE(x)": "avg", "SUM(bytes)": "sum",
+		"count(*)": "count", "p95($span.duration_nano)": "p95", "AVERAGE(x)": "average", "Median(x)": "median", "SUM(bytes)": "sum",
 		"$span.duration_nano": "", "frobnicate(x)": "",
 	} {
 		if got := defaultAgg(sel); got != want {
@@ -669,12 +688,13 @@ func TestExportUnmanagedThenApplyAdopts(t *testing.T) {
 	f.defs["aaaaaaaa-aaaa-aaaa-aaaa-0000000000f1"] = map[string]any{"id": "aaaaaaaa-aaaa-aaaa-aaaa-0000000000f1", "name": "x",
 		"queries": []any{map[string]any{"name": "errors", "select": []any{"count(*)"}, "where": "",
 			"from_expr": `"collection" = '.traces' AND "dataset" = 'payments'`, "groups": []any{"$service.name"},
-			"aggregation": []any{map[string]any{"time": "count", "reduce_to": "sum"}}},
+			"aggregation": []any{map[string]any{"time": "count", "reduce_to": "avg"}}},
 			map[string]any{"name": "total", "select": []any{"count(*)"}, "where": "", "from_expr": `"collection" = '.traces'`,
 				"aggregation": []any{map[string]any{"time": "count", "reduce_to": "avg"}}}},
 		"formulas": []any{map[string]any{"name": "pct", "expression": "errors / total * 100", "aggregation": map[string]any{"reduce_to": "avg"}}}}
 	f.widgets["aaaaaaaa-aaaa-aaaa-aaaa-0000000000f2"] = map[string]any{"id": "aaaaaaaa-aaaa-aaaa-aaaa-0000000000f2", "name": "UI widget",
-		"type": "bar", "description": "made by hand", "aux": map[string]any{},
+		"type": "top-list", "description": "made by hand",
+		"aux": map[string]any{"sortBy": "name", "sortDirection": "asc", "queryMode": "visual"},
 		"metric_ids": []any{"aaaaaaaa-aaaa-aaaa-aaaa-0000000000f1"}, "widget_ids": []any{}, "tags": map[string]any{}}
 	f.widgets["aaaaaaaa-aaaa-aaaa-aaaa-0000000000f3"] = map[string]any{"id": "aaaaaaaa-aaaa-aaaa-aaaa-0000000000f3", "name": "Group",
 		"type": "group", "metric_ids": []any{}, "widget_ids": []any{"aaaaaaaa-aaaa-aaaa-aaaa-0000000000f2"}, "tags": map[string]any{}}
@@ -687,8 +707,11 @@ func TestExportUnmanagedThenApplyAdopts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("export: %v\n%s", err, stderr)
 	}
-	for _, want := range []string{"ref: Group", "name: UI widget", "type: bar", "reduce_to: sum", `from_expr: '"collection" = ''.traces'''`,
-		"dataset: .traces/payments", "formulas:", "name: pct", "layout:", "widget: UI widget", "env: prod"} {
+	// The web UI's top-list sort becomes sort:, the rest of aux stays aux,
+	// and the one named formula is written as formula: {name, expression}.
+	for _, want := range []string{"ref: Group", "name: UI widget", "type: top-list", `from_expr: '"collection" = ''.traces'''`,
+		"dataset: .traces/payments", "formula:\n      name: pct\n      expression: errors / total * 100", "sort: name asc",
+		"aux:\n      queryMode: visual", "layout:", "widget: UI widget", "env: prod"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("export missing %q:\n%s", want, out)
 		}
@@ -943,5 +966,141 @@ func TestExportEdgeCases(t *testing.T) {
 	}
 	if _, err := parseManifest("x.yaml", []byte(out)); err != nil {
 		t.Fatalf("export doesn't parse: %v\n%s", err, out)
+	}
+}
+
+// #213: a top-list's sort, a named formula, percentage units, and a
+// select the API stores differently from the manifest's spelling
+// (AVERAGE(x) -> average) all apply, re-apply with zero writes, and
+// survive export -> apply.
+func TestApplySortFormulaNameAndUnits(t *testing.T) {
+	f := newFakeOrg(t)
+	src := `name: Shop
+widgets:
+  - name: Top operations
+    type: top-list
+    sort: name
+    queries:
+      - {dataset: .traces/checkout-api, select: count(*), group_by: [$span.name]}
+  - name: Error rate
+    unit: percent
+    queries:
+      - {name: errors, dataset: .traces/checkout-api, select: count(*), where: "$span.status_code = 'STATUS_CODE_ERROR'"}
+      - {name: total, dataset: .traces/checkout-api, select: count(*)}
+    formula: {name: rate, expression: errors / total * 100}
+  - name: Mean latency
+    unit: days
+    queries:
+      - {dataset: .traces/checkout-api, select: AVERAGE($span.duration_nano)}
+  - name: Ratio
+    queries:
+      - {name: a, dataset: .traces/checkout-api, select: count(*)}
+    formula: a / 2
+`
+	path := writeManifest(t, src)
+	applyJSON(t, f, path)
+	top := f.widgetByName("Top operations")
+	if aux, _ := top["aux"].(map[string]any); aux["sortBy"] != "name" || aux["sortDirection"] != "asc" {
+		t.Fatalf("top-list aux = %v", top["aux"])
+	}
+	def := f.defs[strs(f.widgetByName("Error rate")["metric_ids"])[0]]
+	fm := def["formulas"].([]any)[0].(map[string]any)
+	if fm["name"] != "rate" || !sameJSON(fm["unit_config"], map[string]any{"type": "percentage", "input": "percent"}) {
+		t.Fatalf("named formula = %v", fm)
+	}
+	ratio := f.defs[strs(f.widgetByName("Ratio")["metric_ids"])[0]]
+	if name := ratio["formulas"].([]any)[0].(map[string]any)["name"]; name != "value" {
+		t.Fatalf("default formula name = %v", name)
+	}
+	f.resetWrites()
+	applyJSON(t, f, path)
+	if f.writeCount() != 0 {
+		t.Fatalf("re-apply wrote %v", f.writes)
+	}
+
+	// The web UI adds its own aux keys; sort: keeps them and changes
+	// only the sort.
+	top["aux"].(map[string]any)["queryMode"] = "visual"
+	f.resetWrites()
+	applyJSON(t, f, writeManifest(t, strings.Replace(src, "sort: name", "sort: value desc", 1)))
+	if aux := f.widgetByName("Top operations")["aux"].(map[string]any); aux["sortBy"] != "value" || aux["sortDirection"] != "desc" ||
+		aux["queryMode"] != "visual" || f.writeCount() != 1 {
+		t.Fatalf("sort change: aux %v, writes %v", aux, f.writes)
+	}
+
+	out, _, err := runResource(t, f.handler, "", "dashboards", "export", "Shop")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"sort: value desc", "queryMode: visual", "unit: percent", "unit: days",
+		"formula:\n      name: rate\n      expression: errors / total * 100", "formula: a / 2"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("export missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "sortBy") || strings.Contains(out, "agg:") {
+		t.Errorf("export should write sort: instead of aux sortBy, and no agg for a function select:\n%s", out)
+	}
+	f.resetWrites()
+	applyJSON(t, f, writeManifest(t, out))
+	if f.writeCount() != 0 {
+		t.Fatalf("export -> apply wrote %v\n%s", f.writes, out)
+	}
+
+	// With type left out, sort: needs the widget to be a top-list
+	// already: the existing one is, an existing line chart and a new
+	// widget (a line chart) are not.
+	noType := strings.Replace(strings.Replace(src, "    type: top-list\n", "", 1), "sort: name", "sort: value desc", 1)
+	f.resetWrites()
+	applyJSON(t, f, writeManifest(t, noType))
+	if f.writeCount() != 0 {
+		t.Fatalf("sort on an existing top-list without type wrote %v", f.writes)
+	}
+	for name, extra := range map[string]string{
+		"existing line chart": "    sort: name\n",
+		"new widget":          "",
+	} {
+		manifest := strings.Replace(noType, "  - name: Mean latency\n", "  - name: Mean latency\n"+extra, 1)
+		if extra == "" {
+			manifest += "  - name: Fresh\n    sort: name\n    queries:\n      - {dataset: .traces/checkout-api, select: count(*), group_by: [$span.name]}\n"
+		}
+		_, stderr, err := runResource(t, f.handler, "", "dashboards", "apply", "-f", writeManifest(t, manifest))
+		if err == nil || !strings.Contains(err.Error(), "sort is a top-list setting, and the widget is a line; set type: top-list") {
+			t.Errorf("%s: err %v\n%s", name, err, stderr)
+		}
+	}
+}
+
+func TestDefaultFormulaNameAvoidsQueries(t *testing.T) {
+	m := mustParse(t, "name: x\nwidgets:\n  - name: Ratio\n    queries:\n"+
+		"      - {name: value, dataset: a/b, select: count(*)}\n      - {name: value_formula, dataset: a/b, select: count(*)}\n"+
+		"    formula: value / value_formula\n")
+	if got := m.Widgets[0].Formulas[0].Name; got != "value_formula_formula" {
+		t.Fatalf("formula name = %q", got)
+	}
+}
+
+func TestUnitShorthands(t *testing.T) {
+	for unit, want := range map[string]map[string]any{
+		"minutes":   {"type": "time", "input": "minutes", "output": "auto"},
+		"bytes":     {"type": "data_size", "input": "bytes", "output": "auto"},
+		"gibibytes": {"type": "binary_data_size", "input": "gibibytes", "output": "auto"},
+		"percent":   {"type": "percentage", "input": "percent"},
+		"fraction":  {"type": "percentage", "input": "fraction"},
+	} {
+		got := unitConfigFor(unit)
+		if !sameJSON(got, want) || unitNameFor(got) != unit {
+			t.Errorf("%s: unit_config %v, back to %q", unit, got, unitNameFor(got))
+		}
+	}
+	for _, uc := range []map[string]any{
+		{"type": "time", "input": "seconds", "output": "milliseconds"},
+		{"type": "percentage", "input": "percent", "output": "auto"},
+		{"type": "data_size", "input": "bytes", "output": "auto", "per_unit": map[string]any{"time": "seconds"}},
+		nil,
+	} {
+		if n := unitNameFor(uc); n != "" {
+			t.Errorf("unitNameFor(%v) = %q, want none", uc, n)
+		}
 	}
 }

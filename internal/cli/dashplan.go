@@ -193,6 +193,19 @@ func computePlan(want *wantDashboard, live *liveState) (*dashPlan, error) {
 			match, adopt = adoptable[0], true
 		}
 
+		// sort: only means something on a top-list; with type left out,
+		// that's the matched widget's type, or line for a new one.
+		if ww.Sort != nil && ww.Type == "" {
+			typ := "line"
+			if match != nil {
+				typ = match.Type
+			}
+			if typ != "top-list" {
+				errs = append(errs, fmt.Sprintf("%s: widget %q: sort is a top-list setting, and the widget is a %s; set type: top-list",
+					ww.Pos, ww.Name, typ))
+				continue
+			}
+		}
 		if match == nil {
 			typ := orDefault(ww.Type, "line")
 			ch := widgetChange{Action: actCreate, Name: ww.Name, NewDefinition: true, Attach: true, want: ww,
@@ -218,9 +231,13 @@ func computePlan(want *wantDashboard, live *liveState) (*dashPlan, error) {
 			ch.UpdateWidget = true
 			ch.Details = append(ch.Details, fmt.Sprintf("description: %q -> %q", match.Description, *ww.Description))
 		}
-		if ww.Aux != nil && !sameJSON(ww.Aux, nonNilMap(match.Aux)) {
+		if aux := ww.aux(match.Aux); aux != nil && !sameJSON(aux, nonNilMap(match.Aux)) {
 			ch.UpdateWidget = true
-			ch.Details = append(ch.Details, fmt.Sprintf("aux: %s -> %s", compactJSON(nonNilMap(match.Aux)), compactJSON(ww.Aux)))
+			if ww.Aux == nil {
+				ch.Details = append(ch.Details, "sort: "+ww.Sort.String())
+			} else {
+				ch.Details = append(ch.Details, fmt.Sprintf("aux: %s -> %s", compactJSON(nonNilMap(match.Aux)), compactJSON(aux)))
+			}
 		}
 		var cur *apiDef
 		if len(match.MetricIDs) == 1 {

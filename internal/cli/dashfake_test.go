@@ -13,10 +13,12 @@ import (
 
 // fakeOrg is an in-memory Bronto account with the endpoints dashboards
 // apply/export/validate use, behaving like the live API did on
-// 2026-10-21: create bodies drop tags (tags go through /tags), a formula
-// comes back with aggregation {reduce_to: avg}, definitions have no
-// update, deleting a widget detaches it, and the dashboards list carries
-// an empty widget_ids.
+// 2026-10-21/22: create bodies drop tags (tags go through /tags), a
+// definition stores every reduce_to as avg and drops a formula's
+// aggregation, a select function (p95(x)) replaces the query's
+// aggregation, agg params survive only for rate and histogram,
+// definitions have no update, deleting a widget detaches it, and the
+// dashboards list carries an empty widget_ids.
 type fakeOrg struct {
 	t          *testing.T
 	mu         sync.Mutex
@@ -201,10 +203,7 @@ func (f *fakeOrg) handler(w http.ResponseWriter, r *http.Request) {
 		}
 		formulas, _ := d["formulas"].([]any)
 		for _, fm := range formulas {
-			m := fm.(map[string]any)
-			if m["aggregation"] == nil {
-				m["aggregation"] = map[string]any{"reduce_to": "avg"}
-			}
+			delete(fm.(map[string]any), "aggregation")
 		}
 		if formulas == nil {
 			d["formulas"] = []any{}
@@ -213,6 +212,26 @@ func (f *fakeOrg) handler(w http.ResponseWriter, r *http.Request) {
 		for i, q := range queries {
 			m := q.(map[string]any)
 			m["id"] = fmt.Sprintf("q-%s-%d", id, i)
+			sel, _ := m["select"].([]any)
+			if len(sel) == 1 {
+				if fn := selectFuncRe.FindStringSubmatch(fmt.Sprint(sel[0])); fn != nil {
+					agg := map[string]any{"time": strings.ToLower(fn[1])}
+					if old, _ := m["aggregation"].([]any); len(old) == 1 {
+						if p := old[0].(map[string]any)["time_function_params"]; p != nil {
+							agg["time_function_params"] = p
+						}
+					}
+					m["aggregation"] = []any{agg}
+				}
+			}
+			aggs, _ := m["aggregation"].([]any)
+			for _, a := range aggs {
+				am := a.(map[string]any)
+				am["reduce_to"] = "avg"
+				if t := am["time"]; t != "rate" && t != "histogram" {
+					delete(am, "time_function_params")
+				}
+			}
 			if _, ok := m["where"]; !ok {
 				reply(400, map[string]any{"message": "No schema matches"})
 				return

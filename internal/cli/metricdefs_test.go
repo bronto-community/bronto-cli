@@ -103,6 +103,15 @@ func TestHumanNanos(t *testing.T) {
 	if got := formatSeriesValue(5, map[string]any{"type": "bytes"}); got != "5" {
 		t.Errorf("non-time unit = %q", got)
 	}
+	if got := formatSeriesValue(2, map[string]any{"type": "time", "input": "minutes"}); got != "120 s" {
+		t.Errorf("minutes input = %q", got)
+	}
+	if got := formatSeriesValue(12.5, map[string]any{"type": "percentage", "input": "percent"}); got != "12.50%" {
+		t.Errorf("percent = %q", got)
+	}
+	if got := formatSeriesValue(0.25, map[string]any{"type": "percentage", "input": "fraction"}); got != "25%" {
+		t.Errorf("fraction = %q", got)
+	}
 }
 
 // timeseriesServer serves the definitions list, one widget and

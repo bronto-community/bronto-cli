@@ -42,7 +42,7 @@
       "name": "Checkout error rate",
       "description": "",
       "metric_type": "METRIC_TYPE_UNSPECIFIED",
-      "formulas": [{"name": "checkout_error_rate", "expression": "errors / total * 100", "aggregation": {"reduce_to": "avg"}}],
+      "formulas": [{"name": "value", "expression": "errors / total * 100", "aggregation": {"reduce_to": "avg"}}],
       "queries": [
         {
           "name": "errors",

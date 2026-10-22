@@ -13,8 +13,10 @@ import (
 
 // TestDashboardsApplyLive covers bronto dashboards apply/export/validate
 // against the live API (#198): apply a manifest with two inline widgets
-// (one with a formula) and a ref, check the widgets show the seeded spans,
-// re-apply with zero writes, change a query (new definition, widget
+// (a sorted top-list, and a percent formula with the default name
+// "value") and a ref, check the widgets show the seeded spans, re-apply
+// with zero writes (so the API keeps sort's aux keys and the percentage
+// unit_config as sent, #213), change a query (new definition, widget
 // repointed, old definition gone), remove a widget and the ref (widget and
 // definition deleted, ref only detached), --dry-run writes nothing, and
 // export -> apply is a no-op. Everything is named bronto-ci-… (widget
@@ -83,10 +85,10 @@ func TestDashboardsApplyLive(t *testing.T) {
 	t.Cleanup(func() { bestEffortDelete(r, "widgets", sharedID) })
 
 	requestsWidget := func(where string) string {
-		return fmt.Sprintf("  - name: %s\n    type: line\n    queries:\n      - {name: requests, dataset: %s, select: count(*), where: \"%s\"}\n",
-			requests, dsA, where)
+		return fmt.Sprintf("  - name: %s\n    type: top-list\n    sort: name asc\n    queries:\n"+
+			"      - {name: requests, dataset: %s, select: count(*), where: \"%s\"}\n", requests, dsA, where)
 	}
-	errorWidget := fmt.Sprintf("  - name: %s\n    queries:\n"+
+	errorWidget := fmt.Sprintf("  - name: %s\n    unit: percent\n    queries:\n"+
 		"      - {name: errors, dataset: [%s, %s], select: count(*), where: \"$span.status_code = 'STATUS_CODE_ERROR'\"}\n"+
 		"      - {name: total, dataset: [%s, %s], select: count(*)}\n"+
 		"    formula: errors / total * 100\n", errRate, dsA, dsB, dsA, dsB)
@@ -154,19 +156,14 @@ func TestDashboardsApplyLive(t *testing.T) {
 	}
 
 	// 2. The widgets show the seeded spans: serviceA has one server span,
-	// and one of the three spans is an error. The formula is named after
-	// the widget (error-rate -> …_error_rate) and plots a percentage.
+	// and one of the three spans is an error. The formula has the default
+	// name, value, and plots a percentage.
 	totals := widgetTotals(t, r, reqID)
 	if totals["requests"] != 1 {
 		t.Errorf("requests widget totals = %v, want requests 1", totals)
 	}
 	totals = widgetTotals(t, r, errID)
-	formula := 0.0
-	for k, v := range totals {
-		if strings.HasSuffix(k, "_error_rate") {
-			formula = v
-		}
-	}
+	formula := totals["value"]
 	if totals["errors"] != 1 || totals["total"] != 3 || formula <= 0 || formula > 100 {
 		t.Errorf("error rate widget totals = %v, want errors 1, total 3 and a percentage from the formula", totals)
 	}
@@ -215,7 +212,8 @@ func TestDashboardsApplyLive(t *testing.T) {
 
 	// 7. export -> apply is a no-op.
 	res = mustExitZero(t, r, "dashboards", "export", dashID)
-	if strings.Contains(res.Stdout, errRate) || !strings.Contains(res.Stdout, "dataset: "+dsA) {
+	if strings.Contains(res.Stdout, errRate) || !strings.Contains(res.Stdout, "dataset: "+dsA) ||
+		!strings.Contains(res.Stdout, "sort: name asc") {
 		t.Fatalf("export (after a dry run that would add %s):\n%s", errRate, res.Stdout)
 	}
 	if p := apply(write("export.yaml", res.Stdout)); p.Writes != 0 {
