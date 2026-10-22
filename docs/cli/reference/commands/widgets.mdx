@@ -143,8 +143,13 @@ bronto widgets list
 
 Evaluates every metric definition in a widget's metric\_ids, like
 'bronto metrics definitions query' does for one, and prints their series in
-one table with a DEFINITION column. -o json prints an object mapping each
-definition id to its raw /timeseries response.
+one table with a DEFINITION column. A formula's VALUE is the formula over
+the whole range, as the web UI shows it (see 'bronto metrics definitions
+query --help'). -o json prints an object mapping each definition id to its
+raw /timeseries response.
+
+Piped output is that JSON: for a readable summary in scripts or agents,
+add -o table.
 
 The widget can be an id or a unique name.
 
@@ -169,6 +174,8 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto widgets query "Checkout requests"
+# A readable summary in scripts or agents (piped output is JSON otherwise)
+bronto widgets query "Checkout requests" -o table
 bronto widgets query <id> --since 7d -o json
 ```
 

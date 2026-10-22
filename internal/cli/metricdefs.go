@@ -224,6 +224,106 @@ func fetchTimeseries(ctx context.Context, app *App, id string, params url.Values
 	return doJSONRequest(ctx, app, http.MethodGet, "/timeseries/"+url.PathEscape(id)+"?"+params.Encode(), nil)
 }
 
+// queryDefinition evaluates one definition and flattens it into series
+// rows (see timeseriesRows). Each formula's value is then replaced by the
+// formula evaluated over the whole range, which costs one more request
+// with num_of_slices=1: made only for definitions with formulas, and only
+// when rows are printed (-o json prints the raw response).
+//
+// Live (EU, 2026-10-22): a formula entry's aggregates are [{COUNT,
+// <buckets>}, {AVG, <mean of the per-bucket values>}], and so is each
+// grouped formula series' value. That mean is not the formula over the
+// range: errors / total * 100 per service read 25 for a service whose one
+// span in the range was an error (100, in one of four buckets), and 2.84
+// for a real 2.82%. With one slice, the single bucket is the range, which
+// is the value the web UI shows.
+func queryDefinition(ctx context.Context, app *App, id string, params url.Values, label string) (any, []map[string]any, error) {
+	payload, err := fetchTimeseries(ctx, app, id, params)
+	if err != nil {
+		return nil, nil, err
+	}
+	rows := timeseriesRows(payload, label)
+	entries, _ := payload.(map[string]any)
+	formulas := formulaNames(entries)
+	if len(formulas) == 0 || params.Get("num_of_slices") == "1" || !printsRows(app) {
+		return payload, rows, nil
+	}
+	whole := url.Values{}
+	for k, v := range params {
+		whole[k] = v
+	}
+	whole.Set("num_of_slices", "1")
+	rangePayload, err := fetchTimeseries(ctx, app, id, whole)
+	if err != nil {
+		return nil, nil, err
+	}
+	applyRangeValues(rows, rangePayload, formulas)
+	return payload, rows, nil
+}
+
+// printsRows reports whether printTimeseries prints series rows (table or
+// csv) rather than the raw response.
+func printsRows(app *App) bool {
+	format, err := app.DetectFormat(false)
+	return err == nil && (format == output.FormatTable || format == output.FormatCSV)
+}
+
+// formulaNames collects the definition's formula names from whichever
+// entries carry its formulas list.
+func formulaNames(entries map[string]any) map[string]bool {
+	names := map[string]bool{}
+	for _, e := range entries {
+		m, _ := e.(map[string]any)
+		list, _ := m["formulas"].([]any)
+		for _, f := range list {
+			fm, _ := f.(map[string]any)
+			if n, _ := fm["name"].(string); n != "" {
+				names[n] = true
+			}
+		}
+	}
+	return names
+}
+
+// applyRangeValues sets each formula row's value to its value in the
+// one-slice response, and its stat to "formula". A series or group the
+// one-slice response lacks keeps its per-bucket mean and its stat.
+func applyRangeValues(rows []map[string]any, rangePayload any, formulas map[string]bool) {
+	entries, _ := rangePayload.(map[string]any)
+	for _, r := range rows {
+		name, _ := r["series"].(string)
+		e, _ := entries[name].(map[string]any)
+		if !formulas[name] || e == nil {
+			continue
+		}
+		group, _ := r["group"].(string)
+		if v, ok := rangeValue(e, group); ok {
+			r["value"] = v
+			r["stat"] = "formula"
+		}
+	}
+}
+
+// rangeValue reads the single bucket of a one-slice series: the group's
+// value for a grouped formula, else the series' only point.
+func rangeValue(e map[string]any, group string) (float64, bool) {
+	if group != "" {
+		groups, _ := e["groups_series"].([]any)
+		for _, g := range groups {
+			gm, _ := g.(map[string]any)
+			if gm != nil && fmt.Sprint(gm["name"]) == group {
+				return toNumber(gm["value"]), true
+			}
+		}
+		return 0, false
+	}
+	points := seriesPoints(e["series"])
+	if len(points) != 1 {
+		return 0, false
+	}
+	return points[0], true
+}
+
 func newDefinitionQueryCmd() *cobra.Command {
 	var tf timeseriesFlags
 	cmd := &cobra.Command{
@@ -232,13 +332,24 @@ func newDefinitionQueryCmd() *cobra.Command {
 		Long: `Evaluates a saved metric definition over a time range (GET /timeseries/{id})
 and prints one row per series: each query and formula, or each group of a
 grouped one, with its value over the range and a sparkline of the buckets.
-This is the data a widget built on the definition shows. -o json prints the
-raw API response.
+This is the data a widget built on the definition shows.
+
+A formula's VALUE is the formula over the whole range (STAT "formula"), as
+the web UI shows it: errors / total * 100 over all errors and spans in the
+range. That takes one more request, with one slice. The TREND stays per
+bucket.
+
+-o json prints the raw API response. There, a formula's aggregates are the
+mean of its per-bucket values, not the range value; add --slices 1 to get
+the range value in JSON. Piped output is JSON: for a readable summary in
+scripts or agents, add -o table.
 
 The definition can be an id or a unique name. A warning on stderr says when
 every series is zero: usually the from_expr or where matches nothing.`,
 		Example: "  bronto metrics definitions query \"checkout-service requests\"\n" +
 			"  bronto metrics definitions query <id> --since 7d --slices 48\n" +
+			"  # A readable summary in scripts or agents (piped output is JSON otherwise)\n" +
+			"  bronto metrics definitions query <id> -o table\n" +
 			"  bronto metrics definitions query <id> --time-range \"Last 24 hours\" -o json",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeKindRef("definitions"),
@@ -255,11 +366,11 @@ every series is zero: usually the from_expr or where matches nothing.`,
 			if err != nil {
 				return err
 			}
-			payload, err := fetchTimeseries(cmd.Context(), app, id, params)
+			payload, rows, err := queryDefinition(cmd.Context(), app, id, params, "")
 			if err != nil {
 				return err
 			}
-			return printTimeseries(app, params, payload, timeseriesRows(payload, ""), false)
+			return printTimeseries(app, params, payload, rows, false)
 		},
 	}
 	tf.register(cmd)
@@ -273,11 +384,18 @@ func newWidgetQueryCmd() *cobra.Command {
 		Short: "Evaluate the metric definitions a widget plots",
 		Long: `Evaluates every metric definition in a widget's metric_ids, like
 'bronto metrics definitions query' does for one, and prints their series in
-one table with a DEFINITION column. -o json prints an object mapping each
-definition id to its raw /timeseries response.
+one table with a DEFINITION column. A formula's VALUE is the formula over
+the whole range, as the web UI shows it (see 'bronto metrics definitions
+query --help'). -o json prints an object mapping each definition id to its
+raw /timeseries response.
+
+Piped output is that JSON: for a readable summary in scripts or agents,
+add -o table.
 
 The widget can be an id or a unique name.`,
 		Example: "  bronto widgets query \"Checkout requests\"\n" +
+			"  # A readable summary in scripts or agents (piped output is JSON otherwise)\n" +
+			"  bronto widgets query \"Checkout requests\" -o table\n" +
 			"  bronto widgets query <id> --since 7d -o json",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeKindRef("widgets"),
@@ -312,7 +430,11 @@ The widget can be an id or a unique name.`,
 			raw := map[string]any{}
 			var rows []map[string]any
 			for _, id := range ids {
-				payload, err := fetchTimeseries(ctx, app, id, params)
+				label := names[id]
+				if label == "" {
+					label = id
+				}
+				payload, defRows, err := queryDefinition(ctx, app, id, params, label)
 				if err != nil {
 					var ce *clierr.Error
 					if errors.As(err, &ce) && ce.Code == "resource_not_found" {
@@ -323,11 +445,7 @@ The widget can be an id or a unique name.`,
 					return err
 				}
 				raw[id] = payload
-				label := names[id]
-				if label == "" {
-					label = id
-				}
-				rows = append(rows, timeseriesRows(payload, label)...)
+				rows = append(rows, defRows...)
 			}
 			return printTimeseries(app, params, raw, rows, true)
 		},

@@ -49,7 +49,7 @@ func TestServicesMergesThreeAggregates(t *testing.T) {
 		"max($span.duration_nano)": `{"groups":[{"group":["web"],"max($span.duration_nano)":9000000}]}`,
 	})
 	defer srv.Close()
-	rows, err := newAgg(srv).Services(context.Background(), false, 50)
+	rows, err := newAgg(srv).Services(context.Background(), "", false, 50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -259,14 +259,14 @@ func TestServicesMergeDropsGroupsTheCountLacks(t *testing.T) {
 		"max($span.duration_nano)": `{"groups":[{"group":["other"],"max($span.duration_nano)":9},{"group":["web"],"max($span.duration_nano)":9000000}]}`,
 	})
 	defer srv.Close()
-	rows, err := newAgg(srv).Services(context.Background(), false, 2)
+	rows, err := newAgg(srv).Services(context.Background(), "", false, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(rows) != 2 || rows[0]["service"] != "cart" || rows[1]["service"] != "web" {
 		t.Fatalf("rows = %v", rows)
 	}
-	rows, err = newAgg(srv).Services(context.Background(), false, 1)
+	rows, err = newAgg(srv).Services(context.Background(), "", false, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

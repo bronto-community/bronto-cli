@@ -153,6 +153,22 @@ value, such as `STATUS_CODE_ERROR` in a traces dataset, or a field that few even
 such as `$span.events.*`, can be missing from the list. Widen `--since` or check with a
 search before you conclude that a field or value doesn't exist.
 
+To see every value of one field, add `--values <field>`. It counts the field's distinct
+values over all events in the range, most frequent first, so rare values show up too.
+`-n` sets how many values to list (default 20), and `(none)` counts the events that don't
+have the field:
+
+{/* test: tty */}
+```console
+$ bronto fields -d prod/checkout-service --values status --since 1h
+VALUE  COUNT
+200    63
+502    13
+```
+
+With `-o json` the result is an array of `{"value": …, "count": …}` objects. Pass the
+field as a query spells it, such as `$span.status_code` in a traces dataset.
+
 `bronto query check` validates an expression locally, without calling the API, and points
 a caret at the problem:
 
@@ -187,13 +203,21 @@ more keys. Both are repeatable.
 {/* test: tty */}
 ```console
 $ bronto search --select "count()" -g host -d prod/checkout-service --since 30m
-COUNT  GROUP  STAT     VALUE
-28     web-2  count()  28
-26     web-1  count()  26
-22     web-3  count()  22
+GROUP  STAT     VALUE  COUNT  TREND
+web-2  count()  28     28
+web-1  count()  26     26
+web-3  count()  22     22
 ```
 
-For timeseries aggregates, `--slices` sets the number of time buckets.
+The table has one row per group: the value over the whole range, the number of matching
+events, and a sparkline of the time buckets. `--slices` sets the number of buckets.
+
+Piped, the result stays JSON with every bucket of every group, which is long. For a
+readable summary in a script or an agent, add `-o table` (or `-o csv`):
+
+```sh
+bronto search -g '$span.status_code' -d .traces/checkout-api --since 1h -o table
+```
 
 Percentiles have two spellings: the shorthand `p95(duration_ms)` (also `p50`, `p75`,
 `p90`, `p99`), and `percentile(duration_ms, 0.95)`, which takes a fraction. The API

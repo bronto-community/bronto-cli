@@ -65,6 +65,7 @@ var flagClasses = map[string]argClass{
 	"time-range":    argValue,
 	"template":      argValue, // id or name
 	"to":            argValue, // RFC3339 time
+	"values":        argValue, // a field name, like group-by
 	"window":        argValue,
 
 	"bucket":     argName, // S3 bucket name

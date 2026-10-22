@@ -187,6 +187,31 @@ func TestQuery_FieldsCommandListsMarkerKey(t *testing.T) {
 	})
 }
 
+// TestQuery_FieldValuesCountsMarker asserts `bronto fields --values`
+// counts a field's values over every event (one grouped count search,
+// unlike the sampled /top-keys): every seeded event carries the run's
+// ci_marker, so the marker is listed with at least the seeded count. The
+// dataset is a UUID, so this is a single request.
+func TestQuery_FieldValuesCountsMarker(t *testing.T) {
+	key := skipIfNoCreds(t)
+	r := NewRunner(t, key)
+	_, marker := seededData(t)
+	res := mustExitZero(t, r, "fields", "-d", seededLogID(t), "--since", "1h", "--values", "ci_marker", "-o", "json")
+	var rows []map[string]any
+	if err := json.Unmarshal([]byte(res.Stdout), &rows); err != nil {
+		t.Fatalf("fields --values -o json did not parse as an array: %v\noutput: %s", err, res.Stdout)
+	}
+	for _, row := range rows {
+		if row["value"] == marker {
+			if n, _ := row["count"].(float64); n < float64(seedTotalEvents) {
+				t.Fatalf("marker count = %v, want at least %d", row["count"], seedTotalEvents)
+			}
+			return
+		}
+	}
+	t.Fatalf("fields --values ci_marker does not list the marker %s: %s", marker, res.Stdout)
+}
+
 // TestQuery_ContextAroundSeededEvent exercises `bronto context`: it first
 // fetches @sequence/@time for one seeded row via search, then asks for the
 // events around it.

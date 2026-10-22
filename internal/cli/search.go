@@ -51,11 +51,16 @@ func newSearchCmd() *cobra.Command {
 		Short: "Search events with a one-off query",
 		Long: "Runs a query (a Bronto WHERE expression) against one or more datasets.\n" +
 			"Without a time flag or a saved search's range it searches the last 15 minutes.\n" +
-			"Pass '-' as the query to read it from stdin.",
+			"Pass '-' as the query to read it from stdin.\n\n" +
+			"With -g/--group-by the table has one row per group: its value over the range,\n" +
+			"the event count and a sparkline. Piped output is the full JSON, every bucket\n" +
+			"included: for a readable summary in scripts or agents, add -o table.",
 		Example: "  bronto search \"status >= 500\" --since 1h\n" +
 			"  bronto search \"level = 'error'\" -d <dataset-uuid> --limit 50\n" +
 			"  bronto search -d <dataset> --eq model=claude-fable-5 --gt duration_ms=1000\n" +
 			"  bronto search --select \"count()\" -g host --since 15m\n" +
+			"  # A readable summary in scripts or agents (piped output is JSON otherwise)\n" +
+			"  bronto search -d <dataset> -g host --since 1h -o table\n" +
 			"  bronto search --explain-only --since 1d",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -272,6 +277,11 @@ func newSearchCmd() *cobra.Command {
 				if len(rows) == 0 && len(resp.GroupsSeries) > 0 {
 					rows = resp.GroupsSeries
 				}
+				if format, ferr := app.DetectFormat(false); ferr == nil &&
+					(format == output.FormatTable || format == output.FormatCSV) && hasGroupValues(rows) {
+					cols, summary := groupSummaryRows(rows, groups, format == output.FormatTable)
+					return p.PrintRows(cols, summary)
+				}
 				return p.PrintRows(bronto.EventColumns(rows, 0), rows)
 			default:
 				events := resp.EventRows()
@@ -332,6 +342,58 @@ func newSearchCmd() *cobra.Command {
 	// wired tree-wide by applyCompletions.
 	cmd.ValidArgsFunction = defaultArgComplete
 	return cmd
+}
+
+// hasGroupValues reports whether grouped rows are in the live shape
+// (each with a stat and a value), which groupSummaryRows condenses.
+func hasGroupValues(rows []map[string]any) bool {
+	for _, r := range rows {
+		if _, ok := r["value"]; !ok {
+			return false
+		}
+	}
+	return len(rows) > 0
+}
+
+// groupSummaryRows condenses grouped search rows for table and csv output:
+// one row per group with its stat, its value over the range, the number
+// of events, and (table only) a sparkline of the buckets. The JSON keeps
+// the whole response: the per-bucket counts, values and timeseries.
+//
+// Live (EU, 2026-10-22): a grouped row is {group: "a, b", stat, value,
+// count, counts, values, timeseries}, one row per group, and only the
+// first --select comes back.
+func groupSummaryRows(rows []map[string]any, groups []string, table bool) ([]string, []map[string]any) {
+	out := make([]map[string]any, 0, len(rows))
+	for _, r := range rows {
+		_, label := groupIdentity(r, groups)
+		value := toNumber(r["value"])
+		// csv: plain decimal notation, not 4.93e+08.
+		row := map[string]any{"group": label, "stat": r["stat"], "value": strconv.FormatFloat(value, 'f', -1, 64), "count": r["count"]}
+		if table {
+			row["value"] = formatAggValue(value)
+			row["trend"] = sparkline(groupBuckets(r))
+		}
+		out = append(out, row)
+	}
+	cols := []string{"group", "stat", "value", "count"}
+	if table {
+		cols = append(cols, "trend")
+	}
+	return cols, out
+}
+
+// groupBuckets reads a grouped row's per-bucket values: its values array,
+// or the values in its timeseries.
+func groupBuckets(r map[string]any) []float64 {
+	if vals, ok := r["values"].([]any); ok {
+		out := make([]float64, 0, len(vals))
+		for _, v := range vals {
+			out = append(out, toNumber(v))
+		}
+		return out
+	}
+	return seriesPoints(r["timeseries"])
 }
 
 // eventView controls the human rendering of printEvents: expand switches

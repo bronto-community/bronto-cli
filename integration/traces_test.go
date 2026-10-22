@@ -21,6 +21,21 @@ import (
 // services` behaves cleanly (exit 0, a parseable JSON array) against
 // whatever the account's .traces logset actually holds — empty or not —
 // rather than asserting on data this harness can't reliably produce.
+// TestTraces_DatasetOutsideTracesIsUsageError: -d is an alias of -s for
+// .traces/<service>; any other collection fails as a usage error before a
+// request is made, so this costs no API requests.
+func TestTraces_DatasetOutsideTracesIsUsageError(t *testing.T) {
+	key := skipIfNoCreds(t)
+	r := NewRunner(t, key)
+	res, err := r.Run(t.Context(), "", "traces", "operations", "-d", "default/some-logs", "-o", "json")
+	if err != nil {
+		t.Fatalf("running traces operations: %v", err)
+	}
+	if res.ExitCode != 2 || !strings.Contains(res.Stderr, "usage_invalid_flags") {
+		t.Fatalf("exit %d, want 2 with usage_invalid_flags\nstderr: %s", res.ExitCode, res.Stderr)
+	}
+}
+
 func TestTraces_ServicesTolerant(t *testing.T) {
 	key := skipIfNoCreds(t)
 	r := NewRunner(t, key)
