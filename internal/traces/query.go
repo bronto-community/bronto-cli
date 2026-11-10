@@ -32,8 +32,8 @@ var prefixedAttrs = map[string]string{
 // NormalizeAttr turns a user-supplied attribute into query form. Span
 // fields take the Span: prefix (span.kind and $span.kind -> Span:kind),
 // as do the attributes in prefixedAttrs (http.route -> Span:http.route,
-// service.name -> Resource:service.name); others get a leading $ unless
-// present (cart.items -> $cart.items).
+// service.name -> Resource:service.name); any other unqualified attribute
+// defaults to Span: (cart.items and $cart.items -> Span:cart.items).
 func NormalizeAttr(attr string) (string, error) {
 	a := strings.TrimSpace(attr)
 	if a == "" {
@@ -49,7 +49,7 @@ func NormalizeAttr(attr string) (string, error) {
 	if prefix, ok := prefixedAttrs[bare]; ok {
 		return prefix + bare, nil
 	}
-	return "$" + bare, nil
+	return "Span:" + bare, nil
 }
 
 // KindClause builds the span-kind filter. Accepts bare (server) or

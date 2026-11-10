@@ -34,8 +34,10 @@ func TestNormalizeAttr(t *testing.T) {
 	if got, _ := NormalizeAttr("peer.service"); got != "Span:peer.service" {
 		t.Fatalf("got %q", got)
 	}
-	if got, _ := NormalizeAttr("cart.items"); got != "$cart.items" {
-		t.Fatalf("got %q", got)
+	for _, in := range []string{"cart.items", "$cart.items"} {
+		if got, _ := NormalizeAttr(in); got != "Span:cart.items" {
+			t.Fatalf("NormalizeAttr(%q) = %q, want Span:cart.items", in, got)
+		}
 	}
 	if _, err := NormalizeAttr("  "); err == nil {
 		t.Fatal("empty attr must error")
