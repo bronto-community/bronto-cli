@@ -16,9 +16,9 @@ func TestListSpansBuildsWhereAndRows(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
 		_ = json.Unmarshal(b, &body)
-		_, _ = w.Write([]byte(`{"result":[{"@time":"t1","$span.trace_id":"tr","$span.span_id":"sp",
-			"$span.name":"GET /x","$service.name":"web","$span.duration_nano":2000000,
-			"$span.status_code":"STATUS_CODE_OK"}]}`))
+		_, _ = w.Write([]byte(`{"result":[{"@time":"t1","Span:trace_id":"tr","Span:span_id":"sp",
+			"Span:name":"GET /x","Resource:service.name":"web","Span:duration_nano":2000000,
+			"Span:status_code":"STATUS_CODE_OK"}]}`))
 	}))
 	defer srv.Close()
 
@@ -29,7 +29,7 @@ func TestListSpansBuildsWhereAndRows(t *testing.T) {
 		t.Fatal(err)
 	}
 	where, _ := body["where"].(string)
-	want := "$service.name = 'web' AND $span.name = 'GET /x' AND $span.duration_nano >= 1500000 AND $span.status_code = 'STATUS_CODE_ERROR'"
+	want := "Resource:service.name = 'web' AND Span:name = 'GET /x' AND Span:duration_nano >= 1500000 AND Span:status_code = 'STATUS_CODE_ERROR'"
 	if where != want {
 		t.Fatalf("where = %q\nwant    %q", where, want)
 	}
@@ -52,7 +52,7 @@ func TestFetchTraceSpansBatchesOrChains(t *testing.T) {
 		if body["limit"] != float64(5000) {
 			t.Errorf("limit = %v, want 5000", body["limit"])
 		}
-		_, _ = w.Write([]byte(`{"result":[{"$span.trace_id":"x","$span.span_id":"s1"}]}`))
+		_, _ = w.Write([]byte(`{"result":[{"Span:trace_id":"x","Span:span_id":"s1"}]}`))
 	}))
 	defer srv.Close()
 
@@ -70,7 +70,7 @@ func TestFetchTraceSpansBatchesOrChains(t *testing.T) {
 	if strings.Count(wheres[0], " OR ") != 14 || strings.Count(wheres[1], " OR ") != 1 {
 		t.Fatalf("OR chains wrong: %q / %q", wheres[0], wheres[1])
 	}
-	if !strings.Contains(wheres[0], "$span.trace_id = 'id00'") {
+	if !strings.Contains(wheres[0], "Span:trace_id = 'id00'") {
 		t.Fatalf("clause form: %q", wheres[0])
 	}
 	if len(spans) != 2 {
@@ -84,8 +84,8 @@ func TestFindSampleTraceIDsDedupsAndStops(t *testing.T) {
 		b, _ := io.ReadAll(r.Body)
 		_ = json.Unmarshal(b, &body)
 		_, _ = w.Write([]byte(`{"result":[
-			{"$span.trace_id":"a"},{"$span.trace_id":"b"},{"$span.trace_id":"a"},
-			{"$span.trace_id":"c"},{"$span.trace_id":"d"}]}`))
+			{"Span:trace_id":"a"},{"Span:trace_id":"b"},{"Span:trace_id":"a"},
+			{"Span:trace_id":"c"},{"Span:trace_id":"d"}]}`))
 	}))
 	defer srv.Close()
 

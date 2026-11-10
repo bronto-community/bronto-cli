@@ -24,7 +24,7 @@ func TestSearchPercentileOverOneHint(t *testing.T) {
 		sel      string
 		wantHint bool
 	}{
-		{"percentile($span.duration_nano, 95)", true},
+		{"percentile(Span:duration_nano, 95)", true},
 		{"PERCENTILE(x,99.9)", true},
 		{"percentile(x, 0.95)", false},
 		{"p95(x)", false},
@@ -51,9 +51,9 @@ func TestSearchPercentileOverOneHint(t *testing.T) {
 // A group key with a digit segment fails unquoted ("Invalid query."), so
 // search sends it double-quoted.
 func TestSearchQuotesDigitGroupKeys(t *testing.T) {
-	body := searchBody(t, `{"groups":[]}`, "-g", "$span.events.0.exception.type", "-g", "$service.name")
+	body := searchBody(t, `{"groups":[]}`, "-g", "Span:events.0.exception.type", "-g", "Resource:service.name")
 	got, _ := json.Marshal(body["groups"])
-	if string(got) != `["\"$span.events.0.exception.type\"","$service.name"]` {
+	if string(got) != `["\"Span:events.0.exception.type\"","Resource:service.name"]` {
 		t.Fatalf("groups = %s", got)
 	}
 }

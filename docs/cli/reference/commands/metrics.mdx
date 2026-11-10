@@ -88,16 +88,16 @@ bronto metrics definitions create --input - <<'EOF'
 {"name": "checkout-service requests",
  "queries": [{"name": "requests", "select": ["count(*)"],
    "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'",
-   "where": "$span.kind = 'SPAN_KIND_SERVER'",
+   "where": "Span:kind = 'SPAN_KIND_SERVER'",
    "aggregation": [{"time": "count", "reduce_to": "avg"}]}]}
 EOF
 
 # p95 latency of server spans, grouped by operation, shown in ms/s
 bronto metrics definitions create --input - <<'EOF'
 {"name": "checkout-service p95 latency",
- "queries": [{"name": "p95_latency", "select": ["p95($span.duration_nano)"],
+ "queries": [{"name": "p95_latency", "select": ["p95(Span:duration_nano)"],
    "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'",
-   "where": "$span.kind = 'SPAN_KIND_SERVER'", "groups": ["$span.name"],
+   "where": "Span:kind = 'SPAN_KIND_SERVER'", "groups": ["Span:name"],
    "aggregation": [{"time": "p95", "reduce_to": "avg"}],
    "unit_config": {"type": "time", "input": "nanoseconds", "output": "auto"}}]}
 EOF
@@ -107,10 +107,10 @@ bronto metrics definitions create --input - <<'EOF'
 {"name": "error rate by service",
  "queries": [
    {"name": "errors", "select": ["count(*)"], "from_expr": "\"collection\" = '.traces'",
-    "where": "$span.status_code = 'STATUS_CODE_ERROR'", "groups": ["$service.name"],
+    "where": "Span:status_code = 'STATUS_CODE_ERROR'", "groups": ["Resource:service.name"],
     "aggregation": [{"time": "count", "reduce_to": "avg"}]},
    {"name": "total", "select": ["count(*)"], "from_expr": "\"collection\" = '.traces'",
-    "where": "", "groups": ["$service.name"],
+    "where": "", "groups": ["Resource:service.name"],
     "aggregation": [{"time": "count", "reduce_to": "avg"}]}],
  "formulas": [{"name": "error_rate", "expression": "errors / total * 100"}]}
 EOF

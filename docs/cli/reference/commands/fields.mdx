@@ -13,14 +13,14 @@ spelling of a field before you write a search query.
 
 Both the field list and the values come from a sample of recent events, not
 from every event: a rare value (such as STATUS\_CODE\_ERROR in
-$span.status\_code) or a rarely set field (such as $span.events.\*) can be
+Span:status\_code) or a rarely set field (such as Span:events.\*) can be
 missing. Widen --since, or check with a search, before you conclude a field
 or value doesn't exist.
 
 --values &lt;field&gt; lists one field's distinct values instead, counted over
 every event in the range (a grouped count search), most frequent first:
 rare values the sample misses show up there. -n sets how many values
-(default 20). Pass the field as a query spells it, e.g. $span.status\_code;
+(default 20). Pass the field as a query spells it, e.g. Span:status\_code;
 (none) counts the events without the field.
 
 <Tip>
@@ -39,7 +39,7 @@ bronto fields [name-filter] [flags]
 | `--dataset` | `-d` | string |  | dataset name or UUID (omit to cover all datasets) |
 | `--limit` | `-n` | int |  | maximum keys to return (with --values: values, default 20) |
 | `--since` |  | string | `1h` | relative lookback (single unit: 30s, 15m, 1h, 2d) |
-| `--values` |  | string |  | list this field's distinct values with counts over the range, e.g. '$span.status\_code' |
+| `--values` |  | string |  | list this field's distinct values with counts over the range, e.g. 'Span:status\_code' |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
 
@@ -49,5 +49,5 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 bronto fields -d <dataset> --since 1h
 bronto fields -d <dataset> model      # fields with "model" in the name
 bronto fields --since 15m -n 20
-bronto fields -d .traces/checkout-api --values '$span.status_code' --since 24h
+bronto fields -d .traces/checkout-api --values 'Span:status_code' --since 24h
 ```

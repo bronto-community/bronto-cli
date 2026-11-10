@@ -4,11 +4,11 @@ import "testing"
 
 func TestRowToSpanCoercionAndBackfills(t *testing.T) {
 	row := map[string]any{
-		"$span.trace_id": "t1", "$span.span_id": "s1", "$span.parent_span_id": nil,
-		"$span.name": "GET /x", "$span.kind": "SPAN_KIND_SERVER",
-		"$span.duration_nano": "0", "$span.start_time_unix_nano": float64(100),
-		"$span.end_time_unix_nano": "250.0",
-		"$span.status_code":        "STATUS_CODE_ERROR", "$service.name": "cart",
+		"Span:trace_id": "t1", "Span:span_id": "s1", "Span:parent_span_id": nil,
+		"Span:name": "GET /x", "Span:kind": "SPAN_KIND_SERVER",
+		"Span:duration_nano": "0", "Span:start_time_unix_nano": float64(100),
+		"Span:end_time_unix_nano": "250.0",
+		"Span:status_code":        "STATUS_CODE_ERROR", "Resource:service.name": "cart",
 	}
 	s := RowToSpan(row)
 	if s.TraceID != "t1" || s.ParentSpanID != "" || s.Kind != "SERVER" || s.Service != "cart" {
@@ -22,9 +22,9 @@ func TestRowToSpanCoercionAndBackfills(t *testing.T) {
 	}
 
 	// end backfill: end==0, start+duration known
-	row2 := map[string]any{"$span.start_time_unix_nano": float64(100),
-		"$span.duration_nano": float64(50), "$span.end_time_unix_nano": float64(0),
-		"$span.status_code": "STATUS_CODE_UNSET"}
+	row2 := map[string]any{"Span:start_time_unix_nano": float64(100),
+		"Span:duration_nano": float64(50), "Span:end_time_unix_nano": float64(0),
+		"Span:status_code": "STATUS_CODE_UNSET"}
 	s2 := RowToSpan(row2)
 	if s2.EndNS != 150 {
 		t.Fatalf("end backfill = %d, want 150", s2.EndNS)

@@ -47,8 +47,8 @@ func TestDashboardsApplyLive(t *testing.T) {
 	attempt := 0
 	PollUntil(t, seedPollBudget(), 10*time.Second, func() (bool, error) {
 		attempt++
-		res, err := r.Run(t.Context(), "", "search", fmt.Sprintf("$span.name != 'attempt-%d'", attempt),
-			"-d", dsA, "-d", dsB, "--since", "1h", "--select", "count(*)", "-g", "$span.status_code", "-o", "json")
+		res, err := r.Run(t.Context(), "", "search", fmt.Sprintf("Span:name != 'attempt-%d'", attempt),
+			"-d", dsA, "-d", dsB, "--since", "1h", "--select", "count(*)", "-g", "Span:status_code", "-o", "json")
 		if err != nil {
 			return false, err
 		}
@@ -89,11 +89,11 @@ func TestDashboardsApplyLive(t *testing.T) {
 			"      - {name: requests, dataset: %s, select: count(*), where: \"%s\"}\n", requests, dsA, where)
 	}
 	errorWidget := fmt.Sprintf("  - name: %s\n    unit: percent\n    queries:\n"+
-		"      - {name: errors, dataset: [%s, %s], select: count(*), where: \"$span.status_code = 'STATUS_CODE_ERROR'\"}\n"+
+		"      - {name: errors, dataset: [%s, %s], select: count(*), where: \"Span:status_code = 'STATUS_CODE_ERROR'\"}\n"+
 		"      - {name: total, dataset: [%s, %s], select: count(*)}\n"+
 		"    formula: errors / total * 100\n", errRate, dsA, dsB, dsA, dsB)
 	head := "name: " + dashName + "\ndescription: bronto-cli integration test\nwidgets:\n"
-	server := "$span.kind = 'SPAN_KIND_SERVER'"
+	server := "Span:kind = 'SPAN_KIND_SERVER'"
 	full := write("v1.yaml", head+requestsWidget(server)+errorWidget+"  - ref: "+sharedID+"\n")
 
 	type change struct {
@@ -175,7 +175,7 @@ func TestDashboardsApplyLive(t *testing.T) {
 
 	// 4. Change one query: new definition, repoint, delete the old one.
 	oldDefs := widgetMetricIDs(t, r, reqID)
-	changed := write("v2.yaml", head+requestsWidget(server+" AND $span.name = 'GET /checkout'")+errorWidget+"  - ref: "+sharedID+"\n")
+	changed := write("v2.yaml", head+requestsWidget(server+" AND Span:name = 'GET /checkout'")+errorWidget+"  - ref: "+sharedID+"\n")
 	p = apply(changed)
 	c := byName(p)[requests]
 	if p.Writes != 3 || c.Action != "update" || len(c.DeleteDefinitions) != 1 || c.DeleteDefinitions[0] != oldDefs[0] {
@@ -188,7 +188,7 @@ func TestDashboardsApplyLive(t *testing.T) {
 	// 5. Remove the error-rate widget and the ref: the widget and its
 	// definition are deleted, the ref only detached.
 	errDefs := widgetMetricIDs(t, r, errID)
-	trimmed := write("v3.yaml", head+requestsWidget(server+" AND $span.name = 'GET /checkout'"))
+	trimmed := write("v3.yaml", head+requestsWidget(server+" AND Span:name = 'GET /checkout'"))
 	p = apply(trimmed)
 	if p.Writes != 3 {
 		t.Errorf("remove widget + ref: %d writes, want 3: %+v", p.Writes, p.Widgets)

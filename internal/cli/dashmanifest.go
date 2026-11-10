@@ -619,7 +619,7 @@ func parseQuery(e *manifestErrors, n *yaml.Node) manQuery {
 		}
 	}
 	if n.Kind == yaml.MappingNode && q.Select == "" {
-		e.at(n, "%s needs a select, e.g. count(*) or $span.duration_nano", label)
+		e.at(n, "%s needs a select, e.g. count(*) or Span:duration_nano", label)
 	}
 	if q.Unit != "" && q.UnitConfig != nil {
 		e.at(n, "%s: use unit or unit_config, not both", label)

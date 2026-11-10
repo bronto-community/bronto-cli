@@ -7,7 +7,7 @@ and literal strings below are copied verbatim from the v1 Python.
 
 - `DEFAULT_TRACES_FROM_EXPR = "logset = '.traces'"` — every request sets
   `from_expr` to this literal string. No per-service dataset selection; the
-  `.traces` logset spans all services and `$service.name` is used to
+  `.traces` logset spans all services and `Resource:service.name` is used to
   distinguish them.
 - All requests go to `POST /search` via `client.post("/search", json=body)`.
 - Common request body builder `_run_search(...)`:
@@ -31,32 +31,32 @@ and literal strings below are copied verbatim from the v1 Python.
 
 ### 1.1 Fields requested on every per-span query (`SPAN_FIELDS`)
 ```
-$span.trace_id
-$span.span_id
-$span.parent_span_id
-$span.name
-$span.kind
-$span.duration_nano
-$span.start_time_unix_nano
-$span.end_time_unix_nano
-$span.status_code
-$service.name
-$service.namespace
+Span:trace_id
+Span:span_id
+Span:parent_span_id
+Span:name
+Span:kind
+Span:duration_nano
+Span:start_time_unix_nano
+Span:end_time_unix_nano
+Span:status_code
+Resource:service.name
+Resource:service.namespace
 ```
 `list` and `show` prepend `"@time"` to this list in `select`.
 
 ### 1.2 Row → `Span` dataclass mapping (`_row_to_span`)
 ```
-trace_id        = row["$span.trace_id"]  or ""
-span_id         = row["$span.span_id"]  or ""
-parent_span_id  = row["$span.parent_span_id"]  or ""
-name            = row["$span.name"]  or ""
-kind            = row["$span.kind"].replace("SPAN_KIND_", "")   # e.g. SERVER, CLIENT, INTERNAL, PRODUCER, CONSUMER
-service         = row["$service.name"]  or ""
-start_ns        = _int(row["$span.start_time_unix_nano"])
-end_ns          = _int(row["$span.end_time_unix_nano"])
-duration_ns     = _int(row["$span.duration_nano"])
-status          = row["$span.status_code"]  or ""   # e.g. "STATUS_CODE_ERROR", "STATUS_CODE_UNSET", "STATUS_CODE_OK"
+trace_id        = row["Span:trace_id"]  or ""
+span_id         = row["Span:span_id"]  or ""
+parent_span_id  = row["Span:parent_span_id"]  or ""
+name            = row["Span:name"]  or ""
+kind            = row["Span:kind"].replace("SPAN_KIND_", "")   # e.g. SERVER, CLIENT, INTERNAL, PRODUCER, CONSUMER
+service         = row["Resource:service.name"]  or ""
+start_ns        = _int(row["Span:start_time_unix_nano"])
+end_ns          = _int(row["Span:end_time_unix_nano"])
+duration_ns     = _int(row["Span:duration_nano"])
+status          = row["Span:status_code"]  or ""   # e.g. "STATUS_CODE_ERROR", "STATUS_CODE_UNSET", "STATUS_CODE_OK"
 ```
 `_int(v)`: `int(float(v))`, catches `TypeError`/`ValueError` → `0` (tolerant
 numeric coercion; values may arrive as strings/floats from the API).
@@ -84,12 +84,12 @@ ms >= 1000             → f"{ms/1000:.2f}s"       # seconds, 2 decimals
 
 ### 1.4 Root/entry span predicates
 - **Root-span clause** (used server-side in `where`):
-  `ROOT_ONLY_CLAUSE = "NOT EXISTS $span.parent_span_id"`.
+  `ROOT_ONLY_CLAUSE = "NOT EXISTS Span:parent_span_id"`.
 - **Root span, client-side** (used in `show`/`shape` when reconstructing a
   tree from a fetched batch): a span is a root **within the fetched batch**
   if `span.parent_span_id not in by_id` (its parent isn't present in the
   result set — NOT necessarily the same as "no parent" server-side).
-- **Entry span** (`shape`'s `entry_only`/`--entry` default): `$span.kind ==
+- **Entry span** (`shape`'s `entry_only`/`--entry` default): `Span:kind ==
   'SPAN_KIND_SERVER'` — i.e. `kind == "SERVER"` after stripping the prefix.
   This is explicitly *not* the same concept as root span; entry = SERVER-kind
   regardless of whether it has a parent (e.g. it may be a downstream
@@ -100,13 +100,13 @@ ms >= 1000             → f"{ms/1000:.2f}s"       # seconds, 2 decimals
 ### 2.1 `services`
 - Options: `--time-range/-t` (default "Last 15 minutes"), `--errors`,
   `--limit/-n` (default 50), `--output/-o`.
-- `where`: `"$span.status_code = 'STATUS_CODE_ERROR'"` if `--errors` else `None`.
-- Group key: `["$service.name"]`.
+- `where`: `"Span:status_code = 'STATUS_CODE_ERROR'"` if `--errors` else `None`.
+- Group key: `["Resource:service.name"]`.
 - Three separate aggregate queries via `_group_aggregate` (each its own
   `/search` call with `select=[aggregate]`, `groups=group_keys`):
   - `count(*)`
-  - `avg($span.duration_nano)`
-  - `max($span.duration_nano)`
+  - `avg(Span:duration_nano)`
+  - `max(Span:duration_nano)`
   All three share `where`, `time_range`, `limit`.
 - `_group_aggregate` parses each response row's `"group"` field via
   `_parse_group` (handles list, dict, or bracketed-string `"[a, b]"` forms)
@@ -122,13 +122,13 @@ ms >= 1000             → f"{ms/1000:.2f}s"       # seconds, 2 decimals
 - JSON mode (`-o json`): dumps `table_rows` (post-sort, pre-render) as-is.
 
 ### 2.2 `operations`
-- Options: `--service/-s` (filters `$service.name`), `--time-range/-t`,
+- Options: `--service/-s` (filters `Resource:service.name`), `--time-range/-t`,
   `--errors`, `--limit/-n` (default 25), `--output/-o`.
-- `where` clauses AND'd: `$service.name = '<service>'` (if given),
-  `$span.status_code = 'STATUS_CODE_ERROR'` (if `--errors`).
-- Group key: `["$service.name", "$span.name"]`.
-- Same 3-query pattern (`count(*)`, `avg($span.duration_nano)`,
-  `max($span.duration_nano)`) with this group key.
+- `where` clauses AND'd: `Resource:service.name = '<service>'` (if given),
+  `Span:status_code = 'STATUS_CODE_ERROR'` (if `--errors`).
+- Group key: `["Resource:service.name", "Span:name"]`.
+- Same 3-query pattern (`count(*)`, `avg(Span:duration_nano)`,
+  `max(Span:duration_nano)`) with this group key.
 - Row shape: `{service, operation, spans, avg, max}` — `key[0]`→service,
   `key[1]`→operation (guarded with `len(key)>=N` checks, default `""`).
 - Sort: descending by `spans`.
@@ -142,24 +142,26 @@ ms >= 1000             → f"{ms/1000:.2f}s"       # seconds, 2 decimals
   `--limit/-n` (default 50), `--include-empty/--hide-empty` (default hide),
   `--output/-o`.
 - `_normalise_attr(attr)`: strips whitespace; raises `BadParameter` on empty;
-  prefixes with `$` unless already present (`http.route` → `$http.route`).
+  prefixes with `$` unless already present (`cart.items` → `$cart.items`);
+  attributes the API spells with a schema prefix get that instead
+  (`http.route` → `Span:http.route`, `service.name` → `Resource:service.name`).
   Group keys = `[_normalise_attr(a) for a in by]`.
 - `where` clause assembly, AND-joined, in this order:
   1. `ROOT_ONLY_CLAUSE` if `root_only`
-  2. `$service.name = '<service>'` if `--service`
-  3. `$span.kind = 'SPAN_KIND_<KIND>'` if `--kind` (kind is upper-cased;
+  2. `Resource:service.name = '<service>'` if `--service`
+  3. `Span:kind = 'SPAN_KIND_<KIND>'` if `--kind` (kind is upper-cased;
      prefixed with `SPAN_KIND_` unless already present)
-  4. `$span.status_code = 'STATUS_CODE_ERROR'` if `--errors`
+  4. `Span:status_code = 'STATUS_CODE_ERROR'` if `--errors`
   5. `(<raw --where>)` if given
 - **Overfetch**: `fetch_limit = max(limit * 5, 200)` — because "Bronto
   returns one aggregate per query and each query has its own top-N ordering,"
   so results are merged then trimmed client-side.
 - Four aggregate queries (all with `fetch_limit`):
   - `count(*)` → `counts`
-  - `avg($span.duration_nano)` → `avgs`
-  - `max($span.duration_nano)` → `maxes`
+  - `avg(Span:duration_nano)` → `avgs`
+  - `max(Span:duration_nano)` → `maxes`
   - if **not** `errors_only`: a 4th `count(*)` query with `where` = same
-    clauses **plus** `$span.status_code = 'STATUS_CODE_ERROR'` appended →
+    clauses **plus** `Span:status_code = 'STATUS_CODE_ERROR'` appended →
     `errors` dict (error count per group, run only when not already filtered
     to errors).
 - **Ranking ground truth is `counts`** — iteration is `for key, count_val in
@@ -195,14 +197,14 @@ ms >= 1000             → f"{ms/1000:.2f}s"       # seconds, 2 decimals
   `--all-spans --kind server --service <name>`.
 
 ### 2.4 `list`
-- Options: `--service/-s`, `--operation` (filters `$span.name`),
+- Options: `--service/-s`, `--operation` (filters `Span:name`),
   `--min-duration-ms`, `--errors`, `--time-range/-t`, `--limit/-n` (default
   50), `--output/-o`.
 - `where` AND-joined clauses:
-  - `$service.name = '<service>'`
-  - `$span.name = '<operation>'`
-  - `$span.duration_nano > <int(min_duration_ms * 1_000_000)>` (ms→ns)
-  - `$span.status_code = 'STATUS_CODE_ERROR'`
+  - `Resource:service.name = '<service>'`
+  - `Span:name = '<operation>'`
+  - `Span:duration_nano > <int(min_duration_ms * 1_000_000)>` (ms→ns)
+  - `Span:status_code = 'STATUS_CODE_ERROR'`
 - Single query: `select=["@time", *SPAN_FIELDS]`, `most_recent_first=True`,
   no `groups`.
 - JSON mode dumps the **raw payload**, not the transformed rows (`print_json(payload)`).
@@ -219,7 +221,7 @@ ms >= 1000             → f"{ms/1000:.2f}s"       # seconds, 2 decimals
 - Options: `trace_id` (positional), `--time-range/-t` (default **"Last 1
   hour"**, wider than other commands), `--limit/-n` (default **500**),
   `--bar-width` (default 40), `--output/-o`.
-- Query: `where="$span.trace_id = '<trace_id>'"`, `select=["@time",
+- Query: `where="Span:trace_id = '<trace_id>'"`, `select=["@time",
   *SPAN_FIELDS]`, `most_recent_first=False` (chronological), `limit=500`.
 - JSON mode dumps raw payload.
 - If no rows: `print_error(...)` + `raise typer.Exit(code=1)`.
@@ -296,13 +298,13 @@ Options: `--service/-s`, `--operation`, `--where/-w`, `--errors`,
 ### 4.1 Step 1 — find sample trace IDs (`_find_sample_trace_ids`)
 - Builds `where` from entry/service/operation/errors/min-duration/extra
   clauses, AND-joined:
-  - `$span.kind = 'SPAN_KIND_SERVER'` if `entry_only`
-  - `$service.name = '<service>'`
-  - `$span.name = '<operation>'`
-  - `$span.status_code = 'STATUS_CODE_ERROR'` if `errors_only`
-  - `$span.duration_nano > <ms*1_000_000>` if `min_duration_ms`
+  - `Span:kind = 'SPAN_KIND_SERVER'` if `entry_only`
+  - `Resource:service.name = '<service>'`
+  - `Span:name = '<operation>'`
+  - `Span:status_code = 'STATUS_CODE_ERROR'` if `errors_only`
+  - `Span:duration_nano > <ms*1_000_000>` if `min_duration_ms`
   - `(<where>)` extra raw clause
-- Query: `select=["$span.trace_id"]`, `limit=max(sample*3, 30)`,
+- Query: `select=["Span:trace_id"]`, `limit=max(sample*3, 30)`,
   `most_recent_first=True` (i.e. **most recent spans matching filter**, not
   random sampling).
 - Dedup trace_ids preserving order, **stop as soon as `len(result) >=
@@ -312,7 +314,7 @@ Options: `--service/-s`, `--operation`, `--where/-w`, `--errors`,
 ### 4.2 Step 2 — fetch all spans of sampled traces (`_fetch_spans_for_traces`)
 - Bronto's `/search` doesn't support `IN (...)` (returns 500 per code
   comment), so trace_ids are **batched into OR-chains**: `batch_size = 15`,
-  `where = " OR ".join(f"$span.trace_id = '{t}'" for t in batch)`.
+  `where = " OR ".join(f"Span:trace_id = '{t}'" for t in batch)`.
 - Each batch query: `select=SPAN_FIELDS` (no `@time`), `limit=5000` (ceiling
   per batch), `most_recent_first=False`.
 - All rows across batches parsed into a flat `List[Span]`.
@@ -466,13 +468,13 @@ are silently truncated by the loop bound, not an explicit clamp).
 
 1. **Root span ≠ entry span.**
    - Root (server-side, `aggregate`'s `--root-only`): `NOT EXISTS
-     $span.parent_span_id` — true absence of a parent id in the span record.
+     Span:parent_span_id` — true absence of a parent id in the span record.
    - Root (client-side, `show`/`shape` subtree building): parent id not
      present in the **currently fetched batch** (`parent_span_id not in
      by_id`) — an artifact of pagination/time-range, can misclassify a
      genuinely non-root span as a root if its parent fell outside the query
      window/limit.
-   - Entry (`shape` default): `$span.kind == 'SPAN_KIND_SERVER'`, regardless
+   - Entry (`shape` default): `Span:kind == 'SPAN_KIND_SERVER'`, regardless
      of parent — the "APM endpoint" mental model, deliberately different from
      root because ingress/proxy root spans often lack app-level attributes.
 2. **`--root-only/--all-spans`** (aggregate command): default **root_only =

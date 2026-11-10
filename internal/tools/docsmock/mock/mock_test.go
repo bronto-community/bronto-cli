@@ -97,8 +97,8 @@ func TestMockWorld(t *testing.T) {
 	services := map[string]bool{}
 	example := false
 	for _, sp := range s.spans {
-		services[fmt.Sprint(sp["$service.name"])] = true
-		if sp["$span.trace_id"] == "4bf92f3577b34da6a3ce929d0e0e4736" {
+		services[fmt.Sprint(sp["Resource:service.name"])] = true
+		if sp["Span:trace_id"] == "4bf92f3577b34da6a3ce929d0e0e4736" {
 			example = true
 		}
 		if ms := eventMillis(sp); ms < lo || ms >= hi {
@@ -143,8 +143,8 @@ func TestSearch(t *testing.T) {
 
 	// Group-by aggregate in the live shape.
 	_, body = do(t, s, http.MethodPost, "/search", map[string]any{
-		"from_expr": "logset = '.traces'", "where": "NOT EXISTS $span.parent_span_id",
-		"select": []string{"count(*)"}, "groups": []string{"$service.name"},
+		"from_expr": "logset = '.traces'", "where": "NOT EXISTS Span:parent_span_id",
+		"select": []string{"count(*)"}, "groups": []string{"Resource:service.name"},
 	})
 	groups, _ := body["groups"].([]any)
 	if len(groups) != 1 || groups[0].(map[string]any)["group"] != "[web-frontend]" {

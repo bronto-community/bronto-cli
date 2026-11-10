@@ -294,7 +294,7 @@ func EventColumnsByFrequency(rows []map[string]any, max int) []string {
 }
 
 // QuoteGroupKey double-quotes a bare group-by key that has a path segment
-// starting with a digit, such as $span.events.0.exception.type: unquoted,
+// starting with a digit, such as Span:events.0.exception.type: unquoted,
 // the API reads ".0" as a number and rejects the search ("Invalid query.",
 // live-verified 2026-10-21), while the double-quoted key works. Anything
 // that isn't a plain dotted key (already quoted, an expression, spaces) is
@@ -303,7 +303,7 @@ func QuoteGroupKey(key string) string {
 	if !plainDottedKey(key) {
 		return key
 	}
-	for _, seg := range strings.Split(strings.TrimLeft(key, "$@"), ".") {
+	for _, seg := range strings.Split(strings.TrimLeft(trimSchemaPrefix(key), "$@"), ".") {
 		if seg != "" && seg[0] >= '0' && seg[0] <= '9' {
 			return "\"" + key + "\""
 		}
@@ -311,10 +311,20 @@ func QuoteGroupKey(key string) string {
 	return key
 }
 
-// plainDottedKey reports whether k is an optional $ or @ prefix followed
-// by letters, digits, underscores, hyphens and dots only.
+// trimSchemaPrefix drops a leading Span: or Resource: from a trace key.
+func trimSchemaPrefix(k string) string {
+	for _, p := range []string{"Span:", "Resource:"} {
+		if rest, ok := strings.CutPrefix(k, p); ok {
+			return rest
+		}
+	}
+	return k
+}
+
+// plainDottedKey reports whether k is an optional $, @, Span: or Resource:
+// prefix followed by letters, digits, underscores, hyphens and dots only.
 func plainDottedKey(k string) bool {
-	k = strings.TrimPrefix(strings.TrimPrefix(k, "$"), "@")
+	k = strings.TrimPrefix(strings.TrimPrefix(trimSchemaPrefix(k), "$"), "@")
 	if k == "" {
 		return false
 	}

@@ -24,9 +24,9 @@ import (
 // It posts OTLP/HTTP JSON straight to the ingestion host's /v1/traces with
 // the management key (which carries IngestionApi, see CONTRIBUTING), the
 // same endpoint the telemetry test's exporter uses. `bronto send` can't do
-// this: it sends log events, and spans only get their $span.* fields
+// this: it sends log events, and spans only get their Span:* fields
 // through OTLP (live-verified 2026-10-21: kind, status code and duration
-// all arrive as SPAN_KIND_SERVER, STATUS_CODE_ERROR and $span.duration_nano).
+// all arrive as SPAN_KIND_SERVER, STATUS_CODE_ERROR and Span:duration_nano).
 //
 // The service names come from resourceName, so the datasets they create
 // are bronto-ci-<ts>-... and the sweeper deletes them an hour later.

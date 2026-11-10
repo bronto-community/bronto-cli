@@ -44,9 +44,9 @@ func newAgg(srv *httptest.Server) *Aggregator {
 
 func TestServicesMergesThreeAggregates(t *testing.T) {
 	srv, bodies := aggServer(t, map[string]string{
-		"count(*)":                 `{"groups":[{"group":["cart"],"count(*)":30},{"group":["web"],"count(*)":10}]}`,
-		"avg($span.duration_nano)": `{"groups":[{"group":["cart"],"avg($span.duration_nano)":2000000}]}`,
-		"max($span.duration_nano)": `{"groups":[{"group":["web"],"max($span.duration_nano)":9000000}]}`,
+		"count(*)":                `{"groups":[{"group":["cart"],"count(*)":30},{"group":["web"],"count(*)":10}]}`,
+		"avg(Span:duration_nano)": `{"groups":[{"group":["cart"],"avg(Span:duration_nano)":2000000}]}`,
+		"max(Span:duration_nano)": `{"groups":[{"group":["web"],"max(Span:duration_nano)":9000000}]}`,
 	})
 	defer srv.Close()
 	rows, err := newAgg(srv).Services(context.Background(), "", false, 50)
@@ -85,7 +85,7 @@ func TestOperationsGroupsByServiceAndName(t *testing.T) {
 	// where must include service filter AND errors filter
 	b := (*bodies)[0]
 	where, _ := b["where"].(string)
-	if where != "$service.name = 'cart' AND $span.status_code = 'STATUS_CODE_ERROR'" {
+	if where != "Resource:service.name = 'cart' AND Span:status_code = 'STATUS_CODE_ERROR'" {
 		t.Fatalf("where = %q", where)
 	}
 }
@@ -96,8 +96,8 @@ func TestAttributesMissingHandlingAndTrim(t *testing.T) {
 			{"group":["/api/a"],"count(*)":50},
 			{"group":[""],"count(*)":40},
 			{"group":["/api/b"],"count(*)":30}]}`,
-		"avg($span.duration_nano)": `{"groups":[{"group":["/api/a"],"avg($span.duration_nano)":1500000}]}`,
-		"max($span.duration_nano)": `{"groups":[]}`,
+		"avg(Span:duration_nano)": `{"groups":[{"group":["/api/a"],"avg(Span:duration_nano)":1500000}]}`,
+		"max(Span:duration_nano)": `{"groups":[]}`,
 	})
 	defer srv.Close()
 
@@ -238,7 +238,7 @@ func TestGroupAggregateLiveShape(t *testing.T) {
 	}))
 	defer srv.Close()
 	agg := &Aggregator{Client: bronto.NewClient(srv.Client(), srv.URL)}
-	got, err := agg.groupAggregate(context.Background(), "count(*)", []string{"$service.name"}, "", 50)
+	got, err := agg.groupAggregate(context.Background(), "count(*)", []string{"Resource:service.name"}, "", 50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,9 +254,9 @@ func TestGroupAggregateLiveShape(t *testing.T) {
 // rows, and the merged result must not exceed the limit.
 func TestServicesMergeDropsGroupsTheCountLacks(t *testing.T) {
 	srv, _ := aggServer(t, map[string]string{
-		"count(*)":                 `{"groups":[{"group":["cart"],"count(*)":30},{"group":["web"],"count(*)":10},{"group":["idle"],"count(*)":0}]}`,
-		"avg($span.duration_nano)": `{"groups":[{"group":["cart"],"avg($span.duration_nano)":2000000},{"group":["late"],"avg($span.duration_nano)":5}]}`,
-		"max($span.duration_nano)": `{"groups":[{"group":["other"],"max($span.duration_nano)":9},{"group":["web"],"max($span.duration_nano)":9000000}]}`,
+		"count(*)":                `{"groups":[{"group":["cart"],"count(*)":30},{"group":["web"],"count(*)":10},{"group":["idle"],"count(*)":0}]}`,
+		"avg(Span:duration_nano)": `{"groups":[{"group":["cart"],"avg(Span:duration_nano)":2000000},{"group":["late"],"avg(Span:duration_nano)":5}]}`,
+		"max(Span:duration_nano)": `{"groups":[{"group":["other"],"max(Span:duration_nano)":9},{"group":["web"],"max(Span:duration_nano)":9000000}]}`,
 	})
 	defer srv.Close()
 	rows, err := newAgg(srv).Services(context.Background(), "", false, 2)
