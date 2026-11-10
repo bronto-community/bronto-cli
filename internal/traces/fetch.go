@@ -18,10 +18,10 @@ type ListOptions struct {
 func (a *Aggregator) ListSpans(ctx context.Context, opts ListOptions) ([]map[string]any, error) {
 	var clauses []string
 	if opts.Service != "" {
-		clauses = append(clauses, "$service.name = "+Quote(opts.Service))
+		clauses = append(clauses, "Resource:service.name = "+Quote(opts.Service))
 	}
 	if opts.Operation != "" {
-		clauses = append(clauses, "$span.name = "+Quote(opts.Operation))
+		clauses = append(clauses, "Span:name = "+Quote(opts.Operation))
 	}
 	clauses = append(clauses, MinDurationClause(opts.MinDurationMS))
 	if opts.ErrorsOnly {
@@ -67,7 +67,7 @@ func (a *Aggregator) FetchTraceSpans(ctx context.Context, traceIDs []string) ([]
 		}
 		clauses := make([]string, 0, end-start)
 		for _, id := range traceIDs[start:end] {
-			clauses = append(clauses, "$span.trace_id = "+Quote(id))
+			clauses = append(clauses, "Span:trace_id = "+Quote(id))
 		}
 		resp, err := a.Client.Search(ctx, bronto.SearchRequest{
 			FromExpr: FromExpr, Time: a.Time,
@@ -94,7 +94,7 @@ func (a *Aggregator) FindSampleTraceIDs(ctx context.Context, where string, sampl
 	mrf := true
 	resp, err := a.Client.Search(ctx, bronto.SearchRequest{
 		FromExpr: FromExpr, Time: a.Time,
-		Select: []string{"$span.trace_id"}, Where: where,
+		Select: []string{"Span:trace_id"}, Where: where,
 		Limit: limit, MostRecentFirst: &mrf,
 	})
 	if err != nil {
@@ -103,7 +103,7 @@ func (a *Aggregator) FindSampleTraceIDs(ctx context.Context, where string, sampl
 	seen := map[string]bool{}
 	var ids []string
 	for _, row := range resp.SelectedRows() {
-		id := str(row, "$span.trace_id")
+		id := str(row, "Span:trace_id")
 		if id == "" || seen[id] {
 			continue
 		}

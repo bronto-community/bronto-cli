@@ -33,15 +33,15 @@ func TestMetricDefinitionsLive(t *testing.T) {
 	attempt := 0
 	PollUntil(t, seedPollBudget(), 10*time.Second, func() (bool, error) {
 		attempt++
-		nonce := fmt.Sprintf(" AND $span.name != 'attempt-%d'", attempt)
+		nonce := fmt.Sprintf(" AND Span:name != 'attempt-%d'", attempt)
 		name = resourceName(fmt.Sprintf("definition-%d", attempt))
 		created := mustRunJSONObject(t, r, "metrics", "definitions", "create", "--input", writeBodyFile(t, map[string]any{
 			"name": name,
 			"queries": []any{
 				map[string]any{"name": "requests", "select": []string{"count(*)"}, "from_expr": traces,
-					"where": fmt.Sprintf("$service.name = '%s'", serviceA) + nonce, "aggregation": count},
+					"where": fmt.Sprintf("Resource:service.name = '%s'", serviceA) + nonce, "aggregation": count},
 				map[string]any{"name": "errors", "select": []string{"count(*)"}, "from_expr": traces,
-					"where":       fmt.Sprintf("$service.name = '%s' AND $span.status_code = 'STATUS_CODE_ERROR'", serviceB) + nonce,
+					"where":       fmt.Sprintf("Resource:service.name = '%s' AND Span:status_code = 'STATUS_CODE_ERROR'", serviceB) + nonce,
 					"aggregation": count},
 			},
 		}))

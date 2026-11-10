@@ -69,7 +69,7 @@ func TestKindClauseValidation(t *testing.T) {
 		t.Error("unknown kind must error")
 	}
 	got, _ := KindClause("server")
-	if got != "$span.kind = 'SPAN_KIND_SERVER'" {
+	if got != "Span:kind = 'SPAN_KIND_SERVER'" {
 		t.Fatalf("clause = %q", got)
 	}
 }

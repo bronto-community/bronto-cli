@@ -12,8 +12,8 @@ import (
 
 const (
 	aggCount = "count(*)"
-	aggAvg   = "avg($span.duration_nano)"
-	aggMax   = "max($span.duration_nano)"
+	aggAvg   = "avg(Span:duration_nano)"
+	aggMax   = "max(Span:duration_nano)"
 )
 
 type Aggregator struct {
@@ -104,12 +104,12 @@ func parseGroup(v any) []string {
 func (a *Aggregator) Services(ctx context.Context, service string, errorsOnly bool, limit int) ([]map[string]any, error) {
 	var svcClause, errClause string
 	if service != "" {
-		svcClause = "$service.name = " + Quote(service)
+		svcClause = "Resource:service.name = " + Quote(service)
 	}
 	if errorsOnly {
 		errClause = ErrorsClause
 	}
-	return a.threeWayRows(ctx, []string{"$service.name"}, AndJoin(svcClause, errClause), limit,
+	return a.threeWayRows(ctx, []string{"Resource:service.name"}, AndJoin(svcClause, errClause), limit,
 		func(vals []string) map[string]any {
 			return map[string]any{"service": at(vals, 0)}
 		})
@@ -118,12 +118,12 @@ func (a *Aggregator) Services(ctx context.Context, service string, errorsOnly bo
 func (a *Aggregator) Operations(ctx context.Context, service string, errorsOnly bool, limit int) ([]map[string]any, error) {
 	var svcClause, errClause string
 	if service != "" {
-		svcClause = "$service.name = " + Quote(service)
+		svcClause = "Resource:service.name = " + Quote(service)
 	}
 	if errorsOnly {
 		errClause = ErrorsClause
 	}
-	return a.threeWayRows(ctx, []string{"$service.name", "$span.name"},
+	return a.threeWayRows(ctx, []string{"Resource:service.name", "Span:name"},
 		AndJoin(svcClause, errClause), limit,
 		func(vals []string) map[string]any {
 			return map[string]any{"service": at(vals, 0), "operation": at(vals, 1)}
@@ -213,7 +213,7 @@ func (a *Aggregator) Attributes(ctx context.Context, opts AttrOptions) ([]map[st
 		clauses = append(clauses, RootOnlyClause)
 	}
 	if opts.Service != "" {
-		clauses = append(clauses, "$service.name = "+Quote(opts.Service))
+		clauses = append(clauses, "Resource:service.name = "+Quote(opts.Service))
 	}
 	if opts.Kind != "" {
 		kindClause, err := KindClause(opts.Kind)
@@ -247,9 +247,10 @@ func (a *Aggregator) Attributes(ctx context.Context, opts AttrOptions) ([]map[st
 		}
 	}
 
-	attrNames := make([]string, len(groupKeys))
-	for i, g := range groupKeys {
-		attrNames[i] = strings.TrimPrefix(g, "$")
+	// Columns keep the user's spelling (http.route, not Span:http.route).
+	attrNames := make([]string, len(opts.By))
+	for i, attr := range opts.By {
+		attrNames[i] = strings.TrimPrefix(strings.TrimSpace(attr), "$")
 	}
 
 	countKeys := make([]string, 0, len(counts))

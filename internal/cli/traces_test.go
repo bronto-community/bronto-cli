@@ -49,9 +49,9 @@ func runTraces(t *testing.T, srv *httptest.Server, args ...string) (string, erro
 
 func TestTracesServicesJSON(t *testing.T) {
 	srv := tracesServer(t, map[string]string{
-		"count(*)":                 `{"groups":[{"group":["cart"],"count(*)":9}]}`,
-		"avg($span.duration_nano)": `{"groups":[{"group":["cart"],"avg($span.duration_nano)":1000000}]}`,
-		"max($span.duration_nano)": `{"groups":[{"group":["cart"],"max($span.duration_nano)":2000000}]}`,
+		"count(*)":                `{"groups":[{"group":["cart"],"count(*)":9}]}`,
+		"avg(Span:duration_nano)": `{"groups":[{"group":["cart"],"avg(Span:duration_nano)":1000000}]}`,
+		"max(Span:duration_nano)": `{"groups":[{"group":["cart"],"max(Span:duration_nano)":2000000}]}`,
 	})
 	defer srv.Close()
 	out, err := runTraces(t, srv, "services", "-o", "json")
@@ -90,11 +90,11 @@ func TestTracesAggregateRejectsBadKind(t *testing.T) {
 func TestTracesShowStreamsRows(t *testing.T) {
 	srv := tracesServer(t, map[string]string{
 		"@time": `{"result":[
-			{"$span.trace_id":"tr1","$span.span_id":"a","$span.name":"root","$service.name":"cart",
-			 "$span.start_time_unix_nano":100,"$span.duration_nano":50,"$span.status_code":"STATUS_CODE_OK"},
-			{"$span.trace_id":"tr1","$span.span_id":"b","$span.parent_span_id":"a","$span.name":"child",
-			 "$service.name":"cart","$span.start_time_unix_nano":110,"$span.duration_nano":20,
-			 "$span.status_code":"STATUS_CODE_UNSET"}]}`,
+			{"Span:trace_id":"tr1","Span:span_id":"a","Span:name":"root","Resource:service.name":"cart",
+			 "Span:start_time_unix_nano":100,"Span:duration_nano":50,"Span:status_code":"STATUS_CODE_OK"},
+			{"Span:trace_id":"tr1","Span:span_id":"b","Span:parent_span_id":"a","Span:name":"child",
+			 "Resource:service.name":"cart","Span:start_time_unix_nano":110,"Span:duration_nano":20,
+			 "Span:status_code":"STATUS_CODE_UNSET"}]}`,
 	})
 	defer srv.Close()
 	out, err := runTraces(t, srv, "show", "tr1")
@@ -119,11 +119,11 @@ func TestTracesShowStreamsRows(t *testing.T) {
 func TestTracesShowAppliesFieldsFilter(t *testing.T) {
 	srv := tracesServer(t, map[string]string{
 		"@time": `{"result":[
-			{"$span.trace_id":"tr1","$span.span_id":"a","$span.name":"root","$service.name":"cart",
-			 "$span.start_time_unix_nano":100,"$span.duration_nano":50,"$span.status_code":"STATUS_CODE_OK"},
-			{"$span.trace_id":"tr1","$span.span_id":"b","$span.parent_span_id":"a","$span.name":"child",
-			 "$service.name":"cart","$span.start_time_unix_nano":110,"$span.duration_nano":20,
-			 "$span.status_code":"STATUS_CODE_UNSET"}]}`,
+			{"Span:trace_id":"tr1","Span:span_id":"a","Span:name":"root","Resource:service.name":"cart",
+			 "Span:start_time_unix_nano":100,"Span:duration_nano":50,"Span:status_code":"STATUS_CODE_OK"},
+			{"Span:trace_id":"tr1","Span:span_id":"b","Span:parent_span_id":"a","Span:name":"child",
+			 "Resource:service.name":"cart","Span:start_time_unix_nano":110,"Span:duration_nano":20,
+			 "Span:status_code":"STATUS_CODE_UNSET"}]}`,
 	})
 	defer srv.Close()
 	out, err := runTraces(t, srv, "show", "tr1", "--fields", "service,operation")
@@ -196,7 +196,7 @@ func TestTracesShowNotFound(t *testing.T) {
 
 func TestTracesShapeJSON(t *testing.T) {
 	// Both FindSampleTraceIDs and FetchTraceSpans use select[0] ==
-	// "$span.trace_id", so route by "limit" instead: sampling requests
+	// "Span:trace_id", so route by "limit" instead: sampling requests
 	// max(sample*3, 30); the span fetch always requests 5000.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
@@ -204,13 +204,13 @@ func TestTracesShapeJSON(t *testing.T) {
 		_ = json.Unmarshal(b, &body)
 		if body["limit"] == float64(5000) {
 			_, _ = w.Write([]byte(`{"result":[
-				{"$span.trace_id":"t1","$span.span_id":"a1","$span.name":"POST /x","$service.name":"web",
-				 "$span.kind":"SPAN_KIND_SERVER","$span.start_time_unix_nano":100,"$span.duration_nano":50},
-				{"$span.trace_id":"t2","$span.span_id":"a2","$span.name":"POST /x","$service.name":"web",
-				 "$span.kind":"SPAN_KIND_SERVER","$span.start_time_unix_nano":900,"$span.duration_nano":70}]}`))
+				{"Span:trace_id":"t1","Span:span_id":"a1","Span:name":"POST /x","Resource:service.name":"web",
+				 "Span:kind":"SPAN_KIND_SERVER","Span:start_time_unix_nano":100,"Span:duration_nano":50},
+				{"Span:trace_id":"t2","Span:span_id":"a2","Span:name":"POST /x","Resource:service.name":"web",
+				 "Span:kind":"SPAN_KIND_SERVER","Span:start_time_unix_nano":900,"Span:duration_nano":70}]}`))
 			return
 		}
-		_, _ = w.Write([]byte(`{"result":[{"$span.trace_id":"t1"},{"$span.trace_id":"t2"}]}`))
+		_, _ = w.Write([]byte(`{"result":[{"Span:trace_id":"t1"},{"Span:trace_id":"t2"}]}`))
 	}))
 	defer srv.Close()
 	out, err := runTraces(t, srv, "shape", "--sample", "2", "-o", "json")
@@ -244,11 +244,11 @@ func TestTracesShapeRejectsFieldsOnTTYRender(t *testing.T) {
 		_ = json.Unmarshal(b, &body)
 		if body["limit"] == float64(5000) {
 			_, _ = w.Write([]byte(`{"result":[
-				{"$span.trace_id":"t1","$span.span_id":"a1","$span.name":"POST /x","$service.name":"web",
-				 "$span.kind":"SPAN_KIND_SERVER","$span.start_time_unix_nano":100,"$span.duration_nano":50}]}`))
+				{"Span:trace_id":"t1","Span:span_id":"a1","Span:name":"POST /x","Resource:service.name":"web",
+				 "Span:kind":"SPAN_KIND_SERVER","Span:start_time_unix_nano":100,"Span:duration_nano":50}]}`))
 			return
 		}
-		_, _ = w.Write([]byte(`{"result":[{"$span.trace_id":"t1"}]}`))
+		_, _ = w.Write([]byte(`{"result":[{"Span:trace_id":"t1"}]}`))
 	}))
 	defer srv.Close()
 	_, err := runTraces(t, srv, "shape", "--sample", "1", "--fields", "name")
@@ -296,9 +296,9 @@ func TestTracesShapeRejectsNonPositiveSample(t *testing.T) {
 
 func TestTracesListColumns(t *testing.T) {
 	srv := tracesServer(t, map[string]string{
-		"@time": `{"result":[{"@time":"t1","$span.trace_id":"tr","$span.span_id":"sp",
-			"$span.name":"op","$service.name":"svc","$span.duration_nano":3000000,
-			"$span.status_code":"STATUS_CODE_OK"}]}`,
+		"@time": `{"result":[{"@time":"t1","Span:trace_id":"tr","Span:span_id":"sp",
+			"Span:name":"op","Resource:service.name":"svc","Span:duration_nano":3000000,
+			"Span:status_code":"STATUS_CODE_OK"}]}`,
 	})
 	defer srv.Close()
 	out, err := runTraces(t, srv, "list", "-o", "json")
@@ -314,12 +314,12 @@ func TestTracesListColumns(t *testing.T) {
 func TestTracesListPipedDefaultIsJSONL(t *testing.T) {
 	srv := tracesServer(t, map[string]string{
 		"@time": `{"result":[
-			{"@time":"t1","$span.trace_id":"tr1","$span.span_id":"sp1",
-			 "$span.name":"op1","$service.name":"svc","$span.duration_nano":1000000,
-			 "$span.status_code":"STATUS_CODE_OK"},
-			{"@time":"t2","$span.trace_id":"tr2","$span.span_id":"sp2",
-			 "$span.name":"op2","$service.name":"svc","$span.duration_nano":2000000,
-			 "$span.status_code":"STATUS_CODE_OK"}]}`,
+			{"@time":"t1","Span:trace_id":"tr1","Span:span_id":"sp1",
+			 "Span:name":"op1","Resource:service.name":"svc","Span:duration_nano":1000000,
+			 "Span:status_code":"STATUS_CODE_OK"},
+			{"@time":"t2","Span:trace_id":"tr2","Span:span_id":"sp2",
+			 "Span:name":"op2","Resource:service.name":"svc","Span:duration_nano":2000000,
+			 "Span:status_code":"STATUS_CODE_OK"}]}`,
 	})
 	defer srv.Close()
 	// No -o flag: piped (non-TTY) stdout must default to JSONL, like search.
@@ -383,7 +383,7 @@ func TestServiceFlagsResolve(t *testing.T) {
 	bad := map[[2]string]string{
 		{"", "web/nginx"}: "usage_invalid_flags",
 		{"", "11111111-1111-1111-1111-111111111111"}: "usage_invalid_flags",
-		{"cart", ".traces/checkout-api"}:              "usage_conflicting_flags",
+		{"cart", ".traces/checkout-api"}:             "usage_conflicting_flags",
 	}
 	for in, code := range bad {
 		_, err := (&serviceFlags{service: in[0], dataset: in[1]}).resolve()
@@ -409,7 +409,7 @@ func TestTracesDatasetAlias(t *testing.T) {
 			t.Fatalf("%s: %v", sub, err)
 		}
 		srv.Close()
-		if len(wheres) == 0 || wheres[0] != "$service.name = 'checkout-api'" {
+		if len(wheres) == 0 || wheres[0] != "Resource:service.name = 'checkout-api'" {
 			t.Errorf("%s -d: wheres = %q", sub, wheres)
 		}
 
@@ -429,7 +429,7 @@ func TestShapeSampleWhereMinDurationIsInclusive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if where != "$span.duration_nano >= 500000000" {
+	if where != "Span:duration_nano >= 500000000" {
 		t.Fatalf("where = %q", where)
 	}
 }

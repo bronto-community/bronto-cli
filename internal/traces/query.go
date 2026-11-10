@@ -7,10 +7,10 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
-const RootOnlyClause = "NOT EXISTS $span.parent_span_id"
+const RootOnlyClause = "NOT EXISTS Span:parent_span_id"
 
 // ErrorsClause is the WHERE fragment matching error-status spans.
-const ErrorsClause = "$span.status_code = 'STATUS_CODE_ERROR'"
+const ErrorsClause = "Span:status_code = 'STATUS_CODE_ERROR'"
 
 // validKinds are the OpenTelemetry span kinds accepted by KindClause,
 // bare (server) or SPAN_KIND_-prefixed (SPAN_KIND_SERVER), case-insensitive.
@@ -18,17 +18,38 @@ var validKinds = map[string]bool{
 	"SERVER": true, "CLIENT": true, "INTERNAL": true, "PRODUCER": true, "CONSUMER": true,
 }
 
-// NormalizeAttr turns a user-supplied attribute into query form:
-// leading $ added unless present. http.route -> $http.route.
+// prefixedAttrs maps the trace attributes the API spells with a schema
+// prefix to that prefix.
+var prefixedAttrs = map[string]string{
+	"service.name":              "Resource:",
+	"service.namespace":         "Resource:",
+	"http.route":                "Span:",
+	"http.response.status_code": "Span:",
+	"db.system":                 "Span:",
+	"peer.service":              "Span:",
+}
+
+// NormalizeAttr turns a user-supplied attribute into query form. Span
+// fields take the Span: prefix (span.kind and $span.kind -> Span:kind),
+// as do the attributes in prefixedAttrs (http.route -> Span:http.route,
+// service.name -> Resource:service.name); any other unqualified attribute
+// defaults to Span: (cart.items and $cart.items -> Span:cart.items).
 func NormalizeAttr(attr string) (string, error) {
 	a := strings.TrimSpace(attr)
 	if a == "" {
 		return "", clierr.New("usage_invalid_attr", "attribute name is empty")
 	}
-	if !strings.HasPrefix(a, "$") {
-		a = "$" + a
+	if strings.HasPrefix(a, "Span:") || strings.HasPrefix(a, "Resource:") {
+		return a, nil
 	}
-	return a, nil
+	bare := strings.TrimPrefix(a, "$")
+	if rest, ok := strings.CutPrefix(bare, "span."); ok {
+		return "Span:" + rest, nil
+	}
+	if prefix, ok := prefixedAttrs[bare]; ok {
+		return prefix + bare, nil
+	}
+	return "Span:" + bare, nil
 }
 
 // KindClause builds the span-kind filter. Accepts bare (server) or
@@ -43,7 +64,7 @@ func KindClause(kind string) (string, error) {
 			fmt.Sprintf("unknown span kind %q", kind)).
 			WithHint("Valid kinds: server, client, internal, producer, consumer.")
 	}
-	return fmt.Sprintf("$span.kind = 'SPAN_KIND_%s'", bare), nil
+	return fmt.Sprintf("Span:kind = 'SPAN_KIND_%s'", bare), nil
 }
 
 // MinDurationClause matches spans at least ms milliseconds long, the
@@ -52,7 +73,7 @@ func MinDurationClause(ms float64) string {
 	if ms <= 0 {
 		return ""
 	}
-	return fmt.Sprintf("$span.duration_nano >= %d", int64(ms*1e6))
+	return fmt.Sprintf("Span:duration_nano >= %d", int64(ms*1e6))
 }
 
 func AndJoin(clauses ...string) string {

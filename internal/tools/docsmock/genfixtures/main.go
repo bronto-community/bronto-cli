@@ -143,14 +143,14 @@ func (g *gen) checkout(start time.Time, traceID string) {
 			service: "checkout-service", route: "/api/checkout", httpStatus: code, start: coStart, dur: coDur, err: failed},
 		span{traceID: traceID, spanID: dbID, parentID: coID, name: "SELECT orders", kind: "CLIENT",
 			service: "checkout-service", start: dbStart, dur: dbDur,
-			extra: map[string]any{"$db.system": "postgresql"}},
+			extra: map[string]any{"Span:db.system": "postgresql"}},
 		span{traceID: traceID, spanID: cliID, parentID: coID, name: "POST /charge", kind: "CLIENT",
 			service: "checkout-service", httpStatus: payCode, start: cliStart, dur: cliDur, err: failed},
 		span{traceID: traceID, spanID: payID, parentID: cliID, name: "POST /charge", kind: "SERVER",
 			service: "payments-api", route: "/charge", httpStatus: payCode, start: payStart, dur: payDur, err: failed},
 		span{traceID: traceID, spanID: provID, parentID: payID, name: "provider.authorize", kind: "CLIENT",
 			service: "payments-api", start: provStart, dur: provDur, err: failed,
-			extra: map[string]any{"$peer.service": "card-provider"}},
+			extra: map[string]any{"Span:peer.service": "card-provider"}},
 	)
 
 	coMsg, coStatus := "checkout completed", "info"
@@ -193,7 +193,7 @@ func (g *gen) cart(start time.Time, traceID string) {
 			service: "checkout-service", route: "/api/cart", httpStatus: 200, start: coStart, dur: coDur},
 		span{traceID: traceID, spanID: dbID, parentID: coID, name: "SELECT cart_items", kind: "CLIENT",
 			service: "checkout-service", start: coStart.Add(g.ms(1, 2)), dur: dbDur,
-			extra: map[string]any{"$db.system": "postgresql"}},
+			extra: map[string]any{"Span:db.system": "postgresql"}},
 	)
 	g.events = append(g.events,
 		event{at: coStart.Add(coDur), logID: logCheckoutProd, status: "info", kvs: map[string]any{
@@ -317,25 +317,25 @@ func spanDoc(s span) map[string]any {
 	end := s.start.Add(s.dur)
 	d := map[string]any{
 		"@time":                      s.start.Format("2006-01-02 15:04:05.000 MST"),
-		"$span.trace_id":             s.traceID,
-		"$span.span_id":              s.spanID,
-		"$span.name":                 s.name,
-		"$span.kind":                 "SPAN_KIND_" + s.kind,
-		"$span.duration_nano":        s.dur.Nanoseconds(),
-		"$span.start_time_unix_nano": s.start.UnixNano(),
-		"$span.end_time_unix_nano":   end.UnixNano(),
-		"$span.status_code":          status,
-		"$service.name":              s.service,
-		"$service.namespace":         "shop",
+		"Span:trace_id":              s.traceID,
+		"Span:span_id":               s.spanID,
+		"Span:name":                  s.name,
+		"Span:kind":                  "SPAN_KIND_" + s.kind,
+		"Span:duration_nano":         s.dur.Nanoseconds(),
+		"Span:start_time_unix_nano":  s.start.UnixNano(),
+		"Span:end_time_unix_nano":    end.UnixNano(),
+		"Span:status_code":           status,
+		"Resource:service.name":      s.service,
+		"Resource:service.namespace": "shop",
 	}
 	if s.parentID != "" {
-		d["$span.parent_span_id"] = s.parentID
+		d["Span:parent_span_id"] = s.parentID
 	}
 	if s.route != "" {
-		d["$http.route"] = s.route
+		d["Span:http.route"] = s.route
 	}
 	if s.httpStatus != 0 {
-		d["$http.response.status_code"] = s.httpStatus
+		d["Span:http.response.status_code"] = s.httpStatus
 	}
 	for k, v := range s.extra {
 		d[k] = v

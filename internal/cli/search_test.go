@@ -85,13 +85,13 @@ func TestSearchGroupsRenderAsRows(t *testing.T) {
 }
 
 // liveGroupedSearch is a grouped /search response in the live shape (EU,
-// 2026-10-22, -g $span.status_code -g $span.name over payments-gateway):
+// 2026-10-22, -g Span:status_code -g Span:name over payments-gateway):
 // one row per group with the per-bucket counts, values and timeseries.
 const liveGroupedSearch = `{"groups":[
- {"group":"[STATUS_CODE_ERROR, POST /charge]","stat":"avg($span.duration_nano)","value":1.7536153846153846E9,"count":13,
+ {"group":"[STATUS_CODE_ERROR, POST /charge]","stat":"avg(Span:duration_nano)","value":1.7536153846153846E9,"count":13,
   "counts":[2,5,6],"values":[1.337E9,1.848E9,1.8138333333333333E9],
   "timeseries":[{"@timestamp":1792649929725,"count":2,"value":1.337E9},{"@timestamp":1792650529725,"count":5,"value":1.848E9},{"@timestamp":1792651129725,"count":6,"value":1.8138333333333333E9}]},
- {"group":"[STATUS_CODE_OK, POST /charge]","stat":"avg($span.duration_nano)","value":1.5961968680089486E8,"count":447,
+ {"group":"[STATUS_CODE_OK, POST /charge]","stat":"avg(Span:duration_nano)","value":1.5961968680089486E8,"count":447,
   "counts":[152,136,159],"values":[1.5942105263157895E8,1.377058823529412E8,1.7855345911949685E8],
   "timeseries":[{"@timestamp":1792649929725,"count":152,"value":1.5942105263157895E8},{"@timestamp":1792650529725,"count":136,"value":1.377058823529412E8},{"@timestamp":1792651129725,"count":159,"value":1.7855345911949685E8}]}]}`
 
@@ -104,7 +104,7 @@ func runGroupedSearch(t *testing.T, format string) string {
 	root.SetOut(&out)
 	root.SetErr(&bytes.Buffer{})
 	root.SetArgs([]string{"search", "-d", "11111111-1111-1111-1111-111111111111",
-		"--select", "avg($span.duration_nano)", "-g", "$span.status_code", "-g", "$span.name",
+		"--select", "avg(Span:duration_nano)", "-g", "Span:status_code", "-g", "Span:name",
 		"--base-url", srv.URL, "--api-key", "k", "-o", format})
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
@@ -122,7 +122,7 @@ func TestSearchGroupsCompactTable(t *testing.T) {
 	if got := strings.Join(strings.Fields(lines[0]), " "); got != "GROUP STAT VALUE COUNT TREND" {
 		t.Fatalf("header = %q", got)
 	}
-	if got := strings.Join(strings.Fields(lines[1]), " "); got != "STATUS_CODE_ERROR, POST /charge avg($span.duration_nano) 1753615384.62 13 ▆█▇" {
+	if got := strings.Join(strings.Fields(lines[1]), " "); got != "STATUS_CODE_ERROR, POST /charge avg(Span:duration_nano) 1753615384.62 13 ▆█▇" {
 		t.Fatalf("row = %q", got)
 	}
 	if strings.Contains(out, "@timestamp") {

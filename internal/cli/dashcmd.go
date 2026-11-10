@@ -30,24 +30,24 @@ const manifestFormatHelp = `Manifest format (YAML or JSON, one dashboard per fil
         - name: requests             # default q1, q2, ...; formulas refer to it
           dataset: .traces/checkout-api   # name, collection/name or id; or a list
           select: count(*)
-          where: "$span.kind = 'SPAN_KIND_SERVER'"   # default "" (everything)
+          where: "Span:kind = 'SPAN_KIND_SERVER'"   # default "" (everything)
     - name: p95 latency
       unit: nanoseconds              # what the values are in; the web UI shows "640 ms"
       queries:
-        - {name: p95, dataset: .traces/checkout-api, select: $span.duration_nano, agg: p95,
-           where: "$span.kind = 'SPAN_KIND_SERVER'", group_by: [$span.name]}
+        - {name: p95, dataset: .traces/checkout-api, select: Span:duration_nano, agg: p95,
+           where: "Span:kind = 'SPAN_KIND_SERVER'", group_by: [Span:name]}
     - name: Error rate %
       unit: percent                  # values from 0 to 100, shown as a percentage
       queries:
         - {name: errors, dataset: .traces/checkout-api, select: count(*),
-           where: "$span.status_code = 'STATUS_CODE_ERROR'"}
+           where: "Span:status_code = 'STATUS_CODE_ERROR'"}
         - {name: total, dataset: .traces/checkout-api, select: count(*)}
       formula: errors / total * 100  # one formula over the queries (the widget plots it)
     - name: Busiest operations
       type: top-list
       sort: value desc               # value desc (default) | value asc | name asc | name desc
       queries:
-        - {dataset: .traces/checkout-api, select: count(*), group_by: [$span.name]}
+        - {dataset: .traces/checkout-api, select: count(*), group_by: [Span:name]}
     - ref: Shared widget             # an existing widget, by name or id: attached, never owned
 
 Query fields: name, dataset | from_expr | from (dataset ids), select (count(*),
@@ -57,9 +57,9 @@ agg_params (rate and histogram only), where, group_by (up to 5), unit or
 unit_config. A widget takes up to 6 queries, and formula: (an expression, or
 {name, expression}) or formulas: [{name, expression}]. formula: names its
 formula "value", which the web UI shows in the legend (with the group, for a
-grouped query). Trace fields: $service.name, $span.name,
-$span.kind = 'SPAN_KIND_SERVER', $span.duration_nano (nanoseconds),
-$span.status_code = 'STATUS_CODE_ERROR'.
+grouped query). Trace fields: Resource:service.name, Span:name,
+Span:kind = 'SPAN_KIND_SERVER', Span:duration_nano (nanoseconds),
+Span:status_code = 'STATUS_CODE_ERROR'.
 
 Units (unit: on a widget, query or formula; unit_config takes the API's
 object instead): nanoseconds, microseconds, milliseconds, seconds, minutes,

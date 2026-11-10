@@ -15,7 +15,7 @@ func TestParseValid(t *testing.T) {
 		"status >= 500 AND level = 'error'",
 		"a = 1 OR b = 2 AND NOT c = 3",
 		"(a = 1 OR b = 2) AND c != 'x'",
-		"$span.trace_id = 'd14b'",
+		"Span:trace_id = 'd14b'",
 		"@raw ~ 'info'",
 		"message ~ 'timeout'",
 		"path !~ 'health'",
@@ -129,7 +129,7 @@ func TestParseServerGrammar(t *testing.T) {
 		"status IS NOT NULL",
 		"nosuchfield Is Null",
 		"EXISTS status",
-		"NOT EXISTS $span.parent_span_id",
+		"NOT EXISTS Span:parent_span_id",
 		`exists "status"`,
 		"EXISTS (status)",
 		"EXISTS", // alone: a search term

@@ -90,7 +90,7 @@ func TestGroupRowsMergesGroupObject(t *testing.T) {
 // select projection). Projection consumers must use SelectedRows —
 // EventRows silently ignores the select.
 func TestSelectedRowsVsEventRows(t *testing.T) {
-	body := `{"events":[{"@raw":"raw","attributes":{}}],"result":[{"$span.trace_id":"t1"}]}`
+	body := `{"events":[{"@raw":"raw","attributes":{}}],"result":[{"Span:trace_id":"t1"}]}`
 	var resp SearchResponse
 	if err := DecodeJSON([]byte(body), &resp); err != nil {
 		t.Fatal(err)
@@ -98,7 +98,7 @@ func TestSelectedRowsVsEventRows(t *testing.T) {
 	if _, ok := resp.EventRows()[0]["@raw"]; !ok {
 		t.Fatal("EventRows must prefer the raw events")
 	}
-	if resp.SelectedRows()[0]["$span.trace_id"] != "t1" {
+	if resp.SelectedRows()[0]["Span:trace_id"] != "t1" {
 		t.Fatal("SelectedRows must prefer the projection")
 	}
 	// fallbacks when only one side is populated
@@ -247,16 +247,17 @@ func TestEventColumnsByFrequencyNullPaddingIgnored(t *testing.T) {
 
 func TestQuoteGroupKey(t *testing.T) {
 	for in, want := range map[string]string{
-		"$span.events.0.exception.type":   `"$span.events.0.exception.type"`,
-		"attrs.1st":                       `"attrs.1st"`,
-		"$service.name":                   "$service.name",
-		"host":                            "host",
-		"$http2.status":                   "$http2.status",
-		`"$span.events.0.exception.type"`: `"$span.events.0.exception.type"`,
-		"0":                               `"0"`,
-		"lower($a.0)":                     "lower($a.0)",
-		"":                                "",
-		"$":                               "$",
+		"Span:events.0.exception.type":   `"Span:events.0.exception.type"`,
+		"attrs.1st":                      `"attrs.1st"`,
+		"Resource:service.name":          "Resource:service.name",
+		"Resource:attrs.0":               `"Resource:attrs.0"`,
+		"host":                           "host",
+		"$http2.status":                  "$http2.status",
+		`"Span:events.0.exception.type"`: `"Span:events.0.exception.type"`,
+		"0":                              `"0"`,
+		"lower($a.0)":                    "lower($a.0)",
+		"":                               "",
+		"$":                              "$",
 	} {
 		if got := QuoteGroupKey(in); got != want {
 			t.Errorf("QuoteGroupKey(%q) = %q, want %q", in, got, want)
@@ -265,8 +266,8 @@ func TestQuoteGroupKey(t *testing.T) {
 }
 
 func TestBodyQuotesDigitGroupKeys(t *testing.T) {
-	b := SearchRequest{Groups: []string{"$service.name", "$span.events.0.exception.type"}}.Body()
-	want := []string{"$service.name", `"$span.events.0.exception.type"`}
+	b := SearchRequest{Groups: []string{"Resource:service.name", "Span:events.0.exception.type"}}.Body()
+	want := []string{"Resource:service.name", `"Span:events.0.exception.type"`}
 	if !reflect.DeepEqual(b["groups"], want) {
 		t.Fatalf("groups = %v, want %v", b["groups"], want)
 	}

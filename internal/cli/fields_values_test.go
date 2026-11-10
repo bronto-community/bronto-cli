@@ -143,7 +143,7 @@ func TestFieldValueRowsKeepLiteralValues(t *testing.T) {
 
 func TestFieldsValuesRejectsBadUsage(t *testing.T) {
 	for _, args := range [][]string{
-		{"--values", "$span.status_code", "status"},
+		{"--values", "Span:status_code", "status"},
 		{"--values", ""},
 		{"--values", "$x", "-n", "-1"},
 	} {

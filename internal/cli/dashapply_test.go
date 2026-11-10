@@ -21,15 +21,15 @@ widgets:
       - name: requests
         dataset: .traces/checkout-api
         select: count(*)
-        where: $span.kind = 'SPAN_KIND_SERVER'
+        where: Span:kind = 'SPAN_KIND_SERVER'
   - name: p95 latency
     unit: nanoseconds
     queries:
-      - {name: p95, dataset: checkout-api, select: $span.duration_nano, agg: p95,
-         where: "$span.kind = 'SPAN_KIND_SERVER'", group_by: [$span.name]}
+      - {name: p95, dataset: checkout-api, select: Span:duration_nano, agg: p95,
+         where: "Span:kind = 'SPAN_KIND_SERVER'", group_by: [Span:name]}
   - name: Error rate %
     queries:
-      - {name: errors, dataset: .traces/checkout-api, select: count(*), where: "$span.status_code = 'STATUS_CODE_ERROR'"}
+      - {name: errors, dataset: .traces/checkout-api, select: count(*), where: "Span:status_code = 'STATUS_CODE_ERROR'"}
       - {name: total, dataset: .traces/checkout-api, select: count(*)}
     formula: errors / total * 100
 `
@@ -65,8 +65,8 @@ func TestParseManifestErrors(t *testing.T) {
 			"d.yaml:5:9: a query needs a dataset (or from_expr, or from)"},
 		{"two sources", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {dataset: a/b, from_expr: y, select: count(*)}",
 			"use one of dataset, from_expr or from"},
-		{"bare field without agg", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {dataset: a/b, select: $span.duration_nano}",
-			`select "$span.duration_nano" is a field, so set agg`},
+		{"bare field without agg", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {dataset: a/b, select: Span:duration_nano}",
+			`select "Span:duration_nano" is a field, so set agg`},
 		{"unknown agg", "name: x\nwidgets:\n  - name: w\n    queries:\n      - {dataset: a/b, select: x, agg: p42}",
 			`unknown agg "p42"`},
 		{"unknown unit", "name: x\nwidgets:\n  - name: w\n    unit: percentage\n    queries:\n      - {dataset: a/b, select: count(*)}",
@@ -150,12 +150,12 @@ func TestResolveDefaults(t *testing.T) {
 	req := want.Widgets[0].Def.Queries[0]
 	wantFrom := `"collection" = '.traces' AND "dataset" = 'checkout-api'`
 	if req.FromExpr != wantFrom || req.Aggregation[0].Time != "count" || req.Aggregation[0].ReduceTo != "avg" ||
-		req.Select[0] != "count(*)" || req.Where != "$span.kind = 'SPAN_KIND_SERVER'" || req.Groups == nil {
+		req.Select[0] != "count(*)" || req.Where != "Span:kind = 'SPAN_KIND_SERVER'" || req.Groups == nil {
 		t.Fatalf("request query = %+v", req)
 	}
 	p95 := want.Widgets[1].Def.Queries[0]
 	if p95.Aggregation[0].Time != "p95" || p95.FromExpr != wantFrom || p95.UnitConfig["input"] != "nanoseconds" ||
-		p95.UnitConfig["type"] != "time" || p95.UnitConfig["output"] != "auto" || p95.Groups[0] != "$span.name" {
+		p95.UnitConfig["type"] != "time" || p95.UnitConfig["output"] != "auto" || p95.Groups[0] != "Span:name" {
 		t.Fatalf("p95 query = %+v", p95)
 	}
 	errs := want.Widgets[2].Def
@@ -170,8 +170,8 @@ func TestResolveDefaults(t *testing.T) {
 
 func TestDefaultAgg(t *testing.T) {
 	for sel, want := range map[string]string{
-		"count(*)": "count", "p95($span.duration_nano)": "p95", "AVERAGE(x)": "average", "Median(x)": "median", "SUM(bytes)": "sum",
-		"$span.duration_nano": "", "frobnicate(x)": "",
+		"count(*)": "count", "p95(Span:duration_nano)": "p95", "AVERAGE(x)": "average", "Median(x)": "median", "SUM(bytes)": "sum",
+		"Span:duration_nano": "", "frobnicate(x)": "",
 	} {
 		if got := defaultAgg(sel); got != want {
 			t.Errorf("defaultAgg(%q) = %q, want %q", sel, got, want)
@@ -687,14 +687,14 @@ func TestExportUnmanagedThenApplyAdopts(t *testing.T) {
 	f := newFakeOrg(t)
 	f.defs["aaaaaaaa-aaaa-aaaa-aaaa-0000000000f1"] = map[string]any{"id": "aaaaaaaa-aaaa-aaaa-aaaa-0000000000f1", "name": "x",
 		"queries": []any{map[string]any{"name": "errors", "select": []any{"count(*)"}, "where": "",
-			"from_expr": `"collection" = '.traces' AND "dataset" = 'payments'`, "groups": []any{"$service.name"},
+			"from_expr": `"collection" = '.traces' AND "dataset" = 'payments'`, "groups": []any{"Resource:service.name"},
 			"aggregation": []any{map[string]any{"time": "count", "reduce_to": "avg"}}},
 			map[string]any{"name": "total", "select": []any{"count(*)"}, "where": "", "from_expr": `"collection" = '.traces'`,
 				"aggregation": []any{map[string]any{"time": "count", "reduce_to": "avg"}}}},
 		"formulas": []any{map[string]any{"name": "pct", "expression": "errors / total * 100", "aggregation": map[string]any{"reduce_to": "avg"}}}}
 	f.widgets["aaaaaaaa-aaaa-aaaa-aaaa-0000000000f2"] = map[string]any{"id": "aaaaaaaa-aaaa-aaaa-aaaa-0000000000f2", "name": "UI widget",
 		"type": "top-list", "description": "made by hand",
-		"aux": map[string]any{"sortBy": "name", "sortDirection": "asc", "queryMode": "visual"},
+		"aux":        map[string]any{"sortBy": "name", "sortDirection": "asc", "queryMode": "visual"},
 		"metric_ids": []any{"aaaaaaaa-aaaa-aaaa-aaaa-0000000000f1"}, "widget_ids": []any{}, "tags": map[string]any{}}
 	f.widgets["aaaaaaaa-aaaa-aaaa-aaaa-0000000000f3"] = map[string]any{"id": "aaaaaaaa-aaaa-aaaa-aaaa-0000000000f3", "name": "Group",
 		"type": "group", "metric_ids": []any{}, "widget_ids": []any{"aaaaaaaa-aaaa-aaaa-aaaa-0000000000f2"}, "tags": map[string]any{}}
@@ -981,17 +981,17 @@ widgets:
     type: top-list
     sort: name
     queries:
-      - {dataset: .traces/checkout-api, select: count(*), group_by: [$span.name]}
+      - {dataset: .traces/checkout-api, select: count(*), group_by: [Span:name]}
   - name: Error rate
     unit: percent
     queries:
-      - {name: errors, dataset: .traces/checkout-api, select: count(*), where: "$span.status_code = 'STATUS_CODE_ERROR'"}
+      - {name: errors, dataset: .traces/checkout-api, select: count(*), where: "Span:status_code = 'STATUS_CODE_ERROR'"}
       - {name: total, dataset: .traces/checkout-api, select: count(*)}
     formula: {name: rate, expression: errors / total * 100}
   - name: Mean latency
     unit: days
     queries:
-      - {dataset: .traces/checkout-api, select: AVERAGE($span.duration_nano)}
+      - {dataset: .traces/checkout-api, select: AVERAGE(Span:duration_nano)}
   - name: Ratio
     queries:
       - {name: a, dataset: .traces/checkout-api, select: count(*)}
@@ -1062,7 +1062,7 @@ widgets:
 	} {
 		manifest := strings.Replace(noType, "  - name: Mean latency\n", "  - name: Mean latency\n"+extra, 1)
 		if extra == "" {
-			manifest += "  - name: Fresh\n    sort: name\n    queries:\n      - {dataset: .traces/checkout-api, select: count(*), group_by: [$span.name]}\n"
+			manifest += "  - name: Fresh\n    sort: name\n    queries:\n      - {dataset: .traces/checkout-api, select: count(*), group_by: [Span:name]}\n"
 		}
 		_, stderr, err := runResource(t, f.handler, "", "dashboards", "apply", "-f", writeManifest(t, manifest))
 		if err == nil || !strings.Contains(err.Error(), "sort is a top-list setting, and the widget is a line; set type: top-list") {

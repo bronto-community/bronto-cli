@@ -153,17 +153,17 @@ widgets:
       - name: requests
         dataset: .traces/checkout-service
         select: count(*)
-        where: $span.kind = 'SPAN_KIND_SERVER'
+        where: Span:kind = 'SPAN_KIND_SERVER'
   - name: p95 latency
     type: line
-    unit: nanoseconds          # $span.duration_nano is in ns; the web UI shows "640 ms"
+    unit: nanoseconds          # Span:duration_nano is in ns; the web UI shows "640 ms"
     queries:
       - name: p95
         dataset: .traces/checkout-service
-        select: $span.duration_nano
+        select: Span:duration_nano
         agg: p95
-        where: $span.kind = 'SPAN_KIND_SERVER'
-        group_by: [$span.name]  # one line per operation
+        where: Span:kind = 'SPAN_KIND_SERVER'
+        group_by: [Span:name]  # one line per operation
   - name: Error rate %
     type: line
     unit: percent              # the values are 0-100; the web UI shows "2.5%"
@@ -171,7 +171,7 @@ widgets:
       - name: errors
         dataset: .traces/checkout-service
         select: count(*)
-        where: $span.status_code = 'STATUS_CODE_ERROR'
+        where: Span:status_code = 'STATUS_CODE_ERROR'
       - name: total
         dataset: .traces/checkout-service
         select: count(*)
@@ -182,7 +182,7 @@ widgets:
     queries:
       - dataset: .traces/checkout-service
         select: count(*)
-        group_by: [$span.name]
+        group_by: [Span:name]
 ```
 
 Check it, preview the changes, apply, and look at the data:
@@ -218,24 +218,24 @@ widgets:
       - name: requests
         dataset: .traces/checkout-service
         select: count(*)
-        where: $span.kind = 'SPAN_KIND_SERVER'
+        where: Span:kind = 'SPAN_KIND_SERVER'
   - name: Checkout p95 latency
     type: line
     unit: nanoseconds
     queries:
       - name: p95_latency
         dataset: .traces/checkout-service
-        select: p95($span.duration_nano)
-        where: $span.kind = 'SPAN_KIND_SERVER'
+        select: p95(Span:duration_nano)
+        where: Span:kind = 'SPAN_KIND_SERVER'
         group_by:
-          - $span.name
+          - Span:name
   - name: Checkout error rate
     type: line
     queries:
       - name: errors
         dataset: .traces/checkout-service
         select: count(*)
-        where: $span.status_code = 'STATUS_CODE_ERROR'
+        where: Span:status_code = 'STATUS_CODE_ERROR'
       - name: total
         dataset: .traces/checkout-service
         select: count(*)
@@ -291,16 +291,16 @@ $ bronto dashboards validate -f dashboard.yaml 2>&1
 | `widgets[].ref` | An existing widget, by name or id, to attach. Takes no other field. |
 | `queries[].name` | Default `q1`, `q2`, …; formulas refer to it, so no spaces. |
 | `queries[].dataset` | A dataset as `-d` takes it (`name`, `collection/name` or id), or a list. Becomes the query's `from_expr`. `from_expr:` sets one directly, and `from:` takes dataset ids. |
-| `queries[].select` | `count(*)`, a function such as `p95($span.duration_nano)`, or a field with `agg`. |
+| `queries[].select` | `count(*)`, a function such as `p95(Span:duration_nano)`, or a field with `agg`. |
 | `queries[].agg` | The aggregation of a bare field: `count`, `sum`, `avg`, `min`, `max`, `p50`, `p75`, `p90`, `p95`, `p99`, and more. A select such as `count(*)` or `p95(field)` already aggregates with its function, and Bronto ignores a different `agg`, so leave it out there. |
 | `queries[].where` | A filter in the [query language](https://docs.bronto.io/core-features/log-search/query-syntax). Default `""`, everything. |
 | `queries[].group_by` | Up to five fields; one series per group. |
 | `layout` | Optional `[{widget, x, y, w, h}]` positions. Without it, the web UI lays the widgets out in two columns, ordered by widget id. |
 
-The trace fields that dashboards use most: `$service.name`, `$span.name` (the operation),
-`$span.kind = 'SPAN_KIND_SERVER'` (requests a service handled), `$span.duration_nano`
+The trace fields that dashboards use most: `Resource:service.name`, `Span:name` (the operation),
+`Span:kind = 'SPAN_KIND_SERVER'` (requests a service handled), `Span:duration_nano`
 (nanoseconds, so set `unit: nanoseconds`), and
-`$span.status_code = 'STATUS_CODE_ERROR'`.
+`Span:status_code = 'STATUS_CODE_ERROR'`.
 
 ### Units
 
@@ -323,7 +323,7 @@ For anything else, such as a rate per second, set `unit_config` to the API's obj
   `reduce_to: avg`, so `validate` refuses `sum`, `min` and `max`, which `apply` could
   never make stick.
 - **A formula over grouped queries** has a series only for the groups that every query
-  returns. In an error rate grouped by `$service.name`, a service with no errors has no
+  returns. In an error rate grouped by `Resource:service.name`, a service with no errors has no
   `errors` series, so it gets no error-rate line rather than a line at 0%. Bronto has no
   option to fill the missing group with zero.
 
@@ -551,9 +551,9 @@ From definition to dashboard:
 # 1. A definition: p95 latency of checkout-service's server spans, per operation
 bronto metrics definitions create --input - <<'EOF'
 {"name": "checkout-service p95 latency",
- "queries": [{"name": "p95_latency", "select": ["p95($span.duration_nano)"],
+ "queries": [{"name": "p95_latency", "select": ["p95(Span:duration_nano)"],
    "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'",
-   "where": "$span.kind = 'SPAN_KIND_SERVER'", "groups": ["$span.name"],
+   "where": "Span:kind = 'SPAN_KIND_SERVER'", "groups": ["Span:name"],
    "aggregation": [{"time": "p95", "reduce_to": "avg"}],
    "unit_config": {"type": "time", "input": "nanoseconds", "output": "auto"}}]}
 EOF

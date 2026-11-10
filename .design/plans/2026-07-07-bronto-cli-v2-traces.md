@@ -40,9 +40,9 @@
   - `traces.RowToSpan(row map[string]any) Span` — tolerant coercion + backfills (extraction §1.2)
   - `(Span).IsError() bool` — `strings.HasSuffix(strings.ToUpper(status), "ERROR")`
   - `traces.FormatDurationNS(ns int64) string` — `—` / `X.Yµs` / `X.YZms` / `X.YZs` (extraction §1.3)
-  - `traces.RootOnlyClause = "NOT EXISTS $span.parent_span_id"` (const)
-  - `traces.NormalizeAttr(attr string) (string, error)` — trim, error on empty (`usage_invalid_attr`), prefix `$` unless present
-  - `traces.KindClause(kind string) string` — upper-case, prefix `SPAN_KIND_` unless present, wrap as `$span.kind = '...'`
+  - `traces.RootOnlyClause = "NOT EXISTS Span:parent_span_id"` (const)
+  - `traces.NormalizeAttr(attr string) (string, error)` — trim, error on empty (`usage_invalid_attr`), prefix `Span:`/`Resource:` unless present
+  - `traces.KindClause(kind string) string` — upper-case, prefix `SPAN_KIND_` unless present, wrap as `Span:kind = '...'`
   - `traces.AndJoin(clauses ...string) string` — skips empty, joins with ` AND `
   - `traces.Quote(v string) string` — single-quote a literal, doubling embedded `'`
 - Consumes: `clierr`.
@@ -58,11 +58,11 @@ import "testing"
 
 func TestRowToSpanCoercionAndBackfills(t *testing.T) {
 	row := map[string]any{
-		"$span.trace_id": "t1", "$span.span_id": "s1", "$span.parent_span_id": nil,
-		"$span.name": "GET /x", "$span.kind": "SPAN_KIND_SERVER",
-		"$span.duration_nano": "0", "$span.start_time_unix_nano": float64(100),
-		"$span.end_time_unix_nano": "250.0",
-		"$span.status_code": "STATUS_CODE_ERROR", "$service.name": "cart",
+		"Span:trace_id": "t1", "Span:span_id": "s1", "Span:parent_span_id": nil,
+		"Span:name": "GET /x", "Span:kind": "SPAN_KIND_SERVER",
+		"Span:duration_nano": "0", "Span:start_time_unix_nano": float64(100),
+		"Span:end_time_unix_nano": "250.0",
+		"Span:status_code": "STATUS_CODE_ERROR", "Resource:service.name": "cart",
 	}
 	s := RowToSpan(row)
 	if s.TraceID != "t1" || s.ParentSpanID != "" || s.Kind != "SERVER" || s.Service != "cart" {
@@ -76,9 +76,9 @@ func TestRowToSpanCoercionAndBackfills(t *testing.T) {
 	}
 
 	// end backfill: end==0, start+duration known
-	row2 := map[string]any{"$span.start_time_unix_nano": float64(100),
-		"$span.duration_nano": float64(50), "$span.end_time_unix_nano": float64(0),
-		"$span.status_code": "STATUS_CODE_UNSET"}
+	row2 := map[string]any{"Span:start_time_unix_nano": float64(100),
+		"Span:duration_nano": float64(50), "Span:end_time_unix_nano": float64(0),
+		"Span:status_code": "STATUS_CODE_UNSET"}
 	s2 := RowToSpan(row2)
 	if s2.EndNS != 150 {
 		t.Fatalf("end backfill = %d, want 150", s2.EndNS)
@@ -118,10 +118,10 @@ package traces
 import "testing"
 
 func TestNormalizeAttr(t *testing.T) {
-	if got, _ := NormalizeAttr(" http.route "); got != "$http.route" {
+	if got, _ := NormalizeAttr(" http.route "); got != "Span:http.route" {
 		t.Fatalf("got %q", got)
 	}
-	if got, _ := NormalizeAttr("$span.kind"); got != "$span.kind" {
+	if got, _ := NormalizeAttr("Span:kind"); got != "Span:kind" {
 		t.Fatalf("got %q", got)
 	}
 	if _, err := NormalizeAttr("  "); err == nil {
@@ -130,10 +130,10 @@ func TestNormalizeAttr(t *testing.T) {
 }
 
 func TestKindClause(t *testing.T) {
-	if got := KindClause("server"); got != "$span.kind = 'SPAN_KIND_SERVER'" {
+	if got := KindClause("server"); got != "Span:kind = 'SPAN_KIND_SERVER'" {
 		t.Fatalf("got %q", got)
 	}
-	if got := KindClause("SPAN_KIND_CLIENT"); got != "$span.kind = 'SPAN_KIND_CLIENT'" {
+	if got := KindClause("SPAN_KIND_CLIENT"); got != "Span:kind = 'SPAN_KIND_CLIENT'" {
 		t.Fatalf("got %q", got)
 	}
 }
@@ -176,10 +176,10 @@ import (
 const FromExpr = "logset = '.traces'"
 
 var SpanFields = []string{
-	"$span.trace_id", "$span.span_id", "$span.parent_span_id",
-	"$span.name", "$span.kind", "$span.duration_nano",
-	"$span.start_time_unix_nano", "$span.end_time_unix_nano",
-	"$span.status_code", "$service.name", "$service.namespace",
+	"Span:trace_id", "Span:span_id", "Span:parent_span_id",
+	"Span:name", "Span:kind", "Span:duration_nano",
+	"Span:start_time_unix_nano", "Span:end_time_unix_nano",
+	"Span:status_code", "Resource:service.name", "Resource:service.namespace",
 }
 
 type Span struct {
@@ -197,16 +197,16 @@ type Span struct {
 
 func RowToSpan(row map[string]any) Span {
 	s := Span{
-		TraceID:      str(row, "$span.trace_id"),
-		SpanID:       str(row, "$span.span_id"),
-		ParentSpanID: str(row, "$span.parent_span_id"),
-		Name:         str(row, "$span.name"),
-		Kind:         strings.TrimPrefix(str(row, "$span.kind"), "SPAN_KIND_"),
-		Service:      str(row, "$service.name"),
-		Status:       str(row, "$span.status_code"),
-		StartNS:      toInt64(row["$span.start_time_unix_nano"]),
-		EndNS:        toInt64(row["$span.end_time_unix_nano"]),
-		DurationNS:   toInt64(row["$span.duration_nano"]),
+		TraceID:      str(row, "Span:trace_id"),
+		SpanID:       str(row, "Span:span_id"),
+		ParentSpanID: str(row, "Span:parent_span_id"),
+		Name:         str(row, "Span:name"),
+		Kind:         strings.TrimPrefix(str(row, "Span:kind"), "SPAN_KIND_"),
+		Service:      str(row, "Resource:service.name"),
+		Status:       str(row, "Span:status_code"),
+		StartNS:      toInt64(row["Span:start_time_unix_nano"]),
+		EndNS:        toInt64(row["Span:end_time_unix_nano"]),
+		DurationNS:   toInt64(row["Span:duration_nano"]),
 	}
 	if s.DurationNS == 0 && s.EndNS > s.StartNS && s.StartNS > 0 {
 		s.DurationNS = s.EndNS - s.StartNS
@@ -296,10 +296,11 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 )
 
-const RootOnlyClause = "NOT EXISTS $span.parent_span_id"
+const RootOnlyClause = "NOT EXISTS Span:parent_span_id"
 
 // NormalizeAttr turns a user-supplied attribute into query form:
-// leading $ added unless present. http.route -> $http.route.
+// leading $ added unless present (cart.items -> $cart.items); http.route
+// takes the Span: prefix instead (http.route -> Span:http.route).
 func NormalizeAttr(attr string) (string, error) {
 	a := strings.TrimSpace(attr)
 	if a == "" {
@@ -319,7 +320,7 @@ func KindClause(kind string) string {
 	if !strings.HasPrefix(k, "SPAN_KIND_") {
 		k = "SPAN_KIND_" + k
 	}
-	return fmt.Sprintf("$span.kind = '%s'", k)
+	return fmt.Sprintf("Span:kind = '%s'", k)
 }
 
 func AndJoin(clauses ...string) string {
@@ -418,8 +419,8 @@ func newAgg(srv *httptest.Server) *Aggregator {
 func TestServicesMergesThreeAggregates(t *testing.T) {
 	srv, bodies := aggServer(t, map[string]string{
 		"count(*)":                  `{"groups":[{"group":["cart"],"count(*)":30},{"group":["web"],"count(*)":10}]}`,
-		"avg($span.duration_nano)":  `{"groups":[{"group":["cart"],"avg($span.duration_nano)":2000000}]}`,
-		"max($span.duration_nano)":  `{"groups":[{"group":["web"],"max($span.duration_nano)":9000000}]}`,
+		"avg(Span:duration_nano)":  `{"groups":[{"group":["cart"],"avg(Span:duration_nano)":2000000}]}`,
+		"max(Span:duration_nano)":  `{"groups":[{"group":["web"],"max(Span:duration_nano)":9000000}]}`,
 	})
 	defer srv.Close()
 	rows, err := newAgg(srv).Services(context.Background(), false, 50)
@@ -458,7 +459,7 @@ func TestOperationsGroupsByServiceAndName(t *testing.T) {
 	// where must include service filter AND errors filter
 	b := (*bodies)[0]
 	where, _ := b["where"].(string)
-	if where != "$service.name = 'cart' AND $span.status_code = 'STATUS_CODE_ERROR'" {
+	if where != "Resource:service.name = 'cart' AND Span:status_code = 'STATUS_CODE_ERROR'" {
 		t.Fatalf("where = %q", where)
 	}
 }
@@ -469,8 +470,8 @@ func TestAttributesMissingHandlingAndTrim(t *testing.T) {
 			{"group":["/api/a"],"count(*)":50},
 			{"group":[""],"count(*)":40},
 			{"group":["/api/b"],"count(*)":30}]}`,
-		"avg($span.duration_nano)": `{"groups":[{"group":["/api/a"],"avg($span.duration_nano)":1500000}]}`,
-		"max($span.duration_nano)": `{"groups":[]}`,
+		"avg(Span:duration_nano)": `{"groups":[{"group":["/api/a"],"avg(Span:duration_nano)":1500000}]}`,
+		"max(Span:duration_nano)": `{"groups":[]}`,
 	})
 	defer srv.Close()
 
@@ -566,9 +567,9 @@ import (
 
 const (
 	aggCount = "count(*)"
-	aggAvg   = "avg($span.duration_nano)"
-	aggMax   = "max($span.duration_nano)"
-	errorsClause = "$span.status_code = 'STATUS_CODE_ERROR'"
+	aggAvg   = "avg(Span:duration_nano)"
+	aggMax   = "max(Span:duration_nano)"
+	errorsClause = "Span:status_code = 'STATUS_CODE_ERROR'"
 )
 
 type Aggregator struct {
@@ -651,7 +652,7 @@ func (a *Aggregator) Services(ctx context.Context, errorsOnly bool, limit int) (
 	if errorsOnly {
 		where = errorsClause
 	}
-	return a.threeWayRows(ctx, []string{"$service.name"}, where, limit,
+	return a.threeWayRows(ctx, []string{"Resource:service.name"}, where, limit,
 		func(vals []string) map[string]any {
 			return map[string]any{"service": at(vals, 0)}
 		})
@@ -660,12 +661,12 @@ func (a *Aggregator) Services(ctx context.Context, errorsOnly bool, limit int) (
 func (a *Aggregator) Operations(ctx context.Context, service string, errorsOnly bool, limit int) ([]map[string]any, error) {
 	var svcClause, errClause string
 	if service != "" {
-		svcClause = "$service.name = " + Quote(service)
+		svcClause = "Resource:service.name = " + Quote(service)
 	}
 	if errorsOnly {
 		errClause = errorsClause
 	}
-	return a.threeWayRows(ctx, []string{"$service.name", "$span.name"},
+	return a.threeWayRows(ctx, []string{"Resource:service.name", "Span:name"},
 		AndJoin(svcClause, errClause), limit,
 		func(vals []string) map[string]any {
 			return map[string]any{"service": at(vals, 0), "operation": at(vals, 1)}
@@ -731,7 +732,7 @@ func (a *Aggregator) Attributes(ctx context.Context, opts AttrOptions) ([]map[st
 		clauses = append(clauses, RootOnlyClause)
 	}
 	if opts.Service != "" {
-		clauses = append(clauses, "$service.name = "+Quote(opts.Service))
+		clauses = append(clauses, "Resource:service.name = "+Quote(opts.Service))
 	}
 	if opts.Kind != "" {
 		clauses = append(clauses, KindClause(opts.Kind))
@@ -891,7 +892,7 @@ git commit -m "feat: traces aggregations (services, operations, attribute breakd
   - `type ListOptions struct { Service, Operation string; MinDurationMS float64; ErrorsOnly bool; Limit int }`
   - `(*Aggregator).ListSpans(ctx, opts ListOptions) ([]map[string]any, error)` — single query `select=["@time", SpanFields...]`, `most_recent_first=true`; rows `{@time, service, operation, duration (formatted), duration_ns int64, status (prefix-stripped), trace_id, span_id}` (extraction §2.4)
   - `(*Aggregator).FetchTraceSpans(ctx, traceIDs []string) ([]Span, error)` — OR-chain batches of 15, `limit 5000` per batch, `most_recent_first=false`, select SpanFields (no @time) (extraction §4.2; `IN(...)` returns 500)
-  - `(*Aggregator).FindSampleTraceIDs(ctx, where string, sample int) ([]string, error)` — `select=["$span.trace_id"]`, `limit=max(sample*3,30)`, `most_recent_first=true`, dedup preserving order, early-stop at `sample` (extraction §4.1)
+  - `(*Aggregator).FindSampleTraceIDs(ctx, where string, sample int) ([]string, error)` — `select=["Span:trace_id"]`, `limit=max(sample*3,30)`, `most_recent_first=true`, dedup preserving order, early-stop at `sample` (extraction §4.1)
 - Consumes: Tasks 1–2.
 
 - [ ] **Step 1: Failing tests**
@@ -917,9 +918,9 @@ func TestListSpansBuildsWhereAndRows(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
 		_ = json.Unmarshal(b, &body)
-		_, _ = w.Write([]byte(`{"result":[{"@time":"t1","$span.trace_id":"tr","$span.span_id":"sp",
-			"$span.name":"GET /x","$service.name":"web","$span.duration_nano":2000000,
-			"$span.status_code":"STATUS_CODE_OK"}]}`))
+		_, _ = w.Write([]byte(`{"result":[{"@time":"t1","Span:trace_id":"tr","Span:span_id":"sp",
+			"Span:name":"GET /x","Resource:service.name":"web","Span:duration_nano":2000000,
+			"Span:status_code":"STATUS_CODE_OK"}]}`))
 	}))
 	defer srv.Close()
 
@@ -930,7 +931,7 @@ func TestListSpansBuildsWhereAndRows(t *testing.T) {
 		t.Fatal(err)
 	}
 	where, _ := body["where"].(string)
-	want := "$service.name = 'web' AND $span.name = 'GET /x' AND $span.duration_nano > 1500000 AND $span.status_code = 'STATUS_CODE_ERROR'"
+	want := "Resource:service.name = 'web' AND Span:name = 'GET /x' AND Span:duration_nano > 1500000 AND Span:status_code = 'STATUS_CODE_ERROR'"
 	if where != want {
 		t.Fatalf("where = %q\nwant    %q", where, want)
 	}
@@ -953,7 +954,7 @@ func TestFetchTraceSpansBatchesOrChains(t *testing.T) {
 		if body["limit"] != float64(5000) {
 			t.Errorf("limit = %v, want 5000", body["limit"])
 		}
-		_, _ = w.Write([]byte(`{"result":[{"$span.trace_id":"x","$span.span_id":"s1"}]}`))
+		_, _ = w.Write([]byte(`{"result":[{"Span:trace_id":"x","Span:span_id":"s1"}]}`))
 	}))
 	defer srv.Close()
 
@@ -971,7 +972,7 @@ func TestFetchTraceSpansBatchesOrChains(t *testing.T) {
 	if strings.Count(wheres[0], " OR ") != 14 || strings.Count(wheres[1], " OR ") != 1 {
 		t.Fatalf("OR chains wrong: %q / %q", wheres[0], wheres[1])
 	}
-	if !strings.Contains(wheres[0], "$span.trace_id = 'id00'") {
+	if !strings.Contains(wheres[0], "Span:trace_id = 'id00'") {
 		t.Fatalf("clause form: %q", wheres[0])
 	}
 	if len(spans) != 2 {
@@ -985,8 +986,8 @@ func TestFindSampleTraceIDsDedupsAndStops(t *testing.T) {
 		b, _ := io.ReadAll(r.Body)
 		_ = json.Unmarshal(b, &body)
 		_, _ = w.Write([]byte(`{"result":[
-			{"$span.trace_id":"a"},{"$span.trace_id":"b"},{"$span.trace_id":"a"},
-			{"$span.trace_id":"c"},{"$span.trace_id":"d"}]}`))
+			{"Span:trace_id":"a"},{"Span:trace_id":"b"},{"Span:trace_id":"a"},
+			{"Span:trace_id":"c"},{"Span:trace_id":"d"}]}`))
 	}))
 	defer srv.Close()
 
@@ -1034,13 +1035,13 @@ type ListOptions struct {
 func (a *Aggregator) ListSpans(ctx context.Context, opts ListOptions) ([]map[string]any, error) {
 	var clauses []string
 	if opts.Service != "" {
-		clauses = append(clauses, "$service.name = "+Quote(opts.Service))
+		clauses = append(clauses, "Resource:service.name = "+Quote(opts.Service))
 	}
 	if opts.Operation != "" {
-		clauses = append(clauses, "$span.name = "+Quote(opts.Operation))
+		clauses = append(clauses, "Span:name = "+Quote(opts.Operation))
 	}
 	if opts.MinDurationMS > 0 {
-		clauses = append(clauses, fmt.Sprintf("$span.duration_nano > %d", int64(opts.MinDurationMS*1e6)))
+		clauses = append(clauses, fmt.Sprintf("Span:duration_nano > %d", int64(opts.MinDurationMS*1e6)))
 	}
 	if opts.ErrorsOnly {
 		clauses = append(clauses, errorsClause)
@@ -1085,7 +1086,7 @@ func (a *Aggregator) FetchTraceSpans(ctx context.Context, traceIDs []string) ([]
 		}
 		clauses := make([]string, 0, end-start)
 		for _, id := range traceIDs[start:end] {
-			clauses = append(clauses, "$span.trace_id = "+Quote(id))
+			clauses = append(clauses, "Span:trace_id = "+Quote(id))
 		}
 		resp, err := a.Client.Search(ctx, bronto.SearchRequest{
 			FromExpr: FromExpr, Time: a.Time,
@@ -1112,7 +1113,7 @@ func (a *Aggregator) FindSampleTraceIDs(ctx context.Context, where string, sampl
 	mrf := true
 	resp, err := a.Client.Search(ctx, bronto.SearchRequest{
 		FromExpr: FromExpr, Time: a.Time,
-		Select: []string{"$span.trace_id"}, Where: where,
+		Select: []string{"Span:trace_id"}, Where: where,
 		Limit: limit, MostRecentFirst: &mrf,
 	})
 	if err != nil {
@@ -1121,7 +1122,7 @@ func (a *Aggregator) FindSampleTraceIDs(ctx context.Context, where string, sampl
 	seen := map[string]bool{}
 	var ids []string
 	for _, row := range resp.EventRows() {
-		id := str(row, "$span.trace_id")
+		id := str(row, "Span:trace_id")
 		if id == "" || seen[id] {
 			continue
 		}
@@ -2147,7 +2148,7 @@ git commit -m "feat: aggregated shape waterfall (buckets, stats, glyph rendering
   - `traces operations [-s service] [--errors] [-n 25] [--since 15m]` → columns `service,operation,spans,avg,max`
   - `traces aggregate --by attr [--by ...] [--root-only|--all-spans] [-s svc] [--kind k] [--errors] [--where raw] [--include-empty] [-n 50] [--since 15m]` → `Attributes(...)`; columns from the returned `columns`; when zero rows AND RootOnly AND dropped>0, TTY+!quiet hint to stderr: "Root spans on ingress/proxy services often lack app attributes — try --all-spans --kind server --service <name>." `--by` required (`MarkFlagRequired`).
   - `traces list [-s svc] [--operation op] [--min-duration-ms N] [--errors] [-n 50] [--since 15m]` → columns `@time,service,operation,duration,status,trace_id`
-  - `traces show <trace-id> [--since 1h] [-n 500] [--bar-width 40]` → fetch via `FetchTraceSpans(ctx, []string{traceID})` with the Aggregator's Time set from --since... IMPORTANT: `FetchTraceSpans` limit is 5000 per batch; the `-n` flag caps rendered spans client-side (`spans = spans[:n]` after sort? NO — cap the fetch instead: for a single trace use a direct search). Implement show's fetch as its own single query: `Where: "$span.trace_id = " + Quote(id)`, `Select: append([]string{"@time"}, traces.SpanFields...)`, `Limit: n`, `MostRecentFirst: &false` — matching extraction §3. Empty result → `clierr.New("trace_not_found", ...)` (exit 4 via `_not_found` suffix). TTY: `RenderWaterfall(app.Stdout, spans, barWidth, app.Color)`; piped/`-o json|jsonl`: `WaterfallRows` through the printer (streaming rows).
+  - `traces show <trace-id> [--since 1h] [-n 500] [--bar-width 40]` → fetch via `FetchTraceSpans(ctx, []string{traceID})` with the Aggregator's Time set from --since... IMPORTANT: `FetchTraceSpans` limit is 5000 per batch; the `-n` flag caps rendered spans client-side (`spans = spans[:n]` after sort? NO — cap the fetch instead: for a single trace use a direct search). Implement show's fetch as its own single query: `Where: "Span:trace_id = " + Quote(id)`, `Select: append([]string{"@time"}, traces.SpanFields...)`, `Limit: n`, `MostRecentFirst: &false` — matching extraction §3. Empty result → `clierr.New("trace_not_found", ...)` (exit 4 via `_not_found` suffix). TTY: `RenderWaterfall(app.Stdout, spans, barWidth, app.Color)`; piped/`-o json|jsonl`: `WaterfallRows` through the printer (streaming rows).
   - `traces shape [-s svc] [--operation op] [--where raw] [--errors] [--min-duration-ms N] [--entry|--any-span] [--sample 30] [--min-traces 1] [--since 1h] [--bar-width 50]` → build the sample where-clause exactly as extraction §4.1 (kind clause when entry; service; operation; errors; duration; parenthesized raw where — reuse `traces.AndJoin`/`Quote`/`KindClause`); `FindSampleTraceIDs`; empty → `clierr.New("traces_not_found", "no traces matched the filter")` — NOTE: use code `trace_not_found` (exit 4) for consistency; `FetchTraceSpans`; empty → `trace_not_found` with hint about the time window; `ComputeShape` with `EntryMatch{...}`; `FilterMinTraces`; empty → `usage_min_traces_too_high` (exit 2) with hint. TTY: `RenderShape`; piped: `ShapeRows` via printer.
 - Consumes: everything above.
 
@@ -2206,8 +2207,8 @@ func runTraces(t *testing.T, srv *httptest.Server, args ...string) (string, erro
 func TestTracesServicesJSON(t *testing.T) {
 	srv := tracesServer(t, map[string]string{
 		"count(*)":                 `{"groups":[{"group":["cart"],"count(*)":9}]}`,
-		"avg($span.duration_nano)": `{"groups":[{"group":["cart"],"avg($span.duration_nano)":1000000}]}`,
-		"max($span.duration_nano)": `{"groups":[{"group":["cart"],"max($span.duration_nano)":2000000}]}`,
+		"avg(Span:duration_nano)": `{"groups":[{"group":["cart"],"avg(Span:duration_nano)":1000000}]}`,
+		"max(Span:duration_nano)": `{"groups":[{"group":["cart"],"max(Span:duration_nano)":2000000}]}`,
 	})
 	defer srv.Close()
 	out, err := runTraces(t, srv, "services", "-o", "json")
@@ -2235,11 +2236,11 @@ func TestTracesAggregateRequiresBy(t *testing.T) {
 func TestTracesShowStreamsRows(t *testing.T) {
 	srv := tracesServer(t, map[string]string{
 		"@time": `{"result":[
-			{"$span.trace_id":"tr1","$span.span_id":"a","$span.name":"root","$service.name":"cart",
-			 "$span.start_time_unix_nano":100,"$span.duration_nano":50,"$span.status_code":"STATUS_CODE_OK"},
-			{"$span.trace_id":"tr1","$span.span_id":"b","$span.parent_span_id":"a","$span.name":"child",
-			 "$service.name":"cart","$span.start_time_unix_nano":110,"$span.duration_nano":20,
-			 "$span.status_code":"STATUS_CODE_UNSET"}]}`,
+			{"Span:trace_id":"tr1","Span:span_id":"a","Span:name":"root","Resource:service.name":"cart",
+			 "Span:start_time_unix_nano":100,"Span:duration_nano":50,"Span:status_code":"STATUS_CODE_OK"},
+			{"Span:trace_id":"tr1","Span:span_id":"b","Span:parent_span_id":"a","Span:name":"child",
+			 "Resource:service.name":"cart","Span:start_time_unix_nano":110,"Span:duration_nano":20,
+			 "Span:status_code":"STATUS_CODE_UNSET"}]}`,
 	})
 	defer srv.Close()
 	out, err := runTraces(t, srv, "show", "tr1")
@@ -2268,7 +2269,7 @@ func TestTracesShowNotFound(t *testing.T) {
 
 func TestTracesShapeJSON(t *testing.T) {
 	// Both FindSampleTraceIDs and FetchTraceSpans use select[0] ==
-	// "$span.trace_id", so route by "limit" instead: sampling requests
+	// "Span:trace_id", so route by "limit" instead: sampling requests
 	// max(sample*3, 30); the span fetch always requests 5000.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
@@ -2276,13 +2277,13 @@ func TestTracesShapeJSON(t *testing.T) {
 		_ = json.Unmarshal(b, &body)
 		if body["limit"] == float64(5000) {
 			_, _ = w.Write([]byte(`{"result":[
-				{"$span.trace_id":"t1","$span.span_id":"a1","$span.name":"POST /x","$service.name":"web",
-				 "$span.kind":"SPAN_KIND_SERVER","$span.start_time_unix_nano":100,"$span.duration_nano":50},
-				{"$span.trace_id":"t2","$span.span_id":"a2","$span.name":"POST /x","$service.name":"web",
-				 "$span.kind":"SPAN_KIND_SERVER","$span.start_time_unix_nano":900,"$span.duration_nano":70}]}`))
+				{"Span:trace_id":"t1","Span:span_id":"a1","Span:name":"POST /x","Resource:service.name":"web",
+				 "Span:kind":"SPAN_KIND_SERVER","Span:start_time_unix_nano":100,"Span:duration_nano":50},
+				{"Span:trace_id":"t2","Span:span_id":"a2","Span:name":"POST /x","Resource:service.name":"web",
+				 "Span:kind":"SPAN_KIND_SERVER","Span:start_time_unix_nano":900,"Span:duration_nano":70}]}`))
 			return
 		}
-		_, _ = w.Write([]byte(`{"result":[{"$span.trace_id":"t1"},{"$span.trace_id":"t2"}]}`))
+		_, _ = w.Write([]byte(`{"result":[{"Span:trace_id":"t1"},{"Span:trace_id":"t2"}]}`))
 	}))
 	defer srv.Close()
 	out, err := runTraces(t, srv, "shape", "--sample", "2", "-o", "json")
@@ -2300,9 +2301,9 @@ func TestTracesShapeJSON(t *testing.T) {
 
 func TestTracesListColumns(t *testing.T) {
 	srv := tracesServer(t, map[string]string{
-		"@time": `{"result":[{"@time":"t1","$span.trace_id":"tr","$span.span_id":"sp",
-			"$span.name":"op","$service.name":"svc","$span.duration_nano":3000000,
-			"$span.status_code":"STATUS_CODE_OK"}]}`,
+		"@time": `{"result":[{"@time":"t1","Span:trace_id":"tr","Span:span_id":"sp",
+			"Span:name":"op","Resource:service.name":"svc","Span:duration_nano":3000000,
+			"Span:status_code":"STATUS_CODE_OK"}]}`,
 	})
 	defer srv.Close()
 	out, err := runTraces(t, srv, "list", "-o", "json")

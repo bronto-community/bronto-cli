@@ -10,7 +10,7 @@
         {
           "name": "requests",
           "select": ["count(*)"],
-          "where": "$span.kind = 'SPAN_KIND_SERVER'",
+          "where": "Span:kind = 'SPAN_KIND_SERVER'",
           "groups": [],
           "aggregation": [{"time": "count", "reduce_to": "avg"}],
           "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'"
@@ -27,9 +27,9 @@
       "queries": [
         {
           "name": "p95_latency",
-          "select": ["p95($span.duration_nano)"],
-          "where": "$span.kind = 'SPAN_KIND_SERVER'",
-          "groups": ["$span.name"],
+          "select": ["p95(Span:duration_nano)"],
+          "where": "Span:kind = 'SPAN_KIND_SERVER'",
+          "groups": ["Span:name"],
           "aggregation": [{"time": "p95", "reduce_to": "avg"}],
           "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'",
           "unit_config": {"type": "time", "input": "nanoseconds", "output": "auto"}
@@ -47,7 +47,7 @@
         {
           "name": "errors",
           "select": ["count(*)"],
-          "where": "$span.status_code = 'STATUS_CODE_ERROR'",
+          "where": "Span:status_code = 'STATUS_CODE_ERROR'",
           "groups": [],
           "aggregation": [{"time": "count", "reduce_to": "avg"}],
           "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'"

@@ -28,18 +28,18 @@ func newFieldsCmd() *cobra.Command {
 			"spelling of a field before you write a search query.\n\n" +
 			"Both the field list and the values come from a sample of recent events, not\n" +
 			"from every event: a rare value (such as STATUS_CODE_ERROR in\n" +
-			"$span.status_code) or a rarely set field (such as $span.events.*) can be\n" +
+			"Span:status_code) or a rarely set field (such as Span:events.*) can be\n" +
 			"missing. Widen --since, or check with a search, before you conclude a field\n" +
 			"or value doesn't exist.\n\n" +
 			"--values <field> lists one field's distinct values instead, counted over\n" +
 			"every event in the range (a grouped count search), most frequent first:\n" +
 			"rare values the sample misses show up there. -n sets how many values\n" +
-			"(default 20). Pass the field as a query spells it, e.g. $span.status_code;\n" +
+			"(default 20). Pass the field as a query spells it, e.g. Span:status_code;\n" +
 			"(none) counts the events without the field.",
 		Example: "  bronto fields -d <dataset> --since 1h\n" +
 			"  bronto fields -d <dataset> model      # fields with \"model\" in the name\n" +
 			"  bronto fields --since 15m -n 20\n" +
-			"  bronto fields -d .traces/checkout-api --values '$span.status_code' --since 24h",
+			"  bronto fields -d .traces/checkout-api --values 'Span:status_code' --since 24h",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
@@ -94,7 +94,7 @@ func newFieldsCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&dataset, "dataset", "d", "", "dataset name or UUID (omit to cover all datasets)")
 	cmd.Flags().StringVar(&since, "since", "1h", "relative lookback (single unit: 30s, 15m, 1h, 2d)")
 	cmd.Flags().IntVarP(&limit, "limit", "n", 0, "maximum keys to return (with --values: values, default 20)")
-	cmd.Flags().StringVar(&valuesOf, "values", "", "list this field's distinct values with counts over the range, e.g. '$span.status_code'")
+	cmd.Flags().StringVar(&valuesOf, "values", "", "list this field's distinct values with counts over the range, e.g. 'Span:status_code'")
 	// The positional name-filter completes to the dataset's own field names
 	// (or flag hints when no -d is set yet); --dataset completion is wired
 	// tree-wide by applyCompletions.
@@ -113,7 +113,7 @@ const defaultValuesLimit = 20
 func runFieldValues(ctx context.Context, app *App, dataset, since, field string, limit int) error {
 	field = strings.TrimSpace(field)
 	if field == "" {
-		return clierr.New("usage_invalid_flags", "--values needs a field name, e.g. --values '$span.status_code'").
+		return clierr.New("usage_invalid_flags", "--values needs a field name, e.g. --values 'Span:status_code'").
 			WithHint("List the field names with 'bronto fields -d <dataset>'.")
 	}
 	if limit == 0 {

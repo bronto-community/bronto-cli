@@ -22,7 +22,7 @@ const liveTimeseries = `{
  "requests": {"name": "requests",
    "queries": [
      {"name": "requests", "select": ["count(*)"], "where": "", "from_expr": "x"},
-     {"name": "latency", "select": ["p95($span.duration_nano)"], "groups": ["$span.name"],
+     {"name": "latency", "select": ["p95(Span:duration_nano)"], "groups": ["Span:name"],
       "unit_config": {"type": "time", "input": "nanoseconds", "output": "auto"}}],
    "formulas": [{"name": "rate", "expression": "requests / 60"}],
    "aggregates": [{"function": "COUNT", "value": 204}, {"function": "COUNT", "value": 204.0}],
@@ -35,9 +35,9 @@ const liveTimeseries = `{
    "aggregates": [{"function": "COUNT", "value": 102}, {"function": "P95", "value": 412763220.4}],
    "series": [],
    "groups_series": [
-     {"key": "$span.name", "name": "GET /logs", "stat": "P95", "value": 412763220.4,
+     {"key": "Span:name", "name": "GET /logs", "stat": "P95", "value": 412763220.4,
       "timeseries": [{"value": 1.0}, {"value": 4.0}]},
-     {"key": "$span.name", "name": "POST /pay", "stat": "P95", "value": 80000000.0,
+     {"key": "Span:name", "name": "POST /pay", "stat": "P95", "value": 80000000.0,
       "timeseries": [{"value": 2.0}, {"value": 2.0}]}]}
 }`
 
@@ -184,37 +184,37 @@ func TestDefinitionQueryTable(t *testing.T) {
 
 // liveFormulaBuckets and liveFormulaWhole are trimmed GET /timeseries/{id}
 // responses (EU, 2026-10-22) for errors / total * 100 grouped by
-// $service.name, over the same hour with 4 slices and with 1. In the
+// Resource:service.name, over the same hour with 4 slices and with 1. In the
 // 4-slice one the formula's values are the mean of its per-bucket rates:
 // svc-b's one span was an error, in the last bucket, so it reads 25, and
 // payments-gateway reads 2.84 for 23 errors in 816 spans (2.82%).
 const liveFormulaBuckets = `{
  "total": {"name": "total",
-   "queries": [{"name": "errors", "select": ["count(*)"], "groups": ["$service.name"]},
-               {"name": "total", "select": ["count(*)"], "groups": ["$service.name"]}],
+   "queries": [{"name": "errors", "select": ["count(*)"], "groups": ["Resource:service.name"]},
+               {"name": "total", "select": ["count(*)"], "groups": ["Resource:service.name"]}],
    "formulas": [{"name": "error_rate", "expression": "errors / total * 100"}],
    "aggregates": [{"function": "COUNT", "value": 817}, {"function": "COUNT", "value": 817.0}],
    "series": [{"value": "155.0"}, {"value": "222.0"}, {"value": "215.0"}, {"value": "225.0"}],
    "groups_series": [
-     {"key": "$service.name", "name": "payments-gateway", "stat": "COUNT", "value": 816.0,
+     {"key": "Resource:service.name", "name": "payments-gateway", "stat": "COUNT", "value": 816.0,
       "timeseries": [{"value": 155.0}, {"value": 222.0}, {"value": 215.0}, {"value": 224.0}]},
-     {"key": "$service.name", "name": "svc-b", "stat": "COUNT", "value": 1.0,
+     {"key": "Resource:service.name", "name": "svc-b", "stat": "COUNT", "value": 1.0,
       "timeseries": [{"value": 0.0}, {"value": 0.0}, {"value": 0.0}, {"value": 1.0}]}]},
  "errors": {"name": "errors", "queries": [], "formulas": [],
    "aggregates": [{"function": "COUNT", "value": 24}, {"function": "COUNT", "value": 24.0}],
    "series": [{"value": "5.0"}, {"value": "6.0"}, {"value": "5.0"}, {"value": "8.0"}],
    "groups_series": [
-     {"key": "$service.name", "name": "payments-gateway", "stat": "COUNT", "value": 23.0,
+     {"key": "Resource:service.name", "name": "payments-gateway", "stat": "COUNT", "value": 23.0,
       "timeseries": [{"value": 5.0}, {"value": 6.0}, {"value": 5.0}, {"value": 7.0}]},
-     {"key": "$service.name", "name": "svc-b", "stat": "COUNT", "value": 1.0,
+     {"key": "Resource:service.name", "name": "svc-b", "stat": "COUNT", "value": 1.0,
       "timeseries": [{"value": 0.0}, {"value": 0.0}, {"value": 0.0}, {"value": 1.0}]}]},
  "error_rate": {"name": "error_rate", "queries": [], "formulas": [],
    "aggregates": [{"function": "COUNT", "value": 8}, {"function": "AVG", "value": 13.92}],
    "series": [{"value": "1.6"}, {"value": "1.35"}, {"value": "1.16"}, {"value": "52.0"}],
    "groups_series": [
-     {"key": "$service.name", "name": "svc-b", "stat": "AVG", "value": 25,
+     {"key": "Resource:service.name", "name": "svc-b", "stat": "AVG", "value": 25,
       "timeseries": [{"value": 0}, {"value": 0}, {"value": 0}, {"value": 100}]},
-     {"key": "$service.name", "name": "payments-gateway", "stat": "AVG", "value": 2.844772637416111,
+     {"key": "Resource:service.name", "name": "payments-gateway", "stat": "AVG", "value": 2.844772637416111,
       "timeseries": [{"value": 3.225806451612903}, {"value": 2.7027027027027026}, {"value": 2.3255813953488373}, {"value": 3.125}]}]}
 }`
 
@@ -223,9 +223,9 @@ const liveFormulaWhole = `{
    "aggregates": [{"function": "COUNT", "value": 2}, {"function": "AVG", "value": 51.41}],
    "series": [{"value": "51.41"}],
    "groups_series": [
-     {"key": "$service.name", "name": "svc-b", "stat": "AVG", "value": 100,
+     {"key": "Resource:service.name", "name": "svc-b", "stat": "AVG", "value": 100,
       "timeseries": [{"value": 100}]},
-     {"key": "$service.name", "name": "payments-gateway", "stat": "AVG", "value": 2.8186274509803924,
+     {"key": "Resource:service.name", "name": "payments-gateway", "stat": "AVG", "value": 2.8186274509803924,
       "timeseries": [{"value": 2.8186274509803924}]}]}
 }`
 
@@ -552,7 +552,7 @@ func TestDefinitionsHaveNoUpdateAndCreateExamples(t *testing.T) {
 	if create == nil {
 		t.Fatal("metrics definitions create missing")
 	}
-	for _, want := range []string{"count(*)", "p95($span.duration_nano)", "errors / total * 100", "from_expr"} {
+	for _, want := range []string{"count(*)", "p95(Span:duration_nano)", "errors / total * 100", "from_expr"} {
 		if !strings.Contains(create.Example, want) {
 			t.Errorf("create example lacks %q", want)
 		}

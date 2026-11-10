@@ -23,7 +23,7 @@ func TestSanitize(t *testing.T) {
 		{"service IN ('a', 'b')", "service IN (?, ?)", true},
 		{"service NOT IN (1,2) AND msg not like '%x%'", "service NOT IN (?, ?) AND msg NOT LIKE ?", true},
 		{"LOWER(level) = 'e' OR a is not null", "LOWER(level) = ? OR a IS NOT NULL", true},
-		{"NOT EXISTS $span.parent_span_id", "NOT EXISTS $span.parent_span_id", true},
+		{"NOT EXISTS Span:parent_span_id", "NOT EXISTS Span:parent_span_id", true},
 		{"in", "?", true},            // a lone keyword-word is a free-text term
 		{"msg ~ 'a\\'b'", "", false}, // backslash is no escape: unterminated
 		{"x = 1 | stats count()", "", false},

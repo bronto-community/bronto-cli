@@ -15,10 +15,10 @@ import (
 const FromExpr = "logset = '.traces'"
 
 var SpanFields = []string{
-	"$span.trace_id", "$span.span_id", "$span.parent_span_id",
-	"$span.name", "$span.kind", "$span.duration_nano",
-	"$span.start_time_unix_nano", "$span.end_time_unix_nano",
-	"$span.status_code", "$service.name", "$service.namespace",
+	"Span:trace_id", "Span:span_id", "Span:parent_span_id",
+	"Span:name", "Span:kind", "Span:duration_nano",
+	"Span:start_time_unix_nano", "Span:end_time_unix_nano",
+	"Span:status_code", "Resource:service.name", "Resource:service.namespace",
 }
 
 type Span struct {
@@ -36,16 +36,16 @@ type Span struct {
 
 func RowToSpan(row map[string]any) Span {
 	s := Span{
-		TraceID:      str(row, "$span.trace_id"),
-		SpanID:       str(row, "$span.span_id"),
-		ParentSpanID: str(row, "$span.parent_span_id"),
-		Name:         str(row, "$span.name"),
-		Kind:         strings.TrimPrefix(str(row, "$span.kind"), "SPAN_KIND_"),
-		Service:      str(row, "$service.name"),
-		Status:       str(row, "$span.status_code"),
-		StartNS:      toInt64(row["$span.start_time_unix_nano"]),
-		EndNS:        toInt64(row["$span.end_time_unix_nano"]),
-		DurationNS:   toInt64(row["$span.duration_nano"]),
+		TraceID:      str(row, "Span:trace_id"),
+		SpanID:       str(row, "Span:span_id"),
+		ParentSpanID: str(row, "Span:parent_span_id"),
+		Name:         str(row, "Span:name"),
+		Kind:         strings.TrimPrefix(str(row, "Span:kind"), "SPAN_KIND_"),
+		Service:      str(row, "Resource:service.name"),
+		Status:       str(row, "Span:status_code"),
+		StartNS:      toInt64(row["Span:start_time_unix_nano"]),
+		EndNS:        toInt64(row["Span:end_time_unix_nano"]),
+		DurationNS:   toInt64(row["Span:duration_nano"]),
 	}
 	if s.DurationNS == 0 && s.EndNS > s.StartNS && s.StartNS > 0 {
 		s.DurationNS = s.EndNS - s.StartNS

@@ -195,12 +195,12 @@ func newTracesOperationsCmd() *cobra.Command {
 
 func newTracesAggregateCmd() *cobra.Command {
 	var (
-		since, kind, where string
-		sf                 serviceFlags
-		by                          []string
-		errorsOnly, includeEmpty    bool
-		rootOnly, allSpans          bool
-		limit                       int
+		since, kind, where       string
+		sf                       serviceFlags
+		by                       []string
+		errorsOnly, includeEmpty bool
+		rootOnly, allSpans       bool
+		limit                    int
 	)
 	cmd := &cobra.Command{
 		Use:   "aggregate",
@@ -344,7 +344,7 @@ func newTracesShowCmd() *cobra.Command {
 			mrf := false
 			resp, err := agg.Client.Search(cmd.Context(), bronto.SearchRequest{
 				FromExpr: traces.FromExpr, Time: agg.Time,
-				Where:           "$span.trace_id = " + traces.Quote(id),
+				Where:           "Span:trace_id = " + traces.Quote(id),
 				Select:          append([]string{"@time"}, traces.SpanFields...),
 				Limit:           limit,
 				MostRecentFirst: &mrf,
@@ -422,12 +422,12 @@ func rejectFieldsForCustomRender(app *App) error {
 
 func newTracesShapeCmd() *cobra.Command {
 	var (
-		since, operation, where string
-		sf                        serviceFlags
-		errorsOnly                       bool
-		minDurationMS                    float64
-		entry, anySpan                   bool
-		sample, minTraces, barWidth      int
+		since, operation, where     string
+		sf                          serviceFlags
+		errorsOnly                  bool
+		minDurationMS               float64
+		entry, anySpan              bool
+		sample, minTraces, barWidth int
 	)
 	cmd := &cobra.Command{
 		Use:   "shape",
@@ -548,10 +548,10 @@ func shapeSampleWhere(entry bool, service, operation string, errorsOnly bool, mi
 		clauses = append(clauses, kindClause)
 	}
 	if service != "" {
-		clauses = append(clauses, "$service.name = "+traces.Quote(service))
+		clauses = append(clauses, "Resource:service.name = "+traces.Quote(service))
 	}
 	if operation != "" {
-		clauses = append(clauses, "$span.name = "+traces.Quote(operation))
+		clauses = append(clauses, "Span:name = "+traces.Quote(operation))
 	}
 	if errorsOnly {
 		clauses = append(clauses, traces.ErrorsClause)

@@ -5,9 +5,9 @@
     "queries": [
       {
         "name": "p95_latency",
-        "select": ["p95($span.duration_nano)"],
-        "where": "$span.kind = 'SPAN_KIND_SERVER'",
-        "groups": ["$span.name"],
+        "select": ["p95(Span:duration_nano)"],
+        "where": "Span:kind = 'SPAN_KIND_SERVER'",
+        "groups": ["Span:name"],
         "aggregation": [{"time": "p95", "reduce_to": "avg"}],
         "from_expr": "\"collection\" = '.traces' AND \"dataset\" = 'checkout-service'",
         "unit_config": {"type": "time", "input": "nanoseconds", "output": "auto"}
@@ -27,7 +27,7 @@
     ],
     "groups_series": [
       {
-        "key": "$span.name", "name": "POST /api/checkout", "count": 1040, "stat": "P95", "value": 640000000.0,
+        "key": "Span:name", "name": "POST /api/checkout", "count": 1040, "stat": "P95", "value": 640000000.0,
         "timeseries": [
           {"@timestamp": 1784419200000, "count": 120, "value": 210000000.0},
           {"@timestamp": 1784430000000, "count": 110, "value": 205000000.0},
@@ -40,7 +40,7 @@
         ]
       },
       {
-        "key": "$span.name", "name": "GET /api/cart", "count": 800, "stat": "P95", "value": 95000000.0,
+        "key": "Span:name", "name": "GET /api/cart", "count": 800, "stat": "P95", "value": 95000000.0,
         "timeseries": [
           {"@timestamp": 1784419200000, "count": 100, "value": 90000000.0},
           {"@timestamp": 1784430000000, "count": 80, "value": 88000000.0},
