@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -147,21 +148,57 @@ func getDashboard(ctx context.Context, app *App, id string) (*liveDashboard, err
 	return &d, nil
 }
 
-// fetchWidgetsAndDefs reads every widget and every metric definition, one
-// list call each.
-func fetchWidgetsAndDefs(ctx context.Context, app *App, st *liveState) error {
-	payload, err := doJSONRequest(ctx, app, http.MethodGet, "/widgets", nil)
-	if err != nil {
-		return err
+// fetchDashboardWidgets reads the widgets attached to st.Dashboard one by
+// one (none for a dashboard that doesn't exist yet).
+func fetchDashboardWidgets(ctx context.Context, app *App, st *liveState) error {
+	if st.Dashboard == nil {
+		return nil
 	}
-	for _, row := range rowsFromPayload(payload, "widgets") {
-		var w liveWidget
-		if err := recode(row, &w); err != nil {
+	for _, id := range st.Dashboard.WidgetIDs {
+		payload, err := doJSONRequest(ctx, app, http.MethodGet, "/widgets/"+url.PathEscape(id), nil)
+		if err != nil {
 			return err
 		}
-		if w.ID != "" {
-			st.Widgets = append(st.Widgets, w)
+		var w liveWidget
+		if err := recode(payload, &w); err != nil {
+			return err
 		}
+		if w.ID == "" {
+			w.ID = id
+		}
+		st.Widgets = append(st.Widgets, w)
+	}
+	return nil
+}
+
+// fetchWidgetsAndDefs reads every widget and every metric definition, one
+// list call each. When the widget list answers 5xx it reads the
+// dashboard's own widgets one by one instead.
+func fetchWidgetsAndDefs(ctx context.Context, app *App, st *liveState) error {
+	payload, err := doJSONRequest(ctx, app, http.MethodGet, "/widgets", nil)
+	var ce *clierr.Error
+	switch {
+	case err == nil:
+		for _, row := range rowsFromPayload(payload, "widgets") {
+			var w liveWidget
+			if err := recode(row, &w); err != nil {
+				return err
+			}
+			if w.ID != "" {
+				st.Widgets = append(st.Widgets, w)
+			}
+		}
+	case errors.As(err, &ce) && ce.Code == "api_server_error":
+		// Live (#111, again in #222) the org-wide list can 500 because of
+		// a broken widget elsewhere in the org. Apply and export only need
+		// this dashboard's widgets. The cost: apply can't see widgets it
+		// owns that were detached from the dashboard, so it leaves them be.
+		if fbErr := fetchDashboardWidgets(ctx, app, st); fbErr != nil {
+			return err
+		}
+		app.Notef("Note: listing all widgets failed (%v); using the %d widgets on the dashboard.\n", err, len(st.Widgets))
+	default:
+		return err
 	}
 	payload, err = doJSONRequest(ctx, app, http.MethodGet, "/metrics/definitions", nil)
 	if err != nil {
