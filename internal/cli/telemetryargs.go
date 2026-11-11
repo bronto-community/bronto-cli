@@ -44,6 +44,7 @@ var safeFlagTypes = map[string]bool{
 // TestTelemetryClassifiesEveryArg fails when a flag or positional argument
 // has no class, so a new flag is recorded only once someone has decided how.
 var flagClasses = map[string]argClass{
+	"agg":           argValue,
 	"by":            argValue,
 	"collection":    argValue,
 	"content-type":  argValue,

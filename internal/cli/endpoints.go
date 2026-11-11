@@ -82,7 +82,7 @@ var handWrittenEndpoints = []EndpointPattern{
 	// dashboards apply/export/validate read the dashboard, every widget and
 	// every metric definition, and apply writes all three plus the
 	// ownership tags; validate --live runs queries ad hoc.
-	{Pattern: "/logs", Command: "bronto dashboards apply / dashboards validate"},
+	{Pattern: "/logs", Command: "bronto dashboards apply / dashboards validate / metrics query"},
 	{Pattern: "/widgets", Command: "bronto dashboards apply / dashboards export / dashboards validate"},
 	{Pattern: "/widgets/{*}", Command: "bronto dashboards apply"},
 	{Pattern: "/metrics/definitions", Command: "bronto dashboards apply / dashboards export"},
@@ -90,7 +90,7 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/dashboards/{*}/widgets", Command: "bronto dashboards apply"},
 	{Pattern: "/dashboards/{*}/widgets/{*}", Command: "bronto dashboards apply"},
 	{Pattern: "/tags", Command: "bronto dashboards apply"},
-	{Pattern: "/timeseries/search", Command: "bronto dashboards validate"},
+	{Pattern: "/timeseries/search", Command: "bronto metrics query / dashboards validate"},
 }
 
 // EndpointInventory returns every management-API path pattern the CLI

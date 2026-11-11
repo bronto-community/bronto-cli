@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -238,7 +239,24 @@ func fetchTimeseries(ctx context.Context, app *App, id string, params url.Values
 // for a real 2.82%. With one slice, the single bucket is the range, which
 // is the value the web UI shows.
 func queryDefinition(ctx context.Context, app *App, id string, params url.Values, label string) (any, []map[string]any, error) {
-	payload, err := fetchTimeseries(ctx, app, id, params)
+	return querySeries(app, label, params.Get("num_of_slices") == "1", func(oneSlice bool) (any, error) {
+		if !oneSlice {
+			return fetchTimeseries(ctx, app, id, params)
+		}
+		whole := url.Values{}
+		for k, v := range params {
+			whole[k] = v
+		}
+		whole.Set("num_of_slices", "1")
+		return fetchTimeseries(ctx, app, id, whole)
+	})
+}
+
+// querySeries is queryDefinition for any timeseries request: fetch runs it
+// with the requested slices, or with one slice for formula range values.
+// alreadyOne says the requested slices already are one.
+func querySeries(app *App, label string, alreadyOne bool, fetch func(oneSlice bool) (any, error)) (any, []map[string]any, error) {
+	payload, err := fetch(false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -248,17 +266,12 @@ func queryDefinition(ctx context.Context, app *App, id string, params url.Values
 	if len(formulas) == 0 || !printsRows(app) {
 		return payload, rows, nil
 	}
-	if params.Get("num_of_slices") == "1" {
+	if alreadyOne {
 		// Already the range: label it so, without another request.
 		applyRangeValues(rows, payload, formulas)
 		return payload, rows, nil
 	}
-	whole := url.Values{}
-	for k, v := range params {
-		whole[k] = v
-	}
-	whole.Set("num_of_slices", "1")
-	rangePayload, err := fetchTimeseries(ctx, app, id, whole)
+	rangePayload, err := fetch(true)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -375,7 +388,7 @@ every series is zero: usually the from_expr or where matches nothing.`,
 			if err != nil {
 				return err
 			}
-			return printTimeseries(app, params, payload, rows, false)
+			return printTimeseries(app, params.Get("time_range"), payload, rows, false, checkDefinition)
 		},
 	}
 	tf.register(cmd)
@@ -452,11 +465,201 @@ The widget can be an id or a unique name.`,
 				raw[id] = payload
 				rows = append(rows, defRows...)
 			}
-			return printTimeseries(app, params, raw, rows, true)
+			return printTimeseries(app, params.Get("time_range"), raw, rows, true, checkDefinition)
 		},
 	}
 	tf.register(cmd)
 	return cmd
+}
+
+const checkDefinition = "the definition's from_expr and where (bronto metrics definitions get <definition>)"
+
+// newMetricQueryCmd builds "metrics query": an ad-hoc query through
+// POST /timeseries/search, which saves nothing. The flags describe one
+// query the way a dashboard manifest's query does (manQuery.resolve
+// builds it); --input takes a whole body, e.g. a definition's queries
+// and formulas.
+func newMetricQueryCmd() *cobra.Command {
+	var tf timeseriesFlags
+	var q manQuery
+	var input string
+	cmd := &cobra.Command{
+		Use:   "query",
+		Short: "Run an ad-hoc timeseries query, without saving it",
+		Long: `Runs a timeseries query once (POST /timeseries/search) and prints its
+series like 'bronto metrics definitions query': one row per series or
+group, with its value over the range and a sparkline of the buckets.
+Nothing is saved.
+
+Describe one query with flags: --select, a dataset (-d, repeatable) or
+--from-expr, and optionally --where, --group-by and --agg. A select such
+as count(*) or p95(Span:duration_nano) aggregates with its function; a
+bare field needs --agg.
+
+For several queries or formulas, pass a request body with --input (a
+file, or - for stdin): {"queries": [...], "formulas": [...]}, the same
+queries and formulas a metric definition holds. Time flags you set
+override the body's time_range, num_of_slices and limit; the body's
+values override the flag defaults.
+
+-o json prints the raw API response. Piped output is JSON: for a readable
+summary in scripts or agents, add -o table.`,
+		Example: "  bronto metrics query --select 'count(*)' -d checkout-service --since 1h\n" +
+			"  bronto metrics query --select 'p95(Span:duration_nano)' -d .traces/checkout-service \\\n" +
+			"    --where \"Span:kind = 'SPAN_KIND_SERVER'\" --group-by Span:name -o table\n" +
+			"  bronto metrics query --select duration_ms --agg max --from-expr \"\\\"collection\\\" = 'prod'\"\n" +
+			"  # Several queries and a formula\n" +
+			"  bronto metrics query --input - <<'EOF'\n" +
+			"  {\"queries\": [\n" +
+			"     {\"name\": \"errors\", \"select\": [\"count(*)\"], \"from_expr\": \"\\\"collection\\\" = '.traces'\",\n" +
+			"      \"where\": \"Span:status_code = 'STATUS_CODE_ERROR'\", \"aggregation\": [{\"time\": \"count\"}]},\n" +
+			"     {\"name\": \"total\", \"select\": [\"count(*)\"], \"from_expr\": \"\\\"collection\\\" = '.traces'\",\n" +
+			"      \"where\": \"\", \"aggregation\": [{\"time\": \"count\"}]}],\n" +
+			"   \"formulas\": [{\"name\": \"error_rate\", \"expression\": \"errors / total * 100\"}]}\n" +
+			"  EOF",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			params, err := tf.params()
+			if err != nil {
+				return err
+			}
+			body := map[string]any{}
+			fl := cmd.Flags()
+			if fl.Changed("limit") && tf.limit < 1 {
+				// tf.params treats 0 as unset, but the API needs a limit of at least 1.
+				return clierr.New("usage_invalid_flags", fmt.Sprintf("--limit must be at least 1, got %d", tf.limit)).WithHint("Drop --limit to use the default.")
+			}
+			queryFlags := fl.Changed("select") || fl.Changed("dataset") || fl.Changed("from-expr") ||
+				fl.Changed("where") || fl.Changed("group-by") || fl.Changed("agg")
+			switch {
+			case input != "" && queryFlags:
+				return clierr.New("usage_conflicting_flags", "--input cannot be combined with --select, --dataset, --from-expr, --where, --group-by or --agg").
+					WithHint("Put the query in the --input body, or drop --input and describe one query with flags.")
+			case input != "":
+				b, err := readBodyInput(cmd, input)
+				if err != nil {
+					return err
+				}
+				if err := json.Unmarshal(b, &body); err != nil {
+					return clierr.New("usage_invalid_body", "the --input body isn't a JSON object: "+err.Error()).
+						WithHint(`Pass {"queries": [...], "formulas": [...]}; see 'bronto metrics query --help'.`)
+				}
+				if qs, _ := body["queries"].([]any); len(qs) == 0 {
+					return clierr.New("usage_invalid_body", `the --input body needs at least one query in "queries"`).
+						WithHint("See 'bronto metrics query --help' for an example.")
+				}
+			default:
+				q.Agg = strings.ToLower(strings.TrimSpace(q.Agg))
+				if err := checkQueryFlags(q); err != nil {
+					return err
+				}
+			}
+			app, err := NewApp(cmd)
+			if err != nil {
+				return err
+			}
+			// POST /timeseries/search saves nothing: run it under --dry-run
+			// too, as a GET would be.
+			app.DryRun = false
+			ctx := cmd.Context()
+			if input == "" {
+				var lookup datasetLookup
+				if len(q.Datasets) > 0 {
+					ds, err := listDatasets(ctx, app)
+					if err != nil {
+						return err
+					}
+					lookup = lookupIn(ds)
+				}
+				aq, err := q.resolve(0, lookup, nil)
+				if err != nil {
+					return err
+				}
+				body["queries"] = []apiQuery{aq}
+			}
+			timeSet := fl.Changed("since") || fl.Changed("from") || fl.Changed("to") || fl.Changed("time-range")
+			if _, ok := body["time_range"]; !ok || timeSet {
+				tr := map[string]any{"natural": params.Get("time_range")}
+				if params.Get("time_range") == "" {
+					from, _ := strconv.ParseInt(params.Get("from_ts"), 10, 64)
+					to, _ := strconv.ParseInt(params.Get("to_ts"), 10, 64)
+					tr = map[string]any{"from_ts": from, "to_ts": to}
+				}
+				body["time_range"] = tr
+			}
+			if _, ok := body["num_of_slices"]; !ok || fl.Changed("slices") {
+				body["num_of_slices"] = tf.slices
+			}
+			if _, ok := body["limit"]; (!ok && tf.limit != 0) || fl.Changed("limit") {
+				body["limit"] = tf.limit
+			}
+			oneSlice := fmt.Sprint(body["num_of_slices"]) == "1"
+			payload, rows, err := querySeries(app, "", oneSlice, func(whole bool) (any, error) {
+				send := body
+				if whole {
+					send = map[string]any{}
+					for k, v := range body {
+						send[k] = v
+					}
+					send["num_of_slices"] = 1
+				}
+				b, err := json.Marshal(send)
+				if err != nil {
+					return nil, err
+				}
+				return doJSONRequest(ctx, app, http.MethodPost, "/timeseries/search", b)
+			})
+			if err != nil {
+				return err
+			}
+			window := ""
+			if tr, _ := body["time_range"].(map[string]any); tr != nil {
+				window, _ = tr["natural"].(string)
+			}
+			return printTimeseries(app, window, payload, rows, false, "the query's dataset and where")
+		},
+	}
+	tf.register(cmd)
+	f := cmd.Flags()
+	f.StringVar(&q.Select, "select", "", "what to compute, e.g. count(*), p95(Span:duration_nano), or a field with --agg")
+	f.StringArrayVarP(&q.Datasets, "dataset", "d", nil, "dataset name, collection/name or UUID to query (repeatable)")
+	f.StringVar(&q.FromExpr, "from-expr", "", `dataset selector expression, e.g. "collection" = '.traces' (instead of -d)`)
+	f.StringVar(&q.Where, "where", "", "filter, e.g. Span:kind = 'SPAN_KIND_SERVER'")
+	f.StringArrayVarP(&q.GroupBy, "group-by", "g", nil, "group-by key (repeatable, at most 5)")
+	f.StringVar(&q.Agg, "agg", "", "aggregation for a field select: "+strings.Join(timeFunctions, ", "))
+	f.StringVar(&input, "input", "", "read the request body from a file, or - for stdin")
+	return cmd
+}
+
+// checkQueryFlags catches what the API would reject with a bare 400, with
+// the flag that fixes it.
+func checkQueryFlags(q manQuery) error {
+	invalid := func(msg, hint string) error {
+		return clierr.New("usage_invalid_flags", msg).WithHint(hint)
+	}
+	fn := defaultAgg(q.Select)
+	switch {
+	case strings.TrimSpace(q.Select) == "":
+		return invalid("--select is required (or pass a request body with --input)",
+			"e.g. --select 'count(*)', or --select duration_ms --agg p95.")
+	case len(q.Datasets) == 0 && strings.TrimSpace(q.FromExpr) == "":
+		return invalid("a dataset is required: pass -d <dataset> or --from-expr",
+			"Run 'bronto datasets list' to see datasets.")
+	case len(q.Datasets) > 0 && q.FromExpr != "":
+		return invalid("use -d or --from-expr, not both", "Drop one of them.")
+	case q.Agg != "" && !contains(timeFunctions, q.Agg):
+		return invalid(fmt.Sprintf("unknown --agg %q", q.Agg), "Use one of "+strings.Join(timeFunctions, ", ")+".")
+	case q.Agg != "" && fn != "" && q.Agg != fn:
+		// The API ignores a different aggregation when the select already has a function.
+		return invalid(fmt.Sprintf("--select %q already aggregates with %s, and the API ignores --agg %s", q.Select, fn, q.Agg),
+			fmt.Sprintf("Drop --agg, or select the bare field with --agg %s.", q.Agg))
+	case q.Agg == "" && fn == "":
+		return invalid(fmt.Sprintf("--select %q is a field, so --agg must say how to aggregate it", q.Select),
+			fmt.Sprintf("e.g. --agg p95, avg, sum or max, or --select 'max(%s)'.", q.Select))
+	case len(q.GroupBy) > maxQueryGroups:
+		return invalid(fmt.Sprintf("--group-by takes at most %d keys, got %d", maxQueryGroups, len(q.GroupBy)), "Drop some keys.")
+	}
+	return nil
 }
 
 // stringList reads a string array field from a decoded JSON object.
@@ -490,9 +693,9 @@ func definitionNames(ctx context.Context, app *App) (map[string]string, error) {
 
 // printTimeseries prints the raw payload for json/jsonl and the series rows
 // for table/csv, warning on stderr when every series is zero.
-func printTimeseries(app *App, params url.Values, raw any, rows []map[string]any, withDefinition bool) error {
+// check says what to look at when every series is zero.
+func printTimeseries(app *App, window string, raw any, rows []map[string]any, withDefinition bool, check string) error {
 	if allZero(rows) {
-		window := params.Get("time_range")
 		if window == "" {
 			window = "the requested range"
 		}
@@ -500,10 +703,9 @@ func printTimeseries(app *App, params url.Values, raw any, rows []map[string]any
 		// saved query by its content, and one first evaluated before fresh
 		// data was visible kept answering zero for minutes, while a query
 		// differing only in its where saw the data at once.
-		app.Notef("Warning: every series is zero over %s. Check the definition's from_expr and where "+
-			"(bronto metrics definitions get <definition>), or widen the range with --since. "+
+		app.Notef("Warning: every series is zero over %s. Check %s, or widen the range with --since. "+
 			"If the data was ingested in the last few minutes, Bronto may still be answering a cached zero "+
-			"for these queries: a new definition whose query differs (even only in its where) is evaluated fresh.\n", window)
+			"for these queries: a query that differs (even only in its where) is evaluated fresh.\n", window, check)
 	}
 	format, err := app.DetectFormat(false)
 	if err != nil {

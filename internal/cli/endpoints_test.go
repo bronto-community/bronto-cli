@@ -101,6 +101,7 @@ var endpointProbes = map[string][][]string{
 	"bronto widgets remove-widget":           {{"widgets", "remove-widget", probeID, probeID}},
 	"bronto metrics definitions query":       {{"metrics", "definitions", "query", probeID}, {"metrics", "definitions", "query", "d1"}},
 	"bronto widgets query":                   {{"widgets", "query", probeID}},
+	"bronto metrics query":                   {{"metrics", "query", "--select", "count(*)", "-d", "ds"}},
 	"bronto dashboards templates show":       {{"dashboards", "templates", "show", probeID}, {"dashboards", "templates", "show", "t1"}},
 	"bronto dashboards create": {{"dashboards", "create", "--template", probeID},
 		{"dashboards", "create", "--template", "t1"}},

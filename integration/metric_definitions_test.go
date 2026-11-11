@@ -72,6 +72,15 @@ func TestMetricDefinitionsLive(t *testing.T) {
 	}
 	assertListContainsName(t, r, "metrics definitions", name)
 
+	// The same query ad hoc (POST /timeseries/search), now that the spans
+	// are visible; its own where keeps it off any cached zero.
+	res = mustExitZero(t, r, "metrics", "query", "--select", "count(*)", "--from-expr", traces,
+		"--where", fmt.Sprintf("Resource:service.name = '%s' AND Span:name != 'ad-hoc'", serviceA),
+		"--since", "1h", "--slices", "6", "-o", "json")
+	if totals, err := seriesTotals(res.Stdout); err != nil || totals["q1"] != 2 {
+		t.Errorf("metrics query totals = %v (%v), want q1 2\n%s", totals, err, res.Stdout)
+	}
+
 	// A widget plots it; widgets query evaluates every metric id.
 	widget := mustRunJSONObject(t, r, "widgets", "create", "--input",
 		writeBodyFile(t, map[string]any{"name": resourceName("widget-def"), "type": "line", "metric_ids": []string{id}}))

@@ -103,7 +103,7 @@ func NewRootCmd() *cobra.Command {
 		case "groups":
 			rc = newResourceCmd(d, newGroupMembersCmd(), newGroupMembershipCmd(true), newGroupMembershipCmd(false))
 		case "metrics":
-			rc = newResourceCmd(d, newMetricTopKeysCmd())
+			rc = newResourceCmd(d, newMetricTopKeysCmd(), newMetricQueryCmd())
 		case "datasets":
 			rc = newResourceCmd(d, newDatasetParserCmd(), newDatasetLinkedCmd("monitors"), newDatasetLinkedCmd("dashboards"))
 		case "forward-configs":
