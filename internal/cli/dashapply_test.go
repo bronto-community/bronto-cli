@@ -680,6 +680,28 @@ func TestApplyEndToEnd(t *testing.T) {
 	}
 }
 
+// #222: when GET /widgets answers 500, apply and export read the
+// dashboard's widgets one by one and carry on.
+func TestWidgetListFailureFallsBackToDashboardWidgets(t *testing.T) {
+	f := newFakeOrg(t)
+	path := writeManifest(t, testManifest)
+	applyJSON(t, f, path)
+	f.listErr = true
+
+	f.resetWrites()
+	_, stderr, err := runResource(t, f.handler, "", "dashboards", "apply", "-f", path, "-o", "json")
+	if err != nil || f.writeCount() != 0 {
+		t.Fatalf("re-apply with a failing widget list: %v, writes %v\n%s", err, f.writes, stderr)
+	}
+	if !strings.Contains(stderr, "using the 3 widgets on the dashboard") {
+		t.Errorf("no fallback note:\n%s", stderr)
+	}
+	out, stderr, err := runResource(t, f.handler, "", "dashboards", "export", "Checkout API health")
+	if err != nil || !strings.Contains(out, "name: Error rate %") {
+		t.Fatalf("export with a failing widget list: %v\n%s\n%s", err, out, stderr)
+	}
+}
+
 // A dashboard built elsewhere: export writes every widget inline with a
 // note, and applying the export adopts them (tags only), after which a
 // re-apply is a no-op.

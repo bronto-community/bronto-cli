@@ -31,6 +31,7 @@ type fakeOrg struct {
 	series     float64  // the value /timeseries/search returns for queries
 	formula    *float64 // and for formulas (nil: series)
 	searchErr  bool
+	listErr    bool // GET /widgets answers 500 (#222)
 }
 
 func newFakeOrg(t *testing.T) *fakeOrg {
@@ -153,6 +154,10 @@ func (f *fakeOrg) handler(w http.ResponseWriter, r *http.Request) {
 		d["widget_ids"] = toAny(without(strs(d["widget_ids"]), parts[3]))
 		reply(204, nil)
 	case r.Method == http.MethodGet && r.URL.Path == "/widgets":
+		if f.listErr {
+			reply(500, map[string]any{"details": "Internal Server Error"})
+			return
+		}
 		var rows []any
 		for _, id := range sortedMapKeys(f.widgets) {
 			rows = append(rows, f.widgets[id])
