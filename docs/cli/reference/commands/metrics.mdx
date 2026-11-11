@@ -24,6 +24,7 @@ bronto metrics <command> [flags]
 | [`bronto metrics definitions`](/cli/reference/commands/metrics#bronto-metrics-definitions) | Manage metric definitions |
 | [`bronto metrics get`](/cli/reference/commands/metrics#bronto-metrics-get) | Get a metric by ID |
 | [`bronto metrics list`](/cli/reference/commands/metrics#bronto-metrics-list) | List metrics |
+| [`bronto metrics query`](/cli/reference/commands/metrics#bronto-metrics-query) | Run an ad-hoc timeseries query, without saving it |
 | [`bronto metrics top-keys`](/cli/reference/commands/metrics#bronto-metrics-top-keys) | List the attribute keys seen on a metric |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
@@ -249,6 +250,69 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto metrics list
+```
+
+## bronto metrics query
+
+Runs a timeseries query once (POST /timeseries/search) and prints its
+series like 'bronto metrics definitions query': one row per series or
+group, with its value over the range and a sparkline of the buckets.
+Nothing is saved.
+
+Describe one query with flags: --select, a dataset (-d, repeatable) or
+--from-expr, and optionally --where, --group-by and --agg. A select such
+as count(\*) or p95(Span:duration\_nano) aggregates with its function; a
+bare field needs --agg.
+
+For several queries or formulas, pass a request body with --input (a
+file, or - for stdin): &#123;"queries": \[...\], "formulas": \[...\]&#125;, the same
+queries and formulas a metric definition holds. Time flags you set
+override the body's time\_range, num\_of\_slices and limit; the body's
+values override the flag defaults.
+
+-o json prints the raw API response. Piped output is JSON: for a readable
+summary in scripts or agents, add -o table.
+
+```sh
+bronto metrics query [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--agg` |  | string |  | aggregation for a field select: sum, avg, average, min, max, mean, count, median, p25, p50, p75, p90, p95, p99, p999, histogram, rate |
+| `--dataset` | `-d` | stringArray |  | dataset name, collection/name or UUID to query (repeatable) |
+| `--from` |  | string |  | absolute start (RFC3339) |
+| `--from-expr` |  | string |  | dataset selector expression, e.g. "collection" = '.traces' (instead of -d) |
+| `--group-by` | `-g` | stringArray |  | group-by key (repeatable, at most 5) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
+| `--limit` |  | int |  | maximum groups per grouped query, 1-1000 (default: the API's 100) |
+| `--select` |  | string |  | what to compute, e.g. count(\*), p95(Span:duration\_nano), or a field with --agg |
+| `--since` |  | string |  | relative lookback: 30m, 24h, 7d, 1h30m (default 24h) |
+| `--slices` |  | int | `24` | time buckets per series (the TREND sparkline's resolution) |
+| `--time-range` |  | string |  | relative range in the API's words, e.g. "Last 24 hours" (instead of --since) |
+| `--to` |  | string |  | absolute end (RFC3339), requires --from |
+| `--where` |  | string |  | filter, e.g. Span:kind = 'SPAN\_KIND\_SERVER' |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto metrics query --select 'count(*)' -d checkout-service --since 1h
+bronto metrics query --select 'p95(Span:duration_nano)' -d .traces/checkout-service \
+  --where "Span:kind = 'SPAN_KIND_SERVER'" --group-by Span:name -o table
+bronto metrics query --select duration_ms --agg max --from-expr "\"collection\" = 'prod'"
+# Several queries and a formula
+bronto metrics query --input - <<'EOF'
+{"queries": [
+   {"name": "errors", "select": ["count(*)"], "from_expr": "\"collection\" = '.traces'",
+    "where": "Span:status_code = 'STATUS_CODE_ERROR'", "aggregation": [{"time": "count"}]},
+   {"name": "total", "select": ["count(*)"], "from_expr": "\"collection\" = '.traces'",
+    "where": "", "aggregation": [{"time": "count"}]}],
+ "formulas": [{"name": "error_rate", "expression": "errors / total * 100"}]}
+EOF
 ```
 
 ## bronto metrics top-keys

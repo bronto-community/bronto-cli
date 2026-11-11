@@ -586,3 +586,100 @@ func TestMetricNamedDefinitionsStillResolves(t *testing.T) {
 		t.Fatalf("paths = %v, out = %s", paths, out)
 	}
 }
+
+// tsSearchServer serves /logs and POST /timeseries/search, recording each
+// search body. A body with num_of_slices 1 gets whole, when set.
+type tsSearchServer struct {
+	reply, whole string
+	bodies       []map[string]any
+}
+
+func (s *tsSearchServer) handler(t *testing.T) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/logs":
+			_, _ = w.Write([]byte(`{"logs":[{"log_id":"aaaaaaaa-aaaa-aaaa-aaaa-00000000d501","log":"checkout-api","collection":".traces"}]}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/timeseries/search":
+			var body map[string]any
+			b, _ := io.ReadAll(r.Body)
+			if err := json.Unmarshal(b, &body); err != nil {
+				t.Errorf("body isn't JSON: %s", b)
+			}
+			s.bodies = append(s.bodies, body)
+			if s.whole != "" && body["num_of_slices"] == 1.0 {
+				_, _ = w.Write([]byte(s.whole))
+				return
+			}
+			_, _ = w.Write([]byte(s.reply))
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}
+}
+
+func TestMetricQueryFromFlags(t *testing.T) {
+	s := &tsSearchServer{reply: liveTimeseries}
+	out, _, err := runResource(t, s.handler(t), "", "metrics", "query", "--select", "p95(Span:duration_nano)",
+		"-d", "checkout-api", "--where", "Span:kind = 'SPAN_KIND_SERVER'", "-g", "Span:name", "--since", "1h", "-o", "table")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.bodies) != 2 { // the reply has a formula: one more, one-slice call
+		t.Fatalf("search calls = %d", len(s.bodies))
+	}
+	got, _ := json.Marshal(s.bodies[0])
+	want := `{"num_of_slices":24,"queries":[{"aggregation":[{"reduce_to":"avg","time":"p95"}],` +
+		`"from_expr":"\"collection\" = '.traces' AND \"dataset\" = 'checkout-api'","groups":["Span:name"],` +
+		`"name":"q1","select":["p95(Span:duration_nano)"],"where":"Span:kind = 'SPAN_KIND_SERVER'"}],` +
+		`"time_range":{"natural":"Last 1 hour"}}`
+	if string(got) != want {
+		t.Errorf("body =\n%s\nwant\n%s", got, want)
+	}
+	if !strings.Contains(out, "413 ms") || !strings.Contains(out, "GET /logs") {
+		t.Errorf("table:\n%s", out)
+	}
+}
+
+func TestMetricQueryInput(t *testing.T) {
+	s := &tsSearchServer{reply: liveFormulaBuckets, whole: liveFormulaWhole}
+	in := `{"queries":[{"name":"errors"},{"name":"total"}],"formulas":[{"name":"error_rate","expression":"errors / total * 100"}],"num_of_slices":4,"limit":7}`
+	out, _, err := runResource(t, s.handler(t), in, "metrics", "query", "--input", "-", "--time-range", "Last 2 days", "-o", "table")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The body's num_of_slices and limit beat the flag defaults; a time flag that is set beats the body.
+	if b := s.bodies[0]; b["num_of_slices"] != 4.0 || b["limit"] != 7.0 || b["time_range"].(map[string]any)["natural"] != "Last 2 days" {
+		t.Fatalf("body = %v", b)
+	}
+	if len(s.bodies) != 2 || s.bodies[1]["num_of_slices"] != 1.0 {
+		t.Fatalf("range call missing: %v", s.bodies)
+	}
+	if got := tableRow(out, "error_rate svc-b"); !strings.HasPrefix(got, "error_rate svc-b formula 100") {
+		t.Errorf("formula row = %q\n%s", got, out)
+	}
+}
+
+func TestMetricQueryRejectsBadFlags(t *testing.T) {
+	for args, code := range map[string]string{
+		"-d|checkout-api":                                  "usage_invalid_flags",
+		"--select|count(*)":                                "usage_invalid_flags",
+		"--select|duration_ms|-d|x":                        "usage_invalid_flags",
+		"--select|duration_ms|--agg|nope|-d|x":             "usage_invalid_flags",
+		"--select|count(*)|-d|x|--from-expr|y":             "usage_invalid_flags",
+		"--input|-|--select|count(*)":                      "usage_conflicting_flags",
+		"--select|count(*)|-d|x|--slices|0":                "usage_invalid_flags",
+		"--select|count(*)|-d|x|--time-range|a|--since|1h": "usage_conflicting_time_flags",
+	} {
+		_, _, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) {
+			t.Errorf("%s: no request expected", args)
+		}, "", append([]string{"metrics", "query"}, strings.Split(args, "|")...)...)
+		if got := codeOf(err); got != code {
+			t.Errorf("%s: code = %q, want %q (%v)", args, got, code, err)
+		}
+	}
+	_, _, err := runResource(t, nil, `{"queries":[]}`, "metrics", "query", "--input", "-")
+	if codeOf(err) != "usage_invalid_body" {
+		t.Errorf("empty queries: %v", err)
+	}
+}

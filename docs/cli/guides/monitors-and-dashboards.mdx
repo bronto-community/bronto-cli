@@ -545,6 +545,20 @@ in JSON.
 Piped, `query` prints the raw JSON. For a readable summary in a script or an agent,
 add `-o table`, as with `bronto widgets query`.
 
+To try a query before you save it, `bronto metrics query` runs one once and saves nothing
+([ad-hoc timeseries query](https://docs.bronto.io/api-reference/timeseries/run-an-ad-hoc-timeseries-query)).
+It prints the same table and takes the same time flags. Describe one query with
+`--select`, a dataset (`-d`, repeatable) or `--from-expr`, and optionally `--where`,
+`--group-by` and `--agg` (needed when `--select` is a bare field). For several queries or a
+formula, pass `{"queries": [...], "formulas": [...]}` with `--input`:
+
+```sh
+bronto metrics query --select 'p95(Span:duration_nano)' -d .traces/checkout-service \
+  --where "Span:kind = 'SPAN_KIND_SERVER'" --group-by Span:name --since 1h
+bronto metrics query --select duration_ms --agg max -d prod/checkout-service
+bronto metrics query --input queries.json --since 7d
+```
+
 From definition to dashboard:
 
 ```sh
