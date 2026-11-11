@@ -525,6 +525,10 @@ summary in scripts or agents, add -o table.`,
 			}
 			body := map[string]any{}
 			fl := cmd.Flags()
+			if fl.Changed("limit") && tf.limit < 1 {
+				// tf.params treats 0 as unset, but the API needs a limit of at least 1.
+				return clierr.New("usage_invalid_flags", fmt.Sprintf("--limit must be at least 1, got %d", tf.limit)).WithHint("Drop --limit to use the default.")
+			}
 			queryFlags := fl.Changed("select") || fl.Changed("dataset") || fl.Changed("from-expr") ||
 				fl.Changed("where") || fl.Changed("group-by") || fl.Changed("agg")
 			switch {
@@ -645,6 +649,10 @@ func checkQueryFlags(q manQuery) error {
 		return invalid("use -d or --from-expr, not both", "Drop one of them.")
 	case q.Agg != "" && !contains(timeFunctions, q.Agg):
 		return invalid(fmt.Sprintf("unknown --agg %q", q.Agg), "Use one of "+strings.Join(timeFunctions, ", ")+".")
+	case q.Agg != "" && fn != "" && q.Agg != fn:
+		// The API ignores a different aggregation when the select already has a function.
+		return invalid(fmt.Sprintf("--select %q already aggregates with %s, and the API ignores --agg %s", q.Select, fn, q.Agg),
+			fmt.Sprintf("Drop --agg, or select the bare field with --agg %s.", q.Agg))
 	case q.Agg == "" && fn == "":
 		return invalid(fmt.Sprintf("--select %q is a field, so --agg must say how to aggregate it", q.Select),
 			fmt.Sprintf("e.g. --agg p95, avg, sum or max, or --select 'max(%s)'.", q.Select))

@@ -669,6 +669,8 @@ func TestMetricQueryRejectsBadFlags(t *testing.T) {
 		"--select|count(*)|-d|x|--from-expr|y":             "usage_invalid_flags",
 		"--input|-|--select|count(*)":                      "usage_conflicting_flags",
 		"--select|count(*)|-d|x|--slices|0":                "usage_invalid_flags",
+		"--select|count(*)|-d|x|--limit|0":                 "usage_invalid_flags",
+		"--select|p95(duration_ms)|-d|x|--agg|max":         "usage_invalid_flags",
 		"--select|count(*)|-d|x|--time-range|a|--since|1h": "usage_conflicting_time_flags",
 	} {
 		_, _, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) {
