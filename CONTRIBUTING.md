@@ -39,7 +39,7 @@ To add a new one:
 
 ## Documentation
 
-The docs are a [Mintlify](https://mintlify.com) project in `docs/`. A Mintlify dev site deploys it from `main`, and maintainers copy `docs/cli/` into the official docs at https://docs.bronto.io/cli for each release (`scripts/sync-official-docs.sh`). `docs/AGENTS.md` is the full contributor contract; the short version:
+The docs are a [Mintlify](https://mintlify.com) project in `docs/`. A Mintlify dev site deploys it from `main`, and each published release opens a pull request that copies `docs/cli/` into the official docs at https://docs.bronto.io/cli (the `docs-sync` workflow, which runs `scripts/sync-official-docs.sh`). `docs/AGENTS.md` is the full contributor contract; the short version:
 
 - Hand-written pages live in `docs/cli/` (guides, configuration, reference pages) and appear in the sidebar once listed in `docs/cli/navigation.json`. The command reference under `docs/cli/reference/commands/` is generated from the cobra tree: never edit it by hand, run `make docs-reference` and commit the result. Preview with `make docs-dev`.
 - Bronto is the product; this is the bronto CLI. In prose write `` `bronto` `` or "the bronto CLI", never bare "bronto" (see "Naming" in `docs/AGENTS.md`). This applies to every document in the repo, not only the docs site.

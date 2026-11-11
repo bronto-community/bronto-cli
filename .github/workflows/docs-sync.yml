@@ -1,0 +1,124 @@
+name: Sync official docs
+
+# Opens a pull request in the official Bronto docs repository that copies
+# this repo's docs/cli/ at a release tag (scripts/sync-official-docs.sh).
+# A maintainer reviews and merges it there.
+#
+# The target repository is never named in this repo: its owner and name
+# come from the DOCS_SYNC_OWNER and DOCS_SYNC_REPO secrets, which GitHub
+# masks in every log line, PR URLs included. The branch and the pull
+# request are created with an installation token of the Bronto Community
+# Bot app (the org secrets the release workflow uses), so the app is the
+# PR author and any maintainer can approve it.
+#
+# Setup:
+#   - Install the Bronto Community Bot on the docs repository only (an
+#     owner of that organisation approves the install). It already has
+#     Contents and Pull requests: read & write.
+#   - Repo Settings → Environments → docs-sync: deployment branches and
+#     tags limited to `main` and tags `v*`, so a workflow edited on a
+#     branch can't read these secrets; secrets DOCS_SYNC_OWNER and
+#     DOCS_SYNC_REPO.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Release tag whose docs/cli to sync, e.g. v0.8.0
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    # Docs follow stable releases only; a manual run can sync any tag.
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    environment: docs-sync
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      - name: Resolve the tag
+        id: tag
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.ref }}
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::not a release tag: $TAG"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: cli
+          fetch-depth: 0 # the script reads docs/cli at the tag
+          persist-credentials: false
+
+      - name: Mint a docs-repo token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          # Org secrets, shared with the release workflow's tap token.
+          app-id: ${{ secrets.BRONTO_COMMUNITY_BOT_APP_ID }}
+          private-key: ${{ secrets.BRONTO_COMMUNITY_BOT_PRIVATE_KEY }}
+          owner: ${{ secrets.DOCS_SYNC_OWNER }}
+          repositories: ${{ secrets.DOCS_SYNC_REPO }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ secrets.DOCS_SYNC_OWNER }}/${{ secrets.DOCS_SYNC_REPO }}
+          token: ${{ steps.app.outputs.token }}
+          path: official
+          # Kept for the push below; the installation token expires within
+          # the hour and the runner is discarded after the job.
+          persist-credentials: true
+
+      - name: Copy docs/cli
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: cli/scripts/sync-official-docs.sh --ref "$TAG" official
+
+      - name: Open or update the pull request
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          DOCS_REPO: ${{ secrets.DOCS_SYNC_OWNER }}/${{ secrets.DOCS_SYNC_REPO }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+          RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.tag.outputs.tag }}
+        working-directory: official
+        run: |
+          if [ -z "$(git status --porcelain -- cli)" ]; then
+            echo "The official docs already match $TAG; nothing to do."
+            exit 0
+          fi
+          bot_id=$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+
+          branch="bronto-cli/docs-${TAG}"
+          git switch -c "$branch"
+          git add -A -- cli
+          git commit -q -m "docs(cli): sync the bronto CLI docs from ${TAG}"
+          # A re-run for the same tag replaces the earlier attempt.
+          git push --force -u origin "$branch"
+
+          if gh pr view "$branch" -R "$DOCS_REPO" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            echo "Updated the open pull request for $TAG."
+            exit 0
+          fi
+          gh pr create -R "$DOCS_REPO" --head "$branch" \
+            --title "docs(cli): sync the bronto CLI docs from ${TAG}" \
+            --body "Copies \`docs/cli/\` from bronto-cli [${TAG}](${RELEASE_URL}) into \`cli/\`, replacing it as a whole. Opened automatically by the bronto-cli docs-sync workflow; don't edit \`cli/\` here, the next sync overwrites it."
