@@ -15,7 +15,7 @@ All live testing goes to the **test org** in `.env.local`, never anywhere else. 
 
 ## Working in the repo
 
-- **Lint** with the toolchain pinned in `go.mod` when your local Go is newer, e.g. `GOTOOLCHAIN=go1.26.10 make lint`. Plain `make lint` fails on newer Go.
+- **Lint** with the toolchain pinned in `go.mod` when your local Go is newer, e.g. `GOTOOLCHAIN=go1.26.11 make lint`. Plain `make lint` fails on newer Go.
 - **Commits** follow Conventional Commits. AI attribution goes in an `Assisted-By:` trailer, never `Co-Authored-By:`: the CLA check treats a co-author as someone who must sign.
 - **Generated docs:** after changing commands or flags, run `make docs-reference` and commit the result. Update `skill.md` when behavior an agent relies on changes.
 - **Out-of-scope findings** get fixed now or filed as an issue, never left as a note.
