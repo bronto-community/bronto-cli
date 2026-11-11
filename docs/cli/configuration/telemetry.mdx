@@ -6,7 +6,7 @@ description: Send traces of the bronto CLI's own runs to any OTLP backend, and c
 The bronto CLI can trace its own runs with OpenTelemetry. This is off by default, and nothing is
 sent anywhere unless you configure an exporter with the standard `OTEL_*` environment
 variables. The only setting specific to the CLI is `BRONTO_TELEMETRY_CAPTURE`, which controls
-[how much of the command line is recorded](#whats-recorded).
+[how much of the command line is recorded](#what-gets-recorded).
 
 Separately from tracing, every request the CLI sends to Bronto identifies the client in its
 `User-Agent` header: `bronto-cli/<version> (<os>; <arch>)`, for example
@@ -28,7 +28,7 @@ Each run produces:
   It records `bronto.command` (the same command path), `process.executable.name`,
   `process.pid` and `process.exit.code`, and on failure `error.type`, which holds the
   [error code](/cli/reference/exit-codes) (for example `auth_invalid_key`). It also records the
-  flags and arguments, sanitized as described in [What's recorded](#whats-recorded).
+  flags and arguments, sanitized as described in [What gets recorded](#what-gets-recorded).
 - A client span for each HTTP request to the Bronto API, retries included, as children of the
   root span. Each is named after the method and the API route, such as
   `GET /monitors/{monitorId}`, and records the route as `url.template`. A path that doesn't
@@ -86,7 +86,7 @@ plugin's spans nest under the `bronto` command that ran it.
 | `OTEL_SERVICE_NAME` | Overrides `service.name`, which defaults to `bronto-cli`. |
 | `OTEL_RESOURCE_ATTRIBUTES` | Extra resource attributes, such as `deployment.environment.name=ci`. |
 | `OTEL_TRACES_SAMPLER`, `OTEL_TRACES_SAMPLER_ARG` | Sampler. The default, `parentbased_always_on`, follows the sampled flag in `TRACEPARENT`. |
-| `BRONTO_TELEMETRY_CAPTURE` | How much of the command line the root span records: `default`, `none` or `all`. See [What's recorded](#whats-recorded). |
+| `BRONTO_TELEMETRY_CAPTURE` | How much of the command line the root span records: `default`, `none` or `all`. See [What gets recorded](#what-gets-recorded). |
 | `OTEL_LOG_LEVEL` | Export and configuration errors are silent by default, so they don't mix into stderr output that scripts parse. Set this to any value other than `none` to print them. |
 | `TRACEPARENT`, `TRACESTATE`, `BAGGAGE` | The trace context to continue. |
 
@@ -94,7 +94,7 @@ The OTLP exporters also honor the rest of the standard exporter settings, such a
 `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_TIMEOUT`, `OTEL_EXPORTER_OTLP_COMPRESSION`
 and `OTEL_EXPORTER_OTLP_CERTIFICATE`, plus their `_TRACES_` variants.
 
-## What's recorded
+## What gets recorded
 
 Command lines can hold queries, payloads and keys, so the root span records them only in
 sanitized form. `BRONTO_TELEMETRY_CAPTURE` picks the level:
