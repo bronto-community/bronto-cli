@@ -1,6 +1,6 @@
 ---
 title: Install
-description: Install the bronto CLI with Homebrew, Scoop, the install script, go install, Docker, or a release archive, and verify the download.
+description: Install the bronto CLI with Homebrew, Scoop, aqua, mise, the install script, go install, Docker, or a release archive, and verify the download.
 ---
 
 `bronto` is a single static binary for macOS, Linux, and Windows. Install it with
@@ -37,6 +37,30 @@ scoop install bronto-community/bronto
 
 The release workflow updates the bucket's manifest on every stable release, for both
 amd64 and arm64. Update with `scoop update bronto`.
+
+</Tab>
+<Tab title="aqua">
+
+`bronto` is in the [aqua registry](https://github.com/aquaproj/aqua-registry):
+
+```sh
+aqua init  # only if there's no aqua.yaml yet
+aqua g -i bronto-community/bronto-cli
+aqua i -l
+```
+
+aqua checks each download against the release's `checksums.txt` and its cosign signature.
+
+</Tab>
+<Tab title="mise">
+
+mise installs bronto through its aqua backend:
+
+```sh
+mise use -g aqua:bronto-community/bronto-cli@latest
+```
+
+Drop `-g` to pin the version in the current project's `mise.toml` instead.
 
 </Tab>
 <Tab title="Install script">
