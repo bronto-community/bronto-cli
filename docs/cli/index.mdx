@@ -2,6 +2,7 @@
 title: The Bronto command line
 sidebarTitle: Overview
 description: Search logs, tail streams, inspect traces, and manage Bronto resources from the terminal.
+icon: "terminal"
 ---
 
 `bronto` is a command-line client for the [Bronto](https://bronto.io) observability
@@ -23,27 +24,27 @@ suggest features in [GitHub issues](https://github.com/bronto-community/bronto-c
 ## What you can do
 
 <CardGroup cols={2}>
-  <Card title="Search logs" icon="magnifying-glass" href="/cli/guides/searching">
+  <Card title="Search logs" icon="search" color="#8E51FF" href="/cli/guides/searching">
     Run one-shot queries with `bronto search`, or let filter flags like `--eq` and `--gt`
     write the WHERE clause for you.
   </Card>
-  <Card title="Follow live" icon="rocket" href="/cli/guides/live-tail">
+  <Card title="Follow live" icon="rocket" color="#00A6F4" href="/cli/guides/live-tail">
     `bronto tail` streams new events like `tail -f`, or redraws a live group-by every few
     seconds.
   </Card>
-  <Card title="Explore traces" icon="diagram-project" href="/cli/guides/traces">
+  <Card title="Explore traces" icon="workflow" color="#00BBA7" href="/cli/guides/traces">
     See a trace's waterfall, latency per service, and the call-tree shape merged across
     many traces.
   </Card>
-  <Card title="Manage resources" icon="list" href="/cli/guides/resources">
+  <Card title="Manage resources" icon="list" color="#FF6900" href="/cli/guides/resources">
     Datasets, monitors, dashboards, users, API keys and more share one
     `list | get | create | update | delete` pattern.
   </Card>
-  <Card title="Script it" icon="terminal" href="/cli/guides/scripting">
+  <Card title="Script it" icon="terminal" color="#16A34A" href="/cli/guides/scripting">
     JSONL when piped, a JSON error envelope, `--jq`, `--dry-run`, and documented exit
     codes.
   </Card>
-  <Card title="Run it in CI" icon="gear" href="/cli/guides/ci-cd">
+  <Card title="Run it in CI" icon="settings" color="#FF2056" href="/cli/guides/ci-cd">
     Read the key from the environment instead of a keychain, or use the container image,
     which has no shell.
   </Card>
@@ -52,16 +53,16 @@ suggest features in [GitHub issues](https://github.com/bronto-community/bronto-c
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Install" icon="download" href="/cli/getting-started/install">
+  <Card title="Install" icon="download" color="#16A34A" href="/cli/getting-started/install">
     Homebrew, Scoop, install script, go install, Docker, or a release archive.
   </Card>
-  <Card title="Quickstart" icon="play" href="/cli/getting-started/quickstart">
+  <Card title="Quickstart" icon="play" color="#8E51FF" href="/cli/getting-started/quickstart">
     From API key to your first piped search in five minutes.
   </Card>
-  <Card title="Command reference" icon="book" href="/cli/reference/commands">
+  <Card title="Command reference" icon="book" color="#00A6F4" href="/cli/reference/commands">
     Every command and flag, generated from the CLI itself.
   </Card>
-  <Card title="Source on GitHub" icon="github" href="https://github.com/bronto-community/bronto-cli">
+  <Card title="Source on GitHub" icon="git-fork" color="#FF6900" href="https://github.com/bronto-community/bronto-cli">
     Issues, releases, and the code behind the bronto CLI.
   </Card>
 </CardGroup>

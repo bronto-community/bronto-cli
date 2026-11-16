@@ -64,8 +64,12 @@ listed are still reachable by URL, so don't leave drafts in `cli/`. The
 command reference group is generated into
 `cli/reference/commands/navigation.json` and pulled in with `"$ref"`.
 
-Frontmatter takes `title` and `description`, plus `sidebarTitle` when the
-sidebar needs a shorter label than the title.
+Frontmatter takes `title`, `description` and `icon`, plus `sidebarTitle`
+when the sidebar needs a shorter label than the title. Every page has an
+`icon`, shown next to it in the sidebar. Icons are
+[Lucide](https://lucide.dev/icons) names, the library both sites use. The
+generated reference pages take theirs from `commandIcons` in
+`internal/tools/docgen`; a new top-level command needs an entry there.
 
 Directories under `cli/`:
 
@@ -86,8 +90,8 @@ Use Mintlify's built-in components; there are no imports:
   with a bold line: `**No keychain?**`.
 - `<Tabs>` with `<Tab title="zsh">`; tabs with the same title stay in sync
   across a page.
-- `<CardGroup cols={2}>` with `<Card title="…" icon="…" href="…">`. Icons are
-  Font Awesome names.
+- `<CardGroup cols={2}>` with `<Card title="…" icon="…" color="…" href="…">`. Icons
+  are Lucide names.
 - Comments are MDX comments, `{/* … */}`. HTML comments break the build.
 
 ## Code blocks
