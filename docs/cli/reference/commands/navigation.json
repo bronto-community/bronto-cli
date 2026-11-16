@@ -1,5 +1,6 @@
 {
   "group": "Commands",
+  "icon": "terminal",
   "pages": [
     "cli/reference/commands/index",
     "cli/reference/commands/global-flags",

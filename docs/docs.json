@@ -14,6 +14,9 @@
     "href": "/cli"
   },
   "favicon": "/logo/favicon.png",
+  "icons": {
+    "library": "lucide"
+  },
   "fonts": {
     "heading": { "family": "Inter" },
     "body": { "family": "Inter" }
