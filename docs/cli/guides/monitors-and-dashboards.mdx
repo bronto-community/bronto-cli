@@ -294,7 +294,7 @@ $ bronto dashboards validate -f dashboard.yaml 2>&1
 | `queries[].dataset` | A dataset as `-d` takes it (`name`, `collection/name` or id), or a list. Becomes the query's `from_expr`. `from_expr:` sets one directly, and `from:` takes dataset ids. |
 | `queries[].select` | `count(*)`, a function such as `p95(Span:duration_nano)`, or a field with `agg`. |
 | `queries[].agg` | The aggregation of a bare field: `count`, `sum`, `avg`, `min`, `max`, `p50`, `p75`, `p90`, `p95`, `p99`, and more. A select such as `count(*)` or `p95(field)` already aggregates with its function, and Bronto ignores a different `agg`, so leave it out there. |
-| `queries[].where` | A filter in the [query language](https://docs.bronto.io/core-features/log-search/query-syntax). Default `""`, everything. |
+| `queries[].where` | A filter in the [query language](https://docs.bronto.io/query-syntax/search-syntax). Default `""`, everything. |
 | `queries[].group_by` | Up to five fields; one series per group. |
 | `layout` | Optional `[{widget, x, y, w, h}]` positions. Without it, the web UI lays the widgets out in two columns, ordered by widget id. |
 
