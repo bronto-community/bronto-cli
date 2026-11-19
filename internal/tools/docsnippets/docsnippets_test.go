@@ -327,8 +327,24 @@ func TestBackgroundChildDoesNotHang(t *testing.T) {
 		if err != nil {
 			t.Fatalf("tty=%v: %v", tty, err)
 		}
-		if err := exec.Command("kill", "-0", strings.TrimSpace(string(b))).Run(); err == nil {
-			t.Errorf("tty=%v: background child %s survived the snippet", tty, strings.TrimSpace(string(b)))
+		// SIGKILL is asynchronous, and a killed orphan stays a zombie until
+		// init reaps it, so poll briefly and ignore zombies.
+		pid := strings.TrimSpace(string(b))
+		deadline := time.Now().Add(5 * time.Second)
+		for alive(pid) && time.Now().Before(deadline) {
+			time.Sleep(50 * time.Millisecond)
+		}
+		if alive(pid) {
+			t.Errorf("tty=%v: background child %s survived the snippet", tty, pid)
 		}
 	}
+}
+
+// alive reports whether pid is a running (non-zombie) process.
+func alive(pid string) bool {
+	if exec.Command("kill", "-0", pid).Run() != nil {
+		return false
+	}
+	out, _ := exec.Command("ps", "-o", "stat=", "-p", pid).Output()
+	return !strings.HasPrefix(strings.TrimSpace(string(out)), "Z")
 }
