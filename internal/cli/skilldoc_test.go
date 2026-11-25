@@ -19,16 +19,20 @@ var skillDocFiles = []string{"skill.md", "README.md", "llms.txt"}
 
 // docsContentDir is the docs site's content root, relative to the repo
 // root; docsReferenceDir (under it) holds the GENERATED command reference,
-// which the guards skip — it is derived from the command tree, so it is
-// correct by construction and checked by `make docs-reference-check`.
+// and docsAPICoverageFile the GENERATED API coverage page. The guards skip
+// both: they are derived from the command tree (and the API coverage map,
+// checked by TestAPICoverage), so they are correct by construction and
+// checked by `make docs-reference-check`. Mentioning every command, the
+// coverage page must not count as teaching it.
 const (
-	docsContentDir   = "docs/cli"
-	docsReferenceDir = docsContentDir + "/reference/commands"
+	docsContentDir      = "docs/cli"
+	docsReferenceDir    = docsContentDir + "/reference/commands"
+	docsAPICoverageFile = docsContentDir + "/reference/api-coverage.mdx"
 )
 
 // handWrittenDocFiles returns the repo-relative paths (sorted, slash-
 // separated) of every .md/.mdx page under docsContentDir except the
-// generated reference. Zero pages is fine (the site may be empty); a
+// generated reference and API coverage page. Zero pages is fine (the site may be empty); a
 // missing content directory is an error — the guard must not silently
 // pass because the docs moved.
 func handWrittenDocFiles(repoRoot string) ([]string, error) {
@@ -55,7 +59,9 @@ func handWrittenDocFiles(repoRoot string) ([]string, error) {
 			if err != nil {
 				return err
 			}
-			files = append(files, filepath.ToSlash(rel))
+			if rel = filepath.ToSlash(rel); rel != docsAPICoverageFile {
+				files = append(files, rel)
+			}
 		}
 		return nil
 	})

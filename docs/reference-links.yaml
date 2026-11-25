@@ -14,7 +14,7 @@ search:
   api: https://docs.bronto.io/api-reference/search/execute-a-query
 tail:
   docs: https://docs.bronto.io/Search-and-Visualize/Log-Search
-  api: https://docs.bronto.io/api-reference/live-tail/initiate-a-live-tail-job
+  api: https://docs.bronto.io/api-reference/search/execute-a-query
 context:
   docs: https://docs.bronto.io/api-reference/context/overview
   api: https://docs.bronto.io/api-reference/context/retrieve-contextual-information-for-a-given-sequence-and-log

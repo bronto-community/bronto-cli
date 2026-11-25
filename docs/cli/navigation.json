@@ -54,6 +54,7 @@
         "cli/reference/exit-codes",
         "cli/reference/environment-variables",
         "cli/reference/output-formats",
+        "cli/reference/api-coverage",
         { "$ref": "reference/commands/navigation.json" }
       ]
     }

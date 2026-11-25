@@ -1,12 +1,14 @@
 ---
-title: The api command
-description: Call any Bronto API endpoint with bronto api, with authentication, region, retries, and output handled for you.
+title: "Call the Bronto API from the CLI"
+sidebarTitle: "The api command"
+description: "Call any Bronto API endpoint with the bronto api command, passing parameters and JSON bodies while auth, region, retries, and output are handled."
 icon: "braces"
 ---
 
 Not every Bronto endpoint has its own command. `bronto api` calls any of them directly,
 using the same credentials, region, retries, `--debug` tracing, and output formatting as
-the rest of the CLI.
+the rest of the CLI. [API coverage](/cli/reference/api-coverage) lists which endpoints
+have a command and which you reach with `bronto api`.
 
 ```sh
 bronto api <METHOD> <path> [-f key=value]... [--input <file|->]

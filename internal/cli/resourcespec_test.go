@@ -182,29 +182,6 @@ var specLiveButUndocumented = map[string]bool{
 	"/widgets/templates":    true,
 }
 
-// normalizeParams rewrites every {param} segment to a bare {} so patterns
-// and spec paths compare regardless of parameter naming ("/monitors/{*}"
-// vs "/monitors/{monitorId}"). Mirrors the `norm` helper in
-// scripts/spec-digest.sh — keep the two in sync.
-func normalizeParams(p string) string {
-	var b strings.Builder
-	for {
-		open := strings.IndexByte(p, '{')
-		if open < 0 {
-			b.WriteString(p)
-			return b.String()
-		}
-		closing := strings.IndexByte(p[open:], '}')
-		if closing < 0 {
-			b.WriteString(p)
-			return b.String()
-		}
-		b.WriteString(p[:open])
-		b.WriteString("{}")
-		p = p[open+closing+1:]
-	}
-}
-
 // TestEndpointInventoryMatchesSpec keeps EndpointInventory (the CLI-impact
 // input for spec-sync's digest) honest: every pattern must match a path in
 // the vendored spec — exactly, as a prefix (e.g. "/logs/{*}" is satisfied

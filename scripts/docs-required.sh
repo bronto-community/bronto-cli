@@ -43,6 +43,7 @@ DOCS_PATHS=(
 # Generated docs do not count (they change automatically with the code).
 NOT_DOCS=(
   '^docs/cli/reference/commands/'
+  '^docs/cli/reference/api-coverage\.mdx$'
 )
 OVERRIDE_LABEL=no-docs-needed
 
