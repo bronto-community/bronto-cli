@@ -30,6 +30,10 @@ type EndpointPattern struct {
 // command path with the "bronto " prefix dropped after the first, and it
 // covers that command and all of its subcommands ("traces" covers
 // "bronto traces show").
+//
+// This inventory is per path and includes helper lookups; the per-operation
+// map behind the docs' API coverage page is apiOperationCommands in
+// apicoverage.go. A new hand-written command usually needs both.
 var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/search", Command: "bronto search / tail / traces / ask / repl"},
 	{Pattern: "/context", Command: "bronto context"},

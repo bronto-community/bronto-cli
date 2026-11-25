@@ -49,8 +49,9 @@ reference pages unchanged.
 | --- | --- | --- |
 | `docs.json`, `.mintignore`, `logo/`, `package.json` | Dev-site shell: theme, logos, the pinned `mint` CLI. Not copied to the official docs. | site |
 | `cli/navigation.json` | The CLI tab: groups and page order. Shared by both sites. | content |
-| `cli/**` except `reference/commands/` and `tapes/` | Hand-written pages | content |
+| `cli/**` except `reference/commands/`, `reference/api-coverage.mdx` and `tapes/` | Hand-written pages | content |
 | `cli/reference/commands/**` | **Generated** command reference and its `navigation.json` (`make docs-reference`). Never hand-edit. | generator |
+| `cli/reference/api-coverage.mdx` | **Generated** API coverage page (`make docs-reference`), from `api/openapi.yaml` and the map in `internal/cli/apicoverage.go`. Never hand-edit. | generator |
 | `tapes/*.tape`, `tapes/golden/*.txt` | VHS recordings and their text goldens | tapes |
 | `cli/tapes/*.webm`, `cli/tapes/*.png` | Rendered videos and posters (committed, produced by `make docs-tapes`) | tapes |
 | `testdata/mock/**` | Fixtures for the deterministic docs mock server | tapes |
@@ -70,6 +71,10 @@ when the sidebar needs a shorter label than the title. Every page has an
 [Lucide](https://lucide.dev/icons) names, the library both sites use. The
 generated reference pages take theirs from `commandIcons` in
 `internal/tools/docgen`; a new top-level command needs an entry there.
+Their `description` (the search-engine meta description) comes from
+`pageDescriptions` in the same file, falling back to the command's `Short`,
+which stays brief because `--help` shows it. When you add, rename or remove
+a subcommand or a flag a description names, update its entry.
 
 Directories under `cli/`:
 
@@ -79,7 +84,7 @@ Directories under `cli/`:
 - `configuration/`: config files and profiles, environments (staging/local/restricted), shell completion
 - `extend/`: plugins, the `bronto api` escape hatch
 - `troubleshooting.mdx`
-- `reference/`: generated command reference under `reference/commands/`; hand-written reference pages (exit codes, environment variables, output formats) sit next to it
+- `reference/`: generated command reference under `reference/commands/` and the generated API coverage page (`api-coverage.mdx`); hand-written reference pages (exit codes, environment variables, output formats) sit next to them
 - `tapes/`: rendered recordings (see "Videos")
 
 ## Components

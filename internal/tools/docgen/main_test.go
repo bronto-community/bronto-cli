@@ -33,3 +33,26 @@ func TestCheckIconsRejectsMissingAndStaleEntries(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckPageDescriptionsCoversTheCommandTree(t *testing.T) {
+	root := cli.NewRootCmd()
+	root.InitDefaultCompletionCmd()
+	if err := checkPageDescriptions(root); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCheckPageDescriptionsRejectsStaleEntries(t *testing.T) {
+	root := &cobra.Command{Use: "bronto"}
+	root.AddCommand(&cobra.Command{Use: "brand-new", Run: func(*cobra.Command, []string) {}})
+	err := checkPageDescriptions(root)
+	if err == nil {
+		t.Fatal("checkPageDescriptions accepted an entry for a missing command")
+	}
+	if want := `pageDescriptions: "search" is not a documented top-level command`; !strings.Contains(err.Error(), want) {
+		t.Errorf("error %q does not mention %q", err, want)
+	}
+	if strings.Contains(err.Error(), "brand-new") {
+		t.Errorf("a command without an entry should fall back to Short, got %q", err)
+	}
+}

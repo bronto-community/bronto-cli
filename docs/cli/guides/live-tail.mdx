@@ -1,6 +1,7 @@
 ---
-title: Live tail
-description: Follow new events as they arrive with bronto tail, filter them with regexes, and watch live aggregates.
+title: "Live tail logs with the bronto CLI"
+sidebarTitle: "Live tail"
+description: "Follow new log events as they arrive with bronto tail in the bronto CLI, include, exclude, or highlight lines with regexes, and watch live aggregates."
 icon: "activity"
 ---
 
@@ -119,4 +120,5 @@ On very high-volume streams, raise `--dedup-size` if you see repeated lines.
 
 For live tail concepts on the platform side, see
 [Log Search on docs.bronto.io](https://docs.bronto.io/Search-and-Visualize/Log-Search).
-`bronto tail` uses the [live tail API](https://docs.bronto.io/api-reference/live-tail/initiate-a-live-tail-job).
+`bronto tail` polls the [search API](https://docs.bronto.io/api-reference/search/execute-a-query);
+it doesn't use the live tail API.

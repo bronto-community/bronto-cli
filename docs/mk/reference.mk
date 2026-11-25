@@ -2,26 +2,31 @@
 # Included by the top-level Makefile via `-include docs/mk/*.mk`.
 
 DOCS_REFERENCE_DIR := docs/cli/reference/commands
+DOCS_API_COVERAGE := docs/cli/reference/api-coverage.mdx
+# Everything docs-reference writes.
+DOCS_GENERATED := $(DOCS_REFERENCE_DIR) $(DOCS_API_COVERAGE)
 
 .PHONY: docs-reference docs-reference-check docs-coverage
 
-# docs-reference regenerates docs/cli/reference/commands/ from
-# the cobra command tree (internal/tools/docgen). Commit the result.
+# docs-reference regenerates docs/cli/reference/commands/ from the cobra
+# command tree (internal/tools/docgen), and the API coverage page from
+# api/openapi.yaml and internal/cli/apicoverage.go. Commit the result.
 docs-reference:
-	go run ./internal/tools/docgen -out $(DOCS_REFERENCE_DIR) -links docs/reference-links.yaml
+	go run ./internal/tools/docgen -out $(DOCS_REFERENCE_DIR) -links docs/reference-links.yaml \
+		-spec api/openapi.yaml -api-coverage $(DOCS_API_COVERAGE)
 
 # docs-reference-check regenerates the reference and fails if the committed
 # pages differ (modified, deleted, or new untracked pages).
 docs-reference-check: docs-reference
-	@if ! git diff --quiet --exit-code -- $(DOCS_REFERENCE_DIR) || \
-	   [ -n "$$(git ls-files --others --exclude-standard -- $(DOCS_REFERENCE_DIR))" ]; then \
+	@if ! git diff --quiet --exit-code -- $(DOCS_GENERATED) || \
+	   [ -n "$$(git ls-files --others --exclude-standard -- $(DOCS_GENERATED))" ]; then \
 		echo ""; \
 		echo "docs-reference-check: the generated command reference is out of date."; \
-		echo "A command, flag, or help text changed without regenerating the docs."; \
-		echo "Fix: run 'make docs-reference' and commit $(DOCS_REFERENCE_DIR)/."; \
+		echo "A command, flag, help text, or the API spec changed without regenerating the docs."; \
+		echo "Fix: run 'make docs-reference' and commit $(DOCS_GENERATED)."; \
 		echo ""; \
-		git --no-pager diff --stat -- $(DOCS_REFERENCE_DIR); \
-		git ls-files --others --exclude-standard -- $(DOCS_REFERENCE_DIR) | sed 's/^/  untracked: /'; \
+		git --no-pager diff --stat -- $(DOCS_GENERATED); \
+		git ls-files --others --exclude-standard -- $(DOCS_GENERATED) | sed 's/^/  untracked: /'; \
 		exit 1; \
 	fi
 	@echo "docs-reference-check: reference is up to date"
