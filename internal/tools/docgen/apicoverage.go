@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -69,23 +70,41 @@ func apiCoveragePage(rep cli.APICoverageReport, root *cobra.Command) (string, er
 	var b bytes.Buffer
 	b.WriteString("---\n")
 	fmt.Fprintf(&b, "title: %s\n", yamlString("API coverage"))
-	fmt.Fprintf(&b, "description: %s\n", yamlString("Which bronto CLI command calls each Bronto API endpoint, and how to reach the rest with bronto api."))
+	fmt.Fprintf(&b, "description: %s\n", yamlString("Which bronto CLI commands cover each part of the Bronto API, and what the CLI doesn't support yet."))
 	fmt.Fprintf(&b, "icon: %s\n", yamlString(apiCoverageIcon))
 	b.WriteString("---\n\n" + apiCoverageNotice + "\n\n")
 
-	covered, example, group := 0, "", ""
+	// Per category, in spec order: its top-level commands, and the
+	// operations no command supports yet.
 	var groups []string
-	byGroup := map[string][]cli.APICoverageRow{}
+	commands := map[string][]string{}
+	missing := map[string][]cli.APICoverageRow{}
+	example := ""
 	for _, r := range rep.Operations {
-		if len(r.Commands) > 0 {
-			covered++
-		} else if example == "" && r.Method == "GET" && !strings.Contains(r.Path, "{") {
-			example = r.Key()
-		}
-		if _, ok := byGroup[r.Group]; !ok {
+		if _, seen := commands[r.Group]; !seen {
 			groups = append(groups, r.Group)
+			commands[r.Group] = nil
 		}
-		byGroup[r.Group] = append(byGroup[r.Group], r)
+		for _, c := range append(slices.Clone(r.Commands), r.Elsewhere...) {
+			top := strings.Join(strings.Fields(c)[:2], " ")
+			if !slices.Contains(commands[r.Group], top) {
+				commands[r.Group] = append(commands[r.Group], top)
+			}
+		}
+		if r.Missing != "" {
+			missing[r.Group] = append(missing[r.Group], r)
+			if example == "" && r.Method == "GET" && !strings.Contains(r.Path, "{") {
+				example = r.Key()
+			}
+		}
+	}
+
+	// The command named after the category goes first ("bronto monitors"
+	// before "bronto datasets", which lists a dataset's monitors).
+	for _, g := range groups {
+		slices.SortStableFunc(commands[g], func(a, b string) int {
+			return boolRank(a == "bronto "+g) - boolRank(b == "bronto "+g)
+		})
 	}
 
 	link := func(path string) (string, error) {
@@ -93,75 +112,53 @@ func apiCoveragePage(rep cli.APICoverageReport, root *cobra.Command) (string, er
 		if err != nil || c.CommandPath() != path {
 			return "", fmt.Errorf("API coverage names %q, which is not a command", path)
 		}
-		if group == "" && c.HasAvailableSubCommands() {
-			group = path
-		}
 		return fmt.Sprintf("[`%s`](%s)", path, pageURL(c)), nil
 	}
-	commandsCell := func(r cli.APICoverageRow) (string, error) {
-		if len(r.Commands) == 0 {
-			return "Use [`bronto api`](" + apiCommandURL + ")", nil
-		}
-		links := make([]string, len(r.Commands))
-		for i, c := range r.Commands {
-			l, err := link(c)
-			if err != nil {
-				return "", err
-			}
-			links[i] = l
-		}
-		return strings.Join(links, ", "), nil
-	}
-	notesCell := func(r cli.APICoverageRow) string {
-		var parts []string
-		if r.Deprecated {
-			parts = append(parts, "Deprecated in the spec.")
-		}
-		if r.Note != "" {
-			parts = append(parts, r.Note)
-		}
-		return strings.ReplaceAll(strings.Join(parts, " "), "|", `\|`)
-	}
 
-	var body bytes.Buffer
-	for _, g := range groups {
-		fmt.Fprintf(&body, "## %s\n\n| Endpoint | Command | Notes |\n| --- | --- | --- |\n", tagTitle(g))
-		for _, r := range byGroup[g] {
-			cmds, err := commandsCell(r)
-			if err != nil {
-				return "", err
-			}
-			fmt.Fprintf(&body, "| `%s` | %s | %s |\n", r.Key(), cmds, notesCell(r))
-		}
-		body.WriteString("\n")
-	}
-	if len(rep.OutsideSpec) > 0 {
-		body.WriteString("## Endpoints outside the spec\n\n")
-		body.WriteString("These commands call endpoints that the published OpenAPI spec doesn't describe, so the API reference has no page for them.\n\n")
-		body.WriteString("| Endpoint | Command |\n| --- | --- |\n")
-		for _, r := range rep.OutsideSpec {
-			cmds, err := commandsCell(r)
-			if err != nil {
-				return "", err
-			}
-			fmt.Fprintf(&body, "| `%s` | %s |\n", r.Key(), cmds)
-		}
-	}
-
-	total := len(rep.Operations)
-	b.WriteString("This page lists every operation of the [Bronto API](https://docs.bronto.io/api-reference/introduction) and the `bronto` command that calls it. ")
-	b.WriteString("It is generated from the OpenAPI spec the CLI is built against and from the CLI's own code, so it matches the binary built from the same commit.\n\n")
-	fmt.Fprintf(&b, "**%d of %d operations have a dedicated command.** ", covered, total)
-	fmt.Fprintf(&b, "The other %d, and every endpoint the API adds later, are reachable with [`bronto api`](%s), ", total-covered, apiCommandURL)
-	b.WriteString("which calls any endpoint with the same credentials, region, retries, and output formatting as the rest of the CLI:\n\n")
+	b.WriteString("The bronto CLI has commands for most of the [Bronto API](https://docs.bronto.io/api-reference/introduction). ")
+	b.WriteString("This page lists the commands for each part of the API, then what the CLI doesn't support yet. ")
+	fmt.Fprintf(&b, "You can call those endpoints with [`bronto api`](%s), which uses the same credentials and region as every other command", apiCommandURL)
 	if example != "" {
-		b.WriteString("```sh\nbronto api " + example + "\n```\n\n")
+		b.WriteString(":\n\n```sh\nbronto api " + example + "\n```\n\n")
+	} else {
+		b.WriteString(".\n\n")
 	}
-	b.WriteString("A command is listed when it exposes what the endpoint does. Endpoints a command only calls along the way, such as resolving a dataset name to its id, are not listed under it.")
-	if group != "" {
-		fmt.Fprintf(&b, " A command group such as `%s` calls the endpoint from its subcommands.", group)
+	b.WriteString("The page is generated from the OpenAPI spec the CLI is built against, so it matches the CLI released from the same commit.\n\n")
+
+	b.WriteString("## Commands by category\n\n| Category | Commands |\n| --- | --- |\n")
+	for _, g := range groups {
+		cell := "None yet"
+		if cmds := commands[g]; len(cmds) > 0 {
+			links := make([]string, len(cmds))
+			for i, c := range cmds {
+				l, err := link(c)
+				if err != nil {
+					return "", err
+				}
+				links[i] = l
+			}
+			cell = strings.Join(links, ", ")
+		}
+		fmt.Fprintf(&b, "| %s | %s |\n", tagTitle(g), cell)
 	}
-	b.WriteString("\n\n")
-	b.Write(body.Bytes())
+
+	b.WriteString("\n## Not supported yet\n\n| Category | What | Endpoint |\n| --- | --- | --- |\n")
+	for _, g := range groups {
+		for i, r := range missing[g] {
+			title := ""
+			if i == 0 {
+				title = tagTitle(g)
+			}
+			fmt.Fprintf(&b, "| %s | %s | `%s` |\n", title, strings.ReplaceAll(r.Missing, "|", `\|`), r.Key())
+		}
+	}
 	return b.String(), nil
+}
+
+// boolRank sorts true before false.
+func boolRank(b bool) int {
+	if b {
+		return 0
+	}
+	return 1
 }

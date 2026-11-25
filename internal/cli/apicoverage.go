@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -21,8 +20,9 @@ import (
 //     IDBase/{id} (registryOperations);
 //   - apiOperationCommands below, for the hand-written commands.
 //
-// Every spec operation must be covered by one of them or listed in
-// apiOperationsNotCovered, so a re-vendored spec with a new operation fails
+// Every spec operation must be covered by one of them, offered by a
+// command through another endpoint (apiOperationsElsewhere), or listed as
+// not supported yet (apiOperationsNotCovered), so a re-vendored spec with a new operation fails
 // APICoverage (and with it TestAPICoverage and `make docs-reference`) until
 // someone decides which command covers it. An endpoint a command calls only
 // as a helper (resolving a dataset or user name, reading ownership tags)
@@ -63,66 +63,71 @@ var apiOperationCommands = map[string][]string{
 	"POST /timeseries/search":                             {"bronto metrics query", "bronto dashboards validate"},
 }
 
-// apiOperationsNotCovered marks the spec operations no command exposes;
-// `bronto api` reaches them. The value is an optional short reason or
-// pointer, shown in the Notes column.
-var apiOperationsNotCovered = map[string]string{
-	"GET /users/all":                    "",
-	"GET /users/{userId}/export":        "",
-	"GET /users/{userId}/preferences":   "",
-	"PATCH /users/{userId}/preferences": "",
-	"GET /users/{userId}/access":        "",
-	"GET /groups/{groupId}/export":      "",
-	"GET /search":                       "Same query as `POST /search`, which `bronto search` uses.",
-	"GET /live-tail":                    "`bronto tail` polls `POST /search` instead.",
-	"POST /live-tail":                   "`bronto tail` polls `POST /search` instead.",
-	"POST /logs":                        "`bronto datasets create` uses `POST /datasets`.",
-	"GET /datasets":                     "`bronto datasets list` reads the same datasets from `GET /logs`.",
-	"POST /datasets/resolve":            "",
-	"POST /organizations/{orgId}/access/{entityType}/{entityId}":      "",
-	"DELETE /organizations/{orgId}/access/{entityType}/{entityId}":    "",
-	"GET /organizations/{orgId}/access":                               "",
-	"GET /organizations/{orgId}/access/{entityType}/{entityId}/check": "",
-	"POST /organizations/{orgId}/access/user/{userId}/switch":         "",
-	"GET /monitors/{monitorId}/export":                                "",
-	"PATCH /widgets/{id}":                                             "`bronto widgets update` replaces the widget with `PUT`.",
-	"GET /dashboards/{dashboardId}/export":                            "`bronto dashboards export` writes a manifest for `bronto dashboards apply` instead.",
-	"GET /integrations/slack/{slack_id}":                              "`bronto slack list` shows every Slack integration.",
-	"GET /integrations/slack/{slack_id}/export":                       "",
-	"GET /integrations/slack/workspaces":                              "",
-	"DELETE /integrations/slack/workspaces/{workspace_id}":            "",
-	"GET /integrations/webhooks/{webhook_id}":                         "`bronto webhooks list` shows every webhook.",
-	"GET /integrations/webhooks/{webhook_id}/export":                  "",
-	"GET /integrations/providers":                                     "",
-	"POST /integrations/providers":                                    "",
-	"GET /integrations/providers/{provider_id}":                       "",
-	"PUT /integrations/providers/{provider_id}":                       "",
-	"DELETE /integrations/providers/{provider_id}":                    "",
-	"GET /integrations/providers/{provider_id}/export":                "",
-	"GET /sso/idps/{idp_name}/export":                                 "",
-	"GET /sso/mappings/export":                                        "",
-	"GET /customer":                                                   "",
-	"PATCH /customer":                                                 "",
-	"PUT /tags":                                                       "`bronto dashboards apply` tags the dashboards it manages, but no command manages tags.",
-	"POST /tags":                                                      "`bronto dashboards apply` tags the dashboards it manages, but no command manages tags.",
-	"DELETE /tags":                                                    "`bronto dashboards apply` tags the dashboards it manages, but no command manages tags.",
-	"GET /tags/search":                                                "",
-	"GET /explain-error":                                              "",
-	"GET /widget-creation-assistant":                                  "",
-	"GET /policies/resources/{resource_type}/{resource_id}":           "",
-	"POST /patterns":                                                  "`bronto search --patterns` clusters events into patterns locally.",
+// apiOperationsElsewhere maps spec operations no command calls, but whose
+// capability a command offers through another endpoint, to those commands
+// (`bronto search` runs the same query as GET /search through POST
+// /search). The coverage page counts them as covered and lists the
+// commands under the operation's category.
+var apiOperationsElsewhere = map[string][]string{
+	"GET /search":                             {"bronto search"},
+	"GET /live-tail":                          {"bronto tail"},
+	"POST /live-tail":                         {"bronto tail"},
+	"POST /logs":                              {"bronto datasets create"},
+	"GET /datasets":                           {"bronto datasets list"},
+	"PATCH /widgets/{id}":                     {"bronto widgets update"},
+	"GET /dashboards/{dashboardId}/export":    {"bronto dashboards export"},
+	"GET /integrations/slack/{slack_id}":      {"bronto slack list"},
+	"GET /integrations/webhooks/{webhook_id}": {"bronto webhooks list"},
+	"POST /patterns":                          {"bronto search"},
 }
 
-// apiOperationNotes adds a note to covered operations.
-var apiOperationNotes = map[string]string{
-	"POST /monitors/{monitorId}/status": "Mutes until a time, or unmutes with `--unmute`.",
-	"POST /timeseries/search":           "`bronto dashboards validate` calls it with `--live`.",
+// apiOperationsNotCovered lists what the CLI doesn't support yet: spec
+// operations no command offers in any form. The value says in a few words
+// what a user can't do; the coverage page lists it under "Not supported
+// yet", and `bronto api` reaches the endpoint meanwhile.
+var apiOperationsNotCovered = map[string]string{
+	"GET /users/all":                                                  "List all users",
+	"GET /users/{userId}/export":                                      "Export a user",
+	"GET /users/{userId}/preferences":                                 "Read a user's preferences",
+	"PATCH /users/{userId}/preferences":                               "Change a user's preferences",
+	"GET /users/{userId}/access":                                      "List the organizations a user can access",
+	"GET /groups/{groupId}/export":                                    "Export a group",
+	"POST /datasets/resolve":                                          "Resolve datasets",
+	"POST /organizations/{orgId}/access/{entityType}/{entityId}":      "Grant a user or group access to an organization",
+	"DELETE /organizations/{orgId}/access/{entityType}/{entityId}":    "Revoke a user's or group's access to an organization",
+	"GET /organizations/{orgId}/access":                               "List who has access to an organization",
+	"GET /organizations/{orgId}/access/{entityType}/{entityId}/check": "Check whether a user or group has access to an organization",
+	"POST /organizations/{orgId}/access/user/{userId}/switch":         "Switch a user's active organization",
+	"GET /monitors/{monitorId}/export":                                "Export a monitor",
+	"GET /integrations/slack/{slack_id}/export":                       "Export a Slack integration",
+	"GET /integrations/slack/workspaces":                              "List Slack workspaces",
+	"DELETE /integrations/slack/workspaces/{workspace_id}":            "Remove a Slack workspace",
+	"GET /integrations/webhooks/{webhook_id}/export":                  "Export a webhook",
+	"GET /integrations/providers":                                     "List provider integrations, such as AWS DevOps Agent",
+	"POST /integrations/providers":                                    "Create a provider integration",
+	"GET /integrations/providers/{provider_id}":                       "Get a provider integration",
+	"PUT /integrations/providers/{provider_id}":                       "Update a provider integration",
+	"DELETE /integrations/providers/{provider_id}":                    "Delete a provider integration",
+	"GET /integrations/providers/{provider_id}/export":                "Export a provider integration",
+	"GET /sso/idps/{idp_name}/export":                                 "Export an SSO identity provider",
+	"GET /sso/mappings/export":                                        "Export SSO mappings",
+	"GET /customer":                                                   "Read the organization's customer record",
+	"PATCH /customer":                                                 "Update the organization's customer record",
+	"GET /tags/search":                                                "List tags",
+	"POST /tags":                                                      "Create a tag",
+	"PUT /tags":                                                       "Update a tag",
+	"DELETE /tags":                                                    "Delete a tag",
+	"GET /explain-error":                                              "Explain an error with AI",
+	"GET /widget-creation-assistant":                                  "Suggest a widget from a prompt with AI",
+	"GET /policies/resources/{resource_type}/{resource_id}":           "List the policies on a resource",
 }
 
 // apiOperationsOutsideSpec lists the endpoints hand-written commands call
 // that the vendored spec does not describe (see specLiveButUndocumented),
-// as "METHOD /path" with "{*}" for a parameter. Registry resources on such
-// endpoints are found mechanically.
+// as "METHOD /path" with "{*}" for a parameter. The coverage page doesn't
+// show them, but TestAPICoverageMatchesRequests checks them, and an entry
+// fails once the spec describes it. Registry resources on such endpoints
+// are in registryOperationsOutsideSpec.
 var apiOperationsOutsideSpec = map[string][]string{
 	"GET /usage":                              {"bronto usage"},
 	"POST /dashboards/templates/{*}/preview":  {"bronto dashboards templates show"},
@@ -174,19 +179,21 @@ type APICoverageRow struct {
 	SpecOperation
 	// Group is the spec tag the operation is listed under.
 	Group string
-	// Commands are full command paths ("bronto monitors list"); empty when
-	// only `bronto api` reaches the operation.
+	// Commands are full command paths ("bronto monitors list") that call
+	// the operation.
 	Commands []string
-	Note     string
+	// Elsewhere are commands that offer the operation's capability through
+	// another endpoint (apiOperationsElsewhere).
+	Elsewhere []string
+	// Missing says what the CLI doesn't support yet when no command offers
+	// the operation (apiOperationsNotCovered); empty otherwise.
+	Missing string
 }
 
 // APICoverageReport is the API coverage page's content.
 type APICoverageReport struct {
 	// Operations are the spec's operations in document order.
 	Operations []APICoverageRow
-	// OutsideSpec are endpoints commands call that the spec does not
-	// describe, sorted by path; Path uses "{id}" for a parameter.
-	OutsideSpec []APICoverageRow
 }
 
 var specMethods = []string{"get", "put", "post", "delete", "patch", "head", "options", "trace"}
@@ -299,12 +306,10 @@ func normalizeParams(p string) string {
 	}
 }
 
-// codeCommand matches a `bronto ...` code span in a note.
-var codeCommand = regexp.MustCompile("`(bronto(?: [a-z][a-z-]*)+)")
-
 // APICoverage maps every operation of the OpenAPI document spec to the
-// commands that expose it. It fails when an operation is neither covered
-// nor in apiOperationsNotCovered, when an entry names an operation the
+// commands that expose it. It fails when an operation is not covered and
+// in neither apiOperationsElsewhere nor apiOperationsNotCovered, when a
+// generated resource verb has no spec operation and no exception, when an entry names an operation the
 // spec doesn't have, or when an entry names a command that doesn't exist.
 func APICoverage(spec []byte) (APICoverageReport, error) {
 	ops, err := ParseSpecOperations(spec)
@@ -330,7 +335,6 @@ func APICoverage(spec []byte) (APICoverageReport, error) {
 	}
 
 	commands := map[string][]string{}
-	var outside []APICoverageRow
 	registryKeys := map[string]bool{}
 	for _, r := range registryOperations() {
 		registryKeys[r.Method+" "+r.Pattern] = true
@@ -345,10 +349,6 @@ func APICoverage(spec []byte) (APICoverageReport, error) {
 		if !excepted {
 			bad("%s (%s) is not an operation in the spec: fix the resource descriptor, or add it to registryOperationsOutsideSpec if the API serves it undocumented", r.Method+" "+r.Pattern, r.Command)
 		}
-		outside = append(outside, APICoverageRow{
-			SpecOperation: SpecOperation{Method: r.Method, Path: r.Pattern},
-			Commands:      []string{r.Command},
-		})
 	}
 	for key, cmds := range apiOperationCommands {
 		if !specKeys[key] {
@@ -361,26 +361,29 @@ func APICoverage(spec []byte) (APICoverageReport, error) {
 			}
 		}
 	}
-	for key, note := range apiOperationsNotCovered {
+	for key, cmds := range apiOperationsElsewhere {
+		if !specKeys[key] {
+			bad("apiOperationsElsewhere: %q is not an operation in the spec", key)
+		}
+		if len(commands[key]) > 0 {
+			bad("apiOperationsElsewhere: %q is called by %s; remove the entry", key, strings.Join(commands[key], ", "))
+		}
+		if _, nc := apiOperationsNotCovered[key]; nc {
+			bad("apiOperationsElsewhere: %q is also in apiOperationsNotCovered; keep one", key)
+		}
+		for _, c := range cmds {
+			checkCommand("apiOperationsElsewhere["+key+"]", c)
+		}
+	}
+	for key, missing := range apiOperationsNotCovered {
 		if !specKeys[key] {
 			bad("apiOperationsNotCovered: %q is not an operation in the spec", key)
 		}
 		if len(commands[key]) > 0 {
 			bad("apiOperationsNotCovered: %q is covered by %s; remove the entry", key, strings.Join(commands[key], ", "))
 		}
-		for _, m := range codeCommand.FindAllStringSubmatch(note, -1) {
-			checkCommand("apiOperationsNotCovered["+key+"]", m[1])
-		}
-	}
-	for key, note := range apiOperationNotes {
-		if !specKeys[key] {
-			bad("apiOperationNotes: %q is not an operation in the spec", key)
-		}
-		if _, nc := apiOperationsNotCovered[key]; nc {
-			bad("apiOperationNotes: %q is not covered; put the note in apiOperationsNotCovered", key)
-		}
-		for _, m := range codeCommand.FindAllStringSubmatch(note, -1) {
-			checkCommand("apiOperationNotes["+key+"]", m[1])
+		if strings.TrimSpace(missing) == "" {
+			bad("apiOperationsNotCovered: %q needs a short description of what isn't supported", key)
 		}
 	}
 	for key := range registryOperationsOutsideSpec {
@@ -396,56 +399,26 @@ func APICoverage(spec []byte) (APICoverageReport, error) {
 		for _, c := range cmds {
 			checkCommand("apiOperationsOutsideSpec["+key+"]", c)
 		}
-		outside = append(outside, APICoverageRow{
-			SpecOperation: SpecOperation{Method: method, Path: pattern},
-			Commands:      cmds,
-		})
 	}
 
 	var rep APICoverageReport
 	for _, op := range ops {
 		key := op.Key()
-		cmds := commands[key]
-		note, notCovered := apiOperationsNotCovered[key]
-		if len(cmds) == 0 && !notCovered {
-			bad("%s has no command: add it to apiOperationCommands, or to apiOperationsNotCovered if only `bronto api` reaches it", key)
+		row := APICoverageRow{
+			SpecOperation: op, Group: primaryTag(op), Commands: commands[key],
+			Elsewhere: apiOperationsElsewhere[key], Missing: apiOperationsNotCovered[key],
 		}
-		if n, ok := apiOperationNotes[key]; ok {
-			note = n
+		if len(row.Commands) == 0 && len(row.Elsewhere) == 0 && row.Missing == "" {
+			bad("%s has no command: add it to apiOperationCommands, to apiOperationsElsewhere if a command offers it through another endpoint, or to apiOperationsNotCovered if the CLI doesn't support it yet", key)
 		}
-		rep.Operations = append(rep.Operations, APICoverageRow{
-			SpecOperation: op, Group: primaryTag(op), Commands: cmds, Note: note,
-		})
+		rep.Operations = append(rep.Operations, row)
 	}
-
-	// One row per endpoint outside the spec, its commands merged.
-	merged := map[string]int{}
-	for _, r := range outside {
-		r.Path = strings.ReplaceAll(r.Path, "{*}", "{id}")
-		if i, ok := merged[r.Key()]; ok {
-			rep.OutsideSpec[i].Commands = append(rep.OutsideSpec[i].Commands, r.Commands...)
-			continue
-		}
-		merged[r.Key()] = len(rep.OutsideSpec)
-		rep.OutsideSpec = append(rep.OutsideSpec, r)
-	}
-	slices.SortFunc(rep.OutsideSpec, func(a, b APICoverageRow) int {
-		if c := strings.Compare(a.Path, b.Path); c != 0 {
-			return c
-		}
-		return methodRank(a.Method) - methodRank(b.Method)
-	})
 
 	if len(problems) > 0 {
 		slices.Sort(problems)
 		return rep, fmt.Errorf("API coverage map (internal/cli/apicoverage.go) is out of date:\n  %s", strings.Join(problems, "\n  "))
 	}
 	return rep, nil
-}
-
-// methodRank orders methods as the spec usually does.
-func methodRank(m string) int {
-	return slices.Index([]string{"GET", "POST", "PUT", "PATCH", "DELETE"}, m)
 }
 
 // primaryTag picks the tag an operation is grouped under: the one named
