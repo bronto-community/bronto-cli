@@ -106,24 +106,31 @@ func TestTransportRetryExhaustionReturnsFinalResponse(t *testing.T) {
 }
 
 func TestTransportCanceledContextAbortsRetryWaitPromptly(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Cancel once the first attempt has been answered, so the cancellation
+	// always lands in the 30s retry wait. A fixed delay raced the first
+	// request on slow runners (calls = 0).
 	var calls atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
 		w.Header().Set("Retry-After", "30")
 		w.WriteHeader(http.StatusTooManyRequests)
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+		time.AfterFunc(20*time.Millisecond, cancel)
 	}))
 	defer srv.Close()
 
 	tr := &Transport{APIKey: "k", UserAgent: "t", MaxRetries: 2}
 	c := &http.Client{Transport: tr}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	time.AfterFunc(20*time.Millisecond, cancel)
 
 	start := time.Now()
 	_, err = c.Do(req)
