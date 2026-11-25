@@ -46,7 +46,7 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 | Encryption keys | [`bronto encryption-keys`](/cli/reference/commands/encryption-keys) |
 | Metrics | [`bronto metrics`](/cli/reference/commands/metrics) |
 | Time series | [`bronto metrics`](/cli/reference/commands/metrics), [`bronto widgets`](/cli/reference/commands/widgets), [`bronto dashboards`](/cli/reference/commands/dashboards) |
-| Patterns | [`bronto search`](/cli/reference/commands/search) |
+| Patterns | None yet |
 
 ## Not supported yet
 
@@ -60,11 +60,13 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 | Groups | Export a group | `GET /groups/{groupId}/export` |
 | Datasets | Resolve datasets | `POST /datasets/resolve` |
 | Monitors | Export a monitor | `GET /monitors/{monitorId}/export` |
+| Dashboards | Export a dashboard as Terraform | `GET /dashboards/{dashboardId}/export` |
 | Access | Grant a user or group access to an organization | `POST /organizations/{orgId}/access/{entityType}/{entityId}` |
 |  | Revoke a user's or group's access to an organization | `DELETE /organizations/{orgId}/access/{entityType}/{entityId}` |
 |  | List who has access to an organization | `GET /organizations/{orgId}/access` |
 |  | Check whether a user or group has access to an organization | `GET /organizations/{orgId}/access/{entityType}/{entityId}/check` |
 |  | Switch a user's active organization | `POST /organizations/{orgId}/access/user/{userId}/switch` |
+| Widgets | Change a widget's layout | `PATCH /widgets/{id}` |
 | Integrations | Export a Slack integration | `GET /integrations/slack/{slack_id}/export` |
 |  | List Slack workspaces | `GET /integrations/slack/workspaces` |
 |  | Remove a Slack workspace | `DELETE /integrations/slack/workspaces/{workspace_id}` |
@@ -86,3 +88,4 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 | AI | Explain an error with AI | `GET /explain-error` |
 |  | Suggest a widget from a prompt with AI | `GET /widget-creation-assistant` |
 | Policies | List the policies on a resource | `GET /policies/resources/{resource_type}/{resource_id}` |
+| Patterns | Get server-side log patterns and their templates | `POST /patterns` |
