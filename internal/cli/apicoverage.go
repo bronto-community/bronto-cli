@@ -129,6 +129,34 @@ var apiOperationsOutsideSpec = map[string][]string{
 	"POST /dashboards/templates/{*}/instance": {"bronto dashboards create"},
 }
 
+// registryOperationsOutsideSpec lists the generated resource verbs whose
+// endpoint the vendored spec does not describe, as "METHOD /path" with
+// "{*}" for a parameter. Every other registry verb must match a spec
+// operation, so a verb the spec drops (a method removed while its path
+// stays) fails APICoverage instead of moving to the outside-spec table.
+var registryOperationsOutsideSpec = map[string]bool{
+	"GET /dashboards/templates":       true,
+	"GET /dashboards/templates/{*}":   true,
+	"GET /logs/{*}":                   true,
+	"PUT /logs/{*}":                   true,
+	"DELETE /logs/{*}":                true,
+	"GET /metrics/definitions":        true,
+	"POST /metrics/definitions":       true,
+	"GET /metrics/definitions/{*}":    true,
+	"DELETE /metrics/definitions/{*}": true,
+	"GET /parsers":                    true,
+	"POST /parsers":                   true,
+	"PATCH /parsers/{*}":              true,
+	"DELETE /parsers/{*}":             true,
+	"GET /saved-searches":             true,
+	"POST /saved-searches":            true,
+	"GET /saved-searches/{*}":         true,
+	"PATCH /saved-searches/{*}":       true,
+	"DELETE /saved-searches/{*}":      true,
+	"GET /widgets/templates":          true,
+	"GET /widgets/templates/{*}":      true,
+}
+
 // SpecOperation is one operation of the OpenAPI document.
 type SpecOperation struct {
 	Method     string // upper case, e.g. "GET"
@@ -303,10 +331,19 @@ func APICoverage(spec []byte) (APICoverageReport, error) {
 
 	commands := map[string][]string{}
 	var outside []APICoverageRow
+	registryKeys := map[string]bool{}
 	for _, r := range registryOperations() {
+		registryKeys[r.Method+" "+r.Pattern] = true
+		excepted := registryOperationsOutsideSpec[r.Method+" "+r.Pattern]
 		if key, ok := byNorm[r.Method+" "+normalizeParams(r.Pattern)]; ok {
+			if excepted {
+				bad("registryOperationsOutsideSpec: %q is the spec operation %q; remove the entry", r.Method+" "+r.Pattern, key)
+			}
 			commands[key] = append(commands[key], r.Command)
 			continue
+		}
+		if !excepted {
+			bad("%s (%s) is not an operation in the spec: fix the resource descriptor, or add it to registryOperationsOutsideSpec if the API serves it undocumented", r.Method+" "+r.Pattern, r.Command)
 		}
 		outside = append(outside, APICoverageRow{
 			SpecOperation: SpecOperation{Method: r.Method, Path: r.Pattern},
@@ -344,6 +381,11 @@ func APICoverage(spec []byte) (APICoverageReport, error) {
 		}
 		for _, m := range codeCommand.FindAllStringSubmatch(note, -1) {
 			checkCommand("apiOperationNotes["+key+"]", m[1])
+		}
+	}
+	for key := range registryOperationsOutsideSpec {
+		if !registryKeys[key] {
+			bad("registryOperationsOutsideSpec: %q is not a generated resource verb; remove the entry", key)
 		}
 	}
 	for key, cmds := range apiOperationsOutsideSpec {

@@ -77,6 +77,38 @@ func TestAPICoverageRejectsGaps(t *testing.T) {
 	}
 }
 
+// TestAPICoverageRejectsDroppedRegistryMethod checks that a registry verb
+// whose method the spec drops, while the path stays, fails the map
+// instead of moving to the outside-spec table.
+func TestAPICoverageRejectsDroppedRegistryMethod(t *testing.T) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(readSpec(t), &doc); err != nil {
+		t.Fatal(err)
+	}
+	user := mappingValue(mappingValue(doc.Content[0], "paths"), "/users/{userId}")
+	if user == nil || mappingValue(user, "delete") == nil {
+		t.Fatal("spec has no DELETE /users/{userId} to drop")
+	}
+	for i := 0; i+1 < len(user.Content); i += 2 {
+		if user.Content[i].Value == "delete" {
+			user.Content = slices.Delete(user.Content, i, i+2)
+			break
+		}
+	}
+	data, err := yaml.Marshal(&doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = APICoverage(data)
+	if err == nil {
+		t.Fatal("APICoverage accepted a spec without DELETE /users/{userId}, which bronto users delete calls")
+	}
+	if want := "DELETE /users/{*} (bronto users delete) is not an operation in the spec"; !strings.Contains(err.Error(), want) {
+		t.Errorf("error does not mention %q:\n%v", want, err)
+	}
+}
+
 // TestAPICoverageMatchesRequests checks the hand-maintained entries
 // against what the commands really do: each command listed for an
 // operation must request it when driven by its endpointProbes (a group
