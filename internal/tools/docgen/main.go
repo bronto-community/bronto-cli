@@ -500,7 +500,7 @@ func (g *gen) indexPage() string {
 	b.WriteString("This reference is generated from the `bronto` command tree, so it always matches the binary built from the same commit. ")
 	b.WriteString("Every command also accepts the [global flags](" + urlBase + globalFlagsSlug + "). ")
 	b.WriteString("Run `bronto <command> --help` for the same information in your terminal. ")
-	b.WriteString("[API coverage](/cli/reference/api-coverage) maps each Bronto API endpoint to the command that calls it.\n\n")
+	b.WriteString("[API coverage](/cli/reference/api-coverage) lists the commands for each part of the Bronto API and what the CLI doesn't support yet.\n\n")
 	b.WriteString("| Command | Description |\n| --- | --- |\n")
 	for _, c := range topLevel(g.root) {
 		fmt.Fprintf(&b, "| [`%s`](%s) | %s |\n", c.CommandPath(), pageURL(c), cell(g.norm.s(c.Short)))
