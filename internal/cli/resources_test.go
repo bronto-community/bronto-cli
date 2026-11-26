@@ -890,6 +890,51 @@ func TestAPIKeysCreateNotice(t *testing.T) {
 	}
 }
 
+// The API accepts any role name on an API key and returns a key without
+// the unknown ones (#263), so create and update refuse them before the
+// request is sent.
+func TestAPIKeysRejectUnknownRoles(t *testing.T) {
+	const id = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000b1"
+	noContact := func(_ http.ResponseWriter, r *http.Request) {
+		t.Errorf("server must not be contacted: %s %s", r.Method, r.URL.Path)
+	}
+	for name, args := range map[string][]string{
+		"create":        {"api-keys", "create", "-f", "name=n", "-f", `roles=["IngestionApi","SearchAPI"]`},
+		"create input":  {"api-keys", "create", "--input", "-"},
+		"update":        {"api-keys", "update", id, "-f", `roles=["SearchAPI"]`},
+		"create dryrun": {"api-keys", "create", "-f", "name=n", "-f", `roles=["SearchAPI"]`, "--dry-run"},
+	} {
+		_, _, err := runResource(t, noContact, `{"name":"n","roles":["SearchAPI"]}`, args...)
+		var ce *clierr.Error
+		if !errors.As(err, &ce) || ce.Code != "usage_invalid_role" || ce.ExitCode() != 2 {
+			t.Fatalf("%s: err = %v, want usage_invalid_role (exit 2)", name, err)
+		}
+		if !strings.Contains(ce.Message, `"SearchAPI"`) || !strings.Contains(ce.Hint, `Did you mean "SearchApi"?`) {
+			t.Errorf("%s: message = %q, hint = %q", name, ce.Message, ce.Hint)
+		}
+		for _, role := range apiKeyRoles {
+			if !strings.Contains(ce.Hint, role) {
+				t.Errorf("%s: hint %q does not name %s", name, ce.Hint, role)
+			}
+		}
+	}
+
+	// Known roles, and a custom role's id, go through unchanged.
+	for _, roles := range []string{`["IngestionApi","SearchApi","AdminApi"]`, `["` + id + `"]`} {
+		var sent map[string]any
+		_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+			_ = json.NewDecoder(r.Body).Decode(&sent)
+			_, _ = w.Write([]byte(`{"id":"k1"}`))
+		}, "", "api-keys", "create", "-f", "name=n", "-f", "roles="+roles, "-o", "json")
+		if err != nil {
+			t.Fatalf("roles %s: %v", roles, err)
+		}
+		if got, _ := json.Marshal(sent["roles"]); string(got) != roles {
+			t.Errorf("sent roles = %s, want %s", got, roles)
+		}
+	}
+}
+
 // dashboards list rows carry an empty widget_ids live even when widgets
 // are attached, so the list view has no widget count column.
 func TestDashboardsListHasNoWidgetCount(t *testing.T) {

@@ -22,6 +22,7 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/bronto-community/bronto-cli/internal/output"
+	"github.com/bronto-community/bronto-cli/internal/query"
 )
 
 // resourceDesc describes one uniform Bronto management resource: the
@@ -250,6 +251,7 @@ var resourceRegistry = []resourceDesc{
 		// response is the one place the full <id>.<secret> key appears.
 		CreateNotice: "Store this API key now: its secret part is shown only once, at creation.",
 		CreateFields: []string{"name=<name>", `roles=["IngestionApi"]`},
+		CheckBody:    checkAPIKeyBody,
 		Columns:      []string{"name", "api_key", "created", "id"}},
 	{Name: "datasets", Base: "/logs", CreatePath: "/datasets", UpdateMethod: http.MethodPut,
 		IDKey:        "log_id",
@@ -974,6 +976,30 @@ func checkBody(desc resourceDesc, verb string, body []byte) error {
 	var obj map[string]any
 	_ = json.Unmarshal(body, &obj)
 	return desc.CheckBody(verb, obj)
+}
+
+// apiKeyRoles are the system role ids an API key can carry. The vendored
+// spec types an API key's roles loosely (no enum); these are the *Api ids
+// in its system role list (grantAccess's roles pattern).
+var apiKeyRoles = []string{"IngestionApi", "SearchApi", "AdminApi", "AgentReadOnlyApi"}
+
+// checkAPIKeyBody refuses role names the API doesn't know: it accepts and
+// echoes any name, and the key then lacks the role with nothing pointing
+// at the typo (#263). A UUID passes, as the id of a custom role.
+func checkAPIKeyBody(_ string, obj map[string]any) error {
+	roles, _ := obj["roles"].([]any) // any other shape: let the API report it
+	for _, r := range roles {
+		role, ok := r.(string)
+		if !ok || slices.Contains(apiKeyRoles, role) || uuidRe.MatchString(role) {
+			continue
+		}
+		hint := "Valid roles: " + strings.Join(apiKeyRoles, ", ") + `. Example: -f 'roles=["IngestionApi","SearchApi"]'`
+		if s := query.Suggest(role, apiKeyRoles); s != "" {
+			hint = fmt.Sprintf("Did you mean %q? %s", s, hint)
+		}
+		return clierr.New("usage_invalid_role", fmt.Sprintf("unknown API key role %q", role)).WithHint(hint)
+	}
+	return nil
 }
 
 // checkDashboardBody refuses dashboard bodies the API mishandles: create

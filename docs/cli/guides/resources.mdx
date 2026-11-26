@@ -264,6 +264,11 @@ full key (`<id>.<secret>`), including the JSON it prints when piped, and the CLI
 you on stderr to store it. Bronto never returns the secret part again: `list` shows only
 the key's id part.
 
+`create` and `update` check the `roles` you pass before sending anything. A name other
+than `IngestionApi`, `SearchApi`, `AdminApi`, or `AgentReadOnlyApi` fails with
+`usage_invalid_role` (exit code 2), because the API would accept it and return a key
+without that role. A custom role's id passes.
+
 `bronto api-keys list` masks that id part in every output format, JSON included, so it
 doesn't leak into CI logs. Pass `--reveal` to see it in full.
 
