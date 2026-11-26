@@ -10,7 +10,8 @@ icon: "tags"
 A tag is a name=value pair on one entity; a name is unique per entity.
 The write verbs take the entity's type (api\_key, dashboard, integration, log, monitor, saved\_search, slo, user, widget),
 then the entity by id, or by name where the CLI has a command for that
-type (log is a dataset), then the tag.
+type (log is a dataset), then the tag. Entity types are accepted in any
+case.
 
 ```sh
 bronto tags <command> [flags]
@@ -67,7 +68,7 @@ bronto tags delete dashboard "Checkout overview" team --yes
 
 ## bronto tags list
 
-List tag names, their values, and how many entities of each type carry them
+Lists the tags in use. The table's type and entities columns are derived from the API's rows: with -o json, --fields selects the API's own keys (name, value), and the entity ids are under value.
 
 ```sh
 bronto tags list [flags]

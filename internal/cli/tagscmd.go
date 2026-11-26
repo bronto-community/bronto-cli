@@ -31,12 +31,16 @@ func tagEntityTypes() string {
 	return strings.Join(types, ", ")
 }
 
-func checkTagEntityType(typ string) error {
-	if _, ok := tagEntityKinds[typ]; !ok {
-		return clierr.New("usage_invalid_args", fmt.Sprintf("%q is not a taggable entity type", typ)).
+// tagEntityType lower-cases an entity type given on the command line (the
+// API answers DASHBOARD and takes dashboard) and refuses one the API
+// doesn't have.
+func tagEntityType(typ string) (string, error) {
+	lower := strings.ToLower(typ)
+	if _, ok := tagEntityKinds[lower]; !ok {
+		return "", clierr.New("usage_invalid_args", fmt.Sprintf("%q is not a taggable entity type", typ)).
 			WithHint("Entity types: " + tagEntityTypes() + ".")
 	}
-	return nil
+	return lower, nil
 }
 
 // tagEntity is the {"type","id"} entity of a tag request, with a name
@@ -62,16 +66,25 @@ func newTagsCmd() *cobra.Command {
 		Long: `A tag is a name=value pair on one entity; a name is unique per entity.
 The write verbs take the entity's type (` + tagEntityTypes() + `),
 then the entity by id, or by name where the CLI has a command for that
-type (log is a dataset), then the tag.`,
+type (log is a dataset), then the tag. Entity types are accepted in any
+case.`,
 	}
 
 	var name, value, entityType string
 	list := &cobra.Command{
-		Use:     "list",
-		Short:   "List tag names, their values, and how many entities of each type carry them",
+		Use:   "list",
+		Short: "List tag names, their values, and how many entities of each type carry them",
+		Long: "Lists the tags in use. The table's type and entities columns are derived from the API's rows: " +
+			"with -o json, --fields selects the API's own keys (name, value), and the entity ids are under value.",
 		Example: "  bronto tags list\n  bronto tags list --name team --entity-type dashboard",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if entityType != "" {
+				var err error
+				if entityType, err = tagEntityType(entityType); err != nil {
+					return err
+				}
+			}
 			q := url.Values{}
 			for k, v := range map[string]string{"name": name, "value": value, "entity_type": entityType} {
 				if v != "" {
@@ -113,7 +126,8 @@ type (log is a dataset), then the tag.`,
 			Example: "  bronto tags " + v.verb + " dashboard \"Checkout overview\" team=checkout",
 			Args:    cobra.ExactArgs(3),
 			RunE: func(cmd *cobra.Command, args []string) error {
-				if err := checkTagEntityType(args[0]); err != nil {
+				typ, err := tagEntityType(args[0])
+				if err != nil {
 					return err
 				}
 				name, value, ok := strings.Cut(args[2], "=")
@@ -124,13 +138,13 @@ type (log is a dataset), then the tag.`,
 				if err != nil {
 					return err
 				}
-				entity, err := tagEntity(cmd.Context(), app, args[0], args[1])
+				entity, err := tagEntity(cmd.Context(), app, typ, args[1])
 				if err != nil {
 					return err
 				}
 				return sendWrite(cmd.Context(), app, v.method, "/tags",
 					map[string]any{"name": name, "value": value, "entity": entity},
-					fmt.Sprintf("%s tag %s on %s %s.", v.done, args[2], args[0], args[1]))
+					fmt.Sprintf("%s tag %s on %s %s.", v.done, args[2], typ, args[1]))
 			},
 		})
 	}
@@ -142,23 +156,24 @@ type (log is a dataset), then the tag.`,
 		Example: "  bronto tags delete dashboard \"Checkout overview\" team --yes",
 		Args:    cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := checkTagEntityType(args[0]); err != nil {
+			typ, err := tagEntityType(args[0])
+			if err != nil {
 				return err
 			}
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
 			}
-			entity, err := tagEntity(cmd.Context(), app, args[0], args[1])
+			entity, err := tagEntity(cmd.Context(), app, typ, args[1])
 			if err != nil {
 				return err
 			}
-			if ok, err := confirmOrAbort(cmd, app, fmt.Sprintf("Delete tag %s from %s %s?", args[2], args[0], args[1]), yes); !ok {
+			if ok, err := confirmOrAbort(cmd, app, fmt.Sprintf("Delete tag %s from %s %s?", args[2], typ, args[1]), yes); !ok {
 				return err
 			}
 			return sendWrite(cmd.Context(), app, http.MethodDelete, "/tags",
 				map[string]any{"name": args[2], "entity": entity},
-				fmt.Sprintf("Deleted tag %s from %s %s.", args[2], args[0], args[1]))
+				fmt.Sprintf("Deleted tag %s from %s %s.", args[2], typ, args[1]))
 		},
 	}
 	del.Flags().BoolVar(&yes, "yes", false, "skip the confirmation prompt")
@@ -170,7 +185,9 @@ type (log is a dataset), then the tag.`,
 // per name, value and entity type, with the number of entities carrying
 // it. Live a row is {name, value: [{value, types: [{type, entities:
 // [{id}]}]}]}; the spec documents the array as "values" and the types as
-// plain strings, so both are read.
+// plain strings, so both are read. A tag without values, or a value
+// without types, keeps a row with those cells empty, and the type prints
+// lower case, the way the write verbs and --entity-type take it.
 func tagListRows(rows []map[string]any, _ output.Format) []map[string]any {
 	var out []map[string]any
 	for _, row := range rows {
@@ -178,14 +195,23 @@ func tagListRows(rows []map[string]any, _ output.Format) []map[string]any {
 		if values == nil {
 			values, _ = row["values"].([]any)
 		}
+		if len(values) == 0 {
+			out = append(out, map[string]any{"name": row["name"]})
+		}
 		for _, v := range values {
 			m, _ := v.(map[string]any)
 			types, _ := m["types"].([]any)
+			if len(types) == 0 {
+				out = append(out, map[string]any{"name": row["name"], "value": m["value"]})
+			}
 			for _, t := range types {
 				r := map[string]any{"name": row["name"], "value": m["value"], "type": t}
 				if tm, ok := t.(map[string]any); ok {
 					entities, _ := tm["entities"].([]any)
 					r["type"], r["entities"] = tm["type"], len(entities)
+				}
+				if s, ok := r["type"].(string); ok {
+					r["type"] = strings.ToLower(s)
 				}
 				out = append(out, r)
 			}
