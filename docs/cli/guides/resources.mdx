@@ -385,6 +385,6 @@ name and the billing emails. The API documents both fields as required, so send 
 you keep too:
 
 ```sh
-bronto org show --jq .customer_name
+bronto org show -o json --jq .customer_name
 bronto org update -f customer_name="Acme Inc." -f 'billing_emails=["billing@example.com"]'
 ```

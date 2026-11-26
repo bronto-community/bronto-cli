@@ -14,7 +14,7 @@ func newOrgCmd() *cobra.Command {
 		Use:     "show",
 		Short:   "Show the organization record",
 		Long:    "Prints the organization's customer record: its ids, name, region, billing emails and the organizations of the same customer.",
-		Example: "  bronto org show\n  bronto org show --jq .customer_name",
+		Example: "  bronto org show\n  bronto org show -o json --jq .customer_name",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			app, err := NewApp(cmd)
@@ -42,7 +42,7 @@ func newOrgCmd() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return sendWrite(cmd.Context(), app, http.MethodPatch, "/customer", b, "Updated the organization record.")
+		return sendWrite(cmd.Context(), app, http.MethodPatch, "/customer", b, "Updated the organization record.", "/customer")
 	}
 	cmd.AddCommand(update)
 	return cmd

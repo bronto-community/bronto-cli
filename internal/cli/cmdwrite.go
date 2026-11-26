@@ -6,9 +6,11 @@ import (
 )
 
 // sendWrite sends a mutating request and prints what comes back (the
-// updated object, or the --dry-run plan); a 204 is confirmed on stderr
-// with done.
-func sendWrite(ctx context.Context, app *App, method, path string, body any, done string) error {
+// updated object, or the --dry-run plan). A response without a body is
+// confirmed on stderr with done; when the caller names the path of the
+// object it changed (fetch), -o json/jsonl and --jq print that object
+// instead, as the generated update verb does.
+func sendWrite(ctx context.Context, app *App, method, path string, body any, done string, fetch ...string) error {
 	var raw []byte
 	switch b := body.(type) {
 	case nil:
@@ -25,6 +27,9 @@ func sendWrite(ctx context.Context, app *App, method, path string, body any, don
 		return err
 	}
 	if payload == nil {
+		if len(fetch) > 0 && wantsJSONResult(app) {
+			return printFetched(ctx, app, fetch[0])
+		}
 		app.Notef("%s\n", done)
 		return nil
 	}
