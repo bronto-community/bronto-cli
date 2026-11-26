@@ -3,6 +3,7 @@ package cli
 import (
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/bronto-community/bronto-cli/internal/bronto"
 	"github.com/bronto-community/bronto-cli/internal/clierr"
@@ -62,6 +63,11 @@ window. Prints the dataset ids and the keys used to resolve them.`,
 				return clierr.New("usage_invalid_flags", "pass --from-expr (the datasets to choose from)").
 					WithHint("e.g. --from-expr \"environment = 'production'\"; --where narrows it further.")
 			}
+			// The spec allows only EXACT or IEXACT with SYNONYM expansion.
+			if m := strings.ToUpper(matchType); strings.EqualFold(expandType, "SYNONYM") && (m == "SUBSTRING" || m == "ISUBSTRING") {
+				return clierr.New("usage_invalid_flags", "--expand-type SYNONYM works only with --match-type EXACT or IEXACT").
+					WithHint("Drop --expand-type, or use --match-type EXACT or IEXACT.")
+			}
 			spec, err := timerange.Resolve(since, "", "", nil)
 			if err != nil {
 				return err
@@ -117,6 +123,9 @@ stderr; with -o json or --jq it prints the updated widget.`,
 		if err != nil {
 			return err
 		}
+		if err := checkWidgetPatchBody(b); err != nil {
+			return err
+		}
 		app, err := NewApp(cmd)
 		if err != nil {
 			return err
@@ -129,4 +138,35 @@ stderr; with -o json or --jq it prints the updated widget.`,
 		return sendWrite(cmd.Context(), app, http.MethodPatch, path, b, "Updated widget "+args[0]+".", path)
 	}
 	return cmd
+}
+
+// checkWidgetPatchBody refuses a widgets patch body that carries more than
+// one of the parts the API takes per call (a oneOf: name, aux, layout, or
+// display and/or sort), or none of them.
+func checkWidgetPatchBody(body []byte) error {
+	var obj map[string]any
+	if bronto.DecodeJSON(body, &obj) != nil || obj == nil {
+		return nil // not a JSON object: let the API report it
+	}
+	var parts []string
+	for _, k := range []string{"name", "aux", "layout"} {
+		if _, ok := obj[k]; ok {
+			parts = append(parts, k)
+		}
+	}
+	_, hasDisplay := obj["display"]
+	_, hasSort := obj["sort"]
+	if hasDisplay || hasSort {
+		parts = append(parts, "display/sort")
+	}
+	switch {
+	case len(parts) > 1:
+		return clierr.New("usage_conflicting_fields",
+			"widgets patch takes one part per call, not "+strings.Join(parts, " and ")).
+			WithHint("Run one patch per part: name, aux, layout, or display and/or sort.")
+	case len(parts) == 0:
+		return clierr.New("usage_missing_fields", "widgets patch needs one of name, aux, layout, display or sort").
+			WithHint("Example: bronto widgets patch <widget> -f name=<name>")
+	}
+	return nil
 }

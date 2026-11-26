@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"net/http"
 	"strings"
 	"testing"
@@ -53,5 +54,32 @@ func TestWidgetsPatchPrintsTheWidgetAsJSON(t *testing.T) {
 	}
 	if want := "PATCH /widgets/" + tDash + " GET /widgets/" + tDash; strings.Join(got, " ") != want {
 		t.Fatalf("requests %v, want %s", got, want)
+	}
+}
+
+// TestPatchAndResolveRejectInvalidCombinations: bodies and flag pairs the
+// API's contract excludes are usage errors before any request.
+func TestPatchAndResolveRejectInvalidCombinations(t *testing.T) {
+	for _, args := range [][]string{
+		{"widgets", "patch", tDash, "-f", "name=x", "-f", `display={"stacked_bars":true}`},
+		{"widgets", "patch", tDash, "-f", "name=x", "-f", `aux={"mode":"sql"}`},
+		{"widgets", "patch", tDash, "-f", "title=x"},
+		{"datasets", "resolve", "--from-expr", "a = 'b'", "--expand-type", "SYNONYM", "--match-type", "SUBSTRING"},
+		{"datasets", "resolve", "--from-expr", "a = 'b'", "--expand-type", "synonym", "--match-type", "isubstring"},
+	} {
+		var got []string
+		_, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+			got = append(got, r.Method+" "+r.URL.Path)
+			_, _ = w.Write([]byte(`{}`))
+		}, "", args...)
+		if clierr.ExitCode(err) != 2 || len(got) != 0 {
+			t.Errorf("%v: err %v (exit %d), requests %v; want a usage error and no request", args, err, clierr.ExitCode(err), got)
+		}
+	}
+	// display and sort together are one part.
+	_, _, err := runResource(t, func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) }, "",
+		"widgets", "patch", tDash, "-f", `display={"stacked_bars":true}`, "-f", `sort={"direction":"asc"}`)
+	if err != nil {
+		t.Errorf("display+sort: %v", err)
 	}
 }
