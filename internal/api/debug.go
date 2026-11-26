@@ -51,7 +51,7 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	_, _ = fmt.Fprintf(d.W, "* %s %s\n", req.Method, debugURL(req.URL))
 	keyAPI := isAPIKeysPath(req.URL.Path)
 	if len(reqBody) > 0 {
-		_, _ = fmt.Fprintf(d.W, "* > %s\n", termsafe.Text(RedactBody(truncateBody(reqBody), keyAPI)))
+		_, _ = fmt.Fprintf(d.W, "* > %s\n", termsafe.Text(debugBody(reqBody, keyAPI)))
 	}
 	if err != nil {
 		_, _ = fmt.Fprintf(d.W, "* ! %v (%s)\n", err, elapsed)
@@ -67,7 +67,7 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			io.Closer
 		}{io.MultiReader(bytes.NewReader(peek), rest), rest}
 		if len(peek) > 0 {
-			_, _ = fmt.Fprintf(d.W, "* < %s\n", termsafe.Text(RedactBody(truncateBody(peek), keyAPI)))
+			_, _ = fmt.Fprintf(d.W, "* < %s\n", termsafe.Text(debugBody(peek, keyAPI)))
 		}
 	}
 	return resp, nil
@@ -104,69 +104,42 @@ var secretQueryKey = regexp.MustCompile(`(?i)token|key|secret|passw|signature|^s
 // readable: seeing limit=10 or the where clause is the point of --debug.
 func debugURL(u *url.URL) string {
 	c := *u
-	if c.RawQuery != "" {
-		parts := strings.Split(c.RawQuery, "&")
-		for i, kv := range parts {
-			k, _, hasVal := strings.Cut(kv, "=")
-			name, err := url.QueryUnescape(k)
-			if err != nil {
-				name = k
-			}
-			if hasVal && secretQueryKey.MatchString(name) {
-				parts[i] = k + "=REDACTED"
-			}
-		}
-		c.RawQuery = strings.Join(parts, "&")
-	}
+	c.RawQuery = RedactQuery(c.RawQuery)
 	return c.Redacted()
 }
 
-func truncateBody(b []byte) string {
-	if len(b) > debugBodyCap {
-		return string(b[:debugBodyCap]) + "…(truncated)"
+// RedactQuery replaces the values of secret-looking parameters in a raw
+// query string with "REDACTED" and leaves the rest as written.
+func RedactQuery(rawQuery string) string {
+	if rawQuery == "" {
+		return ""
 	}
-	return string(b)
+	parts := strings.Split(rawQuery, "&")
+	for i, kv := range parts {
+		k, _, hasVal := strings.Cut(kv, "=")
+		name, err := url.QueryUnescape(k)
+		if err != nil {
+			name = k
+		}
+		if hasVal && secretQueryKey.MatchString(name) {
+			parts[i] = k + "=REDACTED"
+		}
+	}
+	return strings.Join(parts, "&")
 }
 
-// secretField matches a JSON string member whose name holds secrets
-// (api_key, *_secret, *password, *private_key, or any name ending in
-// "token"; case-insensitive, so accessToken too), in
-// raw (possibly truncated, so not always parseable) body text. The value
-// may be cut off by the body cap, so a missing closing quote still
-// matches up to the end of the text.
-var secretField = regexp.MustCompile(`"((?i:(?:[a-z0-9_]*_)?(?:api_key|secret|password|private_key)|[a-z0-9_]*token))"(\s*:\s*)"(?:[^"\\]|\\.)*"?`)
-
-// keyField matches a "key" member. It is redacted only on /api-keys,
-// where it holds key material; elsewhere "key" names a log field (top
-// keys, fields), which a debug trace should show.
-var keyField = regexp.MustCompile(`"(key)"(\s*:\s*)"(?:[^"\\]|\\.)*"?`)
+// debugBody renders a body for the trace: cut to the cap first, so the
+// redactor's work is bounded however large the body is, then redacted
+// (RedactBody copes with the cut), then marked as truncated.
+func debugBody(b []byte, keyAPI bool) string {
+	if len(b) > debugBodyCap {
+		return RedactBody(string(b[:debugBodyCap]), keyAPI) + "…(truncated)"
+	}
+	return RedactBody(string(b), keyAPI)
+}
 
 // isAPIKeysPath reports whether path addresses the API keys resource,
 // with any base_url path prefix (/proxy/api-keys) and any key id after it.
 func isAPIKeysPath(path string) bool {
 	return strings.Contains(path+"/", "/api-keys/")
-}
-
-// headersField matches a webhook's "custom_headers" object up to its last
-// string member, and headerMember one member of it. Any header can carry
-// credentials (Authorization, X-Api-Key, …), so every value is redacted.
-// Like secretField, both tolerate a value cut off by the body cap.
-var (
-	headersField = regexp.MustCompile(`"custom_headers"\s*:\s*\{(?:\s*"(?:[^"\\]|\\.)*"\s*:\s*"(?:[^"\\]|\\.)*"?\s*,?)*`)
-	headerMember = regexp.MustCompile(`("(?:[^"\\]|\\.)*"\s*:\s*)"(?:[^"\\]|\\.)*"?`)
-)
-
-// RedactBody replaces the values of secret-bearing JSON string members
-// with "REDACTED", in the --debug trace and in --dry-run plans. keyAPI
-// also redacts "key" (true for /api-keys paths).
-func RedactBody(body string, keyAPI bool) string {
-	body = secretField.ReplaceAllString(body, `"$1"$2"REDACTED"`)
-	body = headersField.ReplaceAllStringFunc(body, func(m string) string {
-		i := strings.Index(m, "{") + 1
-		return m[:i] + headerMember.ReplaceAllString(m[i:], `$1"REDACTED"`)
-	})
-	if keyAPI {
-		body = keyField.ReplaceAllString(body, `"$1"$2"REDACTED"`)
-	}
-	return body
 }

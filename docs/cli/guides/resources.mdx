@@ -143,13 +143,13 @@ updates need more than the changed field too:
 Some bodies carry a secret, such as a webhook's `custom_headers` or a `secret` field. A
 value passed with `-f` is saved in your shell history and is visible in the process list
 while the command runs. Send the body with `--input` instead, either from a file only you
-can read or from stdin, where the secret can come from an environment variable or a
-secret manager:
+can read or from stdin. To build the body from an exported environment variable, have
+`jq` read it with `env`. Passing it as `--arg token "$PAGER_TOKEN"` would put the value
+on `jq`'s command line instead:
 
 ```sh
 bronto webhooks create --input webhook.json
-jq -n --arg token "$PAGER_TOKEN" \
-  '{name: "pager", url: "https://example.com/hook", custom_headers: {Authorization: "Bearer \($token)"}}' \
+jq -n '{name: "pager", url: "https://example.com/hook", custom_headers: {Authorization: "Bearer \(env.PAGER_TOKEN)"}}' \
   | bronto webhooks create --input -
 ```
 
@@ -195,9 +195,10 @@ $ bronto monitors delete "Payments latency p95" --dry-run
 ```
 
 The plan shows secrets in the body as `REDACTED`, so it is safe to paste or to keep in a
-CI log: every value in a webhook's `custom_headers`, and fields such as `secret`,
-`client_secret`, `password`, `api_key`, and names ending in `token`. Only the plan is
-masked. Without `--dry-run`, the request carries the real values.
+CI log: every value in a webhook's `custom_headers`, and any field whose name ends in
+`secret`, `password`, `api_key`, `private_key`, `token`, or `authorization`, whatever
+its type and at any depth. Only the plan is masked. Without `--dry-run`, the request
+carries the real values.
 
 {/* test: tty */}
 ```console

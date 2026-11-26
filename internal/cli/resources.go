@@ -480,20 +480,25 @@ func doJSONRequest(ctx context.Context, app *App, method, path string, body []by
 }
 
 // dryRunPlan is what doJSONRequest returns for a mutating call under
-// --dry-run: the request that WOULD have been sent, with secret-bearing
-// body fields shown as "REDACTED" (api.RedactBody, the --debug trace's
-// rule), since a plan ends up in terminals and CI logs. Commands print
-// it through the normal output engine, so -o json yields a stable,
-// machine-checkable plan document.
+// --dry-run: the request that WOULD have been sent, with secrets shown as
+// "REDACTED", since a plan ends up in terminals and CI logs. The body is
+// decoded and masked by member name (api.RedactJSON, the --debug trace's
+// rule), so a secret is hidden whatever its JSON type or the spelling of
+// its name on the wire; so are secret-looking query values in the path.
+// body itself is only read: the bytes a real run sends are these. Commands
+// print the plan through the normal output engine, so -o json yields a
+// stable, machine-checkable plan document.
 func dryRunPlan(method, path string, body []byte) map[string]any {
+	if p, q, ok := strings.Cut(path, "?"); ok {
+		path = p + "?" + api.RedactQuery(q)
+	}
 	plan := map[string]any{"dry_run": true, "method": method, "path": path}
 	if len(body) > 0 {
-		body = []byte(api.RedactBody(string(body), false))
 		var decoded any
 		if err := bronto.DecodeJSON(body, &decoded); err == nil {
-			plan["body"] = decoded
-		} else {
-			plan["body"] = string(body)
+			plan["body"] = api.RedactJSON(decoded, false)
+		} else { // not JSON (bronto api --content-type): mask what looks like it
+			plan["body"] = api.RedactBody(string(body), false)
 		}
 	}
 	return plan
