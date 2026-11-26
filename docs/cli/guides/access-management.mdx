@@ -177,7 +177,8 @@ bronto access revoke --user ada@example.com --yes
 Each takes one of `--user` (an id or email) and `--group` (an id or name). `--roles` takes
 role ids or display names, as shown by `bronto roles list`. The organization is the one
 your API key belongs to; pass `--org <id>` for another organization of the same customer.
-`grant` and `revoke` honor `--dry-run`, and `revoke` asks
+If the key can reach several organizations and none is marked active, the commands stop
+with exit code 2 and list them instead of picking one. `grant` and `revoke` honor `--dry-run`, and `revoke` asks
 for confirmation unless you pass `--yes`.
 
 ## API keys

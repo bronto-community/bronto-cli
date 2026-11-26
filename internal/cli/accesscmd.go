@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
@@ -16,7 +17,7 @@ import (
 type accessTarget struct{ org, user, group string }
 
 func (t *accessTarget) orgFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&t.org, "org", "", "organization id (default: org_id from the config, else the active organization)")
+	cmd.Flags().StringVar(&t.org, "org", "", "organization id (default: org_id from the config, else the active or only organization)")
 }
 
 func (t *accessTarget) entityFlags(cmd *cobra.Command) {
@@ -36,31 +37,90 @@ func (t accessTarget) check() error {
 	return nil
 }
 
-// orgPath is /organizations/{org}/access for the selected organization.
-func (t accessTarget) orgPath(ctx context.Context, app *App) (string, error) {
-	org := t.org
-	if org == "" {
-		var err error
-		if org, err = resolveOrgID(ctx, app); err != nil {
-			return "", err
-		}
+// orgID is the organization the command acts on: --org, else org_id from
+// the config, else the active organization, else the only one. Unlike
+// resolveOrgID (search's deep link) it never takes the first of several:
+// a grant or revoke must not land on a guessed organization.
+func (t accessTarget) orgID(ctx context.Context, app *App) (string, error) {
+	if t.org != "" {
+		return t.org, nil
 	}
-	return "/organizations/" + url.PathEscape(org) + "/access", nil
+	if v, ok := app.Config.Get("org_id"); ok && v.Val != "" {
+		return v.Val, nil
+	}
+	payload, err := doJSONRequest(ctx, app, http.MethodGet, "/organizations", nil)
+	if err != nil {
+		return "", err
+	}
+	var ids, labels []string
+	for _, row := range rowsFromPayload(payload, "organisations") { // British spelling on the wire
+		id, _ := row["id"].(string)
+		if id == "" {
+			continue
+		}
+		if active, _ := row["active"].(bool); active {
+			return id, nil
+		}
+		ids = append(ids, id)
+		if name, _ := row["name"].(string); name != "" {
+			id += " (" + name + ")"
+		}
+		labels = append(labels, id)
+	}
+	switch len(ids) {
+	case 1:
+		return ids[0], nil
+	case 0:
+		return "", clierr.New("org_not_found", "could not determine which organization to act on").
+			WithHint("Pass --org <id>, or set it with 'bronto config set org_id <id>' (the id is in the web-app URL).")
+	}
+	slices.Sort(labels)
+	return "", clierr.New("usage_org_required",
+		fmt.Sprintf("the API key can reach %d organizations and none is marked active", len(ids))).
+		WithHint("Pass --org <id>: " + capList(labels) + ".")
+}
+
+// orgPath is /organizations/{org}/access for the selected organization.
+func (t accessTarget) orgPath(ctx context.Context, app *App) (path, org string, err error) {
+	if org, err = t.orgID(ctx, app); err != nil {
+		return "", "", err
+	}
+	return "/organizations/" + url.PathEscape(org) + "/access", org, nil
 }
 
 // entityPath is orgPath plus /{user|group}/{id}, with the name resolved;
-// label names the entity as the user gave it ("group sre").
-func (t accessTarget) entityPath(ctx context.Context, app *App) (path, label string, err error) {
-	base, err := t.orgPath(ctx, app)
+// label names the entity as the user gave it and the organization ("group
+// sre to organization <id>").
+func (t accessTarget) entityPath(ctx context.Context, app *App) (path, label, org string, err error) {
+	base, org, err := t.orgPath(ctx, app)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	typ, kind, ref := "user", "users", t.user
 	if t.group != "" {
 		typ, kind, ref = "group", "groups", t.group
 	}
 	id, err := resolveKindRef(ctx, app, kind, ref)
-	return base + "/" + typ + "/" + url.PathEscape(id), typ + " " + ref, err
+	return base + "/" + typ + "/" + url.PathEscape(id), typ + " " + ref, org, err
+}
+
+// accessMembers returns the member rows of an access list: the live API
+// (2026-11-26) answers a top-level members array, the spec documents
+// items[].members[].
+func accessMembers(payload any) []map[string]any {
+	obj, _ := payload.(map[string]any)
+	if _, ok := obj["members"].([]any); ok {
+		return rowsFromPayload(payload, "members")
+	}
+	items, ok := obj["items"].([]any)
+	if !ok {
+		return rowsFromPayload(payload, "members")
+	}
+	rows := []map[string]any{}
+	for _, item := range items {
+		rows = append(rows, rowsFromPayload(item, "members")...)
+	}
+	return rows
 }
 
 // newAccessCmd builds "access list|check|grant|revoke": who may use an
@@ -86,13 +146,15 @@ email, groups by id or name, roles by id or display name.`,
 			if err != nil {
 				return err
 			}
-			path, err := lt.orgPath(cmd.Context(), app)
+			path, _, err := lt.orgPath(cmd.Context(), app)
 			if err != nil {
 				return err
 			}
-			// Live the members are a top-level array, not the spec's
-			// items[].members[].
-			return printFetchedRows(cmd.Context(), app, path, "members", []string{"type", "id", "roles", "status", "createdAt"})
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, path, nil)
+			if err != nil {
+				return err
+			}
+			return printPolishedRows(app, accessMembers(payload), []string{"type", "id", "roles", "status", "createdAt"})
 		},
 	}
 	lt.orgFlag(list)
@@ -102,7 +164,7 @@ email, groups by id or name, roles by id or display name.`,
 		Use:     "check",
 		Short:   "Show whether a user or group has access, and its roles",
 		Long:    "Takes exactly one of --user and --group.",
-		Example: "  bronto access check --user ada@example.com\n  bronto access check --group sre --jq .is_authorised",
+		Example: "  bronto access check --user ada@example.com\n  bronto access check --group sre -o json --jq .is_authorised",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := ct.check(); err != nil {
@@ -112,7 +174,7 @@ email, groups by id or name, roles by id or display name.`,
 			if err != nil {
 				return err
 			}
-			path, _, err := ct.entityPath(cmd.Context(), app)
+			path, _, _, err := ct.entityPath(cmd.Context(), app)
 			if err != nil {
 				return err
 			}
@@ -146,7 +208,7 @@ email, groups by id or name, roles by id or display name.`,
 			if err != nil {
 				return err
 			}
-			path, label, err := gt.entityPath(cmd.Context(), app)
+			path, label, org, err := gt.entityPath(cmd.Context(), app)
 			if err != nil {
 				return err
 			}
@@ -156,7 +218,7 @@ email, groups by id or name, roles by id or display name.`,
 			}
 			return sendWrite(cmd.Context(), app, http.MethodPost, path,
 				map[string]any{"roles": roleIDs, "status": status},
-				fmt.Sprintf("Granted %s access with %s.", label, strings.Join(roles, ", ")))
+				fmt.Sprintf("Granted %s access to organization %s with %s.", label, org, strings.Join(roles, ", ")))
 		},
 	}
 	gt.entityFlags(grant)
@@ -180,14 +242,15 @@ email, groups by id or name, roles by id or display name.`,
 			if err != nil {
 				return err
 			}
-			path, label, err := rt.entityPath(cmd.Context(), app)
+			path, label, org, err := rt.entityPath(cmd.Context(), app)
 			if err != nil {
 				return err
 			}
-			if ok, err := confirmOrAbort(cmd, app, fmt.Sprintf("Revoke the access of %s?", label), yes); !ok {
+			if ok, err := confirmOrAbort(cmd, app, fmt.Sprintf("Revoke the access of %s to organization %s?", label, org), yes); !ok {
 				return err
 			}
-			return sendWrite(cmd.Context(), app, http.MethodDelete, path, nil, fmt.Sprintf("Revoked the access of %s.", label))
+			return sendWrite(cmd.Context(), app, http.MethodDelete, path, nil,
+				fmt.Sprintf("Revoked the access of %s to organization %s.", label, org))
 		},
 	}
 	rt.entityFlags(revoke)
@@ -215,19 +278,19 @@ func newUserAccessCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return printFetchedRows(cmd.Context(), app, "/users/"+url.PathEscape(id)+"/access",
-				"organisations", []string{"name", "active", "id"})
+			payload, err := doJSONRequest(cmd.Context(), app, http.MethodGet, "/users/"+url.PathEscape(id)+"/access", nil)
+			if err != nil {
+				return err
+			}
+			return printPolishedRows(app, rowsFromPayload(payload, "organisations"), []string{"name", "active", "id"})
 		},
 	}
 }
 
-// printFetchedRows GETs path and prints the array under key as rows.
-func printFetchedRows(ctx context.Context, app *App, path, key string, columns []string) error {
-	payload, err := doJSONRequest(ctx, app, http.MethodGet, path, nil)
-	if err != nil {
-		return err
-	}
-	p, rows, err := humanRows(app, rowsFromPayload(payload, key), resourceListPolish)
+// printPolishedRows prints rows as a list: readable timestamps in a
+// table or csv, the API's values in json.
+func printPolishedRows(app *App, rows []map[string]any, columns []string) error {
+	p, rows, err := humanRows(app, rows, resourceListPolish)
 	if err != nil {
 		return err
 	}

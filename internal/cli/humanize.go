@@ -161,8 +161,8 @@ func collectionListRows(rows []map[string]any, _ output.Format) []map[string]any
 // resourceListPolish is the generic human-view pass applied to EVERY
 // resource list's table/csv rendering (before any per-resource
 // ListTransform):
-//   - top-level *_at epoch-millis values render as relative age (table)
-//     or RFC3339 (csv)
+//   - top-level *_at epoch-millis values (and createdAt, as access
+//     members spell it) render as relative age (table) or RFC3339 (csv)
 //   - metadata.created_at / metadata.modified_at surface as derived
 //     "created" / "modified" columns so curated column sets can show
 //     readable provenance without exposing the metadata blob
@@ -175,7 +175,7 @@ func resourceListPolish(rows []map[string]any, format output.Format) []map[strin
 			// Secret masking is applied earlier (maskSecretRows) for ALL
 			// formats, not just this table/csv pass — so it isn't repeated
 			// here.
-			if strings.HasSuffix(k, "_at") {
+			if strings.HasSuffix(k, "_at") || k == "createdAt" {
 				if ms, ok := numericValue(v); ok && ms > 1e11 {
 					row[k] = humanStamp(ms, format, now)
 				}
