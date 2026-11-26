@@ -73,6 +73,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newTracesCmd())
 	cmd.AddCommand(newAccessCmd())
 	cmd.AddCommand(newSendCmd())
+	cmd.AddCommand(newTagsCmd())
 	cmd.AddCommand(newUsageCmd())
 	cmd.AddCommand(newSSOCmd())
 	cmd.AddCommand(newQueryCmd())

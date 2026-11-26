@@ -50,6 +50,7 @@ var flagClasses = map[string]argClass{
 	"content-type":  argValue,
 	"dataset":       argValue,
 	"direction":     argValue,
+	"entity-type":   argValue,
 	"fields":        argValue,
 	"format":        argValue,
 	"from":          argValue, // RFC3339 time
@@ -84,11 +85,13 @@ var flagClasses = map[string]argClass{
 	"jq":         argName,
 	"local":      argName, // local path
 	"message":    argName,
+	"name":       argName, // a tag name
 	"prefix":     argName, // S3 key prefix
 	"roles":      argName, // ids or names
 	"select":     argName, // expressions can hold literals
 	"user":       argName, // id or email
 	"users":      argName, // ids or emails
+	"value":      argName, // a tag value
 	"widget-ids": argName, // ids or names
 
 	"from-expr": argQuery,
@@ -113,6 +116,7 @@ var argPlaceholders = map[string]argClass{
 	"dashboard":      argValue,
 	"dataset":        argValue,
 	"definition":     argValue,
+	"entity-type":    argValue,
 	"forward-config": argValue,
 	"group":          argValue,
 	"id":             argValue,
@@ -126,10 +130,14 @@ var argPlaceholders = map[string]argClass{
 	"trace-id":       argValue,
 	"widget":         argValue,
 
+	"entity":   argName, // id or name
 	"message":  argName,
+	"tag-name": argName,
 	"question": argName,
 	"user":     argName, // id or email
 	"value":    argName,
+
+	"tag": argPairs, // name=value
 
 	"query": argQuery,
 
