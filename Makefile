@@ -6,8 +6,13 @@ build:
 test:
 	go test ./...
 
+# lint keeps the golangci-lint cache inside the checkout (git-ignored
+# .local/): the default per-user cache is shared by every git worktree, and
+# one worktree then reports another's files. An already-set
+# GOLANGCI_LINT_CACHE wins. CI lints through golangci-lint-action, not this
+# target.
 lint:
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 run
+	GOLANGCI_LINT_CACHE="$${GOLANGCI_LINT_CACHE:-$(CURDIR)/.local/golangci-lint-cache}" go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 run
 
 # check-spec verifies api/openapi.yaml against the digest recorded in
 # api/vendored.sha256 (--self-test first proves the gate can go red). This
