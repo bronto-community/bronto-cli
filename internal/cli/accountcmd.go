@@ -145,7 +145,8 @@ stderr; with -o json or --jq it prints the updated widget.`,
 // display and/or sort), or none of them.
 func checkWidgetPatchBody(body []byte) error {
 	var obj map[string]any
-	if bronto.DecodeJSON(body, &obj) != nil || obj == nil {
+	_ = bronto.DecodeJSON(body, &obj)
+	if obj == nil {
 		return nil // not a JSON object: let the API report it
 	}
 	var parts []string
