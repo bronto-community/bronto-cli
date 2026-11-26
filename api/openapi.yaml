@@ -4117,6 +4117,13 @@ paths:
                 parser_id:
                   type: string
                   format: uuid
+                log_attrs:
+                  description: >-
+                    When present, replaces the dataset's system-generated
+                    log_attrs tag; an empty array removes it. When absent, the
+                    tag is left unchanged.
+                  allOf:
+                    - $ref: '#/components/schemas/LogAttrs'
         required: true
       responses:
         '204':
@@ -13877,11 +13884,6 @@ components:
         login_methods:
           type: object
     ResendUserInvitationResponse:
-      # NOTE(bronto-cli vendor patch): x-go-name avoids a collision with the
-      # ResendUserInvitationResponse type oapi-codegen generates for the
-      # resendUserInvitation operation (operationId + "Response"). Same
-      # pattern for PollLiveTailResponse and InitLiveTailResponse below.
-      x-go-name: ResendUserInvitationResponseBody
       type: object
       properties:
         success:
@@ -14837,8 +14839,6 @@ components:
                   log events.
                 format: uri
     PollLiveTailResponse:
-      # NOTE(bronto-cli vendor patch): see ResendUserInvitationResponse.
-      x-go-name: PollLiveTailResponseBody
       type: object
       properties:
         events:
@@ -14870,8 +14870,6 @@ components:
             - from_expr
           type: object
     InitLiveTailResponse:
-      # NOTE(bronto-cli vendor patch): see ResendUserInvitationResponse.
-      x-go-name: InitLiveTailResponseBody
       type: object
       properties:
         job_id:
@@ -15176,6 +15174,20 @@ components:
         Full replacement of a dataset configuration. All required fields must be
         provided. Any omitted optional fields will be reset to their default
         values.
+    LogAttrs:
+      type: array
+      description: >-
+        Attribute groups present on a dataset's events, stored as the dataset's
+        log_attrs tag.
+      items:
+        type: string
+        enum:
+          - aws
+          - azure
+          - gcp
+          - gen_ai
+          - k8s
+          - otel
     ParseResult:
       type: object
       properties:
@@ -15209,6 +15221,8 @@ components:
       properties:
         recommended_parser_id:
           type: string
+        log_attrs:
+          $ref: '#/components/schemas/LogAttrs'
         candidates:
           type: array
           items:
@@ -20148,6 +20162,17 @@ components:
           example: 12345678-589b-4dea-8efa-444bb3201bb6
         tags:
           $ref: '#/components/schemas/Tags'
+        disabled:
+          type: boolean
+          description: Whether the integration is disabled.
+          readOnly: true
+        disabled_reason:
+          type: string
+          description: >-
+            The reason why the integration is disabled. Only present when
+            disabled is true.
+          readOnly: true
+          example: 404 response (5)
     CreateSlackIntegrationResourceRequest:
       required:
         - channels
@@ -20313,6 +20338,17 @@ components:
             "$alert_id"}}
         tags:
           $ref: '#/components/schemas/Tags'
+        disabled:
+          type: boolean
+          description: Whether the integration is disabled.
+          readOnly: true
+        disabled_reason:
+          type: string
+          description: >-
+            The reason why the integration is disabled. Only present when
+            disabled is true.
+          readOnly: true
+          example: 500 response (10)
     CreateWebhookIntegrationResourceRequest:
       required:
         - name
@@ -20429,6 +20465,17 @@ components:
             - api_key
         tags:
           $ref: '#/components/schemas/Tags'
+        disabled:
+          type: boolean
+          description: Whether the integration is disabled.
+          readOnly: true
+        disabled_reason:
+          type: string
+          description: >-
+            The reason why the integration is disabled. Only present when
+            disabled is true.
+          readOnly: true
+          example: 404 response (5)
     CreateProviderIntegrationRequest:
       required:
         - auth_type
@@ -22173,11 +22220,6 @@ components:
           type: string
           description: Extra contextual information about the SLO.
           example: Checkout availability on the production load balancer.
-        team:
-          maxLength: 255
-          type: string
-          description: The team that owns this SLO.
-          example: checkout
         service:
           maxLength: 255
           type: string
@@ -22212,11 +22254,6 @@ components:
           type: string
           description: Extra contextual information about the SLO.
           example: Checkout availability on the production load balancer.
-        team:
-          maxLength: 255
-          type: string
-          description: The team that owns this SLO.
-          example: checkout
         service:
           maxLength: 255
           type: string
@@ -22402,11 +22439,6 @@ components:
           type: string
           description: Extra contextual information about the SLO.
           example: Checkout availability on the production load balancer.
-        team:
-          maxLength: 255
-          type: string
-          description: The team that owns this SLO.
-          example: checkout
         service:
           maxLength: 255
           type: string
@@ -23070,6 +23102,113 @@ components:
           description: the list of simple queries computed to generate the timeseries
           items:
             $ref: '#/components/schemas/MetricQuery'
+    ServiceMap:
+      required:
+        - edges
+        - nodes
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            required:
+              - calls
+              - calls_per_second
+              - errors
+              - name
+              - type
+            type: object
+            properties:
+              name:
+                type: string
+                description: The service name, or the peer name for a virtual node.
+                example: checkout
+              type:
+                type: string
+                description: >
+                  `service` for nodes that send their own telemetry. The other
+                  types are virtual nodes, only seen from the calls made to
+                  them, or `user` for requests with no instrumented caller.
+                example: service
+                enum:
+                  - service
+                  - database
+                  - messaging
+                  - user
+                  - external
+              calls:
+                type: integer
+                description: >
+                  Requests handled by the node over the time window. For
+                  services these are their server and consumer spans, or all
+                  their spans when they have none.
+                format: int64
+                example: 540
+              errors:
+                type: integer
+                description: The number of those requests that failed.
+                format: int64
+                example: 3
+              calls_per_second:
+                type: number
+                description: >-
+                  The average number of requests per second over the time
+                  window.
+                format: double
+                example: 0.6
+              p95_ms:
+                type: number
+                description: >-
+                  The p95 latency of those requests in milliseconds. Omitted
+                  when unknown.
+                format: double
+                example: 19.6
+        edges:
+          type: array
+          items:
+            required:
+              - calls
+              - connection_type
+              - errors
+              - source
+              - target
+            type: object
+            properties:
+              source:
+                type: string
+                description: The name of the calling node.
+                example: checkout
+              target:
+                type: string
+                description: The name of the called node.
+                example: payment
+              connection_type:
+                type: string
+                description: >
+                  Empty for request/response calls, otherwise the kind of
+                  connection reported by the servicegraph connector, such as
+                  `database`, `messaging_system` or `virtual_node`.
+                example: ''
+              calls:
+                type: integer
+                description: The number of calls over the time window.
+                format: int64
+                example: 540
+              errors:
+                type: integer
+                description: The number of those calls that failed.
+                format: int64
+                example: 0
+              p95_ms:
+                type: number
+                description: >-
+                  The p95 latency of the calls, as seen by the server, in
+                  milliseconds. Omitted when unknown.
+                format: double
+                example: 4.9
+      description: >-
+        The services of an organization and the calls between them over a time
+        window.
     MetricDefinition:
       required:
         - queries
@@ -23402,6 +23541,7 @@ components:
             The reason why the action is disabled. Only present when disabled is
             true.
           readOnly: true
+          example: connection error (5)
     Template:
       type: object
       properties:
@@ -24651,7 +24791,7 @@ components:
           description: >-
             The field in `total_query`'s dataset holding the latency/duration
             value.
-          example: $span.duration_nano
+          example: Span:duration_nano
         comparison_operator:
           type: string
           description: >-
