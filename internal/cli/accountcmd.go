@@ -103,7 +103,8 @@ func newWidgetPatchCmd() *cobra.Command {
 		Long: `Changes one part of a widget and leaves the rest as it is, unlike
 'widgets update', which replaces the widget. One call carries one of: name,
 aux, layout (a group widget's widget_layouts), or display and/or sort
-(within those, a value sets a field and null clears it).`,
+(within those, a value sets a field and null clears it). It confirms on
+stderr; with -o json or --jq it prints the updated widget.`,
 		Example: "  bronto widgets patch <widget> -f name=<name>\n" +
 			"  bronto widgets patch <widget> -f 'display={\"stacked_bars\":true}'\n" +
 			"  bronto widgets patch <group-widget> --input layout.json",
@@ -124,7 +125,8 @@ aux, layout (a group widget's widget_layouts), or display and/or sort
 		if err != nil {
 			return err
 		}
-		return sendWrite(cmd.Context(), app, http.MethodPatch, "/widgets/"+url.PathEscape(id), b, "Updated widget "+args[0]+".")
+		path := "/widgets/" + url.PathEscape(id)
+		return sendWrite(cmd.Context(), app, http.MethodPatch, path, b, "Updated widget "+args[0]+".", path)
 	}
 	return cmd
 }

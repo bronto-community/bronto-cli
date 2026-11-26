@@ -146,7 +146,8 @@ bronto widgets list
 Changes one part of a widget and leaves the rest as it is, unlike
 'widgets update', which replaces the widget. One call carries one of: name,
 aux, layout (a group widget's widget\_layouts), or display and/or sort
-(within those, a value sets a field and null clears it).
+(within those, a value sets a field and null clears it). It confirms on
+stderr; with -o json or --jq it prints the updated widget.
 
 ```sh
 bronto widgets patch <widget> [flags]
