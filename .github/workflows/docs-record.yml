@@ -50,6 +50,9 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+          # No Go cache: this workflow also runs on release, and a cache
+          # restored there could have been poisoned by another workflow.
+          cache: false
 
       - name: Install vhs, ttyd, ffmpeg
         env:
