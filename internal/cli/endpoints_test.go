@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -58,9 +59,9 @@ func TestEndpointInventoryShape(t *testing.T) {
 // API-calling branches against a recording server. Several argument lists
 // per command reach different branches (a dataset name triggers GET /logs
 // resolution, --eq triggers /top-keys field lookup, and so on). A new
-// hand-written command, including one that replaces a generated resource
-// verb, fails TestEveryCommandIsInventoried until it has an entry here, in
-// unprobedCommands, or in commandsWithoutSpecEndpoints.
+// hand-written command, including one that replaces or wraps a generated
+// resource verb, fails TestEveryCommandIsInventoried until it has an entry
+// here, in unprobedCommands, or in commandsWithoutSpecEndpoints.
 var endpointProbes = map[string][][]string{
 	"bronto ask":                             {{"ask", "q", "--yes"}, {"ask", "q", "-d", "ds", "--yes"}},
 	"bronto auth status":                     {{"auth", "status"}},
@@ -107,9 +108,13 @@ var endpointProbes = map[string][][]string{
 	"bronto dashboards templates show":       {{"dashboards", "templates", "show", probeID}, {"dashboards", "templates", "show", "t1"}},
 	"bronto dashboards create": {{"dashboards", "create", "--template", probeID},
 		{"dashboards", "create", "--template", "t1"}},
-	"bronto dashboards apply":    {{"dashboards", "apply", "-f", "@MANIFEST"}},
-	"bronto dashboards export":   {{"dashboards", "export", probeID}},
-	"bronto dashboards validate": {{"dashboards", "validate", "-f", "@MANIFEST", "--live"}},
+	// The first apply creates dashboard d and its widget; the second
+	// changes d1's tags (add, update, remove), so between them every write
+	// apply makes is recorded.
+	"bronto dashboards apply":        {{"dashboards", "apply", "-f", "@MANIFEST"}, {"dashboards", "apply", "-f", "@UPDATE_MANIFEST"}},
+	"bronto dashboards export":       {{"dashboards", "export", probeID}},
+	"bronto dashboards validate":     {{"dashboards", "validate", "-f", "@MANIFEST", "--live"}},
+	"bronto metrics definitions get": {{"metrics", "definitions", "get", probeID}, {"metrics", "definitions", "get", probeMissingID}},
 }
 
 // unprobedCommands can't be driven in-process; their inventory entries are
@@ -137,15 +142,21 @@ var commandsWithoutSpecEndpoints = map[string][]string{
 const (
 	probeDataset = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000d1"
 	probeID      = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000d2"
+	// probeDashboardID is dashboard d1, which the update manifest changes.
+	probeDashboardID = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000d4"
+	// probeMissingID answers 500, as live a GET of a deleted metric
+	// definition does (see newDefinitionGetCmd).
+	probeMissingID = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000d5"
 )
 
 // recordRequests runs one command against a stub API and returns the
 // "METHOD /path" of every request it made. The stub answers just enough
 // for name resolution to succeed (dataset "ds", saved search "s1", user
-// alice@example.com, groups g1/g2, monitor m1, metric cpu, parser p1), and
-// --ask_url points at a fake LLM on the same server, excluded from the
-// result. Errors are ignored: a command that fails after its first calls
-// has still shown which endpoints it uses.
+// alice@example.com, groups g1/g2, monitor m1, metric cpu, parser p1,
+// widget w1, dashboard d1) and for dashboards apply to plan and write (a
+// create answers an id), and --ask_url points at a fake LLM on the same
+// server, excluded from the result. Errors are ignored: a command that
+// fails after its first calls has still shown which endpoints it uses.
 func recordRequests(t *testing.T, args []string) []string {
 	t.Helper()
 	var mu sync.Mutex
@@ -161,6 +172,18 @@ func recordRequests(t *testing.T, args []string) []string {
 		if strings.HasPrefix(r.URL.Path, "/users/") && strings.HasSuffix(r.URL.Path, "/groups") {
 			_, _ = fmt.Fprintf(w, `{"groups":[%q]}`, probeID) // live shape: bare ids
 			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/"+probeMissingID) {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = fmt.Fprint(w, `{"message":"internal error"}`)
+			return
+		}
+		if r.Method == http.MethodPost {
+			switch r.URL.Path {
+			case "/dashboards", "/widgets", "/metrics/definitions":
+				_, _ = fmt.Fprintf(w, `{"id":%q}`, probeID)
+				return
+			}
 		}
 		switch r.URL.Path {
 		case "/logs":
@@ -179,8 +202,17 @@ func recordRequests(t *testing.T, args []string) []string {
 			_, _ = fmt.Fprintf(w, `{"parsers":[{"id":%q,"name":"p1"}]}`, probeID)
 		case "/metrics/definitions":
 			_, _ = fmt.Fprintf(w, `{"definitions":[{"id":%q,"name":"d1"}]}`, probeID)
+		case "/widgets":
+			_, _ = fmt.Fprintf(w, `{"widgets":[{"id":%q,"name":"w1","metric_ids":[%q]}]}`, probeID, probeID)
 		case "/widgets/" + probeID:
 			_, _ = fmt.Fprintf(w, `{"id":%q,"name":"w1","metric_ids":[%q]}`, probeID, probeID)
+		case "/dashboards":
+			_, _ = fmt.Fprintf(w, `{"dashboards":[{"id":%q,"name":"d1"}]}`, probeDashboardID)
+		case "/dashboards/" + probeDashboardID:
+			// The update manifest keeps env, changes managed-by and drops
+			// stale: one tag add, update and delete.
+			_, _ = fmt.Fprintf(w, `{"id":%q,"name":"d1","tags":{"managed-by":"cli-test-other","stale":"x"},"widget_ids":[%q]}`,
+				probeDashboardID, probeID)
 		case "/dashboards/templates":
 			_, _ = fmt.Fprintf(w, `{"templates":[{"id":%q,"name":"t1","parameters":{}}]}`, probeID)
 		case "/dashboards/templates/" + probeID:
@@ -204,9 +236,14 @@ func recordRequests(t *testing.T, args []string) []string {
 	if err := os.WriteFile(manifest, []byte("name: d\nwidgets:\n  - {name: w, queries: [{dataset: ds, select: count(*)}]}\n  - {ref: w1}\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	update := filepath.Join(dir, "update.yaml")
+	if err := os.WriteFile(update, []byte("name: d1\ntags: {env: prod}\nwidgets:\n  - {ref: w1}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	placeholders := strings.NewReplacer("@MONITOR", monitor, "@UPDATE_MANIFEST", update, "@MANIFEST", manifest)
 	full := make([]string, 0, len(args)+4)
 	for _, a := range args {
-		full = append(full, strings.NewReplacer("@MONITOR", monitor, "@MANIFEST", manifest).Replace(a))
+		full = append(full, placeholders.Replace(a))
 	}
 	full = append(full, "--base-url", srv.URL, "--api-key", "k")
 
@@ -281,16 +318,10 @@ func TestEveryCommandIsInventoried(t *testing.T) {
 	// 1. Every leaf command is accounted for. A generated resource verb
 	// needs no entry (registryOperations maps it), but a hand-written
 	// command that replaces one (exports create, dashboards create) does.
-	generated := map[string]*cobra.Command{}
-	for _, d := range resourceRegistry {
-		for _, v := range newResourceCmd(d).Commands() {
-			generated["bronto "+d.display()+" "+v.Name()] = v
-		}
-	}
+	generated := generatedVerbs()
 	isGenerated := func(c *cobra.Command) bool {
 		g := generated[c.CommandPath()]
-		return g != nil && c.Use == g.Use && c.Short == g.Short && c.Long == g.Long &&
-			c.Example == g.Example && slices.Equal(flagNames(c), flagNames(g))
+		return g != nil && sameAsGenerated(c, g)
 	}
 	var walk func(c *cobra.Command)
 	walk = func(c *cobra.Command) {
@@ -354,6 +385,37 @@ func TestEveryCommandIsInventoried(t *testing.T) {
 	}
 }
 
+// generatedVerbs returns every generated resource verb by command path.
+func generatedVerbs() map[string]*cobra.Command {
+	out := map[string]*cobra.Command{}
+	for _, d := range resourceRegistry {
+		for _, v := range newResourceCmd(d).Commands() {
+			out["bronto "+d.display()+" "+v.Name()] = v
+		}
+	}
+	return out
+}
+
+// sameAsGenerated reports whether c is the generated resource verb g
+// rather than a hand-written replacement. Help text and flags aren't
+// enough: a wrapper such as metrics definitions get keeps them and swaps
+// RunE for one that makes extra requests. Closures built from the same
+// func literal share a code pointer, so a generated verb's RunE matches
+// g's, and a wrapping closure's doesn't.
+func sameAsGenerated(c, g *cobra.Command) bool {
+	return c.Use == g.Use && c.Short == g.Short && c.Long == g.Long && c.Example == g.Example &&
+		slices.Equal(flagNames(c), flagNames(g)) &&
+		funcPointer(c.RunE) == funcPointer(g.RunE) &&
+		funcPointer(c.PreRunE) == funcPointer(g.PreRunE)
+}
+
+// Args isn't compared: NewRootCmd wraps every command's validator.
+//
+// funcPointer returns a func's code pointer, 0 for nil.
+func funcPointer(f any) uintptr {
+	return reflect.ValueOf(f).Pointer()
+}
+
 // flagNames returns the sorted names of a command's local flags.
 func flagNames(c *cobra.Command) []string {
 	var out []string
@@ -372,6 +434,48 @@ func TestEveryInventoriedEndpointHasURLTemplate(t *testing.T) {
 		path := strings.ReplaceAll(e.Pattern, "{*}", "0f0e0d0c")
 		if _, ok := api.URLTemplate(path); !ok {
 			t.Errorf("%s (%s): no URL template matches %q", e.Pattern, e.Command, path)
+		}
+	}
+}
+
+// TestSameAsGeneratedSpotsWrappers: metrics definitions get keeps the
+// generated help and flags but wraps RunE, so it must count as
+// hand-written and need a probe.
+func TestSameAsGeneratedSpotsWrappers(t *testing.T) {
+	generated := generatedVerbs()
+	for path, want := range map[string]bool{
+		"bronto metrics definitions get":  false,
+		"bronto metrics definitions list": true,
+	} {
+		c, _, err := NewRootCmd().Find(strings.Fields(path)[1:])
+		if err != nil || generated[path] == nil {
+			t.Fatalf("%s: command %v or generated verb missing", path, err)
+		}
+		if got := sameAsGenerated(c, generated[path]); got != want {
+			t.Errorf("sameAsGenerated(%s) = %v, want %v", path, got, want)
+		}
+	}
+}
+
+// TestEndpointProbesReachTheirBranches guards probes that only prove
+// something if they get past their first requests: an apply that fails
+// to plan makes no writes, and TestAPICoverageMatchesRequests would no
+// longer see the tag writes.
+func TestEndpointProbesReachTheirBranches(t *testing.T) {
+	for _, tc := range []struct {
+		args []string
+		want []string
+	}{
+		{[]string{"dashboards", "apply", "-f", "@MANIFEST"}, []string{"POST /dashboards", "POST /widgets", "POST /tags"}},
+		{[]string{"dashboards", "apply", "-f", "@UPDATE_MANIFEST"}, []string{"POST /tags", "PUT /tags", "DELETE /tags"}},
+		// the 500 fallback lists definitions to tell missing from broken
+		{[]string{"metrics", "definitions", "get", probeMissingID}, []string{"GET /metrics/definitions"}},
+	} {
+		got := recordRequests(t, tc.args)
+		for _, w := range tc.want {
+			if !slices.Contains(got, w) {
+				t.Errorf("%s: no %s among %v", strings.Join(tc.args, " "), w, got)
+			}
 		}
 	}
 }

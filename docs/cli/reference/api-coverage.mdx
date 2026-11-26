@@ -38,7 +38,7 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 | SSO | None yet |
 | Exports | [`bronto exports`](/cli/reference/commands/exports) |
 | Customer | None yet |
-| Tags | None yet |
+| Tags | [`bronto dashboards`](/cli/reference/commands/dashboards) |
 | Limits | [`bronto limits`](/cli/reference/commands/limits) |
 | Permissions | [`bronto permissions`](/cli/reference/commands/permissions) |
 | AI | None yet |
@@ -81,10 +81,7 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 |  | Export SSO mappings | `GET /sso/mappings/export` |
 | Customer | Read the organization's customer record | `GET /customer` |
 |  | Update the organization's customer record | `PATCH /customer` |
-| Tags | Update a tag | `PUT /tags` |
-|  | Create a tag | `POST /tags` |
-|  | Delete a tag | `DELETE /tags` |
-|  | List tags | `GET /tags/search` |
+| Tags | List tags | `GET /tags/search` |
 | AI | Explain an error with AI | `GET /explain-error` |
 |  | Suggest a widget from a prompt with AI | `GET /widget-creation-assistant` |
 | Policies | List the policies on a resource | `GET /policies/resources/{resource_type}/{resource_id}` |
