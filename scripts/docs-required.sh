@@ -30,10 +30,13 @@ USER_FACING_CODE=(
   '^internal/output/.*\.go$'
   '^internal/config/.*\.go$'
 )
-# Excluded even when they match above: tests, and generated/embedded art.
+# Excluded even when they match above: tests, generated/embedded art, and
+# the API coverage map, which only feeds the generated api-coverage page
+# (no command reads it), so a change to it changes no CLI behavior.
 NOT_USER_FACING=(
   '_test\.go$'
   '^internal/cli/mascot_frames\.go$'
+  '^internal/cli/apicoverage\.go$'
 )
 # --- What counts as hand-written docs.
 DOCS_PATHS=(

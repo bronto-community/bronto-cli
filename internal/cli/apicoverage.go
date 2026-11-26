@@ -74,11 +74,8 @@ var apiOperationsElsewhere = map[string][]string{
 	"POST /live-tail":                         {"bronto tail"},
 	"POST /logs":                              {"bronto datasets create"},
 	"GET /datasets":                           {"bronto datasets list"},
-	"PATCH /widgets/{id}":                     {"bronto widgets update"},
-	"GET /dashboards/{dashboardId}/export":    {"bronto dashboards export"},
 	"GET /integrations/slack/{slack_id}":      {"bronto slack list"},
 	"GET /integrations/webhooks/{webhook_id}": {"bronto webhooks list"},
-	"POST /patterns":                          {"bronto search"},
 }
 
 // apiOperationsNotCovered lists what the CLI doesn't support yet: spec
@@ -120,6 +117,9 @@ var apiOperationsNotCovered = map[string]string{
 	"GET /explain-error":                                              "Explain an error with AI",
 	"GET /widget-creation-assistant":                                  "Suggest a widget from a prompt with AI",
 	"GET /policies/resources/{resource_type}/{resource_id}":           "List the policies on a resource",
+	"PATCH /widgets/{id}":                                             "Change a widget's layout",
+	"GET /dashboards/{dashboardId}/export":                            "Export a dashboard as Terraform",
+	"POST /patterns":                                                  "Get server-side log patterns and their templates",
 }
 
 // apiOperationsOutsideSpec lists the endpoints hand-written commands call
