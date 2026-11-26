@@ -140,6 +140,7 @@ Every code `bronto` emits is listed below. Scripts should match on `code`.
 | `export_failed`, `export_wait_timeout` | 1 | an export job failed, or `--wait` gave up |
 | `export_no_id`, `export_no_location` | 1 | an export response had no id or download location |
 | `export_download_failed`, `export_download_insecure` | 1 | the `--download` URL returned an error, or isn't `https` |
+| `signup_failed`, `signup_wait_timeout`, `signup_profile_in_use` | 1 | `bronto signup` (experimental): the sign-up service refused the request, the email wasn't verified within `--wait`, or the profile already has a stored key |
 | `saved_search_invalid` | 1 | `bronto search --saved` named a saved search with no query to run |
 | `payload_too_large` | 1 | an ingestion batch was over 10 MB |
 | `ingest_read_error` | 1 | `bronto send` couldn't read its input, for example a line over 1 MiB |

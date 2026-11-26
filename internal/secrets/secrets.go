@@ -25,7 +25,15 @@ func account(profile string) string {
 	return profile
 }
 
+// KeychainOff reports whether BRONTO_NO_KEYCHAIN asks for the credentials
+// file only. PROTOTYPE seam (bronto signup recordings): lets the real
+// binary store a key without touching the OS keychain.
+func KeychainOff() bool { return os.Getenv("BRONTO_NO_KEYCHAIN") != "" }
+
 func Store(profile, key string) (bool, error) {
+	if KeychainOff() {
+		return true, fileStore(account(profile), key)
+	}
 	if err := keyring.Set(service, account(profile), key); err != nil {
 		return true, fileStore(account(profile), key)
 	}
@@ -39,6 +47,11 @@ func Store(profile, key string) (bool, error) {
 // flattened to ErrNotFound, which would make it indistinguishable from "no
 // key configured" to callers such as NewApp and 'auth status'.
 func Get(profile string) (string, bool, error) {
+	if KeychainOff() {
+		// The file was chosen, not fallen back to: no fallback warning.
+		key, err := fileGet(account(profile))
+		return key, false, err
+	}
 	key, err := keyring.Get(service, account(profile))
 	if err == nil {
 		return key, false, nil
@@ -78,7 +91,9 @@ func Get(profile string) (string, bool, error) {
 // none of them should block logout when the file confirms there is
 // nothing left to remove.
 func Delete(profile string) error {
-	_ = keyring.Delete(service, account(profile))
+	if !KeychainOff() {
+		_ = keyring.Delete(service, account(profile))
+	}
 	ferr := fileDelete(account(profile))
 	if ferr != nil && !errors.Is(ferr, ErrNotFound) {
 		return ferr // genuine file I/O error: never mask this

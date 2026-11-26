@@ -12,6 +12,7 @@ Command-line client for the [Bronto](https://bronto.io) observability platform. 
 - CI / agents: set `BRONTO_API_KEY` and `BRONTO_REGION` (`eu` or `us`) in the environment. No further setup needed.
 - Staging/localhost: `BRONTO_BASE_URL` (and `BRONTO_INGEST_URL` for `send`) override the region-derived hosts; `--base-url` wins over env for one-off calls.
 - Humans: `bronto auth login` prompts for a key and stores it in the OS keychain (`--key-stdin` to pipe it instead).
+- No account yet (experimental prototype): `bronto signup --email <email> --first-name <name> --last-name <name> --org <org> --region eu --accept-terms --generate-password` creates one and never prompts. Ask the user for the region (permanent) and the terms first. It waits for the email verification; `bronto signup confirm '<link from the email>'` completes that without a browser. The generated password is printed once: tell the user to save it.
 - Scripting from a human's stored credential: `export BRONTO_API_KEY=$(bronto auth token)`.
 - Check what's resolved and from where: `bronto auth status`.
 

@@ -78,32 +78,42 @@ func runAuthLogin(cmd *cobra.Command, keyStdin bool) error {
 		return err
 	}
 
-	profile := profileOrDefault(app.Config.Profile())
-	fallback, err := secrets.Store(profile, key)
+	profile, where, err := storeLogin(app, key, region)
 	if err != nil {
 		return err
 	}
-	if fallback && !app.Quiet {
+	app.Notef("Logged in — profile %q, region %s. Key stored in the %s.\n", profile, region, where)
+	return nil
+}
+
+// storeLogin stores key for the active profile, records its region and
+// makes the profile the default. where names the store that took the key.
+// Shared by 'auth login' and 'signup'.
+func storeLogin(app *App, key, region string) (profile, where string, err error) {
+	profile = profileOrDefault(app.Config.Profile())
+	fallback, err := secrets.Store(profile, key)
+	if err != nil {
+		return "", "", err
+	}
+	if fallback && !app.Quiet && !secrets.KeychainOff() {
 		_, _ = fmt.Fprintln(app.Stderr, "Warning: OS keychain unavailable — using the credentials file fallback.")
 	}
 
 	dir, err := configDir()
 	if err != nil {
-		return err
+		return "", "", err
 	}
 	if err := config.SetUserValue(dir, profile, "region", region); err != nil {
-		return err
+		return "", "", err
 	}
 	if err := config.SetDefaultProfile(dir, profile); err != nil {
-		return err
+		return "", "", err
 	}
-
-	where := "OS keychain"
+	where = "OS keychain"
 	if fallback {
 		where = "credentials file"
 	}
-	app.Notef("Logged in — profile %q, region %s. Key stored in the %s.\n", profile, region, where)
-	return nil
+	return profile, where, nil
 }
 
 // acquireKey obtains the API key from stdin (--key-stdin), an interactive

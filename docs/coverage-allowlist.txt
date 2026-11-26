@@ -13,3 +13,4 @@
 #
 # Stale entries fail the build: a path that is not a command, a uniform
 # resource verb, or a command a page now covers must be removed.
+signup confirm  # experimental prototype, no guide yet

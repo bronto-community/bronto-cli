@@ -42,3 +42,9 @@ docs-tapes-check:
 # posters only; goldens stay mock-based. See docs/tapes/record.sh.
 docs-tapes-live:
 	DOCS_TARGET=live docs/tapes/record.sh $(TAPES)
+
+# signup-recordings renders the two bronto signup PROTOTYPE demos into
+# recordings/signup/ (not committed). See docs/tapes/signup/render.sh.
+.PHONY: signup-recordings
+signup-recordings:
+	docs/tapes/signup/render.sh

@@ -34,6 +34,7 @@
     "cli/reference/commands/saved-searches",
     "cli/reference/commands/search",
     "cli/reference/commands/send",
+    "cli/reference/commands/signup",
     "cli/reference/commands/slack",
     "cli/reference/commands/tail",
     "cli/reference/commands/traces",

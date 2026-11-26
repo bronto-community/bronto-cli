@@ -120,11 +120,12 @@ var endpointProbes = map[string][][]string{
 // unprobedCommands can't be driven in-process; their inventory entries are
 // maintained by hand.
 var unprobedCommands = map[string]string{
-	"bronto repl":       "requires a terminal (GET /logs, /top-keys and POST /search are inventoried by hand)",
-	"bronto auth login": "stores the key in the OS keychain (its region probe, GET /logs, is inventoried by hand)",
-	"bronto login":      "alias for auth login",
-	"bronto api":        "generic passthrough to any path",
-	"bronto send":       "ingestion host, a separate API not described by the spec",
+	"bronto repl":           "requires a terminal (GET /logs, /top-keys and POST /search are inventoried by hand)",
+	"bronto auth login":     "stores the key in the OS keychain (its region probe, GET /logs, is inventoried by hand)",
+	"bronto login":          "alias for auth login",
+	"bronto signup confirm": "prototype: talks to the sign-up service (Cognito), not the Bronto API",
+	"bronto api":            "generic passthrough to any path",
+	"bronto send":           "ingestion host, a separate API not described by the spec",
 }
 
 // commandsWithoutSpecEndpoints are probed too, and must make no request.
