@@ -1,7 +1,7 @@
 ---
 title: "bronto slack"
 sidebarTitle: "slack"
-description: "Reference for the bronto slack command in the bronto CLI, with flags for the create, list, update, delete, and export subcommands that manage Slack integrations."
+description: "Reference for the bronto slack command in the bronto CLI, with flags for the create, get, list, update, delete, export, and workspaces subcommands that manage Slack integrations."
 icon: "message-square-text"
 ---
 
@@ -25,8 +25,10 @@ bronto slack <command> [flags]
 | [`bronto slack create`](/cli/reference/commands/slack#bronto-slack-create) | Create a Slack integration |
 | [`bronto slack delete`](/cli/reference/commands/slack#bronto-slack-delete) | Delete a Slack integration |
 | [`bronto slack export`](/cli/reference/commands/slack#bronto-slack-export) | Write a Slack integration as Terraform or OpenTofu |
+| [`bronto slack get`](/cli/reference/commands/slack#bronto-slack-get) | Get a Slack integration by ID |
 | [`bronto slack list`](/cli/reference/commands/slack#bronto-slack-list) | List Slack integrations |
 | [`bronto slack update`](/cli/reference/commands/slack#bronto-slack-update) | Update a Slack integration |
+| [`bronto slack workspaces`](/cli/reference/commands/slack#bronto-slack-workspaces) | Manage Slack workspaces |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
 
@@ -99,6 +101,22 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 bronto slack export <id> > slack_integration.tf
 ```
 
+## bronto slack get
+
+Get a Slack integration by ID
+
+```sh
+bronto slack get <id> [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto slack get <id>
+```
+
 ## bronto slack list
 
 List Slack integrations
@@ -137,4 +155,60 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 ```sh
 bronto slack update <id> -f name=<name> -f workspace_id=<workspace-id> -f 'channels=["<channel>"]'
 bronto slack update <id> --input body.json
+```
+
+## bronto slack workspaces
+
+Lists and removes the Slack workspaces connected to Bronto. Connect one in the web UI;
+deleting one here does not uninstall the Bronto app from Slack.
+
+```sh
+bronto slack workspaces <command> [flags]
+```
+
+#### Subcommands
+
+| Command | Description |
+| --- | --- |
+| [`bronto slack workspaces delete`](/cli/reference/commands/slack#bronto-slack-workspaces-delete) | Delete a Slack workspace |
+| [`bronto slack workspaces list`](/cli/reference/commands/slack#bronto-slack-workspaces-list) | List Slack workspaces |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+## bronto slack workspaces delete
+
+Delete a Slack workspace
+
+```sh
+bronto slack workspaces delete <id> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--yes` |  | bool |  | skip the confirmation prompt |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto slack workspaces delete <id> --yes
+```
+
+## bronto slack workspaces list
+
+List Slack workspaces
+
+```sh
+bronto slack workspaces list [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto slack workspaces list
 ```

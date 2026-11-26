@@ -84,7 +84,8 @@ func TestUnknownCommandSuggests(t *testing.T) {
 func TestGroupCommandsRejectUnknownSubcommands(t *testing.T) {
 	for _, argv := range [][]string{
 		{"parsers", "get", "x"},
-		{"webhooks", "get", "x"},
+		{"forward-configs", "get", "x"},
+		{"slack", "workspaces", "get", "x"},
 		{"datasets", "bogus"},
 		{"monitors", "downtimes", "get", "x"},
 		{"datasets", "parser", "bogus"},

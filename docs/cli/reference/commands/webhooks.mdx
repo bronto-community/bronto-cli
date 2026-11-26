@@ -1,7 +1,7 @@
 ---
 title: "bronto webhooks"
 sidebarTitle: "webhooks"
-description: "Reference for the bronto webhooks command in the bronto CLI, with flags for the create, list, update, delete, and export subcommands that manage webhooks."
+description: "Reference for the bronto webhooks command in the bronto CLI, with flags for the create, get, list, update, delete, and export subcommands that manage webhooks."
 icon: "webhook"
 ---
 
@@ -25,6 +25,7 @@ bronto webhooks <command> [flags]
 | [`bronto webhooks create`](/cli/reference/commands/webhooks#bronto-webhooks-create) | Create a webhook |
 | [`bronto webhooks delete`](/cli/reference/commands/webhooks#bronto-webhooks-delete) | Delete a webhook |
 | [`bronto webhooks export`](/cli/reference/commands/webhooks#bronto-webhooks-export) | Write a webhook as Terraform or OpenTofu |
+| [`bronto webhooks get`](/cli/reference/commands/webhooks#bronto-webhooks-get) | Get a webhook by ID |
 | [`bronto webhooks list`](/cli/reference/commands/webhooks#bronto-webhooks-list) | List webhooks |
 | [`bronto webhooks update`](/cli/reference/commands/webhooks#bronto-webhooks-update) | Update a webhook |
 
@@ -97,6 +98,22 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto webhooks export <id> > webhook.tf
+```
+
+## bronto webhooks get
+
+Get a webhook by ID
+
+```sh
+bronto webhooks get <id> [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto webhooks get <id>
 ```
 
 ## bronto webhooks list
