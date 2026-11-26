@@ -26,7 +26,7 @@ func accessOrgStub(orgs, list string, got *[]string) http.HandlerFunc {
 	}
 }
 
-// TestAccessNeverGuessesTheOrg: without --org or org_id the access
+// TestAccessNeverGuessesTheOrg: without --org the access
 // commands act on the active organization, or on the only one; with
 // several and none active they refuse (exit 2) and list them, instead of
 // taking the first as search's deep link does.
@@ -75,6 +75,19 @@ func TestAccessNeverGuessesTheOrg(t *testing.T) {
 		"access", "grant", "--user", tUser, "--roles", tUser, "--org", "o9")
 	if want := "Granted user " + tUser + " access to organization o9 with "; err != nil || !strings.Contains(errOut, want) {
 		t.Errorf("grant: %v, stderr = %q, want %q", err, errOut, want)
+	}
+}
+
+// TestAccessIgnoresTheLinkOrgOverride: org_id/BRONTO_ORG_ID is the
+// override for web-app links; it must not redirect a grant or revoke away
+// from the key's active organization.
+func TestAccessIgnoresTheLinkOrgOverride(t *testing.T) {
+	t.Setenv("BRONTO_ORG_ID", "o-link")
+	const orgs = `{"organisations":[{"id":"o-link","name":"Other"},{"id":"o1","name":"Acme EU","active":true}]}`
+	var got []string
+	_, _, err := runResource(t, accessOrgStub(orgs, `{}`, &got), "", "access", "revoke", "--user", tUser, "--yes")
+	if err != nil || len(got) != 1 || got[0] != "DELETE /organizations/o1/access/user/"+tUser {
+		t.Fatalf("err %v, requests %v, want one DELETE on o1", err, got)
 	}
 }
 

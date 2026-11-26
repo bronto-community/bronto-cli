@@ -17,15 +17,17 @@ import (
 type accessTarget struct{ org, user, group string }
 
 func (t *accessTarget) orgFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&t.org, "org", "", "organization id (default: org_id from the config, else the active or only organization)")
+	cmd.Flags().StringVar(&t.org, "org", "", "organization id (default: the API key's active or only organization)")
 }
 
 func (t *accessTarget) entityFlags(cmd *cobra.Command) {
 	t.orgFlag(cmd)
 	cmd.Flags().StringVar(&t.user, "user", "", "the user, by id or email")
 	cmd.Flags().StringVar(&t.group, "group", "", "the group, by id or name")
-	_ = cmd.RegisterFlagCompletionFunc("user", completeKindListFlag("users"))
-	_ = cmd.RegisterFlagCompletionFunc("group", completeKindListFlag("groups"))
+	// One reference each, so the single-value completer: the list one
+	// splits on commas, which a group name may contain.
+	_ = cmd.RegisterFlagCompletionFunc("user", completeKindRef("users"))
+	_ = cmd.RegisterFlagCompletionFunc("group", completeKindRef("groups"))
 }
 
 // check refuses anything but exactly one of --user and --group.
@@ -37,16 +39,14 @@ func (t accessTarget) check() error {
 	return nil
 }
 
-// orgID is the organization the command acts on: --org, else org_id from
-// the config, else the active organization, else the only one. Unlike
-// resolveOrgID (search's deep link) it never takes the first of several:
-// a grant or revoke must not land on a guessed organization.
+// orgID is the organization the command acts on: --org, else the API
+// key's active organization, else the only one. Unlike resolveOrgID
+// (search's deep link) it ignores the org_id config, which is documented
+// as an override for web-app links, and never takes the first of several:
+// a grant or revoke must not land on an organization nobody named.
 func (t accessTarget) orgID(ctx context.Context, app *App) (string, error) {
 	if t.org != "" {
 		return t.org, nil
-	}
-	if v, ok := app.Config.Get("org_id"); ok && v.Val != "" {
-		return v.Val, nil
 	}
 	payload, err := doJSONRequest(ctx, app, http.MethodGet, "/organizations", nil)
 	if err != nil {
@@ -72,7 +72,7 @@ func (t accessTarget) orgID(ctx context.Context, app *App) (string, error) {
 		return ids[0], nil
 	case 0:
 		return "", clierr.New("org_not_found", "could not determine which organization to act on").
-			WithHint("Pass --org <id>, or set it with 'bronto config set org_id <id>' (the id is in the web-app URL).")
+			WithHint("Pass --org <id> (the id is in the web-app URL).")
 	}
 	slices.Sort(labels)
 	return "", clierr.New("usage_org_required",

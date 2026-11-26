@@ -40,7 +40,7 @@ bronto access check [flags]
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
 | `--group` |  | string |  | the group, by id or name |
-| `--org` |  | string |  | organization id (default: org\_id from the config, else the active or only organization) |
+| `--org` |  | string |  | organization id (default: the API key's active or only organization) |
 | `--user` |  | string |  | the user, by id or email |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
@@ -65,7 +65,7 @@ bronto access grant [flags]
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
 | `--group` |  | string |  | the group, by id or name |
-| `--org` |  | string |  | organization id (default: org\_id from the config, else the active or only organization) |
+| `--org` |  | string |  | organization id (default: the API key's active or only organization) |
 | `--roles` |  | strings |  | roles to give, by id or display name (comma-separated or repeated) |
 | `--status` |  | string | `active` | status of the grant: active or invited |
 | `--user` |  | string |  | the user, by id or email |
@@ -91,7 +91,7 @@ bronto access list [flags]
 
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
-| `--org` |  | string |  | organization id (default: org\_id from the config, else the active or only organization) |
+| `--org` |  | string |  | organization id (default: the API key's active or only organization) |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
 
@@ -114,7 +114,7 @@ bronto access revoke [flags]
 | Flag | Short | Type | Default | Description |
 | --- | --- | --- | --- | --- |
 | `--group` |  | string |  | the group, by id or name |
-| `--org` |  | string |  | organization id (default: org\_id from the config, else the active or only organization) |
+| `--org` |  | string |  | organization id (default: the API key's active or only organization) |
 | `--user` |  | string |  | the user, by id or email |
 | `--yes` |  | bool |  | skip the confirmation prompt |
 
