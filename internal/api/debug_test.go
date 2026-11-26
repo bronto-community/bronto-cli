@@ -1,9 +1,11 @@
 package api
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -83,11 +85,84 @@ func TestRedactBody(t *testing.T) {
 			`{"oauth2_token":"REDACTED","bearertoken":"REDACTED","accessToken":"REDACTED","API_KEY":"REDACTED"}`},
 		{"lookalike names stay", `{"token_count":"5","keys":"a","secretary":"b"}`, false, `{"token_count":"5","keys":"a","secretary":"b"}`},
 		{"non-string values stay", `{"api_key":null}`, false, `{"api_key":null}`},
+		{"webhook custom headers", `{"name":"h","custom_headers":{"Authorization":"Bearer a\"b}","X-Team" : "c"},"url":"u"}`, false,
+			`{"name":"h","custom_headers":{"Authorization":"REDACTED","X-Team" : "REDACTED"},"url":"u"}`},
+		{"custom headers cut off by the body cap", `{"custom_headers":{"A":"x","B":"bro`, false, `{"custom_headers":{"A":"REDACTED","B":"REDACTED"`},
+		{"empty custom headers", `{"custom_headers":{},"name":"h"}`, false, `{"custom_headers":{},"name":"h"}`},
+		{"escaped member name", `{"secret":"hunter4","n":1}`, false, `{"secret":"REDACTED","n":1}`},
+		{"escaped custom_headers name", `{"custom_headers":{"A":"hunter4"}}`, false, `{"custom_headers":{"A":"REDACTED"}}`},
+		{"secret values of any type", `{"secret":123456,"password":true,"api_key":{"v":"hunter4"},"token":["hunter4"],"n":1}`, false,
+			`{"secret":"REDACTED","password":"REDACTED","api_key":"REDACTED","token":"REDACTED","n":1}`},
+		{"mixed-type custom headers", `{"custom_headers":{"X-Count":1,"Authorization":"Bearer hunter4","X-Obj":{"a":["hunter4"]},"X-Off":false},"n":1}`, false,
+			`{"custom_headers":{"X-Count":"REDACTED","Authorization":"REDACTED","X-Obj":"REDACTED","X-Off":"REDACTED"},"n":1}`},
+		{"custom headers that are no object", `{"custom_headers":["Authorization: hunter4"],"n":1}`, false, `{"custom_headers":"REDACTED","n":1}`},
+		{"cut off after a non-string header", `{"custom_headers":{"X-Count":1,"Authorization":"Bearer hun`, false,
+			`{"custom_headers":{"X-Count":"REDACTED","Authorization":"REDACTED"`},
+		{"cut off inside a secret number", `{"name":"ci","secret":1234`, false, `{"name":"ci","secret":"REDACTED"`},
+		{"cut off inside a secret object", `{"name":"ci","secret":{"v":["hunter4"`, false, `{"name":"ci","secret":"REDACTED"`},
+		{"nested objects and arrays", `{"a":{"b":[{"client_secret":"hunter4","c":[1,{"token":"hunter4"}]}]}}`, false,
+			`{"a":{"b":[{"client_secret":"REDACTED","c":[1,{"token":"REDACTED"}]}]}}`},
+		{"name spellings", `{"Secret":"a","clientSecret":"b","apiKey":"c","api-key":"d","privateKey":"e","Authorization":"f","customHeaders":{"A":"g"},"Custom-Headers":{"A":"h"}}`, false,
+			`{"Secret":"REDACTED","clientSecret":"REDACTED","apiKey":"REDACTED","api-key":"REDACTED","privateKey":"REDACTED","Authorization":"REDACTED","customHeaders":{"A":"REDACTED"},"Custom-Headers":{"A":"REDACTED"}}`},
+		{"list wrapper keeps its rows", `{"api_keys":[{"name":"ci","api_key":"hunter4"}]}`, false, `{"api_keys":[{"name":"ci","api_key":"REDACTED"}]}`},
+		{"one document per line", "{\"token\":\"hunter4\"}\n{\"token\":\"hunter4\",\"n\":2}\n", false, "{\"token\":\"REDACTED\"}\n{\"token\":\"REDACTED\",\"n\":2}\n"},
+		{"malformed value before a secret", `{"a": @, "secret":"hunter4"}`, false, `{"a": @, "secret":"REDACTED"}`},
+		{"stray closer before a secret", `{"a":1}}, "secret":"hunter4"}`, false, `{"a":1}}, "secret":"REDACTED"}`},
+		{"not JSON", "plain text, 100% done\n", false, "plain text, 100% done\n"},
 	}
 	for _, c := range cases {
-		if got := redactBody(c.in, c.keyAPI); got != c.want {
-			t.Errorf("%s: redactBody(%q) = %q, want %q", c.name, c.in, got, c.want)
+		got := RedactBody(c.in, c.keyAPI)
+		if got != c.want {
+			t.Errorf("%s: RedactBody(%q) = %q, want %q", c.name, c.in, got, c.want)
 		}
+		// RedactJSON (the --dry-run plan's redactor) must agree with
+		// RedactBody (the --debug trace's) wherever the body decodes.
+		var doc, want any
+		if json.Unmarshal([]byte(c.in), &doc) != nil || json.Unmarshal([]byte(c.want), &want) != nil {
+			continue
+		}
+		if got := RedactJSON(doc, c.keyAPI); !reflect.DeepEqual(got, want) {
+			t.Errorf("%s: RedactJSON(%s) = %v, want %v", c.name, c.in, got, want)
+		}
+	}
+}
+
+// Wherever the debug cap cuts a body, no secret may survive the cut.
+func TestRedactBodyAtEveryCut(t *testing.T) {
+	const body = `{"name":"h","secret":"hunter4","password":4242424242,"custom_headers":{"X-Count":1,` +
+		`"Authorization":"Bearer hunter4","X-Obj":{"a":["hunter4"]}},"rows":[{"api_key":{"v":"hunter4"},"n":1},` +
+		`{"clientSecret":"hunter\"4","token":[4242424242]}],"url":"u"}`
+	for cut := 0; cut <= len(body); cut++ {
+		if got := RedactBody(body[:cut], false); strings.Contains(got, "hunter") || strings.Contains(got, "4242") {
+			t.Fatalf("cut at %d: %s", cut, got)
+		}
+	}
+}
+
+// A body cut off by the debug cap can't be decoded, and the cut can fall
+// inside a secret that follows a non-string member: the trace must still
+// hide it and still say the body was truncated.
+func TestDebugTransportRedactsTruncatedBody(t *testing.T) {
+	body := `{"custom_headers":{"X-Count":1,"Authorization":"Bearer hunter4` + strings.Repeat("x", debugBodyCap) + `"}}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	defer srv.Close()
+
+	var trace strings.Builder
+	client := &http.Client{Transport: &DebugTransport{Base: http.DefaultTransport, W: &trace}}
+	resp, err := client.Post(srv.URL+"/integrations/webhooks", "application/json", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, _ := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if string(got) != body {
+		t.Fatal("the caller must read the body unchanged")
+	}
+	out := trace.String()
+	if strings.Contains(out, "hunter4") || strings.Count(out, `"Authorization":"REDACTED"…(truncated)`) != 2 {
+		t.Fatalf("trace = %s", out)
 	}
 }
 
