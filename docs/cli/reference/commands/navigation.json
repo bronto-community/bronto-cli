@@ -24,6 +24,7 @@
     "cli/reference/commands/login",
     "cli/reference/commands/metrics",
     "cli/reference/commands/monitors",
+    "cli/reference/commands/org",
     "cli/reference/commands/parsers",
     "cli/reference/commands/permissions",
     "cli/reference/commands/ping",

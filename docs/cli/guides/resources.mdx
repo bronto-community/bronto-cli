@@ -376,3 +376,15 @@ TIME              EVENTS  VOLUME
 
 For per-dataset numbers, call the API directly with
 `bronto api GET /usage/organizations/logs` (see [the api command](/cli/extend/api)).
+
+## The organization record
+
+`bronto org show` prints the organization's record: its ids, name, region, billing
+emails, and the other organizations of the same customer. `bronto org update` changes the
+name and the billing emails. The API documents both fields as required, so send the one
+you keep too:
+
+```sh
+bronto org show --jq .customer_name
+bronto org update -f customer_name="Acme Inc." -f 'billing_emails=["billing@example.com"]'
+```
