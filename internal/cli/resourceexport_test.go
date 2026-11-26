@@ -71,13 +71,18 @@ func TestResourceExportByName(t *testing.T) {
 	}
 }
 
-// TestResourceExportRejectsBadFlags: an unknown format and --jq (the
-// output is HCL, not JSON) fail before any request.
+// TestResourceExportRejectsBadFlags: an unknown format, and --jq and
+// --fields (the output is HCL, not JSON), fail before any request.
 func TestResourceExportRejectsBadFlags(t *testing.T) {
 	const id = "aaaaaaaa-aaaa-aaaa-aaaa-0000000000f3"
 	for _, args := range [][]string{
 		{"monitors", "export", id, "--format", "pulumi"},
 		{"monitors", "export", id, "--jq", ".x"},
+		{"monitors", "export", id, "--fields", "name"},
+		{"monitors", "export", id, "--fields", "?"},
+		{"dashboards", "export", id, "--format", "terraform", "--fields", "name"},
+		{"sso", "idps", "export", "Google", "--fields", "name"},
+		{"sso", "mappings", "export", "--fields", "name"},
 		{"dashboards", "export", id, "--format", "pulumi"},
 		// --include-dependencies belongs to the Terraform export.
 		{"dashboards", "export", id, "--include-dependencies"},

@@ -17,7 +17,9 @@ import (
 var exportFormats = []string{"terraform", "opentofu"}
 
 // checkExportFlags refuses, before any request, a format the API doesn't
-// have and --jq, which can't filter HCL.
+// have, and --jq and --fields, which can't filter HCL. (Not
+// rejectFieldsForCustomRender: its hint points at -o json, which an
+// export doesn't have.)
 func checkExportFlags(app *App, format string) error {
 	if !slices.Contains(exportFormats, format) {
 		return clierr.New("usage_invalid_flags", fmt.Sprintf("--format %q is not an export format", format)).
@@ -25,6 +27,9 @@ func checkExportFlags(app *App, format string) error {
 	}
 	if app.JQ != nil {
 		return clierr.New("usage_invalid_flags", "--jq does not apply: export writes HCL, not JSON")
+	}
+	if len(app.FieldFilter) > 0 || app.ListFieldsOnly {
+		return clierr.New("usage_invalid_flags", "--fields does not apply: export writes HCL, not JSON")
 	}
 	return nil
 }

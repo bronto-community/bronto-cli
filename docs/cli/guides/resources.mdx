@@ -312,8 +312,8 @@ bronto monitors export <id> --include-dependencies
 bronto users export ada@example.com --format opentofu
 ```
 
-`--format` is `terraform` (the default) or `opentofu`. The output is HCL text, so `-o` and
-`--jq` don't apply. `--include-dependencies`, on monitors and dashboards, also exports
+`--format` is `terraform` (the default) or `opentofu`. The output is HCL text, so `-o`
+doesn't apply and `--jq` and `--fields` are refused. `--include-dependencies`, on monitors and dashboards, also exports
 what the resource references (a monitor's metric definition, the sources of a dashboard's
 widgets) and refers to that instead of a literal id. Bronto never returns secrets, so an
 exported webhook, provider integration, or identity provider carries a comment where one
