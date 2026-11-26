@@ -47,10 +47,14 @@ go generate ./internal/api
 
 if ! out=$(make --no-print-directory docs-reference 2>&1); then
   printf '%s\n' "$out" >&2
-  if printf '%s' "$out" | grep -q 'API coverage map'; then
-    echo "spec-update: the spec is re-vendored. Left to do: decide each line above in internal/cli/apicoverage.go, then run 'make docs-reference' and 'go test ./...'." >&2
-    exit 2
-  fi
+  # Matched in the shell, not through `| grep -q`: under pipefail a large
+  # report makes grep exit early, printf die of SIGPIPE, and this exit 1.
+  case "$out" in
+    *'API coverage map'*)
+      echo "spec-update: the spec is re-vendored. Left to do: decide each line above in internal/cli/apicoverage.go, then run 'make docs-reference' and 'go test ./...'." >&2
+      exit 2
+      ;;
+  esac
   exit 1
 fi
 echo "spec-update: done (upstream sha $upstream_sha). Review 'git diff --stat', then run 'go test ./...'."

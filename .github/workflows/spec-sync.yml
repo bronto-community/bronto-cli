@@ -158,9 +158,19 @@ jobs:
           # weekly rewrite would throw that work away. A newer upstream
           # state gets a new PR that names the one it supersedes.
           branch="spec-sync/${SHORT_SHA}"
+          branch_exists=false
           if gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${branch}" >/dev/null 2>&1; then
-            echo "::notice::Branch ${branch} already exists; nothing to do. Delete it to have this upstream state re-vendored from scratch."
-            exit 0
+            branch_exists=true
+            # A pull request in any state means this upstream state is
+            # being handled, or a person closed it on purpose.
+            prs=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" --state all --json number --jq length)
+            if [ "$prs" -gt 0 ]; then
+              echo "::notice::Branch ${branch} already has a pull request; nothing to do. Delete the branch to have this upstream state re-vendored from scratch."
+              exit 0
+            fi
+            # An earlier run pushed the branch and then failed to open the
+            # pull request. Open it for the branch as it is.
+            echo "::warning::Branch ${branch} exists without a pull request; opening one for it."
           fi
 
           # Labels and issues go through the default token (issues: write);
@@ -192,15 +202,17 @@ jobs:
             cat /tmp/oasdiff.md
           } > /tmp/pr-body.md
 
-          bot_id=$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)
-          git config user.name "${APP_SLUG}[bot]"
-          git config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
-          git switch -c "$branch"
-          git add -A -- api internal/api docs
-          git commit -q -m "$TITLE"
-          # checkout kept no credentials; let git ask gh for the app token.
-          gh auth setup-git
-          git push origin "HEAD:refs/heads/${branch}"
+          if [ "$branch_exists" = false ]; then
+            bot_id=$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)
+            git config user.name "${APP_SLUG}[bot]"
+            git config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+            git switch -c "$branch"
+            git add -A -- api internal/api docs
+            git commit -q -m "$TITLE"
+            # checkout kept no credentials; let git ask gh for the app token.
+            gh auth setup-git
+            git push origin "HEAD:refs/heads/${branch}"
+          fi
           # A draft while the coverage map still needs decisions.
           draft=()
           if [ "$UPDATE_RC" = 2 ]; then draft=(--draft); fi
