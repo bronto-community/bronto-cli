@@ -237,7 +237,9 @@ jobs:
     if: ${{ !contains(github.ref_name, '-') }}
     permissions:
       contents: read
-    uses: ./.github/workflows/dockerhub-description.yml
+    # zizmor wants `$/...` here, but actionlint v1.7.12 (the latest) rejects
+    # that syntax (rhysd/actionlint#711). Switch once actionlint accepts it.
+    uses: ./.github/workflows/dockerhub-description.yml # zizmor: ignore[self-repository]
     with:
       soft-fail: true
     secrets:
