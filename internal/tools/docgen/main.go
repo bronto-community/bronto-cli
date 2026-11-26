@@ -303,6 +303,7 @@ var commandIcons = map[string]string{
 	"permissions":     "shield-check",
 	"ping":            "radio",
 	"plugins":         "puzzle",
+	"policies":        "scroll-text",
 	"providers":       "siren",
 	"query":           "search-code",
 	"repl":            "square-terminal",
@@ -360,7 +361,7 @@ var pageDescriptions = map[string]string{
 	"config":          "Reference for the bronto config command in the bronto CLI, with the get, set, and list subcommands for viewing and changing local CLI configuration.",
 	"context":         "Reference for the bronto context command in the bronto CLI, which shows log events around a specific event using --timestamp, --sequence, and --direction.",
 	"dashboards":      "Reference for the bronto dashboards command in the bronto CLI, covering CRUD, apply, validate, export, templates, and widget subcommands for managing dashboards.",
-	"datasets":        "Reference for the bronto datasets command in the bronto CLI, covering CRUD, parser, dashboards, and monitors subcommands for managing log datasets.",
+	"datasets":        "Reference for the bronto datasets command in the bronto CLI, covering CRUD, parser, resolve, dashboards, and monitors subcommands for managing log datasets.",
 	"encryption-keys": "Reference for the bronto encryption-keys command in the bronto CLI, with flags for the create, get, list, update, and delete encryption key subcommands.",
 	"exports":         "Reference for the bronto exports command in the bronto CLI, with flags for the create, get, list, and delete subcommands that manage log data exports.",
 	"fields":          "Reference for the bronto fields command in the bronto CLI, which lists field names (top keys) in a log dataset with sample values, via --dataset.",
@@ -376,6 +377,7 @@ var pageDescriptions = map[string]string{
 	"permissions":     "Reference for the bronto permissions command in the bronto CLI, including the list subcommand for viewing access control permissions in your organization.",
 	"ping":            "Reference for the bronto ping command in the bronto CLI, which checks connectivity and API key credentials against the Bronto API, with JSON output.",
 	"plugins":         "Reference for the bronto plugins command in the bronto CLI, including the list subcommand that finds bronto-* plugin executables on your PATH.",
+	"policies":        "Reference for the bronto policies command in the bronto CLI, whose list subcommand shows the access policies that apply to one resource.",
 	"providers":       "Reference for the bronto providers command in the bronto CLI, with flags for the create, get, list, update, delete, and export subcommands that manage provider integrations.",
 	"query":           "Reference for the bronto query command in the bronto CLI, whose check subcommand validates search query expressions client-side for syntax and fields.",
 	"repl":            "Reference for the bronto repl command in the bronto CLI, which opens an interactive psql-style prompt for exploring logs with WHERE expression queries.",
@@ -392,7 +394,7 @@ var pageDescriptions = map[string]string{
 	"users":           "Reference for the bronto users command in the bronto CLI, covering create, get, list, update, groups, deactivate, reactivate, resend-invite, access, export, and delete.",
 	"version":         "Reference for the bronto version command in the bronto CLI, which prints the installed CLI version, commit hash, and build date, with usage examples.",
 	"webhooks":        "Reference for the bronto webhooks command in the bronto CLI, with flags for the create, get, list, update, delete, and export subcommands that manage webhooks.",
-	"widgets":         "Reference for the bronto widgets command in the bronto CLI, covering create, get, list, update, delete, query, templates, and attaching widgets to dashboards.",
+	"widgets":         "Reference for the bronto widgets command in the bronto CLI, covering create, get, list, update, patch, delete, query, templates, and attaching widgets.",
 }
 
 // checkPageDescriptions fails if pageDescriptions has an entry that is

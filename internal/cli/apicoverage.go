@@ -85,6 +85,10 @@ var apiOperationCommands = map[string][]string{
 	"GET /users/{userId}/access":                                      {"bronto users access"},
 	// Listing tags (#188); the writes are the three lines above.
 	"GET /tags/search": {"bronto tags list"},
+	// The remaining account endpoints (#193) and the partial widget update.
+	"GET /policies/resources/{resource_type}/{resource_id}": {"bronto policies list"},
+	"POST /datasets/resolve":                                {"bronto datasets resolve"},
+	"PATCH /widgets/{id}":                                   {"bronto widgets patch"},
 }
 
 // apiOperationsElsewhere maps spec operations no command calls, but whose
@@ -105,16 +109,15 @@ var apiOperationsElsewhere = map[string][]string{
 // what a user can't do; the coverage page lists it under "Not supported
 // yet", and `bronto api` reaches the endpoint meanwhile.
 var apiOperationsNotCovered = map[string]string{
-	"GET /users/all":                                          "List all users",
-	"GET /users/{userId}/preferences":                         "Read a user's preferences",
-	"PATCH /users/{userId}/preferences":                       "Change a user's preferences",
-	"POST /datasets/resolve":                                  "Resolve datasets",
+	"GET /users/all": "List all users",
 	"POST /organizations/{orgId}/access/user/{userId}/switch": "Switch a user's active organization",
-	"GET /explain-error":                                      "Explain an error with AI",
-	"GET /widget-creation-assistant":                          "Suggest a widget from a prompt with AI",
-	"GET /policies/resources/{resource_type}/{resource_id}":   "List the policies on a resource",
-	"PATCH /widgets/{id}":                                     "Change a widget's layout",
-	"POST /patterns":                                          "Get server-side log patterns and their templates",
+	"GET /explain-error":             "Explain an error with AI",
+	"GET /widget-creation-assistant": "Suggest a widget from a prompt with AI",
+	"POST /patterns":                 "Get server-side log patterns and their templates",
+	// Live (2026-11-26) GET answers 403 to an AdminApi key: preferences
+	// belong to a signed-in user, so no command can offer them (#193).
+	"GET /users/{userId}/preferences":   "Read a user's preferences",
+	"PATCH /users/{userId}/preferences": "Change a user's preferences",
 }
 
 // apiOperationsOutsideSpec lists the endpoints hand-written commands call

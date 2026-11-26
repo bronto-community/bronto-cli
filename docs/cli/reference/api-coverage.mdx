@@ -42,7 +42,7 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 | Limits | [`bronto limits`](/cli/reference/commands/limits) |
 | Permissions | [`bronto permissions`](/cli/reference/commands/permissions) |
 | AI | None yet |
-| Policies | None yet |
+| Policies | [`bronto policies`](/cli/reference/commands/policies) |
 | Encryption keys | [`bronto encryption-keys`](/cli/reference/commands/encryption-keys) |
 | Metrics | [`bronto metrics`](/cli/reference/commands/metrics) |
 | Time series | [`bronto metrics`](/cli/reference/commands/metrics), [`bronto widgets`](/cli/reference/commands/widgets), [`bronto dashboards`](/cli/reference/commands/dashboards) |
@@ -55,10 +55,7 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 | Users | List all users | `GET /users/all` |
 |  | Read a user's preferences | `GET /users/{userId}/preferences` |
 |  | Change a user's preferences | `PATCH /users/{userId}/preferences` |
-| Datasets | Resolve datasets | `POST /datasets/resolve` |
 | Access | Switch a user's active organization | `POST /organizations/{orgId}/access/user/{userId}/switch` |
-| Widgets | Change a widget's layout | `PATCH /widgets/{id}` |
 | AI | Explain an error with AI | `GET /explain-error` |
 |  | Suggest a widget from a prompt with AI | `GET /widget-creation-assistant` |
-| Policies | List the policies on a resource | `GET /policies/resources/{resource_type}/{resource_id}` |
 | Patterns | Get server-side log patterns and their templates | `POST /patterns` |

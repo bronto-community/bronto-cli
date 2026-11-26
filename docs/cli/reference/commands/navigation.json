@@ -30,6 +30,7 @@
     "cli/reference/commands/permissions",
     "cli/reference/commands/ping",
     "cli/reference/commands/plugins",
+    "cli/reference/commands/policies",
     "cli/reference/commands/providers",
     "cli/reference/commands/query",
     "cli/reference/commands/repl",

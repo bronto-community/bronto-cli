@@ -77,6 +77,11 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/forward-configs/test-destination", Command: "bronto forward-configs test"},
 	// forward-configs test <name> reads the saved destination from the list.
 	{Pattern: "/forward-configs", Command: "bronto forward-configs test"},
+	{Pattern: "/policies/resources/{*}/{*}", Command: "bronto policies list"},
+	{Pattern: "/datasets/resolve", Command: "bronto datasets resolve"},
+	// widgets patch resolves the widget's name through the list.
+	{Pattern: "/widgets", Command: "bronto widgets patch"},
+	{Pattern: "/widgets/{*}", Command: "bronto widgets patch"},
 	{Pattern: "/users/{*}/deactivate", Command: "bronto users deactivate"},
 	{Pattern: "/users/{*}/reactivate", Command: "bronto users reactivate"},
 	{Pattern: "/users/{*}/resend-invite", Command: "bronto users resend-invite"},
