@@ -27,8 +27,13 @@ import (
 // someone decides which command covers it. An endpoint a command calls only
 // as a helper (resolving a dataset or user name, reading ownership tags)
 // does not count: the operation is covered only when a command exposes
-// what it does. TestAPICoverageMatchesRequests checks each hand-written
-// entry against the requests the command really makes.
+// what it does. TestAPICoverageMatchesRequests checks the hand-written
+// entries against the requests the commands really make, both ways: each
+// command listed for an operation must request it, and no command may
+// request an operation listed in apiOperationsNotCovered or
+// apiOperationsElsewhere, so a new command that calls one fails until it is
+// added to apiOperationCommands. TestEveryCommandIsInventoried makes every
+// hand-written command either get a probe or say why it can't have one.
 
 // apiOperationCommands maps a spec operation ("METHOD /path" with the
 // spec's own parameter names) to the hand-written commands that expose it.
@@ -61,6 +66,11 @@ var apiOperationCommands = map[string][]string{
 	"GET /metrics/{metric_id}/top-keys":                   {"bronto metrics top-keys"},
 	"GET /timeseries/{metric_definition_id}":              {"bronto metrics definitions query", "bronto widgets query"},
 	"POST /timeseries/search":                             {"bronto metrics query", "bronto dashboards validate"},
+	// apply sets a manifest's dashboard tags and its own ownership tags
+	// through the tags API (live, create and update bodies drop tags).
+	"POST /tags":   {"bronto dashboards apply"},
+	"PUT /tags":    {"bronto dashboards apply"},
+	"DELETE /tags": {"bronto dashboards apply"},
 }
 
 // apiOperationsElsewhere maps spec operations no command calls, but whose
@@ -111,9 +121,6 @@ var apiOperationsNotCovered = map[string]string{
 	"GET /customer":                                                   "Read the organization's customer record",
 	"PATCH /customer":                                                 "Update the organization's customer record",
 	"GET /tags/search":                                                "List tags",
-	"POST /tags":                                                      "Create a tag",
-	"PUT /tags":                                                       "Update a tag",
-	"DELETE /tags":                                                    "Delete a tag",
 	"GET /explain-error":                                              "Explain an error with AI",
 	"GET /widget-creation-assistant":                                  "Suggest a widget from a prompt with AI",
 	"GET /policies/resources/{resource_type}/{resource_id}":           "List the policies on a resource",
