@@ -78,6 +78,8 @@ var endpointProbes = map[string][][]string{
 	"bronto traces shape":                    {{"traces", "shape"}},
 	"bronto traces show":                     {{"traces", "show", "abc"}},
 	"bronto usage":                           {{"usage"}},
+	"bronto sso idps export":                 {{"sso", "idps", "export", "Google"}},
+	"bronto sso mappings export":             {{"sso", "mappings", "export"}},
 	"bronto monitors check":                  {{"monitors", "check", "--input", "@MONITOR"}},
 	"bronto monitors events":                 {{"monitors", "events", probeID}},
 	"bronto monitors mute":                   {{"monitors", "mute", probeID}},
@@ -112,7 +114,7 @@ var endpointProbes = map[string][][]string{
 	// changes d1's tags (add, update, remove), so between them every write
 	// apply makes is recorded.
 	"bronto dashboards apply":        {{"dashboards", "apply", "-f", "@MANIFEST"}, {"dashboards", "apply", "-f", "@UPDATE_MANIFEST"}},
-	"bronto dashboards export":       {{"dashboards", "export", probeID}},
+	"bronto dashboards export":       {{"dashboards", "export", probeID}, {"dashboards", "export", probeID, "--format", "terraform"}},
 	"bronto dashboards validate":     {{"dashboards", "validate", "-f", "@MANIFEST", "--live"}},
 	"bronto metrics definitions get": {{"metrics", "definitions", "get", probeID}, {"metrics", "definitions", "get", probeMissingID}},
 }

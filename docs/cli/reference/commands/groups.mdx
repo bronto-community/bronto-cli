@@ -1,7 +1,7 @@
 ---
 title: "bronto groups"
 sidebarTitle: "groups"
-description: "Reference for the bronto groups command in the bronto CLI, covering create, get, list, update, delete, and member subcommands for managing user groups."
+description: "Reference for the bronto groups command in the bronto CLI, covering create, get, list, update, delete, export, and member subcommands for managing user groups."
 icon: "users"
 ---
 
@@ -25,6 +25,7 @@ bronto groups <command> [flags]
 | [`bronto groups add-members`](/cli/reference/commands/groups#bronto-groups-add-members) | Add users or groups to a group |
 | [`bronto groups create`](/cli/reference/commands/groups#bronto-groups-create) | Create a group |
 | [`bronto groups delete`](/cli/reference/commands/groups#bronto-groups-delete) | Delete a group |
+| [`bronto groups export`](/cli/reference/commands/groups#bronto-groups-export) | Write a group as Terraform or OpenTofu |
 | [`bronto groups get`](/cli/reference/commands/groups#bronto-groups-get) | Get a group by ID |
 | [`bronto groups list`](/cli/reference/commands/groups#bronto-groups-list) | List groups |
 | [`bronto groups members`](/cli/reference/commands/groups#bronto-groups-members) | List the members of a group |
@@ -101,6 +102,29 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto groups delete <id> --yes
+```
+
+## bronto groups export
+
+Writes a group as infrastructure-as-code (HCL) on stdout, to check into version control
+and manage with the Bronto Terraform provider. The output is text, so -o does not apply.
+
+```sh
+bronto groups export <id> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--format` |  | string | `terraform` | export format: terraform or opentofu |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto groups export <id> > group.tf
 ```
 
 ## bronto groups get

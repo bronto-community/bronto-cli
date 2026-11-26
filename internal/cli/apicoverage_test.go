@@ -247,22 +247,22 @@ func TestAPICoverageRejectsUnmappedRequests(t *testing.T) {
 		t.Fatal(err)
 	}
 	recorded := map[string][]string{
-		"bronto api": recordRequests(t, []string{"api", "GET", "/customer"}),
+		"bronto api": recordRequests(t, []string{"api", "GET", "/explain-error"}),
 		"bronto cli-test-new": {
-			"GET /users/" + probeID + "/export", // not supported yet
-			"GET /users/all",                    // not supported yet; not GET /users/{userId}
-			"GET /search",                       // offered elsewhere
-			"GET /logs",                         // a helper call: mapped to datasets list
-			"GET /dashboards/templates",         // outside the spec; not GET /dashboards/{dashboardId}
-			"GET /usage",                        // outside the spec
+			"POST /patterns",            // not supported yet
+			"GET /users/all",            // not supported yet; not GET /users/{userId}
+			"GET /search",               // offered elsewhere
+			"GET /logs",                 // a helper call: mapped to datasets list
+			"GET /dashboards/templates", // outside the spec; not GET /dashboards/{dashboardId}
+			"GET /usage",                // outside the spec
 		},
 	}
 	problems := unmappedRequests(ops, recorded)
 	want := []string{
-		`bronto api calls GET /customer (GET /customer), which apiOperationsNotCovered lists as not supported yet ("Read the organization's customer record"): move it to apiOperationCommands under "bronto api"`,
+		`bronto api calls GET /explain-error (GET /explain-error), which apiOperationsNotCovered lists as not supported yet ("Explain an error with AI"): move it to apiOperationCommands under "bronto api"`,
 		`bronto cli-test-new calls GET /search (GET /search), which apiOperationsElsewhere says no command calls: move it to apiOperationCommands under "bronto cli-test-new"`,
 		`bronto cli-test-new calls GET /users/all (GET /users/all), which apiOperationsNotCovered`,
-		`bronto cli-test-new calls GET /users/{userId}/export (GET /users/` + probeID + `/export), which apiOperationsNotCovered`,
+		`bronto cli-test-new calls POST /patterns (POST /patterns), which apiOperationsNotCovered`,
 	}
 	if len(problems) != len(want) {
 		t.Fatalf("got %d problems, want %d:\n  %s", len(problems), len(want), strings.Join(problems, "\n  "))

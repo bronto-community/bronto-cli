@@ -1,7 +1,7 @@
 ---
 title: "bronto users"
 sidebarTitle: "users"
-description: "Reference for the bronto users command in the bronto CLI, covering create, get, list, update, groups, deactivate, reactivate, resend-invite, and delete."
+description: "Reference for the bronto users command in the bronto CLI, covering create, get, list, update, groups, deactivate, reactivate, resend-invite, export, and delete."
 icon: "users"
 ---
 
@@ -25,6 +25,7 @@ bronto users <command> [flags]
 | [`bronto users create`](/cli/reference/commands/users#bronto-users-create) | Create a user |
 | [`bronto users deactivate`](/cli/reference/commands/users#bronto-users-deactivate) | Deactivate a user |
 | [`bronto users delete`](/cli/reference/commands/users#bronto-users-delete) | Delete a user |
+| [`bronto users export`](/cli/reference/commands/users#bronto-users-export) | Write a user as Terraform or OpenTofu |
 | [`bronto users get`](/cli/reference/commands/users#bronto-users-get) | Get a user by ID |
 | [`bronto users groups`](/cli/reference/commands/users#bronto-users-groups) | List the groups a user belongs to |
 | [`bronto users list`](/cli/reference/commands/users#bronto-users-list) | List users |
@@ -95,6 +96,29 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto users delete <id> --yes
+```
+
+## bronto users export
+
+Writes a user as infrastructure-as-code (HCL) on stdout, to check into version control
+and manage with the Bronto Terraform provider. The output is text, so -o does not apply.
+
+```sh
+bronto users export <id> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--format` |  | string | `terraform` | export format: terraform or opentofu |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto users export <id> > user.tf
 ```
 
 ## bronto users get

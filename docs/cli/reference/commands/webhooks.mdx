@@ -1,7 +1,7 @@
 ---
 title: "bronto webhooks"
 sidebarTitle: "webhooks"
-description: "Reference for the bronto webhooks command in the bronto CLI, with flags for the create, list, update, and delete subcommands that manage webhooks."
+description: "Reference for the bronto webhooks command in the bronto CLI, with flags for the create, list, update, delete, and export subcommands that manage webhooks."
 icon: "webhook"
 ---
 
@@ -24,6 +24,7 @@ bronto webhooks <command> [flags]
 | --- | --- |
 | [`bronto webhooks create`](/cli/reference/commands/webhooks#bronto-webhooks-create) | Create a webhook |
 | [`bronto webhooks delete`](/cli/reference/commands/webhooks#bronto-webhooks-delete) | Delete a webhook |
+| [`bronto webhooks export`](/cli/reference/commands/webhooks#bronto-webhooks-export) | Write a webhook as Terraform or OpenTofu |
 | [`bronto webhooks list`](/cli/reference/commands/webhooks#bronto-webhooks-list) | List webhooks |
 | [`bronto webhooks update`](/cli/reference/commands/webhooks#bronto-webhooks-update) | Update a webhook |
 
@@ -73,6 +74,29 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto webhooks delete <id> --yes
+```
+
+## bronto webhooks export
+
+Writes a webhook as infrastructure-as-code (HCL) on stdout, to check into version control
+and manage with the Bronto Terraform provider. The output is text, so -o does not apply.
+
+```sh
+bronto webhooks export <id> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--format` |  | string | `terraform` | export format: terraform or opentofu |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto webhooks export <id> > webhook.tf
 ```
 
 ## bronto webhooks list
