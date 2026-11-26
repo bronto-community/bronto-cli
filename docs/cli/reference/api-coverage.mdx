@@ -37,7 +37,7 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 | Integrations | [`bronto slack`](/cli/reference/commands/slack), [`bronto webhooks`](/cli/reference/commands/webhooks), [`bronto providers`](/cli/reference/commands/providers) |
 | SSO | [`bronto sso`](/cli/reference/commands/sso) |
 | Exports | [`bronto exports`](/cli/reference/commands/exports) |
-| Customer | None yet |
+| Customer | [`bronto org`](/cli/reference/commands/org) |
 | Tags | [`bronto dashboards`](/cli/reference/commands/dashboards) |
 | Limits | [`bronto limits`](/cli/reference/commands/limits) |
 | Permissions | [`bronto permissions`](/cli/reference/commands/permissions) |
@@ -63,8 +63,6 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 |  | Check whether a user or group has access to an organization | `GET /organizations/{orgId}/access/{entityType}/{entityId}/check` |
 |  | Switch a user's active organization | `POST /organizations/{orgId}/access/user/{userId}/switch` |
 | Widgets | Change a widget's layout | `PATCH /widgets/{id}` |
-| Customer | Read the organization's customer record | `GET /customer` |
-|  | Update the organization's customer record | `PATCH /customer` |
 | Tags | List tags | `GET /tags/search` |
 | AI | Explain an error with AI | `GET /explain-error` |
 |  | Suggest a widget from a prompt with AI | `GET /widget-creation-assistant` |

@@ -37,6 +37,7 @@ type EndpointPattern struct {
 var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/search", Command: "bronto search / tail / traces / ask / repl"},
 	{Pattern: "/context", Command: "bronto context"},
+	{Pattern: "/customer", Command: "bronto org"},
 	{Pattern: "/top-keys", Command: "bronto fields / ask / query check / search / repl"},
 	{Pattern: "/usage", Command: "bronto usage"},
 	{Pattern: "/sso/idps/{*}/export", Command: "bronto sso idps export"},

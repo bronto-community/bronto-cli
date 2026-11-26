@@ -74,6 +74,9 @@ var apiOperationCommands = map[string][]string{
 	// The SSO exports; the other export operations are registry verbs.
 	"GET /sso/idps/{idp_name}/export": {"bronto sso idps export"},
 	"GET /sso/mappings/export":        {"bronto sso mappings export"},
+	// The org record (#191).
+	"GET /customer":   {"bronto org show"},
+	"PATCH /customer": {"bronto org update"},
 }
 
 // apiOperationsElsewhere maps spec operations no command calls, but whose
@@ -104,14 +107,12 @@ var apiOperationsNotCovered = map[string]string{
 	"GET /organizations/{orgId}/access":                               "List who has access to an organization",
 	"GET /organizations/{orgId}/access/{entityType}/{entityId}/check": "Check whether a user or group has access to an organization",
 	"POST /organizations/{orgId}/access/user/{userId}/switch":         "Switch a user's active organization",
-	"GET /customer":                  "Read the organization's customer record",
-	"PATCH /customer":                "Update the organization's customer record",
-	"GET /tags/search":               "List tags",
-	"GET /explain-error":             "Explain an error with AI",
-	"GET /widget-creation-assistant": "Suggest a widget from a prompt with AI",
-	"GET /policies/resources/{resource_type}/{resource_id}": "List the policies on a resource",
-	"PATCH /widgets/{id}": "Change a widget's layout",
-	"POST /patterns":      "Get server-side log patterns and their templates",
+	"GET /tags/search":                                                "List tags",
+	"GET /explain-error":                                              "Explain an error with AI",
+	"GET /widget-creation-assistant":                                  "Suggest a widget from a prompt with AI",
+	"GET /policies/resources/{resource_type}/{resource_id}":           "List the policies on a resource",
+	"PATCH /widgets/{id}":                                             "Change a widget's layout",
+	"POST /patterns":                                                  "Get server-side log patterns and their templates",
 }
 
 // apiOperationsOutsideSpec lists the endpoints hand-written commands call
