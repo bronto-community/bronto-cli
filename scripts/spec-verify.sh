@@ -7,15 +7,14 @@
 # internal/api/doc.go), so `go generate && git diff --exit-code` was a
 # no-op that could never fail, while CONTRIBUTING claimed it guarded the
 # vendored spec against accidental edits. A recorded digest actually does:
-# any edit to api/openapi.yaml — accidental or a deliberate re-vendor/patch
+# any edit to api/openapi.yaml — accidental or a deliberate re-vendor
 # — must come with a matching api/vendored.sha256 update in the same
 # commit (`make spec-baseline`), which is the reviewable governance step,
 # same pattern as .github/coverage-baseline.txt.
 #
-# Note the distinction from api/upstream.sha256: that file records the
-# digest of the UPSTREAM spec at vendoring time (spec-sync.yml compares it
-# against the currently published spec); the vendored openapi.yaml is
-# patched after vendoring, so its digest is recorded separately here.
+# api/upstream.sha256 holds the same digest since the spec is vendored
+# unmodified (make spec-update writes both); spec-sync.yml compares that
+# file against the currently published spec.
 #
 # Usage:
 #   spec-verify.sh              verify the digest
@@ -72,7 +71,7 @@ if [ "$got" != "$want" ]; then
   echo "spec-verify: api/openapi.yaml does not match the recorded vendored digest" >&2
   echo "  recorded: $want  ($record)" >&2
   echo "  actual:   $got" >&2
-  echo "If this edit is intentional (re-vendor or patch), update the record in the same commit: make spec-baseline" >&2
+  echo "If this edit is intentional (a re-vendor), redo it with: make spec-update" >&2
   exit 1
 fi
 echo "spec-verify: ok ($got)"

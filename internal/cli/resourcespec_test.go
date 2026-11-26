@@ -36,8 +36,7 @@ func specPaths(t *testing.T) map[string]bool {
 	paths, err := parseSpec(data)
 	if err != nil {
 		t.Fatalf("api/openapi.yaml is not a well-formed OpenAPI document: %v\n"+
-			"Re-vendor by downloading the upstream spec whole and re-applying the "+
-			"'bronto-cli vendor patch' notes; don't hand-splice path blocks.", err)
+			"Re-vendor with 'make spec-update'; don't hand-splice path blocks.", err)
 	}
 	return paths
 }

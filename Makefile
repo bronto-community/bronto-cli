@@ -1,4 +1,4 @@
-.PHONY: build test lint check-spec spec-baseline lint-workflows check-actions release-dry snapshot coverage coverage-baseline it it-local browser demo-traces vuln mutation
+.PHONY: build test lint check-spec spec-baseline spec-update lint-workflows check-actions release-dry snapshot coverage coverage-baseline it it-local browser demo-traces vuln mutation
 
 build:
 	CGO_ENABLED=0 go build -o bronto ./cmd/bronto
@@ -21,6 +21,13 @@ check-spec:
 # reviewable governance step, same pattern as coverage-baseline.
 spec-baseline:
 	scripts/spec-verify.sh --record
+
+# spec-update re-vendors api/openapi.yaml from the published spec and redoes
+# everything mechanical that follows:
+# both digests, the generated URL templates and the docs reference. It
+# prints what is left for a human; see scripts/spec-update.sh.
+spec-update:
+	scripts/spec-update.sh
 
 # lint-workflows enforces the version-pin policy on CI/release surfaces
 # (workflows, Makefile tool invocations, Dockerfiles).

@@ -1,8 +1,15 @@
-# Watches the published Bronto OpenAPI spec and raises (or updates) a GitHub
-# issue when it drifts from the upstream state our vendored api/openapi.yaml
-# was built from. Deliberately does NOT touch api/openapi.yaml: the vendored
-# spec carries hand-applied patches (grep "bronto-cli vendor patch"), so a
-# human re-vendors, re-patches, regenerates, and updates api/upstream.sha256.
+# Watches the published Bronto OpenAPI spec. When it drifts from the upstream
+# state our vendored api/openapi.yaml was built from (api/upstream.sha256),
+# runs scripts/spec-update.sh (the same `make spec-update` a person runs)
+# and opens a pull request with the result and a CLI-impact digest: a draft
+# when the spec has operations the API coverage map doesn't know yet. The
+# vendored spec is the upstream file, unmodified. If the script fails, it
+# raises or updates a drift issue instead.
+#
+# The pull request is opened with an installation token of the Bronto
+# Community Bot app (the org secrets release.yml uses), because a PR opened
+# with the default GITHUB_TOKEN doesn't trigger CI. The app is installed on
+# this repository with Contents and Pull requests: read & write.
 name: Spec sync
 
 on:
@@ -14,7 +21,12 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: spec-sync
+  cancel-in-progress: false
+
 env:
+  # Keep the default in sync with scripts/spec-update.sh.
   SPEC_URL: ${{ vars.SPEC_URL || 'https://s3.eu-west-1.amazonaws.com/docs.brontobytes.io/redocusaurus/brontobytes.yaml' }}
 
 jobs:
@@ -39,6 +51,7 @@ jobs:
           UPSTREAM_SHA=$(sha256sum /tmp/upstream.yaml | cut -d' ' -f1)
           BASELINE_SHA=$(cut -d' ' -f1 < api/upstream.sha256)
           echo "upstream_sha=${UPSTREAM_SHA}" >> "$GITHUB_OUTPUT"
+          echo "baseline=$(cat api/upstream.sha256)" >> "$GITHUB_OUTPUT"
           if [ "$UPSTREAM_SHA" = "$BASELINE_SHA" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Upstream spec unchanged (sha ${UPSTREAM_SHA})."
@@ -50,6 +63,25 @@ jobs:
         if: steps.compare.outputs.changed == 'true'
         with:
           go-version-file: go.mod
+          # This job's output is pushed to a branch; don't build it from a
+          # restored module/build cache. A weekly run gains little from one.
+          cache: false
+
+      - name: Re-vendor (scripts/spec-update.sh)
+        id: update
+        if: steps.compare.outputs.changed == 'true'
+        run: |
+          cp api/openapi.yaml /tmp/base.yaml
+          # CLI endpoint inventory for the digest, taken from the clean tree.
+          go run ./internal/tools/endpointmap \
+            > /tmp/cli-endpoints.json 2> /tmp/oasdiff-stderr.log || true
+          # 0 = done, 2 = re-vendored but the API coverage map needs a
+          # human decision (the PR's CI stays red until then), anything
+          # else = failed, and the issue step below takes over.
+          rc=0
+          scripts/spec-update.sh /tmp/upstream.yaml > /tmp/spec-update.log 2>&1 || rc=$?
+          cat /tmp/spec-update.log
+          echo "rc=${rc}" >> "$GITHUB_OUTPUT"
 
       - name: Build change digest (oasdiff)
         if: steps.compare.outputs.changed == 'true'
@@ -65,18 +97,16 @@ jobs:
           # the report — it used to fill the issue with "go: downloading"
           # noise. Both commands are best-effort: spec-digest.sh degrades
           # gracefully on missing/invalid JSON.
-          go run github.com/oasdiff/oasdiff@v1.25.1 diff api/openapi.yaml /tmp/upstream.yaml -f json \
-            > /tmp/oasdiff-diff.json 2> /tmp/oasdiff-stderr.log || true
-          go run github.com/oasdiff/oasdiff@v1.25.1 breaking api/openapi.yaml /tmp/upstream.yaml -f json \
+          go run github.com/oasdiff/oasdiff@v1.25.1 diff /tmp/base.yaml /tmp/upstream.yaml -f json \
+            > /tmp/oasdiff-diff.json 2>> /tmp/oasdiff-stderr.log || true
+          go run github.com/oasdiff/oasdiff@v1.25.1 breaking /tmp/base.yaml /tmp/upstream.yaml -f json \
             > /tmp/oasdiff-breaking.json 2>> /tmp/oasdiff-stderr.log || true
-          # CLI endpoint inventory: lets the digest classify spec changes
-          # by impact on bronto commands (new-and-uncovered / removed-but-
-          # used / modified-backing-a-command).
-          go run ./internal/tools/endpointmap \
-            > /tmp/cli-endpoints.json 2>> /tmp/oasdiff-stderr.log || true
+          # cli-endpoints.json (from the step above) lets the digest
+          # classify spec changes by impact on bronto commands (new-and-
+          # uncovered / removed-but-used / modified-backing-a-command).
           scripts/spec-digest.sh /tmp/oasdiff-diff.json /tmp/oasdiff-breaking.json /tmp/oasdiff.md /tmp/cli-endpoints.json
-          # GitHub issue bodies cap at 65536 chars; leave room for the
-          # surrounding body text.
+          # GitHub issue and PR bodies cap at 65536 chars; leave room for
+          # the surrounding body text.
           if [ "$(wc -c < /tmp/oasdiff.md)" -gt 55000 ]; then
             head -c 55000 /tmp/oasdiff.md > /tmp/oasdiff.md.tmp
             printf '\n\n_…digest truncated; the full oasdiff JSON is in the workflow run artifacts._\n' >> /tmp/oasdiff.md.tmp
@@ -93,34 +123,121 @@ jobs:
             /tmp/oasdiff-breaking.json
             /tmp/cli-endpoints.json
             /tmp/oasdiff-stderr.log
+            /tmp/spec-update.log
           retention-days: 30
 
-      - name: Create or update the drift issue
-        if: steps.compare.outputs.changed == 'true'
+      - name: Mint a token for the pull request
+        id: app
+        if: steps.update.outputs.rc == '0' || steps.update.outputs.rc == '2'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          # Org secrets, shared with the release workflow's tap token. The
+          # token is scoped to this repository (the action's default).
+          app-id: ${{ secrets.BRONTO_COMMUNITY_BOT_APP_ID }}
+          private-key: ${{ secrets.BRONTO_COMMUNITY_BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Open the pull request
+        id: pr
+        if: steps.update.outputs.rc == '0' || steps.update.outputs.rc == '2'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          DEFAULT_TOKEN: ${{ github.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
           UPSTREAM_SHA: ${{ steps.compare.outputs.upstream_sha }}
+          BASELINE: ${{ steps.compare.outputs.baseline }}
+          UPDATE_RC: ${{ steps.update.outputs.rc }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           SHORT_SHA=$(printf '%s' "$UPSTREAM_SHA" | cut -c1-12)
           RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          # The marker carries a report-format version (v2 = digest format):
-          # bumping it makes the workflow refresh an open issue that still
-          # has an old-format body even when the upstream sha is unchanged.
+          TITLE="chore(spec): re-vendor the Bronto OpenAPI spec (upstream ${SHORT_SHA})"
+          # One branch per upstream state, never force-pushed: people push
+          # the commands a new endpoint needs onto the PR branch, and a
+          # weekly rewrite would throw that work away. A newer upstream
+          # state gets a new PR that names the one it supersedes.
+          branch="spec-sync/${SHORT_SHA}"
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${branch}" >/dev/null 2>&1; then
+            echo "::notice::Branch ${branch} already exists; nothing to do. Delete it to have this upstream state re-vendored from scratch."
+            exit 0
+          fi
+
+          # Labels and issues go through the default token (issues: write);
+          # the app token only has contents and pull requests.
+          GH_TOKEN="$DEFAULT_TOKEN" gh label create spec-sync --repo "$GITHUB_REPOSITORY" \
+            --description "Upstream OpenAPI spec drift" --color BFD4F2 2>/dev/null || true
+          ISSUES=$(GH_TOKEN="$DEFAULT_TOKEN" gh issue list --repo "$GITHUB_REPOSITORY" --label spec-sync \
+            --state open --json number --jq '.[].number')
+          OLD_PRS=$(gh pr list --repo "$GITHUB_REPOSITORY" --label spec-sync \
+            --state open --json number --jq '.[].number')
+
           # shellcheck disable=SC2016 # single-quoted backticks below are markdown, not command substitution
           {
-            printf '<!-- spec-sync:v2:sha256=%s -->\n\n' "$UPSTREAM_SHA"
-            printf 'The published Bronto OpenAPI spec has drifted from the state our vendored `api/openapi.yaml` was built from.\n\n'
+            printf '<!-- spec-sync:v3:sha256=%s -->\n\n' "$UPSTREAM_SHA"
+            printf 'Re-vendors `api/openapi.yaml` from the published Bronto OpenAPI spec. Everything in the first commit was produced by `make spec-update`.\n\n'
             printf -- '- Upstream: %s\n' "$SPEC_URL"
             printf -- '- Upstream sha256: `%s`\n' "$UPSTREAM_SHA"
-            printf -- '- Recorded baseline: `%s`\n' "$(cat api/upstream.sha256)"
+            printf -- '- Previous baseline: `%s`\n' "$BASELINE"
             printf -- '- Full machine-readable diff: [workflow run artifacts](%s)\n\n' "$RUN_URL"
-            printf 'To re-vendor:\n\n'
-            printf -- '- [ ] Download the upstream spec whole over `api/openapi.yaml` (do not hand-splice path blocks: CI parses the spec and rejects invalid YAML, duplicate keys and dangling `$ref`s)\n'
-            printf -- '- [ ] Re-apply the hand patches (`grep -n "bronto-cli vendor patch" git history / previous spec`)\n'
-            printf -- '- [ ] `make spec-baseline && go generate ./internal/api && go test ./...` (records the new vendored digest and regenerates the span-name URL templates; the resource conformance test guards drift)\n'
-            printf -- '- [ ] Map each new operation to its command in `internal/cli/apicoverage.go`, or mark it not covered (`TestAPICoverage` fails until you do), then `make docs-reference`\n'
-            printf -- '- [ ] Update `api/upstream.sha256` to `%s <date>`\n\n' "$UPSTREAM_SHA"
+            if [ "$UPDATE_RC" = 2 ]; then
+              printf '**Draft: CI fails until the API coverage map is updated.** Decide each line below in `internal/cli/apicoverage.go` (build a command, or list the operation as not supported yet), then run `make docs-reference` and push to this branch:\n\n```\n'
+              sed -n '/API coverage map/,$p' /tmp/spec-update.log | head -c 8000
+              printf '\n```\n\n'
+            fi
+            printf 'Before merging, re-check the commands the digest lists under "Modified endpoints backing existing commands", and push any CLI change they need to this branch.\n\n'
+            for n in $ISSUES; do printf 'Closes #%s\n' "$n"; done
+            for n in $OLD_PRS; do printf 'Supersedes #%s: move any hand-written commits over, then close it.\n' "$n"; done
+            printf '\n'
             cat /tmp/oasdiff.md
+          } > /tmp/pr-body.md
+
+          bot_id=$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add -A -- api internal/api docs
+          git commit -q -m "$TITLE"
+          # checkout kept no credentials; let git ask gh for the app token.
+          gh auth setup-git
+          git push origin "HEAD:refs/heads/${branch}"
+          # A draft while the coverage map still needs decisions.
+          draft=()
+          if [ "$UPDATE_RC" = 2 ]; then draft=(--draft); fi
+          gh pr create --repo "$GITHUB_REPOSITORY" --base "$BASE_BRANCH" --head "$branch" \
+            --label spec-sync --title "$TITLE" --body-file /tmp/pr-body.md "${draft[@]}"
+
+      # Fallback: the re-vendor failed, or the pull request could not be
+      # opened (the job is red in that case), so a person has to do it.
+      - name: Create or update the drift issue
+        if: always() && steps.compare.outputs.changed == 'true' && steps.pr.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM_SHA: ${{ steps.compare.outputs.upstream_sha }}
+          BASELINE: ${{ steps.compare.outputs.baseline }}
+        run: |
+          SHORT_SHA=$(printf '%s' "$UPSTREAM_SHA" | cut -c1-12)
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          # The marker carries a report-format version (v3 = spec-update
+          # output): bumping it makes the workflow refresh an open issue
+          # that still has an old-format body even when the upstream sha is
+          # unchanged.
+          # shellcheck disable=SC2016 # single-quoted backticks below are markdown, not command substitution
+          {
+            printf '<!-- spec-sync:v3:sha256=%s -->\n\n' "$UPSTREAM_SHA"
+            printf 'The published Bronto OpenAPI spec has drifted from the state our vendored `api/openapi.yaml` was built from, and the automatic re-vendor did not produce a pull request.\n\n'
+            printf -- '- Upstream: %s\n' "$SPEC_URL"
+            printf -- '- Upstream sha256: `%s`\n' "$UPSTREAM_SHA"
+            printf -- '- Recorded baseline: `%s`\n' "$BASELINE"
+            printf -- '- Full machine-readable diff: [workflow run](%s)\n\n' "$RUN_URL"
+            printf 'To re-vendor by hand:\n\n'
+            printf -- '- [ ] Run `make spec-update` and fix what it reports\n'
+            printf -- '- [ ] Map each operation it lists in `internal/cli/apicoverage.go` (`TestAPICoverage` fails until you do), then `make docs-reference`\n'
+            printf -- '- [ ] `go test ./...`, then open a pull request that closes this issue\n\n'
+            printf '<details><summary>Output of scripts/spec-update.sh in the workflow run</summary>\n\n```\n'
+            tail -c 4000 /tmp/spec-update.log 2>/dev/null || echo '(the script did not run)'
+            printf '\n```\n\n</details>\n\n'
+            cat /tmp/oasdiff.md 2>/dev/null || true
           } > /tmp/issue-body.md
 
           gh label create spec-sync --repo "$GITHUB_REPOSITORY" \
@@ -134,7 +251,7 @@ jobs:
             gh issue create --repo "$GITHUB_REPOSITORY" --label spec-sync \
               --title "$TITLE" --body-file /tmp/issue-body.md
           elif gh issue view "$EXISTING" --repo "$GITHUB_REPOSITORY" --json body --jq .body \
-              | grep -q "spec-sync:v2:sha256=${UPSTREAM_SHA}"; then
+              | grep -q "spec-sync:v3:sha256=${UPSTREAM_SHA}"; then
             echo "::notice::Open issue #${EXISTING} already reports sha ${SHORT_SHA}; nothing to do."
           else
             gh issue edit "$EXISTING" --repo "$GITHUB_REPOSITORY" \
