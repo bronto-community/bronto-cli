@@ -210,8 +210,9 @@ func (d resourceDesc) plural() string {
 // resourceRegistry is the single source of truth for every uniform Bronto
 // management resource. resourcespec_test.go asserts each entry's Base,
 // CreatePath, and IDBase correspond to real api/openapi.yaml paths (modulo
-// the documented exceptions there). Tags is intentionally absent: the API
-// models it as base-path PUT/DELETE + /tags/search; use `bronto api`.
+// the documented exceptions there). Tags are not here: the API models
+// them as base-path POST/PUT/DELETE plus /tags/search, which the factory
+// can't express, so `bronto tags` is hand-written (tagscmd.go).
 var resourceRegistry = []resourceDesc{
 	{Name: "monitors", Base: "/monitors", UpdateMethod: http.MethodPut, Export: true, ExportDeps: true,
 		CreateFields: monitorExampleFields, UpdateFields: monitorExampleFields,

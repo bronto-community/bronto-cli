@@ -39,6 +39,7 @@
     "cli/reference/commands/send",
     "cli/reference/commands/slack",
     "cli/reference/commands/sso",
+    "cli/reference/commands/tags",
     "cli/reference/commands/tail",
     "cli/reference/commands/traces",
     "cli/reference/commands/usage",

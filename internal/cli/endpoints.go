@@ -107,6 +107,11 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/dashboards/{*}/widgets", Command: "bronto dashboards apply"},
 	{Pattern: "/dashboards/{*}/widgets/{*}", Command: "bronto dashboards apply"},
 	{Pattern: "/tags", Command: "bronto dashboards apply"},
+	// The tag write verbs resolve the entity's name through its list.
+	{Pattern: "/tags", Command: "bronto tags"},
+	{Pattern: "/tags/search", Command: "bronto tags list"},
+	{Pattern: "/dashboards", Command: "bronto tags"},
+	{Pattern: "/users", Command: "bronto tags"},
 	{Pattern: "/timeseries/search", Command: "bronto metrics query / dashboards validate"},
 }
 

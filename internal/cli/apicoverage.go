@@ -68,9 +68,9 @@ var apiOperationCommands = map[string][]string{
 	"POST /timeseries/search":                             {"bronto metrics query", "bronto dashboards validate"},
 	// apply sets a manifest's dashboard tags and its own ownership tags
 	// through the tags API (live, create and update bodies drop tags).
-	"POST /tags":   {"bronto dashboards apply"},
-	"PUT /tags":    {"bronto dashboards apply"},
-	"DELETE /tags": {"bronto dashboards apply"},
+	"POST /tags":   {"bronto dashboards apply", "bronto tags create"},
+	"PUT /tags":    {"bronto dashboards apply", "bronto tags update"},
+	"DELETE /tags": {"bronto dashboards apply", "bronto tags delete"},
 	// The SSO exports; the other export operations are registry verbs.
 	"GET /sso/idps/{idp_name}/export": {"bronto sso idps export"},
 	"GET /sso/mappings/export":        {"bronto sso mappings export"},
@@ -83,6 +83,8 @@ var apiOperationCommands = map[string][]string{
 	"DELETE /organizations/{orgId}/access/{entityType}/{entityId}":    {"bronto access revoke"},
 	"GET /organizations/{orgId}/access/{entityType}/{entityId}/check": {"bronto access check"},
 	"GET /users/{userId}/access":                                      {"bronto users access"},
+	// Listing tags (#188); the writes are the three lines above.
+	"GET /tags/search": {"bronto tags list"},
 }
 
 // apiOperationsElsewhere maps spec operations no command calls, but whose
@@ -108,7 +110,6 @@ var apiOperationsNotCovered = map[string]string{
 	"PATCH /users/{userId}/preferences":                       "Change a user's preferences",
 	"POST /datasets/resolve":                                  "Resolve datasets",
 	"POST /organizations/{orgId}/access/user/{userId}/switch": "Switch a user's active organization",
-	"GET /tags/search":                                        "List tags",
 	"GET /explain-error":                                      "Explain an error with AI",
 	"GET /widget-creation-assistant":                          "Suggest a widget from a prompt with AI",
 	"GET /policies/resources/{resource_type}/{resource_id}":   "List the policies on a resource",

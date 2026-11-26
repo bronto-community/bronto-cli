@@ -38,7 +38,7 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 | SSO | [`bronto sso`](/cli/reference/commands/sso) |
 | Exports | [`bronto exports`](/cli/reference/commands/exports) |
 | Customer | [`bronto org`](/cli/reference/commands/org) |
-| Tags | [`bronto dashboards`](/cli/reference/commands/dashboards) |
+| Tags | [`bronto tags`](/cli/reference/commands/tags), [`bronto dashboards`](/cli/reference/commands/dashboards) |
 | Limits | [`bronto limits`](/cli/reference/commands/limits) |
 | Permissions | [`bronto permissions`](/cli/reference/commands/permissions) |
 | AI | None yet |
@@ -58,7 +58,6 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 | Datasets | Resolve datasets | `POST /datasets/resolve` |
 | Access | Switch a user's active organization | `POST /organizations/{orgId}/access/user/{userId}/switch` |
 | Widgets | Change a widget's layout | `PATCH /widgets/{id}` |
-| Tags | List tags | `GET /tags/search` |
 | AI | Explain an error with AI | `GET /explain-error` |
 |  | Suggest a widget from a prompt with AI | `GET /widget-creation-assistant` |
 | Policies | List the policies on a resource | `GET /policies/resources/{resource_type}/{resource_id}` |

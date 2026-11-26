@@ -358,6 +358,27 @@ NAME     API_KEY    CREATED     ID
 docs-ci  bronto_d…  2026-05-04  7c9e1a3b-5d6f-4b8c-8e2a-3b5d7f9c1e15
 ```
 
+## Tags
+
+A tag is a `name=value` pair on one dataset, dashboard, monitor, or other entity.
+`bronto tags list` shows the tag names in use, their values, and how many entities of
+each type carry them; `--name`, `--value`, and `--entity-type` filter it. The JSON output
+also has the entity ids.
+
+A tag has no id, so `bronto tags create`, `bronto tags update`, and `bronto tags delete`
+take the entity's type, the entity, and the tag:
+
+```sh
+bronto tags create dashboard "Checkout overview" team=checkout
+bronto tags update dashboard "Checkout overview" team=payments
+bronto tags delete dashboard "Checkout overview" team --yes
+```
+
+The entity types are the API's: `log` (a dataset), `dashboard`, `monitor`, `widget`,
+`saved_search`, `user`, `api_key`, `slo`, and `integration`. The entity is an id, or a
+name for every type except `slo` and `integration`. A manifest applied with
+`bronto dashboards apply` sets its dashboard's tags itself.
+
 ## Usage
 
 `bronto usage` shows your organization's billable ingestion volume over a period
