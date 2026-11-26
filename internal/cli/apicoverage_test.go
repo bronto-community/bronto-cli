@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -110,29 +111,28 @@ func TestAPICoverageRejectsDroppedRegistryMethod(t *testing.T) {
 }
 
 // TestAPICoverageMatchesRequests checks the hand-maintained entries
-// against what the commands really do: each command listed for an
-// operation must request it when driven by its endpointProbes (a group
-// such as "bronto traces" by any of its subcommands' probes). Commands
-// that can't be probed (unprobedCommands) are taken on trust.
+// against what the commands really do, in both directions. Each command
+// listed for an operation must request it when driven by its
+// endpointProbes (a group such as "bronto traces" by any of its
+// subcommands' probes); commands that can't be probed (unprobedCommands)
+// are taken on trust. And no probed command may request an operation the
+// map says no command calls (see unmappedRequests); TestEveryCommandIsInventoried
+// makes sure every hand-written command is probed or explicitly excused.
 func TestAPICoverageMatchesRequests(t *testing.T) {
-	recorded := map[string][]string{} // command -> requests, cached
-	requests := func(cmd string) ([]string, bool) {
-		if r, ok := recorded[cmd]; ok {
-			return r, true
+	recorded := map[string][]string{} // probed command -> requests
+	for p, runs := range endpointProbes {
+		for _, args := range runs {
+			recorded[p] = append(recorded[p], recordRequests(t, args)...)
 		}
+	}
+	requests := func(cmd string) ([]string, bool) {
 		var out []string
 		probed := false
-		for p, runs := range endpointProbes {
-			if p != cmd && !strings.HasPrefix(p, cmd+" ") {
-				continue
+		for p, reqs := range recorded {
+			if p == cmd || strings.HasPrefix(p, cmd+" ") {
+				probed = true
+				out = append(out, reqs...)
 			}
-			probed = true
-			for _, args := range runs {
-				out = append(out, recordRequests(t, args)...)
-			}
-		}
-		if probed {
-			recorded[cmd] = out
 		}
 		return out, probed
 	}
@@ -160,5 +160,116 @@ func TestAPICoverageMatchesRequests(t *testing.T) {
 	}
 	for op, cmds := range apiOperationsOutsideSpec {
 		check(op, cmds)
+	}
+
+	ops, err := ParseSpecOperations(readSpec(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, problem := range unmappedRequests(ops, recorded) {
+		t.Error(problem)
+	}
+}
+
+// unmappedRequests returns a problem for every recorded request (command
+// -> "METHOD /path") that reaches a spec operation the coverage map says no
+// command calls: one in apiOperationsNotCovered, which the page would keep
+// listing as not supported, or in apiOperationsElsewhere. Without it, a new
+// command that calls such an operation but isn't added to
+// apiOperationCommands leaves the page wrong and every other check green.
+//
+// Requests to operations mapped to other commands only are not flagged:
+// most are the helper calls apicoverage.go deliberately doesn't count
+// (GET /logs to resolve a dataset name, GET /top-keys to check a field,
+// GET /users and GET /groups to resolve members, the lookups behind
+// `dashboards apply`), and the page already shows such an operation as
+// covered, so it can't be wrong about what the CLI supports.
+func unmappedRequests(ops []SpecOperation, recorded map[string][]string) []string {
+	var problems []string
+	for cmd, reqs := range recorded {
+		for _, req := range reqs {
+			key := specOperationFor(ops, req)
+			if missing, ok := apiOperationsNotCovered[key]; ok {
+				problems = append(problems, fmt.Sprintf(
+					"%s calls %s (%s), which apiOperationsNotCovered lists as not supported yet (%q): "+
+						"move it to apiOperationCommands under %q", cmd, key, req, missing, cmd))
+			}
+			if _, ok := apiOperationsElsewhere[key]; ok {
+				problems = append(problems, fmt.Sprintf(
+					"%s calls %s (%s), which apiOperationsElsewhere says no command calls: "+
+						"move it to apiOperationCommands under %q", cmd, key, req, cmd))
+			}
+		}
+	}
+	slices.Sort(problems)
+	return slices.Compact(problems)
+}
+
+// specOperationFor returns the key of the spec operation a recorded
+// request ("METHOD /concrete/path") reaches, or "" when it reaches none.
+// The most specific match wins, counting literal segments, so GET
+// /users/all is "GET /users/all" rather than "GET /users/{userId}"; the
+// endpoints outside the spec take part too, so GET /dashboards/templates,
+// which the spec doesn't describe, isn't taken for "GET
+// /dashboards/{dashboardId}".
+func specOperationFor(ops []SpecOperation, req string) string {
+	method, path, _ := strings.Cut(req, " ")
+	best, bestLiterals := "", -1
+	consider := func(key, specKey string) {
+		m, p, _ := strings.Cut(key, " ")
+		pattern := strings.ReplaceAll(normalizeParams(p), "{}", "{*}")
+		if m != method || !patternMatches(pattern, path) {
+			return
+		}
+		if literals := strings.Count(pattern, "/") - strings.Count(pattern, "{*}"); literals > bestLiterals {
+			best, bestLiterals = specKey, literals
+		}
+	}
+	for _, op := range ops {
+		consider(op.Key(), op.Key())
+	}
+	for key := range apiOperationsOutsideSpec {
+		consider(key, "")
+	}
+	for key := range registryOperationsOutsideSpec {
+		consider(key, "")
+	}
+	return best
+}
+
+// TestAPICoverageRejectsUnmappedRequests proves the reverse check goes
+// red: a command requesting operations the map lists as not supported or
+// offered elsewhere. `bronto api` really makes its request against the
+// stub; the other requests are injected.
+func TestAPICoverageRejectsUnmappedRequests(t *testing.T) {
+	ops, err := ParseSpecOperations(readSpec(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	recorded := map[string][]string{
+		"bronto api": recordRequests(t, []string{"api", "GET", "/customer"}),
+		"bronto cli-test-new": {
+			"GET /users/" + probeID + "/export", // not supported yet
+			"GET /users/all",                    // not supported yet; not GET /users/{userId}
+			"GET /search",                       // offered elsewhere
+			"GET /logs",                         // a helper call: mapped to datasets list
+			"GET /dashboards/templates",         // outside the spec; not GET /dashboards/{dashboardId}
+			"GET /usage",                        // outside the spec
+		},
+	}
+	problems := unmappedRequests(ops, recorded)
+	want := []string{
+		`bronto api calls GET /customer (GET /customer), which apiOperationsNotCovered lists as not supported yet ("Read the organization's customer record"): move it to apiOperationCommands under "bronto api"`,
+		`bronto cli-test-new calls GET /search (GET /search), which apiOperationsElsewhere says no command calls: move it to apiOperationCommands under "bronto cli-test-new"`,
+		`bronto cli-test-new calls GET /users/all (GET /users/all), which apiOperationsNotCovered`,
+		`bronto cli-test-new calls GET /users/{userId}/export (GET /users/` + probeID + `/export), which apiOperationsNotCovered`,
+	}
+	if len(problems) != len(want) {
+		t.Fatalf("got %d problems, want %d:\n  %s", len(problems), len(want), strings.Join(problems, "\n  "))
+	}
+	for i, w := range want {
+		if !strings.HasPrefix(problems[i], w) {
+			t.Errorf("problem %d = %q, want it to start with %q", i, problems[i], w)
+		}
 	}
 }

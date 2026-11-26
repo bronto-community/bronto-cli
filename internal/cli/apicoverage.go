@@ -27,8 +27,13 @@ import (
 // someone decides which command covers it. An endpoint a command calls only
 // as a helper (resolving a dataset or user name, reading ownership tags)
 // does not count: the operation is covered only when a command exposes
-// what it does. TestAPICoverageMatchesRequests checks each hand-written
-// entry against the requests the command really makes.
+// what it does. TestAPICoverageMatchesRequests checks the hand-written
+// entries against the requests the commands really make, both ways: each
+// command listed for an operation must request it, and no command may
+// request an operation listed in apiOperationsNotCovered or
+// apiOperationsElsewhere, so a new command that calls one fails until it is
+// added to apiOperationCommands. TestEveryCommandIsInventoried makes every
+// hand-written command either get a probe or say why it can't have one.
 
 // apiOperationCommands maps a spec operation ("METHOD /path" with the
 // spec's own parameter names) to the hand-written commands that expose it.

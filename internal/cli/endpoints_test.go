@@ -17,6 +17,7 @@ import (
 	"github.com/bronto-community/bronto-cli/internal/api"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func TestEndpointInventoryShape(t *testing.T) {
@@ -57,8 +58,9 @@ func TestEndpointInventoryShape(t *testing.T) {
 // API-calling branches against a recording server. Several argument lists
 // per command reach different branches (a dataset name triggers GET /logs
 // resolution, --eq triggers /top-keys field lookup, and so on). A new
-// hand-written command fails TestEveryCommandIsInventoried until it has an
-// entry here, in unprobedCommands, or in commandsWithoutSpecEndpoints.
+// hand-written command, including one that replaces a generated resource
+// verb, fails TestEveryCommandIsInventoried until it has an entry here, in
+// unprobedCommands, or in commandsWithoutSpecEndpoints.
 var endpointProbes = map[string][][]string{
 	"bronto ask":                             {{"ask", "q", "--yes"}, {"ask", "q", "-d", "ds", "--yes"}},
 	"bronto auth status":                     {{"auth", "status"}},
@@ -276,12 +278,19 @@ func coveredBy(cmdPath string, names []string) bool {
 func TestEveryCommandIsInventoried(t *testing.T) {
 	inv := EndpointInventory()
 
-	// 1. Every leaf command is accounted for.
-	generated := map[string]bool{}
+	// 1. Every leaf command is accounted for. A generated resource verb
+	// needs no entry (registryOperations maps it), but a hand-written
+	// command that replaces one (exports create, dashboards create) does.
+	generated := map[string]*cobra.Command{}
 	for _, d := range resourceRegistry {
-		for _, verb := range []string{"list", "get", "create", "update", "delete"} {
-			generated["bronto "+d.display()+" "+verb] = true
+		for _, v := range newResourceCmd(d).Commands() {
+			generated["bronto "+d.display()+" "+v.Name()] = v
 		}
+	}
+	isGenerated := func(c *cobra.Command) bool {
+		g := generated[c.CommandPath()]
+		return g != nil && c.Use == g.Use && c.Short == g.Short && c.Long == g.Long &&
+			c.Example == g.Example && slices.Equal(flagNames(c), flagNames(g))
 	}
 	var walk func(c *cobra.Command)
 	walk = func(c *cobra.Command) {
@@ -297,7 +306,7 @@ func TestEveryCommandIsInventoried(t *testing.T) {
 		_, probed := endpointProbes[p]
 		_, unprobed := unprobedCommands[p]
 		_, none := commandsWithoutSpecEndpoints[p]
-		if !probed && !unprobed && !none && !generated[p] {
+		if !probed && !unprobed && !none && !isGenerated(c) {
 			t.Errorf("%s has no entry in endpointProbes, unprobedCommands or commandsWithoutSpecEndpoints", p)
 		}
 	}
@@ -343,6 +352,14 @@ func TestEveryCommandIsInventoried(t *testing.T) {
 			}
 		}
 	}
+}
+
+// flagNames returns the sorted names of a command's local flags.
+func flagNames(c *cobra.Command) []string {
+	var out []string
+	c.LocalFlags().VisitAll(func(f *pflag.Flag) { out = append(out, f.Name) })
+	slices.Sort(out)
+	return out
 }
 
 // TestEveryInventoriedEndpointHasURLTemplate guards HTTP span naming: every
