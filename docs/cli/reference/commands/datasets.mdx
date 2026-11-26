@@ -1,7 +1,7 @@
 ---
 title: "bronto datasets"
 sidebarTitle: "datasets"
-description: "Reference for the bronto datasets command in the bronto CLI, covering CRUD, parser, dashboards, and monitors subcommands for managing log datasets."
+description: "Reference for the bronto datasets command in the bronto CLI, covering CRUD, parser, resolve, dashboards, and monitors subcommands for managing log datasets."
 icon: "database"
 ---
 
@@ -29,6 +29,7 @@ bronto datasets <command> [flags]
 | [`bronto datasets list`](/cli/reference/commands/datasets#bronto-datasets-list) | List datasets |
 | [`bronto datasets monitors`](/cli/reference/commands/datasets#bronto-datasets-monitors) | List the monitors that use a dataset |
 | [`bronto datasets parser`](/cli/reference/commands/datasets#bronto-datasets-parser) | Show or change the parser assigned to a dataset |
+| [`bronto datasets resolve`](/cli/reference/commands/datasets#bronto-datasets-resolve) | Find the datasets a from expression selects |
 | [`bronto datasets update`](/cli/reference/commands/datasets#bronto-datasets-update) | Update a dataset |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
@@ -221,6 +222,35 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto datasets parser unset default/nginx
+```
+
+## bronto datasets resolve
+
+Asks Bronto which datasets a query would read: those a --from-expr
+selects, narrowed by --where to the ones with matching events in the time
+window. Prints the dataset ids and the keys used to resolve them.
+
+```sh
+bronto datasets resolve [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--expand-type` |  | string |  | key expansion: DISABLED or SYNONYM |
+| `--from-expr` |  | string |  | expression selecting datasets by their tags (required) |
+| `--match-type` |  | string |  | how keys match: EXACT, IEXACT, SUBSTRING or ISUBSTRING |
+| `--since` |  | string | `1h` | lookback window, e.g. 15m, 1h, or 1h30m |
+| `--where` |  | string |  | only datasets with events matching this filter |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto datasets resolve --from-expr "environment = 'production'"
+bronto datasets resolve --from-expr "environment = 'production'" --where "status >= 500" --since 1h
 ```
 
 ## bronto datasets update

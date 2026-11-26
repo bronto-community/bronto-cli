@@ -368,6 +368,10 @@ $ bronto dashboards get "Checkout overview"
 }
 ```
 
+`bronto widgets patch` changes one part of a widget and leaves the rest alone: one of
+`name`, `aux`, `layout`, or `display` and `sort`, for example
+`bronto widgets patch <widget> -f 'display={"stacked_bars":true}'`.
+
 `widgets create` and `widgets update` both require `name` and `type`, and `update`
 replaces the whole widget. Pass `metric_ids`, `widget_ids`, or `aux` as JSON values with
 `-f`, or put the whole body in a file:

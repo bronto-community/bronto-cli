@@ -78,6 +78,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newSSOCmd())
 	cmd.AddCommand(newQueryCmd())
 	cmd.AddCommand(newPluginsCmd())
+	cmd.AddCommand(newPoliciesCmd())
 	cmd.AddCommand(newGrazeCmd())
 	cmd.AddCommand(newHerdCmd())
 	cmd.AddCommand(newRumbleCmd())
@@ -97,7 +98,7 @@ func NewRootCmd() *cobra.Command {
 			rc = newResourceCmd(d, newDashboardCreateCmd(d), newDetachFromTemplateCmd(), newDashboardApplyCmd(), newDashboardExportCmd(), newDashboardValidateCmd(),
 				newAttachWidgetsCmd("dashboards"), newRemoveWidgetCmd("dashboards"))
 		case "widgets":
-			rc = newResourceCmd(d, newAttachWidgetsCmd("widgets"), newRemoveWidgetCmd("widgets"), newWidgetQueryCmd())
+			rc = newResourceCmd(d, newAttachWidgetsCmd("widgets"), newRemoveWidgetCmd("widgets"), newWidgetQueryCmd(), newWidgetPatchCmd())
 		case "users":
 			rc = newResourceCmd(d,
 				newUserActionCmd("deactivate", "Deactivate a user"),
@@ -109,7 +110,7 @@ func NewRootCmd() *cobra.Command {
 		case "metrics":
 			rc = newResourceCmd(d, newMetricTopKeysCmd(), newMetricQueryCmd())
 		case "datasets":
-			rc = newResourceCmd(d, newDatasetParserCmd(), newDatasetLinkedCmd("monitors"), newDatasetLinkedCmd("dashboards"))
+			rc = newResourceCmd(d, newDatasetParserCmd(), newDatasetLinkedCmd("monitors"), newDatasetLinkedCmd("dashboards"), newDatasetResolveCmd())
 		case "forward-configs":
 			rc = newResourceCmd(d, newForwardConfigTestCmd())
 		default:

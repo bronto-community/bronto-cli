@@ -237,6 +237,9 @@ A few resources have extra verbs:
 | `bronto datasets parser get`, `bronto datasets parser set`, `bronto datasets parser unset` | assign a parser to a dataset | below |
 | `bronto metrics top-keys` | attribute keys seen on a metric | below |
 | `bronto datasets monitors`, `bronto datasets dashboards` | what uses a dataset | below |
+| `bronto datasets resolve` | find the datasets a from expression selects | below |
+| `bronto policies list` | the access policies on a resource | below |
+| `bronto widgets patch` | change one part of a widget | [Dashboards](/cli/guides/monitors-and-dashboards#dashboards-and-widgets) |
 | `bronto forward-configs test` | check that Bronto can write to a forwarding destination | below |
 | `bronto monitors export`, `bronto users export`, `bronto sso mappings export`, and more | write a resource as Terraform or OpenTofu | below |
 
@@ -268,6 +271,13 @@ metrics counterpart of `bronto fields`:
 bronto metrics top-keys system.cpu.utilization --since 1h
 ```
 
+### Policies on a resource
+
+`bronto policies list <resource-type> <resource-id>` lists the access policies that
+apply to one resource, for example `bronto policies list logset <dataset-id>`. The
+resource type is the API's name for it: a dataset is a `logset`. `bronto policies` has no
+other verbs.
+
 ### What uses a dataset
 
 `bronto datasets monitors` and `bronto datasets dashboards` list the monitors and
@@ -282,6 +292,17 @@ High 5xx rate on checkout  Last 5 minutes  5          2026-05-04  a1f3c9d2-4b6e-
 $ bronto datasets dashboards prod/checkout-service
 NAME               DESCRIPTION                                                 CREATED     ID
 Checkout overview  Request rate, 5xx errors and latency for the checkout flow  2026-05-04  d4c6e2b5-7e91-42b4-af50-1b8e6d3c4f04
+```
+
+### Find the datasets a query would read
+
+`bronto datasets resolve` asks Bronto which datasets a `--from-expr` selects. `--where`
+narrows them to the datasets with matching events in the `--since` window (default `1h`).
+It prints the dataset ids and the keys used to resolve them:
+
+```sh
+bronto datasets resolve --from-expr "environment = 'production'"
+bronto datasets resolve --from-expr "environment = 'production'" --where "status >= 500" --since 1h
 ```
 
 ### Test a forwarding destination

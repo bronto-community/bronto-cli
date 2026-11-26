@@ -1,7 +1,7 @@
 ---
 title: "bronto widgets"
 sidebarTitle: "widgets"
-description: "Reference for the bronto widgets command in the bronto CLI, covering create, get, list, update, delete, query, templates, and attaching widgets to dashboards."
+description: "Reference for the bronto widgets command in the bronto CLI, covering create, get, list, update, patch, delete, query, templates, and attaching widgets."
 icon: "layout-grid"
 ---
 
@@ -27,6 +27,7 @@ bronto widgets <command> [flags]
 | [`bronto widgets delete`](/cli/reference/commands/widgets#bronto-widgets-delete) | Delete a widget |
 | [`bronto widgets get`](/cli/reference/commands/widgets#bronto-widgets-get) | Get a widget by ID |
 | [`bronto widgets list`](/cli/reference/commands/widgets#bronto-widgets-list) | List widgets |
+| [`bronto widgets patch`](/cli/reference/commands/widgets#bronto-widgets-patch) | Change one part of a widget without resending the rest |
 | [`bronto widgets query`](/cli/reference/commands/widgets#bronto-widgets-query) | Evaluate the metric definitions a widget plots |
 | [`bronto widgets remove-widget`](/cli/reference/commands/widgets#bronto-widgets-remove-widget) | Remove a widget from a group widget |
 | [`bronto widgets templates`](/cli/reference/commands/widgets#bronto-widgets-templates) | Manage widget templates |
@@ -138,6 +139,35 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto widgets list
+```
+
+## bronto widgets patch
+
+Changes one part of a widget and leaves the rest as it is, unlike
+'widgets update', which replaces the widget. One call carries one of: name,
+aux, layout (a group widget's widget\_layouts), or display and/or sort
+(within those, a value sets a field and null clears it). It confirms on
+stderr; with -o json or --jq it prints the updated widget.
+
+```sh
+bronto widgets patch <widget> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--field` | `-f` | stringArray |  | request body field as key=value; values parse as JSON when possible (repeatable) |
+| `--input` |  | string |  | read the request body from a file, or - for stdin |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto widgets patch <widget> -f name=<name>
+bronto widgets patch <widget> -f 'display={"stacked_bars":true}'
+bronto widgets patch <group-widget> --input layout.json
 ```
 
 ## bronto widgets query
