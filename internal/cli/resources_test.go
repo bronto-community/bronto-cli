@@ -995,3 +995,51 @@ func TestUsersListShowsStatus(t *testing.T) {
 		t.Fatalf("table = %q", out)
 	}
 }
+
+// TestDryRunPlanMasksSecrets pins #262: a --dry-run plan never echoes a
+// secret-bearing body field, for -f, --input and `bronto api` alike, while
+// the real request still carries it unchanged.
+func TestDryRunPlanMasksSecrets(t *testing.T) {
+	const body = `{"name":"hook","url":"https://example.com/hook","custom_headers":{"Authorization":"Bearer hunter2","X-Team":"hunter3"},"secret":"hunter4"}`
+	noContact := func(http.ResponseWriter, *http.Request) { t.Fatal("server must not be contacted under --dry-run") }
+	for name, args := range map[string][]string{
+		"fields": {"webhooks", "create", "-o", "json", "-f", "name=hook", "-f", "url=https://example.com/hook", "-f", "secret=hunter4",
+			"-f", `custom_headers={"Authorization":"Bearer hunter2","X-Team":"hunter3"}`},
+		"input": {"webhooks", "create", "-o", "json", "--input", "-"},
+		"api":   {"api", "POST", "/integrations/webhooks", "--input", "-"},
+	} {
+		out, stderr, err := runResource(t, noContact, body, append(args, "--dry-run")...)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if strings.Contains(out+stderr, "hunter") {
+			t.Errorf("%s: secret echoed in the dry-run plan:\n%s%s", name, out, stderr)
+		}
+		var plan struct {
+			Body struct {
+				Name          string            `json:"name"`
+				Secret        string            `json:"secret"`
+				CustomHeaders map[string]string `json:"custom_headers"`
+			} `json:"body"`
+		}
+		if err := json.Unmarshal([]byte(out), &plan); err != nil {
+			t.Fatalf("%s: plan is not JSON: %v (%q)", name, err, out)
+		}
+		if plan.Body.Name != "hook" || plan.Body.Secret != "REDACTED" ||
+			plan.Body.CustomHeaders["Authorization"] != "REDACTED" || plan.Body.CustomHeaders["X-Team"] != "REDACTED" {
+			t.Errorf("%s: plan body = %+v", name, plan.Body)
+		}
+	}
+
+	var sent string
+	if _, _, err := runResource(t, func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		sent = string(b)
+		_, _ = w.Write([]byte(`{"id":"w1"}`))
+	}, body, "webhooks", "create", "--input", "-", "-o", "json"); err != nil {
+		t.Fatal(err)
+	}
+	if sent != body {
+		t.Errorf("real request body changed:\n got %s\nwant %s", sent, body)
+	}
+}

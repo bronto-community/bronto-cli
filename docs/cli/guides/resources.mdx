@@ -138,6 +138,21 @@ updates need more than the changed field too:
 - `dashboards update` needs `name` (or a `layout`). A `description` is ignored.
 - `saved-searches update` needs `name`, `log_ids`, and `search_details`.
 
+### Keep secrets off the command line
+
+Some bodies carry a secret, such as a webhook's `custom_headers` or a `secret` field. A
+value passed with `-f` is saved in your shell history and is visible in the process list
+while the command runs. Send the body with `--input` instead, either from a file only you
+can read or from stdin, where the secret can come from an environment variable or a
+secret manager:
+
+```sh
+bronto webhooks create --input webhook.json
+jq -n --arg token "$PAGER_TOKEN" \
+  '{name: "pager", url: "https://example.com/hook", custom_headers: {Authorization: "Bearer \($token)"}}' \
+  | bronto webhooks create --input -
+```
+
 ## Deleting
 
 `delete` asks for confirmation at a terminal. Without a terminal it can't ask, so it
@@ -176,6 +191,29 @@ $ bronto monitors delete "Payments latency p95" --dry-run
   "dry_run": true,
   "method": "DELETE",
   "path": "/monitors/b2e4d0a3-5c7f-4092-8d3e-8f6c4b9a2d02"
+}
+```
+
+The plan shows secrets in the body as `REDACTED`, so it is safe to paste or to keep in a
+CI log: every value in a webhook's `custom_headers`, and fields such as `secret`,
+`client_secret`, `password`, `api_key`, and names ending in `token`. Only the plan is
+masked. Without `--dry-run`, the request carries the real values.
+
+{/* test: tty */}
+```console
+$ bronto webhooks create -f name=pager -f url=https://example.com/hook \
+    -f 'custom_headers={"Authorization":"Bearer <token>"}' --dry-run
+{
+  "body": {
+    "custom_headers": {
+      "Authorization": "REDACTED"
+    },
+    "name": "pager",
+    "url": "https://example.com/hook"
+  },
+  "dry_run": true,
+  "method": "POST",
+  "path": "/integrations/webhooks"
 }
 ```
 

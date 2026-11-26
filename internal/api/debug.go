@@ -22,7 +22,7 @@ const debugBodyCap = 2048
 // DebugTransport wraps a RoundTripper and traces every request/response to
 // W (typically stderr): method, URL, status, duration, and truncated
 // bodies. Headers are never printed, so the API key cannot leak into the
-// trace, and secret-bearing body fields are redacted (redactBody): API
+// trace, and secret-bearing body fields are redacted (RedactBody): API
 // responses carry key material, e.g. GET /api-keys returns every key.
 // Install as Transport.Base (INSIDE the retry loop) so each retry attempt
 // traces individually.
@@ -51,7 +51,7 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	_, _ = fmt.Fprintf(d.W, "* %s %s\n", req.Method, debugURL(req.URL))
 	keyAPI := isAPIKeysPath(req.URL.Path)
 	if len(reqBody) > 0 {
-		_, _ = fmt.Fprintf(d.W, "* > %s\n", termsafe.Text(redactBody(truncateBody(reqBody), keyAPI)))
+		_, _ = fmt.Fprintf(d.W, "* > %s\n", termsafe.Text(RedactBody(truncateBody(reqBody), keyAPI)))
 	}
 	if err != nil {
 		_, _ = fmt.Fprintf(d.W, "* ! %v (%s)\n", err, elapsed)
@@ -67,7 +67,7 @@ func (d *DebugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			io.Closer
 		}{io.MultiReader(bytes.NewReader(peek), rest), rest}
 		if len(peek) > 0 {
-			_, _ = fmt.Fprintf(d.W, "* < %s\n", termsafe.Text(redactBody(truncateBody(peek), keyAPI)))
+			_, _ = fmt.Fprintf(d.W, "* < %s\n", termsafe.Text(RedactBody(truncateBody(peek), keyAPI)))
 		}
 	}
 	return resp, nil
@@ -147,10 +147,24 @@ func isAPIKeysPath(path string) bool {
 	return strings.Contains(path+"/", "/api-keys/")
 }
 
-// redactBody replaces the values of secret-bearing JSON string members
-// with "REDACTED". keyAPI also redacts "key" (true for /api-keys paths).
-func redactBody(body string, keyAPI bool) string {
+// headersField matches a webhook's "custom_headers" object up to its last
+// string member, and headerMember one member of it. Any header can carry
+// credentials (Authorization, X-Api-Key, …), so every value is redacted.
+// Like secretField, both tolerate a value cut off by the body cap.
+var (
+	headersField = regexp.MustCompile(`"custom_headers"\s*:\s*\{(?:\s*"(?:[^"\\]|\\.)*"\s*:\s*"(?:[^"\\]|\\.)*"?\s*,?)*`)
+	headerMember = regexp.MustCompile(`("(?:[^"\\]|\\.)*"\s*:\s*)"(?:[^"\\]|\\.)*"?`)
+)
+
+// RedactBody replaces the values of secret-bearing JSON string members
+// with "REDACTED", in the --debug trace and in --dry-run plans. keyAPI
+// also redacts "key" (true for /api-keys paths).
+func RedactBody(body string, keyAPI bool) string {
 	body = secretField.ReplaceAllString(body, `"$1"$2"REDACTED"`)
+	body = headersField.ReplaceAllStringFunc(body, func(m string) string {
+		i := strings.Index(m, "{") + 1
+		return m[:i] + headerMember.ReplaceAllString(m[i:], `$1"REDACTED"`)
+	})
 	if keyAPI {
 		body = keyField.ReplaceAllString(body, `"$1"$2"REDACTED"`)
 	}

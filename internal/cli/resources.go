@@ -480,12 +480,15 @@ func doJSONRequest(ctx context.Context, app *App, method, path string, body []by
 }
 
 // dryRunPlan is what doJSONRequest returns for a mutating call under
-// --dry-run: the exact request that WOULD have been sent. Commands print
+// --dry-run: the request that WOULD have been sent, with secret-bearing
+// body fields shown as "REDACTED" (api.RedactBody, the --debug trace's
+// rule), since a plan ends up in terminals and CI logs. Commands print
 // it through the normal output engine, so -o json yields a stable,
 // machine-checkable plan document.
 func dryRunPlan(method, path string, body []byte) map[string]any {
 	plan := map[string]any{"dry_run": true, "method": method, "path": path}
 	if len(body) > 0 {
+		body = []byte(api.RedactBody(string(body), false))
 		var decoded any
 		if err := bronto.DecodeJSON(body, &decoded); err == nil {
 			plan["body"] = decoded

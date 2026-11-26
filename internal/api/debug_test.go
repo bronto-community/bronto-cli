@@ -83,10 +83,14 @@ func TestRedactBody(t *testing.T) {
 			`{"oauth2_token":"REDACTED","bearertoken":"REDACTED","accessToken":"REDACTED","API_KEY":"REDACTED"}`},
 		{"lookalike names stay", `{"token_count":"5","keys":"a","secretary":"b"}`, false, `{"token_count":"5","keys":"a","secretary":"b"}`},
 		{"non-string values stay", `{"api_key":null}`, false, `{"api_key":null}`},
+		{"webhook custom headers", `{"name":"h","custom_headers":{"Authorization":"Bearer a\"b}","X-Team" : "c"},"url":"u"}`, false,
+			`{"name":"h","custom_headers":{"Authorization":"REDACTED","X-Team" : "REDACTED"},"url":"u"}`},
+		{"custom headers cut off by the body cap", `{"custom_headers":{"A":"x","B":"bro`, false, `{"custom_headers":{"A":"REDACTED","B":"REDACTED"`},
+		{"empty custom headers", `{"custom_headers":{},"name":"h"}`, false, `{"custom_headers":{},"name":"h"}`},
 	}
 	for _, c := range cases {
-		if got := redactBody(c.in, c.keyAPI); got != c.want {
-			t.Errorf("%s: redactBody(%q) = %q, want %q", c.name, c.in, got, c.want)
+		if got := RedactBody(c.in, c.keyAPI); got != c.want {
+			t.Errorf("%s: RedactBody(%q) = %q, want %q", c.name, c.in, got, c.want)
 		}
 	}
 }
