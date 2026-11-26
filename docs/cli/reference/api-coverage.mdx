@@ -29,7 +29,7 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 | Monitors | [`bronto monitors`](/cli/reference/commands/monitors), [`bronto datasets`](/cli/reference/commands/datasets) |
 | Dashboards | [`bronto dashboards`](/cli/reference/commands/dashboards), [`bronto datasets`](/cli/reference/commands/datasets) |
 | Collections | [`bronto collections`](/cli/reference/commands/collections) |
-| Access | None yet |
+| Access | [`bronto access`](/cli/reference/commands/access) |
 | Forward configs | [`bronto forward-configs`](/cli/reference/commands/forward-configs) |
 | Roles | [`bronto roles`](/cli/reference/commands/roles) |
 | Top keys | [`bronto fields`](/cli/reference/commands/fields) |
@@ -55,13 +55,8 @@ The page is generated from the OpenAPI spec the CLI is built against, so it matc
 | Users | List all users | `GET /users/all` |
 |  | Read a user's preferences | `GET /users/{userId}/preferences` |
 |  | Change a user's preferences | `PATCH /users/{userId}/preferences` |
-|  | List the organizations a user can access | `GET /users/{userId}/access` |
 | Datasets | Resolve datasets | `POST /datasets/resolve` |
-| Access | Grant a user or group access to an organization | `POST /organizations/{orgId}/access/{entityType}/{entityId}` |
-|  | Revoke a user's or group's access to an organization | `DELETE /organizations/{orgId}/access/{entityType}/{entityId}` |
-|  | List who has access to an organization | `GET /organizations/{orgId}/access` |
-|  | Check whether a user or group has access to an organization | `GET /organizations/{orgId}/access/{entityType}/{entityId}/check` |
-|  | Switch a user's active organization | `POST /organizations/{orgId}/access/user/{userId}/switch` |
+| Access | Switch a user's active organization | `POST /organizations/{orgId}/access/user/{userId}/switch` |
 | Widgets | Change a widget's layout | `PATCH /widgets/{id}` |
 | Tags | List tags | `GET /tags/search` |
 | AI | Explain an error with AI | `GET /explain-error` |

@@ -71,6 +71,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newAskCmd())
 	cmd.AddCommand(newOrgCmd())
 	cmd.AddCommand(newTracesCmd())
+	cmd.AddCommand(newAccessCmd())
 	cmd.AddCommand(newSendCmd())
 	cmd.AddCommand(newUsageCmd())
 	cmd.AddCommand(newSSOCmd())
@@ -101,7 +102,7 @@ func NewRootCmd() *cobra.Command {
 				newUserActionCmd("deactivate", "Deactivate a user"),
 				newUserActionCmd("reactivate", "Reactivate a deactivated user"),
 				newUserActionCmd("resend-invite", "Resend a pending user's invitation"),
-				newUserGroupsCmd())
+				newUserGroupsCmd(), newUserAccessCmd())
 		case "groups":
 			rc = newResourceCmd(d, newGroupMembersCmd(), newGroupMembershipCmd(true), newGroupMembershipCmd(false))
 		case "metrics":

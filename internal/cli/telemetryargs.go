@@ -57,12 +57,14 @@ var flagClasses = map[string]argClass{
 	"kind":          argValue,
 	"operation":     argValue,
 	"order-by":      argValue,
+	"org":           argValue,
 	"output":        argValue,
 	"profile":       argValue,
 	"region":        argValue,
 	"saved":         argValue,
 	"service":       argValue,
 	"since":         argValue,
+	"status":        argValue,
 	"storage-class": argValue,
 	"time-range":    argValue,
 	"template":      argValue, // id or name
@@ -74,6 +76,7 @@ var flagClasses = map[string]argClass{
 	"download":   argName, // local path
 	"exclude":    argName, // regex
 	"filename":   argName, // local path
+	"group":      argName, // id or name
 	"groups":     argName, // ids or names
 	"highlight":  argName, // regex
 	"include":    argName, // regex
@@ -82,7 +85,9 @@ var flagClasses = map[string]argClass{
 	"local":      argName, // local path
 	"message":    argName,
 	"prefix":     argName, // S3 key prefix
+	"roles":      argName, // ids or names
 	"select":     argName, // expressions can hold literals
+	"user":       argName, // id or email
 	"users":      argName, // ids or emails
 	"widget-ids": argName, // ids or names
 

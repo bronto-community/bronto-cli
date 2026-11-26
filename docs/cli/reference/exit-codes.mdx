@@ -109,6 +109,7 @@ Every code `bronto` emits is listed below. Scripts should match on `code`.
 | `usage_conflicting_fields` | 2 | a body combines fields the API takes one at a time, such as `name` and `layout` in `bronto dashboards update` |
 | `usage_unsupported_field` | 2 | a body carries a field the API would ignore, such as `widget_ids` in `bronto dashboards create` |
 | `usage_invalid_role` | 2 | `bronto api-keys create` or `update` got a role name the API doesn't know |
+| `usage_org_required` | 2 | a `bronto access` command can reach several organizations and none is marked active: pass `--org` |
 | `usage_invalid_param` | 2 | a `--param` value isn't `key=value`, or repeats a key |
 | `usage_unknown_param`, `usage_missing_param` | 2 | a `--param` key the dashboard template doesn't declare, or one of its parameters has no value |
 | `usage_invalid_method` | 2 | `bronto api` got an unsupported HTTP method |

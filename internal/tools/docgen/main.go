@@ -277,6 +277,7 @@ func loadLinks(file string, root *cobra.Command) (map[string]learnMore, error) {
 // commandIcons maps each documented top-level command to the Lucide icon
 // (https://lucide.dev/icons) shown next to its page in the sidebar.
 var commandIcons = map[string]string{
+	"access":          "shield-check",
 	"api":             "braces",
 	"api-keys":        "key-round",
 	"ask":             "message-circle-question-mark",
@@ -348,6 +349,7 @@ func checkIcons(root *cobra.Command) error {
 // the command's Short. Commands without an entry use their Short. Keep the
 // subcommands and flags they name in step with the command tree.
 var pageDescriptions = map[string]string{
+	"access":          "Reference for the bronto access command in the bronto CLI, covering list, check, grant, and revoke for user and group access to an organization.",
 	"api":             "Reference for the bronto api command in the bronto CLI, which sends an authenticated request to any Bronto API endpoint using --field, --input, and more.",
 	"api-keys":        "Reference for the bronto api-keys command in the bronto CLI, with flags for the create, list, update, and delete subcommands that manage API keys.",
 	"ask":             "Reference for the bronto ask command in the bronto CLI, which turns a natural-language question into a search query using an OpenAI-compatible LLM.",
@@ -385,7 +387,7 @@ var pageDescriptions = map[string]string{
 	"tail":            "Reference for the bronto tail command in the bronto CLI, which follows new log events as they arrive like tail -f, with --interval, --window, and filters.",
 	"traces":          "Reference for the bronto traces command in the bronto CLI, covering list, show, services, operations, aggregate, and shape for OpenTelemetry traces.",
 	"usage":           "Reference for the bronto usage command in the bronto CLI, which shows organization-wide billable log ingestion volume over a time period using --since.",
-	"users":           "Reference for the bronto users command in the bronto CLI, covering create, get, list, update, groups, deactivate, reactivate, resend-invite, export, and delete.",
+	"users":           "Reference for the bronto users command in the bronto CLI, covering create, get, list, update, groups, deactivate, reactivate, resend-invite, access, export, and delete.",
 	"version":         "Reference for the bronto version command in the bronto CLI, which prints the installed CLI version, commit hash, and build date, with usage examples.",
 	"webhooks":        "Reference for the bronto webhooks command in the bronto CLI, with flags for the create, get, list, update, delete, and export subcommands that manage webhooks.",
 	"widgets":         "Reference for the bronto widgets command in the bronto CLI, covering create, get, list, update, delete, query, templates, and attaching widgets to dashboards.",
