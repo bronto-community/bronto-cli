@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -276,9 +277,11 @@ func printPlan(app *App, p *output.Printer, format output.Format, plan *dashPlan
 }
 
 func newDashboardExportCmd() *cobra.Command {
+	var format string
+	var withDeps bool
 	cmd := &cobra.Command{
 		Use:   "export <dashboard>",
-		Short: "Write a dashboard as a manifest for 'dashboards apply'",
+		Short: "Write a dashboard as a manifest for 'dashboards apply', or as Terraform",
 		Long: `Writes a dashboard as a manifest (YAML by default, -o json for JSON) that
 'bronto dashboards apply' re-applies without changes: like kubectl get -o
 yaml, it turns a dashboard built in the web UI into a file.
@@ -291,15 +294,36 @@ file deletes it. Widgets the manifest can't express (group widgets, widgets
 with several definitions, widgets another manifest owns) are written as
 ref: entries, which apply only attaches.
 
+With --format terraform (or opentofu) it writes the dashboard and its
+widgets as HCL for the Bronto Terraform provider instead, as the export
+verb of other resources does. That output is text, so -o does not apply;
+--include-dependencies also exports the metrics, monitors and SLOs the
+widgets read.
+
 The dashboard can be an id or a unique name.`,
 		Example: "  bronto dashboards export \"Checkout API health\" > dashboard.yaml\n" +
-			"  bronto dashboards export <id> -o json",
+			"  bronto dashboards export <id> -o json\n" +
+			"  bronto dashboards export <id> --format terraform > dashboard.tf",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeKindRef("dashboards"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err
+			}
+			if format != "manifest" {
+				if err := checkExportFlags(app, format); err != nil {
+					return err
+				}
+				id, err := resolveKindRef(cmd.Context(), app, "dashboards", args[0])
+				if err != nil {
+					return err
+				}
+				return writeExport(cmd.Context(), app, "/dashboards/"+url.PathEscape(id), format, withDeps)
+			}
+			if withDeps {
+				return clierr.New("usage_invalid_flags", "--include-dependencies needs --format terraform or opentofu").
+					WithHint("A manifest always carries its widgets inline.")
 			}
 			asYAML := false
 			switch app.OutputFlag {
@@ -348,6 +372,8 @@ The dashboard can be an id or a unique name.`,
 			return err
 		},
 	}
+	cmd.Flags().StringVar(&format, "format", "manifest", "what to write: manifest, terraform or opentofu")
+	cmd.Flags().BoolVar(&withDeps, "include-dependencies", false, "with --format terraform or opentofu, also export what the widgets reference")
 	return cmd
 }
 

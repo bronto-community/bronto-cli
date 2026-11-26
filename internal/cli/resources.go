@@ -61,6 +61,13 @@ type resourceDesc struct {
 	NoDelete bool
 	NoGet    bool
 
+	// Export adds the export verb: GET IDBase/{id}/export writes the
+	// resource as Terraform or OpenTofu. ExportDeps adds its
+	// --include-dependencies flag, for the endpoints that take
+	// include_dependencies.
+	Export     bool
+	ExportDeps bool
+
 	// AttachTo nests this resource's command under a parent command name
 	// instead of the root (e.g. templates/downtimes under monitors).
 	AttachTo string
@@ -206,7 +213,7 @@ func (d resourceDesc) plural() string {
 // the documented exceptions there). Tags is intentionally absent: the API
 // models it as base-path PUT/DELETE + /tags/search; use `bronto api`.
 var resourceRegistry = []resourceDesc{
-	{Name: "monitors", Base: "/monitors", UpdateMethod: http.MethodPut,
+	{Name: "monitors", Base: "/monitors", UpdateMethod: http.MethodPut, Export: true, ExportDeps: true,
 		CreateFields: monitorExampleFields, UpdateFields: monitorExampleFields,
 		Columns: []string{"name", "window", "threshold", "created", "id"}},
 	// No widget count column: list rows carry an empty widget_ids even
@@ -216,7 +223,10 @@ var resourceRegistry = []resourceDesc{
 	// both with "400: More than one schema valid"), so checkDashboardBody
 	// refuses those client-side, plus a create carrying widget_ids, which
 	// the API silently drops (live-verified 2026-10-21).
-	{Name: "dashboards", Base: "/dashboards", CheckBody: checkDashboardBody,
+	// The export verb is hand-written (newDashboardExportCmd): it writes
+	// an apply manifest by default and calls the export endpoint for
+	// --format terraform|opentofu.
+	{Name: "dashboards", Base: "/dashboards", CheckBody: checkDashboardBody, Export: true,
 		Columns: []string{"name", "description", "created", "id"}},
 	// updateWidget is PUT (204, no body) and a full replacement: the API
 	// rejects a create or update without both `name` and `type` (live-
@@ -297,12 +307,20 @@ var resourceRegistry = []resourceDesc{
 		UpdateMethod: http.MethodPut, NoGet: true,
 		CreateFields: forwardConfigExampleFields, UpdateFields: forwardConfigExampleFields},
 	{Name: "webhooks", Base: "/integrations/webhooks", Singular: "webhook",
-		UpdateMethod: http.MethodPut, NoGet: true,
+		UpdateMethod: http.MethodPut, NoGet: true, Export: true,
 		CreateFields: []string{"name=<name>", "url=<url>"},
 		UpdateFields: []string{"name=<name>", "url=<url>"}},
 	{Name: "slack", Base: "/integrations/slack", Singular: "Slack integration",
-		UpdateMethod: http.MethodPut, NoGet: true,
+		UpdateMethod: http.MethodPut, NoGet: true, Export: true,
 		CreateFields: slackExampleFields, UpdateFields: slackExampleFields},
+	// Integrations that send alerts to a provider (AWS DevOps Agent,
+	// PagerDuty, JSM, Rootly). The secret is write-only: reads carry
+	// has_secret instead, and an update without one keeps the stored secret.
+	{Name: "providers", Base: "/integrations/providers", Singular: "provider integration",
+		UpdateMethod: http.MethodPut, Export: true,
+		CreateFields: []string{"provider=aws-devops-agent", "url=<url>", "secret=<secret>", "auth_type=hmac"},
+		UpdateFields: []string{"url=<url>", "auth_type=hmac"},
+		Columns:      []string{"name", "provider", "url", "auth_type", "has_secret", "id"}},
 	{Name: "templates", AttachTo: "monitors", Base: "/monitors/templates",
 		Singular: "monitor template", UpdateMethod: http.MethodPut,
 		// Only create requires this_template_tags (an object there, an
@@ -334,7 +352,7 @@ var resourceRegistry = []resourceDesc{
 		Singular: "downtime", UpdateMethod: http.MethodPut, NoGet: true,
 		IDKey:        "downtime_id",
 		CreateFields: downtimeExampleFields, UpdateFields: downtimeExampleFields},
-	{Name: "users", Base: "/users", Singular: "user",
+	{Name: "users", Base: "/users", Singular: "user", Export: true,
 		Columns:       []string{"email", "first_name", "last_name", "status", "last_login", "id"},
 		NameKeys:      []string{"email"},
 		ListTransform: userListRows,
@@ -342,7 +360,7 @@ var resourceRegistry = []resourceDesc{
 		UpdateFields:  []string{`roles=["Standard"]`}},
 	// updateGroup is a PATCH that replaces the group: live (2026-10-15)
 	// an omitted name or description is blanked, so update requires both.
-	{Name: "groups", Base: "/groups", Singular: "group",
+	{Name: "groups", Base: "/groups", Singular: "group", Export: true,
 		UpdateFields:   []string{"name=<name>", "description=<description>"},
 		UpdateRequires: []string{"name", "description"},
 		UpdateRequiresHint: "Pass both: -f name=<name> -f description=<description> " +
@@ -454,6 +472,21 @@ func doJSONRequest(ctx context.Context, app *App, method, path string, body []by
 	if app.DryRun && method != http.MethodGet && method != http.MethodHead {
 		return dryRunPlan(method, path, body), nil
 	}
+	raw, err := doRequest(ctx, app, method, path, body)
+	if err != nil || len(raw) == 0 {
+		return nil, err
+	}
+	var doc any
+	if err := bronto.DecodeJSON(raw, &doc); err != nil {
+		return nil, err
+	}
+	return doc, nil
+}
+
+// doRequest is doJSONRequest without the dry-run plan and the JSON
+// decoding: it returns the response body as sent, for the endpoints that
+// answer text (export).
+func doRequest(ctx context.Context, app *App, method, path string, body []byte) ([]byte, error) {
 	var reqBody io.Reader
 	if body != nil {
 		reqBody = bytes.NewReader(body)
@@ -469,14 +502,7 @@ func doJSONRequest(ctx context.Context, app *App, method, path string, body []by
 	if err != nil {
 		return nil, err
 	}
-	if len(resp.Body) == 0 {
-		return nil, nil
-	}
-	var doc any
-	if err := bronto.DecodeJSON(resp.Body, &doc); err != nil {
-		return nil, err
-	}
-	return doc, nil
+	return resp.Body, nil
 }
 
 // dryRunPlan is what doJSONRequest returns for a mutating call under
@@ -671,6 +697,7 @@ func newResourceCmd(desc resourceDesc, extras ...*cobra.Command) *cobra.Command 
 		{"create", desc.NoCreate, func() *cobra.Command { return newResourceCreateCmd(desc) }},
 		{"update", desc.NoUpdate, func() *cobra.Command { return newResourceUpdateCmd(desc) }},
 		{"delete", desc.NoDelete, func() *cobra.Command { return newResourceDeleteCmd(desc) }},
+		{"export", !desc.Export, func() *cobra.Command { return newResourceExportCmd(desc) }},
 	}
 	for _, v := range verbs {
 		if v.disabled || replaced[v.name] {

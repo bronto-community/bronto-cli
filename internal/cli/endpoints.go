@@ -39,6 +39,8 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/context", Command: "bronto context"},
 	{Pattern: "/top-keys", Command: "bronto fields / ask / query check / search / repl"},
 	{Pattern: "/usage", Command: "bronto usage"},
+	{Pattern: "/sso/idps/{*}/export", Command: "bronto sso idps export"},
+	{Pattern: "/sso/mappings/export", Command: "bronto sso mappings export"},
 	// GET /logs is the health probe (ping, auth) and also how every
 	// command that takes a dataset name resolves it to an id.
 	{Pattern: "/logs", Command: "bronto ping / auth login / auth status / login / ask / context / fields / " +
@@ -123,6 +125,9 @@ func EndpointInventory() []EndpointPattern {
 		add(d.createPath(), cmd)
 		if !d.NoGet || !d.NoUpdate || !d.NoDelete {
 			add(d.idBase()+"/{*}", cmd)
+		}
+		if d.Export {
+			add(d.idBase()+"/{*}/export", cmd)
 		}
 	}
 	for _, e := range handWrittenEndpoints {

@@ -84,6 +84,7 @@ Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `
 | webhook integrations | `bronto webhooks list` | [Webhooks](https://docs.bronto.io/integrations/webhooks) | [Integrations](https://docs.bronto.io/api-reference/integrations/get-all-webhook-integration-resources-for-an-organisation) |
 | Slack integrations | `bronto slack list` | [Slack](https://docs.bronto.io/integrations/slack) | [Integrations](https://docs.bronto.io/api-reference/integrations/get-all-slack-integration-resources-for-an-organisation) |
 | log forwarding destinations | `bronto forward-configs list` | [Log Forwarding](https://docs.bronto.io/core-features/log-forwarding) | [Forward](https://docs.bronto.io/api-reference/forward/retrieve-forward-configs) |
+| provider integrations, which send alerts to AWS DevOps Agent, PagerDuty, JSM, or Rootly | `bronto providers list` |  | [Integrations](https://docs.bronto.io/api-reference/integrations/get-all-provider-integration-resources-for-an-organisation) |
 | bring-your-own encryption keys | `bronto encryption-keys list` | [BYOK](https://docs.bronto.io/Account-Management/BYOK) | [Encryption keys](https://docs.bronto.io/api-reference/encryption-keys/retrieve-a-list-of-encryption-keys) |
 | account limits | `bronto limits list` |  | [Limits](https://docs.bronto.io/api-reference/limits/retrieve-limits) |
 
@@ -127,7 +128,7 @@ resource. The example in each command's help (`bronto <resource> create --help`)
 the fields the API requires.
 
 Updates to `monitors`, `monitors templates`, `monitors downtimes`, `widgets`, `datasets`,
-`forward-configs`, `webhooks`, `slack`, and `roles` use HTTP PUT, which replaces the whole
+`forward-configs`, `webhooks`, `slack`, `providers`, and `roles` use HTTP PUT, which replaces the whole
 object. Send every field you want to keep, not only the one you change. A few other
 updates need more than the changed field too:
 
@@ -236,6 +237,7 @@ A few resources have extra verbs:
 | `bronto metrics top-keys` | attribute keys seen on a metric | below |
 | `bronto datasets monitors`, `bronto datasets dashboards` | what uses a dataset | below |
 | `bronto forward-configs test` | check that Bronto can write to a forwarding destination | below |
+| `bronto monitors export`, `bronto users export`, `bronto sso mappings export`, and more | write a resource as Terraform or OpenTofu | below |
 
 ### Assign a parser to a dataset
 
@@ -295,6 +297,43 @@ bronto forward-configs test <forward-config>
 ```
 
 If Bronto can't write to the bucket, the command exits 1 with `forward_destination_failed`.
+
+### Export as Terraform
+
+`export` writes one resource as HCL for Bronto's Terraform provider, so configuration built
+in the web UI can move into version control. It exists for `bronto monitors export`,
+`bronto dashboards export`, `bronto users export`, `bronto groups export`,
+`bronto webhooks export`, `bronto slack export`, and `bronto providers export`, and takes
+an id or a name like `get` does:
+
+```sh
+bronto monitors export "Payments latency p95" > monitor.tf
+bronto monitors export <id> --include-dependencies
+bronto users export ada@example.com --format opentofu
+```
+
+`--format` is `terraform` (the default) or `opentofu`. The output is HCL text, so `-o` and
+`--jq` don't apply. `--include-dependencies`, on monitors and dashboards, also exports
+what the resource references (a monitor's metric definition, the sources of a dashboard's
+widgets) and refers to that instead of a literal id. Bronto never returns secrets, so an
+exported webhook, provider integration, or identity provider carries a comment where one
+has to be set by hand.
+
+`bronto dashboards export` writes an `apply` manifest unless you ask for HCL with
+`--format terraform` or `--format opentofu`; see
+[Declarative dashboards](/cli/guides/monitors-and-dashboards#declarative-dashboards).
+
+`bronto sso` exports the single sign-on configuration the same way. `bronto sso idps`
+has one identity provider per export, named as in Bronto, and `bronto sso mappings`
+always exports the organization's whole mapping list:
+
+```sh
+bronto sso idps export Google > idp.tf
+bronto sso mappings export > sso_mappings.tf
+```
+
+These commands are unrelated to `bronto exports`, which downloads log events
+([guide](/cli/guides/exports)).
 
 ## API keys
 

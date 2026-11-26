@@ -96,6 +96,8 @@ forward-configs test:
 slack:
   docs: https://docs.bronto.io/integrations/slack
   api: https://docs.bronto.io/api-reference/integrations/get-all-slack-integration-resources-for-an-organisation
+providers:
+  api: https://docs.bronto.io/api-reference/integrations/get-all-provider-integration-resources-for-an-organisation
 webhooks:
   docs: https://docs.bronto.io/integrations/webhooks
   api: https://docs.bronto.io/api-reference/integrations/get-all-webhook-integration-resources-for-an-organisation

@@ -51,6 +51,7 @@ var flagClasses = map[string]argClass{
 	"dataset":       argValue,
 	"direction":     argValue,
 	"fields":        argValue,
+	"format":        argValue,
 	"from":          argValue, // RFC3339 time
 	"group-by":      argValue,
 	"kind":          argValue,
@@ -110,6 +111,7 @@ var argPlaceholders = map[string]argClass{
 	"forward-config": argValue,
 	"group":          argValue,
 	"id":             argValue,
+	"idp":            argValue,
 	"key":            argValue,
 	"metric":         argValue,
 	"name-filter":    argValue,

@@ -1,7 +1,7 @@
 ---
 title: "bronto monitors"
 sidebarTitle: "monitors"
-description: "Reference for the bronto monitors command in the bronto CLI, covering monitor CRUD, check, mute, events, notifications, downtimes, and templates subcommands."
+description: "Reference for the bronto monitors command in the bronto CLI, covering monitor CRUD, check, mute, events, notifications, export, downtimes, and templates subcommands."
 icon: "bell-ring"
 ---
 
@@ -27,6 +27,7 @@ bronto monitors <command> [flags]
 | [`bronto monitors delete`](/cli/reference/commands/monitors#bronto-monitors-delete) | Delete a monitor |
 | [`bronto monitors downtimes`](/cli/reference/commands/monitors#bronto-monitors-downtimes) | Manage downtimes |
 | [`bronto monitors events`](/cli/reference/commands/monitors#bronto-monitors-events) | List recent events for a monitor |
+| [`bronto monitors export`](/cli/reference/commands/monitors#bronto-monitors-export) | Write a monitor as Terraform or OpenTofu |
 | [`bronto monitors get`](/cli/reference/commands/monitors#bronto-monitors-get) | Get a monitor by ID |
 | [`bronto monitors list`](/cli/reference/commands/monitors#bronto-monitors-list) | List monitors |
 | [`bronto monitors mute`](/cli/reference/commands/monitors#bronto-monitors-mute) | Mute or unmute a monitor |
@@ -227,6 +228,30 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto monitors events <id>
+```
+
+## bronto monitors export
+
+Writes a monitor as infrastructure-as-code (HCL) on stdout, to check into version control
+and manage with the Bronto Terraform provider. The output is text, so -o does not apply.
+
+```sh
+bronto monitors export <id> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--format` |  | string | `terraform` | export format: terraform or opentofu |
+| `--include-dependencies` |  | bool |  | also export what it references, and reference that instead of literal ids |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto monitors export <id> > monitor.tf
 ```
 
 ## bronto monitors get

@@ -201,6 +201,10 @@ problem with its file and line. With `--live`, it also resolves the datasets and
 widget's queries once, without saving anything. `-f` takes a file, a directory (every
 `.yaml` and `.yml` file in it, one dashboard per file), or `-` for stdin.
 
+`bronto dashboards export --format terraform` writes the dashboard as HCL for Bronto's
+Terraform provider instead of a manifest; see
+[Export as Terraform](/cli/guides/resources#export-as-terraform).
+
 `bronto dashboards export` goes the other way: it writes an existing dashboard as a
 manifest that `apply` re-applies without changes, so a dashboard built in the web UI can
 move into a file and into version control:

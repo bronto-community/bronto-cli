@@ -1,7 +1,7 @@
 ---
 title: "bronto slack"
 sidebarTitle: "slack"
-description: "Reference for the bronto slack command in the bronto CLI, with flags for the create, list, update, and delete subcommands that manage Slack integrations."
+description: "Reference for the bronto slack command in the bronto CLI, with flags for the create, list, update, delete, and export subcommands that manage Slack integrations."
 icon: "message-square-text"
 ---
 
@@ -24,6 +24,7 @@ bronto slack <command> [flags]
 | --- | --- |
 | [`bronto slack create`](/cli/reference/commands/slack#bronto-slack-create) | Create a Slack integration |
 | [`bronto slack delete`](/cli/reference/commands/slack#bronto-slack-delete) | Delete a Slack integration |
+| [`bronto slack export`](/cli/reference/commands/slack#bronto-slack-export) | Write a Slack integration as Terraform or OpenTofu |
 | [`bronto slack list`](/cli/reference/commands/slack#bronto-slack-list) | List Slack integrations |
 | [`bronto slack update`](/cli/reference/commands/slack#bronto-slack-update) | Update a Slack integration |
 
@@ -73,6 +74,29 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 
 ```sh
 bronto slack delete <id> --yes
+```
+
+## bronto slack export
+
+Writes a Slack integration as infrastructure-as-code (HCL) on stdout, to check into version control
+and manage with the Bronto Terraform provider. The output is text, so -o does not apply.
+
+```sh
+bronto slack export <id> [flags]
+```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--format` |  | string | `terraform` | export format: terraform or opentofu |
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto slack export <id> > slack_integration.tf
 ```
 
 ## bronto slack list

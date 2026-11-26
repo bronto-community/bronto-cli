@@ -27,7 +27,7 @@ bronto dashboards <command> [flags]
 | [`bronto dashboards create`](/cli/reference/commands/dashboards#bronto-dashboards-create) | Create a dashboard |
 | [`bronto dashboards delete`](/cli/reference/commands/dashboards#bronto-dashboards-delete) | Delete a dashboard |
 | [`bronto dashboards detach-from-template`](/cli/reference/commands/dashboards#bronto-dashboards-detach-from-template) | Detach a dashboard from its template |
-| [`bronto dashboards export`](/cli/reference/commands/dashboards#bronto-dashboards-export) | Write a dashboard as a manifest for 'dashboards apply' |
+| [`bronto dashboards export`](/cli/reference/commands/dashboards#bronto-dashboards-export) | Write a dashboard as a manifest for 'dashboards apply', or as Terraform |
 | [`bronto dashboards get`](/cli/reference/commands/dashboards#bronto-dashboards-get) | Get a dashboard by ID |
 | [`bronto dashboards list`](/cli/reference/commands/dashboards#bronto-dashboards-list) | List dashboards |
 | [`bronto dashboards remove-widget`](/cli/reference/commands/dashboards#bronto-dashboards-remove-widget) | Remove a widget from a dashboard |
@@ -267,11 +267,24 @@ file deletes it. Widgets the manifest can't express (group widgets, widgets
 with several definitions, widgets another manifest owns) are written as
 ref: entries, which apply only attaches.
 
+With --format terraform (or opentofu) it writes the dashboard and its
+widgets as HCL for the Bronto Terraform provider instead, as the export
+verb of other resources does. That output is text, so -o does not apply;
+--include-dependencies also exports the metrics, monitors and SLOs the
+widgets read.
+
 The dashboard can be an id or a unique name.
 
 ```sh
 bronto dashboards export <dashboard> [flags]
 ```
+
+#### Flags
+
+| Flag | Short | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `--format` |  | string | `manifest` | what to write: manifest, terraform or opentofu |
+| `--include-dependencies` |  | bool |  | with --format terraform or opentofu, also export what the widgets reference |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
 
@@ -280,6 +293,7 @@ Also accepts the [global flags](/cli/reference/commands/global-flags).
 ```sh
 bronto dashboards export "Checkout API health" > dashboard.yaml
 bronto dashboards export <id> -o json
+bronto dashboards export <id> --format terraform > dashboard.tf
 ```
 
 ## bronto dashboards get

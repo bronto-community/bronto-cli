@@ -17,7 +17,7 @@ import (
 // Commands come from two places:
 //   - the resourceRegistry, expanded mechanically: list is GET Base,
 //     create POST CreatePath, get/update/delete GET/UpdateMethod/DELETE
-//     IDBase/{id} (registryOperations);
+//     IDBase/{id}, export GET IDBase/{id}/export (registryOperations);
 //   - apiOperationCommands below, for the hand-written commands.
 //
 // Every spec operation must be covered by one of them, offered by a
@@ -71,6 +71,9 @@ var apiOperationCommands = map[string][]string{
 	"POST /tags":   {"bronto dashboards apply"},
 	"PUT /tags":    {"bronto dashboards apply"},
 	"DELETE /tags": {"bronto dashboards apply"},
+	// The SSO exports; the other export operations are registry verbs.
+	"GET /sso/idps/{idp_name}/export": {"bronto sso idps export"},
+	"GET /sso/mappings/export":        {"bronto sso mappings export"},
 }
 
 // apiOperationsElsewhere maps spec operations no command calls, but whose
@@ -94,39 +97,25 @@ var apiOperationsElsewhere = map[string][]string{
 // yet", and `bronto api` reaches the endpoint meanwhile.
 var apiOperationsNotCovered = map[string]string{
 	"GET /users/all":                                                  "List all users",
-	"GET /users/{userId}/export":                                      "Export a user",
 	"GET /users/{userId}/preferences":                                 "Read a user's preferences",
 	"PATCH /users/{userId}/preferences":                               "Change a user's preferences",
 	"GET /users/{userId}/access":                                      "List the organizations a user can access",
-	"GET /groups/{groupId}/export":                                    "Export a group",
 	"POST /datasets/resolve":                                          "Resolve datasets",
 	"POST /organizations/{orgId}/access/{entityType}/{entityId}":      "Grant a user or group access to an organization",
 	"DELETE /organizations/{orgId}/access/{entityType}/{entityId}":    "Revoke a user's or group's access to an organization",
 	"GET /organizations/{orgId}/access":                               "List who has access to an organization",
 	"GET /organizations/{orgId}/access/{entityType}/{entityId}/check": "Check whether a user or group has access to an organization",
 	"POST /organizations/{orgId}/access/user/{userId}/switch":         "Switch a user's active organization",
-	"GET /monitors/{monitorId}/export":                                "Export a monitor",
-	"GET /integrations/slack/{slack_id}/export":                       "Export a Slack integration",
 	"GET /integrations/slack/workspaces":                              "List Slack workspaces",
 	"DELETE /integrations/slack/workspaces/{workspace_id}":            "Remove a Slack workspace",
-	"GET /integrations/webhooks/{webhook_id}/export":                  "Export a webhook",
-	"GET /integrations/providers":                                     "List provider integrations, such as AWS DevOps Agent",
-	"POST /integrations/providers":                                    "Create a provider integration",
-	"GET /integrations/providers/{provider_id}":                       "Get a provider integration",
-	"PUT /integrations/providers/{provider_id}":                       "Update a provider integration",
-	"DELETE /integrations/providers/{provider_id}":                    "Delete a provider integration",
-	"GET /integrations/providers/{provider_id}/export":                "Export a provider integration",
-	"GET /sso/idps/{idp_name}/export":                                 "Export an SSO identity provider",
-	"GET /sso/mappings/export":                                        "Export SSO mappings",
-	"GET /customer":                                                   "Read the organization's customer record",
-	"PATCH /customer":                                                 "Update the organization's customer record",
-	"GET /tags/search":                                                "List tags",
-	"GET /explain-error":                                              "Explain an error with AI",
-	"GET /widget-creation-assistant":                                  "Suggest a widget from a prompt with AI",
-	"GET /policies/resources/{resource_type}/{resource_id}":           "List the policies on a resource",
-	"PATCH /widgets/{id}":                                             "Change a widget's layout",
-	"GET /dashboards/{dashboardId}/export":                            "Export a dashboard as Terraform",
-	"POST /patterns":                                                  "Get server-side log patterns and their templates",
+	"GET /customer":                  "Read the organization's customer record",
+	"PATCH /customer":                "Update the organization's customer record",
+	"GET /tags/search":               "List tags",
+	"GET /explain-error":             "Explain an error with AI",
+	"GET /widget-creation-assistant": "Suggest a widget from a prompt with AI",
+	"GET /policies/resources/{resource_type}/{resource_id}": "List the policies on a resource",
+	"PATCH /widgets/{id}": "Change a widget's layout",
+	"POST /patterns":      "Get server-side log patterns and their templates",
 }
 
 // apiOperationsOutsideSpec lists the endpoints hand-written commands call
@@ -285,6 +274,9 @@ func registryOperations() []registryOperation {
 		}
 		if !d.NoDelete {
 			out = append(out, registryOperation{http.MethodDelete, id, cmd + "delete"})
+		}
+		if d.Export {
+			out = append(out, registryOperation{http.MethodGet, id + "/export", cmd + "export"})
 		}
 	}
 	return out
