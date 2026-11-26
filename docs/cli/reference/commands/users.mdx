@@ -1,7 +1,7 @@
 ---
 title: "bronto users"
 sidebarTitle: "users"
-description: "Reference for the bronto users command in the bronto CLI, covering create, get, list, update, groups, deactivate, reactivate, resend-invite, export, and delete."
+description: "Reference for the bronto users command in the bronto CLI, covering create, get, list, update, groups, deactivate, reactivate, resend-invite, access, export, and delete."
 icon: "users"
 ---
 
@@ -22,6 +22,7 @@ bronto users <command> [flags]
 
 | Command | Description |
 | --- | --- |
+| [`bronto users access`](/cli/reference/commands/users#bronto-users-access) | List the organizations a user can access |
 | [`bronto users create`](/cli/reference/commands/users#bronto-users-create) | Create a user |
 | [`bronto users deactivate`](/cli/reference/commands/users#bronto-users-deactivate) | Deactivate a user |
 | [`bronto users delete`](/cli/reference/commands/users#bronto-users-delete) | Delete a user |
@@ -34,6 +35,22 @@ bronto users <command> [flags]
 | [`bronto users update`](/cli/reference/commands/users#bronto-users-update) | Update a user |
 
 Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+## bronto users access
+
+List the organizations a user can access
+
+```sh
+bronto users access <user> [flags]
+```
+
+Also accepts the [global flags](/cli/reference/commands/global-flags).
+
+#### Examples
+
+```sh
+bronto users access ada@example.com
+```
 
 ## bronto users create
 

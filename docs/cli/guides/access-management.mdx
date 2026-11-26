@@ -61,6 +61,9 @@ bronto users reactivate grace@example.com
 `bronto users list` confirms the change.
 `bronto users resend-invite` sends a new invitation to a user who hasn't accepted yet.
 
+`bronto users access <user>` lists the organizations a user was given access to with
+`bronto access grant` (see [Organization access](#organization-access)).
+
 ## Groups
 
 {/* test: tty */}
@@ -155,6 +158,27 @@ permission catalog, including permissions the role doesn't grant.
 
 Values passed with `-f` are parsed as JSON, so the `permissions` value above is sent as
 an array.
+
+## Organization access
+
+`bronto access` manages the access users and groups were granted to an organization, and
+with which roles. `bronto access list` prints those grants; the users who belong to the
+organization itself are in `bronto users list`.
+`bronto access check` shows whether one user or group has access, and its roles.
+`bronto access grant` gives access and `bronto access revoke` removes it:
+
+```sh
+bronto access list
+bronto access check --user ada@example.com
+bronto access grant --group sre --roles Admin
+bronto access revoke --user ada@example.com --yes
+```
+
+Each takes one of `--user` (an id or email) and `--group` (an id or name). `--roles` takes
+role ids or display names, as shown by `bronto roles list`. The organization is the one
+your API key belongs to; pass `--org <id>` for another organization of the same customer.
+`grant` and `revoke` honor `--dry-run`, and `revoke` asks
+for confirmation unless you pass `--yes`.
 
 ## API keys
 

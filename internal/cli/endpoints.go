@@ -49,6 +49,16 @@ var handWrittenEndpoints = []EndpointPattern{
 	{Pattern: "/saved-searches", Command: "bronto search"},
 	{Pattern: "/saved-searches/{*}", Command: "bronto search"},
 	{Pattern: "/organizations", Command: "bronto search"},
+	// The access commands default the org to the active one (GET
+	// /organizations) and resolve users, groups and roles by name.
+	{Pattern: "/organizations", Command: "bronto access"},
+	{Pattern: "/organizations/{*}/access", Command: "bronto access list"},
+	{Pattern: "/organizations/{*}/access/{*}/{*}", Command: "bronto access grant / access revoke"},
+	{Pattern: "/organizations/{*}/access/{*}/{*}/check", Command: "bronto access check"},
+	{Pattern: "/users", Command: "bronto access / users access"},
+	{Pattern: "/groups", Command: "bronto access"},
+	{Pattern: "/roles", Command: "bronto access grant"},
+	{Pattern: "/users/{*}/access", Command: "bronto users access"},
 	{Pattern: "/monitors/{*}/events", Command: "bronto monitors events"},
 	{Pattern: "/monitors/{*}/status", Command: "bronto monitors mute"},
 	{Pattern: "/groups/{*}/members", Command: "bronto groups members / groups add-members / groups remove-members"},

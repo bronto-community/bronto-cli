@@ -77,6 +77,12 @@ var apiOperationCommands = map[string][]string{
 	// The org record (#191).
 	"GET /customer":   {"bronto org show"},
 	"PATCH /customer": {"bronto org update"},
+	// Access to an organization (#192).
+	"GET /organizations/{orgId}/access":                               {"bronto access list"},
+	"POST /organizations/{orgId}/access/{entityType}/{entityId}":      {"bronto access grant"},
+	"DELETE /organizations/{orgId}/access/{entityType}/{entityId}":    {"bronto access revoke"},
+	"GET /organizations/{orgId}/access/{entityType}/{entityId}/check": {"bronto access check"},
+	"GET /users/{userId}/access":                                      {"bronto users access"},
 }
 
 // apiOperationsElsewhere maps spec operations no command calls, but whose
@@ -97,22 +103,17 @@ var apiOperationsElsewhere = map[string][]string{
 // what a user can't do; the coverage page lists it under "Not supported
 // yet", and `bronto api` reaches the endpoint meanwhile.
 var apiOperationsNotCovered = map[string]string{
-	"GET /users/all":                                                  "List all users",
-	"GET /users/{userId}/preferences":                                 "Read a user's preferences",
-	"PATCH /users/{userId}/preferences":                               "Change a user's preferences",
-	"GET /users/{userId}/access":                                      "List the organizations a user can access",
-	"POST /datasets/resolve":                                          "Resolve datasets",
-	"POST /organizations/{orgId}/access/{entityType}/{entityId}":      "Grant a user or group access to an organization",
-	"DELETE /organizations/{orgId}/access/{entityType}/{entityId}":    "Revoke a user's or group's access to an organization",
-	"GET /organizations/{orgId}/access":                               "List who has access to an organization",
-	"GET /organizations/{orgId}/access/{entityType}/{entityId}/check": "Check whether a user or group has access to an organization",
-	"POST /organizations/{orgId}/access/user/{userId}/switch":         "Switch a user's active organization",
-	"GET /tags/search":                                                "List tags",
-	"GET /explain-error":                                              "Explain an error with AI",
-	"GET /widget-creation-assistant":                                  "Suggest a widget from a prompt with AI",
-	"GET /policies/resources/{resource_type}/{resource_id}":           "List the policies on a resource",
-	"PATCH /widgets/{id}":                                             "Change a widget's layout",
-	"POST /patterns":                                                  "Get server-side log patterns and their templates",
+	"GET /users/all":                                          "List all users",
+	"GET /users/{userId}/preferences":                         "Read a user's preferences",
+	"PATCH /users/{userId}/preferences":                       "Change a user's preferences",
+	"POST /datasets/resolve":                                  "Resolve datasets",
+	"POST /organizations/{orgId}/access/user/{userId}/switch": "Switch a user's active organization",
+	"GET /tags/search":                                        "List tags",
+	"GET /explain-error":                                      "Explain an error with AI",
+	"GET /widget-creation-assistant":                          "Suggest a widget from a prompt with AI",
+	"GET /policies/resources/{resource_type}/{resource_id}":   "List the policies on a resource",
+	"PATCH /widgets/{id}":                                     "Change a widget's layout",
+	"POST /patterns":                                          "Get server-side log patterns and their templates",
 }
 
 // apiOperationsOutsideSpec lists the endpoints hand-written commands call

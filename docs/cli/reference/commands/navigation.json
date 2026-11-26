@@ -4,6 +4,7 @@
   "pages": [
     "cli/reference/commands/index",
     "cli/reference/commands/global-flags",
+    "cli/reference/commands/access",
     "cli/reference/commands/api",
     "cli/reference/commands/api-keys",
     "cli/reference/commands/ask",
