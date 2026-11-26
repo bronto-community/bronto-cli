@@ -378,14 +378,14 @@ var pageDescriptions = map[string]string{
 	"saved-searches":  "Reference for the bronto saved-searches command in the bronto CLI, with flags for the create, get, list, update, and delete saved log search subcommands.",
 	"search":          "Reference for the bronto search command in the bronto CLI, which runs one-off log queries across datasets with flags for time range, filters, and group-by.",
 	"send":            "Reference for the bronto send command in the bronto CLI, which sends log events to the Bronto ingestion API from a message or stdin, with batching flags.",
-	"slack":           "Reference for the bronto slack command in the bronto CLI, with flags for the create, list, update, delete, and export subcommands that manage Slack integrations.",
+	"slack":           "Reference for the bronto slack command in the bronto CLI, with flags for the create, get, list, update, delete, export, and workspaces subcommands that manage Slack integrations.",
 	"sso":             "Reference for the bronto sso command in the bronto CLI, which exports SSO identity providers and mappings as Terraform or OpenTofu using --format.",
 	"tail":            "Reference for the bronto tail command in the bronto CLI, which follows new log events as they arrive like tail -f, with --interval, --window, and filters.",
 	"traces":          "Reference for the bronto traces command in the bronto CLI, covering list, show, services, operations, aggregate, and shape for OpenTelemetry traces.",
 	"usage":           "Reference for the bronto usage command in the bronto CLI, which shows organization-wide billable log ingestion volume over a time period using --since.",
 	"users":           "Reference for the bronto users command in the bronto CLI, covering create, get, list, update, groups, deactivate, reactivate, resend-invite, export, and delete.",
 	"version":         "Reference for the bronto version command in the bronto CLI, which prints the installed CLI version, commit hash, and build date, with usage examples.",
-	"webhooks":        "Reference for the bronto webhooks command in the bronto CLI, with flags for the create, list, update, delete, and export subcommands that manage webhooks.",
+	"webhooks":        "Reference for the bronto webhooks command in the bronto CLI, with flags for the create, get, list, update, delete, and export subcommands that manage webhooks.",
 	"widgets":         "Reference for the bronto widgets command in the bronto CLI, covering create, get, list, update, delete, query, templates, and attaching widgets to dashboards.",
 }
 

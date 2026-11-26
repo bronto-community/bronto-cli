@@ -302,17 +302,26 @@ var resourceRegistry = []resourceDesc{
 	{Name: "encryption-keys", Base: "/encryption-keys", Singular: "encryption key",
 		ListLimit:    100,
 		CreateFields: []string{"name=<name>", "provider=AWS_KMS", `aws_kms={"alias_arn":"<alias-arn>"}`}},
-	// No per-ID GET documented for these three; update is full-body PUT.
+	// Update is a full-body PUT for these three; forward-configs has no
+	// per-ID GET in the spec.
 	{Name: "forward-configs", Base: "/forward-configs", Singular: "forward config",
 		UpdateMethod: http.MethodPut, NoGet: true,
 		CreateFields: forwardConfigExampleFields, UpdateFields: forwardConfigExampleFields},
 	{Name: "webhooks", Base: "/integrations/webhooks", Singular: "webhook",
-		UpdateMethod: http.MethodPut, NoGet: true, Export: true,
+		UpdateMethod: http.MethodPut, Export: true,
 		CreateFields: []string{"name=<name>", "url=<url>"},
 		UpdateFields: []string{"name=<name>", "url=<url>"}},
 	{Name: "slack", Base: "/integrations/slack", Singular: "Slack integration",
-		UpdateMethod: http.MethodPut, NoGet: true, Export: true,
+		UpdateMethod: http.MethodPut, Export: true,
 		CreateFields: slackExampleFields, UpdateFields: slackExampleFields},
+	// The Slack workspaces the Bronto app is connected to: a slack
+	// integration's workspace_id. They are connected in the web UI (an
+	// OAuth flow), so the API only lists and deletes them; deleting one
+	// does not uninstall the app from Slack.
+	{Name: "workspaces", AttachTo: "slack", Base: "/integrations/slack/workspaces",
+		Singular: "Slack workspace", NoGet: true, NoCreate: true, NoUpdate: true,
+		Long: "Lists and removes the Slack workspaces connected to Bronto. Connect one in the web UI;\n" +
+			"deleting one here does not uninstall the Bronto app from Slack."},
 	// Integrations that send alerts to a provider (AWS DevOps Agent,
 	// PagerDuty, JSM, Rootly). The secret is write-only: reads carry
 	// has_secret instead, and an update without one keeps the stored secret.

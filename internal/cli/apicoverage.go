@@ -82,13 +82,11 @@ var apiOperationCommands = map[string][]string{
 // /search). The coverage page counts them as covered and lists the
 // commands under the operation's category.
 var apiOperationsElsewhere = map[string][]string{
-	"GET /search":                             {"bronto search"},
-	"GET /live-tail":                          {"bronto tail"},
-	"POST /live-tail":                         {"bronto tail"},
-	"POST /logs":                              {"bronto datasets create"},
-	"GET /datasets":                           {"bronto datasets list"},
-	"GET /integrations/slack/{slack_id}":      {"bronto slack list"},
-	"GET /integrations/webhooks/{webhook_id}": {"bronto webhooks list"},
+	"GET /search":     {"bronto search"},
+	"GET /live-tail":  {"bronto tail"},
+	"POST /live-tail": {"bronto tail"},
+	"POST /logs":      {"bronto datasets create"},
+	"GET /datasets":   {"bronto datasets list"},
 }
 
 // apiOperationsNotCovered lists what the CLI doesn't support yet: spec
@@ -106,8 +104,6 @@ var apiOperationsNotCovered = map[string]string{
 	"GET /organizations/{orgId}/access":                               "List who has access to an organization",
 	"GET /organizations/{orgId}/access/{entityType}/{entityId}/check": "Check whether a user or group has access to an organization",
 	"POST /organizations/{orgId}/access/user/{userId}/switch":         "Switch a user's active organization",
-	"GET /integrations/slack/workspaces":                              "List Slack workspaces",
-	"DELETE /integrations/slack/workspaces/{workspace_id}":            "Remove a Slack workspace",
 	"GET /customer":                  "Read the organization's customer record",
 	"PATCH /customer":                "Update the organization's customer record",
 	"GET /tags/search":               "List tags",

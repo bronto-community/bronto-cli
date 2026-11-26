@@ -67,7 +67,7 @@ Agent-critical flags (global): `--dry-run` stops any mutating call — reads sti
 
 ## Resource commands
 
-Resources (`datasets`, `monitors` — plus nested `monitors templates` and `monitors downtimes` — `dashboards`, `metrics definitions` (the saved queries widgets plot), `widgets` (dashboard components; create and update both require `name` and `type` — update is a full replacement — with `metric_ids`/`widget_ids`/`aux` passed as `-f` JSON or `--input body.json`), the read-only template catalogs `dashboards templates` and `widgets templates`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `roles`, `webhooks`, `slack`, `providers` (alert integrations for AWS DevOps Agent, PagerDuty, JSM, Rootly; `secret` is write-only), `limits`, `encryption-keys`, `forward-configs`, and read-only `collections` / `log-views` / `metrics`, list-only `permissions`) share one pattern (list-only where the API documents no other verbs):
+Resources (`datasets`, `monitors` — plus nested `monitors templates` and `monitors downtimes` — `dashboards`, `metrics definitions` (the saved queries widgets plot), `widgets` (dashboard components; create and update both require `name` and `type` — update is a full replacement — with `metric_ids`/`widget_ids`/`aux` passed as `-f` JSON or `--input body.json`), the read-only template catalogs `dashboards templates` and `widgets templates`, `parsers`, `exports`, `api-keys`, `saved-searches`, `users`, `groups`, `roles`, `webhooks`, `slack` — plus nested `slack workspaces` (list and delete only: the workspaces a `slack` integration's `workspace_id` names) — `providers` (alert integrations for AWS DevOps Agent, PagerDuty, JSM, Rootly; `secret` is write-only), `limits`, `encryption-keys`, `forward-configs`, and read-only `collections` / `log-views` / `metrics`, list-only `permissions`) share one pattern (list-only where the API documents no other verbs):
 
 ```
 bronto <resource> list
@@ -77,7 +77,7 @@ bronto <resource> update <id-or-name> -f key=value
 bronto <resource> delete <id-or-name> --yes              # --yes skips the confirmation prompt
 ```
 
-Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `dashboards templates`, `widgets templates`, `metrics`, `metrics definitions`, `exports`.
+Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `slack workspaces`, `monitors downtimes`; no `update` for `slack workspaces`, `dashboards templates`, `widgets templates`, `metrics`, `metrics definitions`, `exports`.
 
 `<resource> create --help` shows an example with the fields the API requires. `update` is a full-replacement PUT for `monitors`, `monitors templates`, `monitors downtimes`, `widgets`, `datasets`, `forward-configs`, `webhooks`, `slack`, `providers`, `roles`: send every field to keep (`--input body.json`). `groups update` must pass both `name` and `description` (the API blanks an omitted one), `datasets update` both `collection` and `dataset`; the CLI refuses either without them. `dashboards update` takes exactly one of `name` or `layout` per call (the CLI refuses both or neither); `saved-searches update` needs `name`, `log_ids`, `search_details`.
 

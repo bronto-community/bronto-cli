@@ -61,7 +61,7 @@ $ bronto monitors get "High 5xx rate on checkout"
 At a terminal, `list` prints a table of the main columns and `get` prints the whole
 object as JSON.
 
-Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `slack`, `monitors downtimes`; no `update` for `dashboards templates`, `widgets templates`, `metrics`, `metrics definitions`, `exports`.
+Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `slack workspaces`, `monitors downtimes`; no `update` for `slack workspaces`, `dashboards templates`, `widgets templates`, `metrics`, `metrics definitions`, `exports`.
 `collections`, `log-views`, and `permissions` are list-only, and `metrics` is read-only
 (`list` and `get`, plus `top-keys`). Bronto's template catalogs are read-only too:
 `bronto dashboards templates` (`list`, `get`, and `show`) and `bronto widgets templates`
@@ -82,7 +82,7 @@ Exceptions: no `get` for `parsers`, `api-keys`, `forward-configs`, `webhooks`, `
 | users, groups, roles, permissions ([guide](/cli/guides/access-management)) | `bronto users list` | [User Management](https://docs.bronto.io/Account-Management/User-Management) | [Users](https://docs.bronto.io/api-reference/users/retrieve-a-list-of-users) |
 | API keys | `bronto api-keys list` | [API Keys](https://docs.bronto.io/Account-Management/API-Keys) | [API keys](https://docs.bronto.io/api-reference/api-keys/retrieve-a-list-of-api-keys) |
 | webhook integrations | `bronto webhooks list` | [Webhooks](https://docs.bronto.io/integrations/webhooks) | [Integrations](https://docs.bronto.io/api-reference/integrations/get-all-webhook-integration-resources-for-an-organisation) |
-| Slack integrations | `bronto slack list` | [Slack](https://docs.bronto.io/integrations/slack) | [Integrations](https://docs.bronto.io/api-reference/integrations/get-all-slack-integration-resources-for-an-organisation) |
+| Slack integrations, and the connected workspaces (`bronto slack workspaces`, list and delete only) | `bronto slack list` | [Slack](https://docs.bronto.io/integrations/slack) | [Integrations](https://docs.bronto.io/api-reference/integrations/get-all-slack-integration-resources-for-an-organisation) |
 | log forwarding destinations | `bronto forward-configs list` | [Log Forwarding](https://docs.bronto.io/core-features/log-forwarding) | [Forward](https://docs.bronto.io/api-reference/forward/retrieve-forward-configs) |
 | provider integrations, which send alerts to AWS DevOps Agent, PagerDuty, JSM, or Rootly | `bronto providers list` |  | [Integrations](https://docs.bronto.io/api-reference/integrations/get-all-provider-integration-resources-for-an-organisation) |
 | bring-your-own encryption keys | `bronto encryption-keys list` | [BYOK](https://docs.bronto.io/Account-Management/BYOK) | [Encryption keys](https://docs.bronto.io/api-reference/encryption-keys/retrieve-a-list-of-encryption-keys) |
