@@ -23,6 +23,10 @@ func newPoliciesCmd() *cobra.Command {
 		Example: "  bronto policies list logset <dataset-id>",
 		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if args[0] == "" || args[1] == "" {
+				return clierr.New("usage_invalid_args", "the resource type and id must not be empty").
+					WithHint("e.g. bronto policies list logset <dataset-id>; 'bronto datasets list' shows the ids.")
+			}
 			app, err := NewApp(cmd)
 			if err != nil {
 				return err

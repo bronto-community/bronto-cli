@@ -65,6 +65,7 @@ func TestPatchAndResolveRejectInvalidCombinations(t *testing.T) {
 		{"widgets", "patch", tDash, "-f", "name=x", "-f", `aux={"mode":"sql"}`},
 		{"widgets", "patch", tDash, "-f", "title=x"},
 		{"datasets", "resolve", "--from-expr", "a = 'b'", "--expand-type", "SYNONYM", "--match-type", "SUBSTRING"},
+		{"policies", "list", "logset", ""},
 		{"datasets", "resolve", "--from-expr", "a = 'b'", "--expand-type", "synonym", "--match-type", "isubstring"},
 	} {
 		var got []string

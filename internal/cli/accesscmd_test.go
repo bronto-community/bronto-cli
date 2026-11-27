@@ -38,7 +38,7 @@ func TestAccessCommands(t *testing.T) {
 		t.Fatalf("access revoke --dry-run: %v, requests %v, stdout %q", err, got, out)
 	}
 	out, _, err = runResource(t, cmdStub(&got), "", "access", "list", "-o", "csv")
-	if err != nil || !strings.HasPrefix(out, "type,id,roles,status,createdAt\nuser,u1,") {
+	if err != nil || !strings.HasPrefix(out, "type,id,roles,status,created_at\nuser,u1,") {
 		t.Fatalf("access list csv: %v, %q", err, out)
 	}
 	out, _, err = runResource(t, cmdStub(&got), "", "users", "access", tUser, "-o", "csv")

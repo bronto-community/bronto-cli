@@ -105,8 +105,9 @@ func (t accessTarget) entityPath(ctx context.Context, app *App) (path, label, or
 }
 
 // accessMembers returns the member rows of an access list: the live API
-// (2026-11-26) answers a top-level members array, the spec documents
-// items[].members[].
+// (2026-11-27) answers a top-level members array of {type, id, roles,
+// status, created_at}; the spec documents items[].members[] with
+// createdAt.
 func accessMembers(payload any) []map[string]any {
 	obj, _ := payload.(map[string]any)
 	if _, ok := obj["members"].([]any); ok {
@@ -119,6 +120,14 @@ func accessMembers(payload any) []map[string]any {
 	rows := []map[string]any{}
 	for _, item := range items {
 		rows = append(rows, rowsFromPayload(item, "members")...)
+	}
+	// The spec spells the timestamp createdAt; live it is created_at,
+	// which is the column the table shows.
+	for _, row := range rows {
+		if v, ok := row["createdAt"]; ok && row["created_at"] == nil {
+			row["created_at"] = v
+			delete(row, "createdAt")
+		}
 	}
 	return rows
 }
@@ -154,7 +163,7 @@ email, groups by id or name, roles by id or display name.`,
 			if err != nil {
 				return err
 			}
-			return printPolishedRows(app, accessMembers(payload), []string{"type", "id", "roles", "status", "createdAt"})
+			return printPolishedRows(app, accessMembers(payload), []string{"type", "id", "roles", "status", "created_at"})
 		},
 	}
 	lt.orgFlag(list)
