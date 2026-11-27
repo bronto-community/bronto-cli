@@ -424,8 +424,8 @@ For per-dataset numbers, call the API directly with
 
 `bronto org show` prints the organization's record: its ids, name, region, billing
 emails, and the other organizations of the same customer. `bronto org update` changes the
-name and the billing emails. The API documents both fields as required, so send the one
-you keep too:
+name and the billing emails. The API requires both fields, so send the one you keep too. The
+CLI refuses an update without both (`usage_missing_fields`, exit code 2):
 
 ```sh
 bronto org show -o json --jq .customer_name
