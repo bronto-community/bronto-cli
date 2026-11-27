@@ -4,7 +4,7 @@
       "id": "5f7b9d1e-3a4c-4d6f-9b8e-0a2c4e6f8b20",
       "name": "PagerDuty",
       "provider": "pagerduty",
-      "url": "https://example.com/pagerduty/checkout",
+      "url": "https://events.pagerduty.com/v2/enqueue",
       "has_secret": true,
       "auth_type": "api_key"
     },
@@ -12,7 +12,7 @@
       "id": "6a8c0e2f-4b5d-4e7a-8c9f-1b3d5f7a9c22",
       "name": "Rootly",
       "provider": "rootly",
-      "url": "https://example.com/rootly/payments",
+      "url": "https://webhooks.rootly.com/webhooks/incoming/payments",
       "has_secret": true,
       "auth_type": "hmac"
     }
