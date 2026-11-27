@@ -107,14 +107,13 @@ func TestAccessRevokePromptNamesTheOrg(t *testing.T) {
 	}
 }
 
-// TestAccessListShapes: the live API answers a top-level members array,
-// the spec documents items[].members[]; both print one row per member,
-// with createdAt readable rather than raw epoch milliseconds.
+// TestAccessListShapes: the live API answers a top-level members array
+// with created_at, the spec documents items[].members[] with createdAt;
+// both print one row per member with the time readable.
 func TestAccessListShapes(t *testing.T) {
-	const member = `{"type":"user","id":"u1","status":"active","createdAt":1784280308383}`
 	for name, payload := range map[string]string{
-		"live": `{"members":[` + member + `]}`,
-		"spec": `{"items":[{"members":[` + member + `]},{"members":[{"type":"group","id":"g1","status":"invited"}]}]}`,
+		"live": `{"members":[{"type":"GROUP","id":"g0","roles":["ReadOnly"],"status":"","created_at":1784280308383}]}`,
+		"spec": `{"items":[{"members":[{"type":"user","id":"u1","status":"active","createdAt":1784280308383}]},{"members":[{"type":"group","id":"g1","status":"invited"}]}]}`,
 	} {
 		var got []string
 		out, _, err := runResource(t, accessOrgStub(`{}`, payload, &got), "", "access", "list", "--org", "o1", "-o", "csv")
@@ -122,8 +121,13 @@ func TestAccessListShapes(t *testing.T) {
 			t.Fatalf("%s: %v", name, err)
 		}
 		lines := strings.Split(strings.TrimSpace(out), "\n")
-		if lines[0] != "type,id,roles,status,createdAt" || len(lines) < 2 || lines[1] != "user,u1,,active,2026-07-17T09:25:08Z" {
-			t.Errorf("%s: csv = %q", name, out)
+		if lines[0] != "type,id,roles,status,created_at" || len(lines) < 2 || !strings.HasSuffix(lines[1], ",2026-07-17T09:25:08Z") {
+			t.Errorf("%s: csv = %q, want a created_at column with a readable time", name, out)
+		}
+		// json keeps the API's own key.
+		raw, _, err := runResource(t, accessOrgStub(`{}`, payload, &got), "", "access", "list", "--org", "o1", "-o", "json")
+		if key := map[string]string{"live": `"created_at"`, "spec": `"createdAt"`}[name]; err != nil || !strings.Contains(raw, key) {
+			t.Errorf("%s: json = %q (err %v), want the key %s kept", name, raw, err, key)
 		}
 		if name == "spec" && (len(lines) != 3 || lines[2] != "group,g1,,invited,") {
 			t.Errorf("spec: csv = %q, want the second item's member as a row", out)
