@@ -69,7 +69,7 @@ var endpointProbes = map[string][][]string{
 	"bronto fields":                          {{"fields"}, {"fields", "-d", "ds"}},
 	"bronto ping":                            {{"ping"}},
 	"bronto org show":                        {{"org", "show"}},
-	"bronto org update":                      {{"org", "update", "-f", "customer_name=x"}},
+	"bronto org update":                      {{"org", "update", "-f", "customer_name=x", "-f", "billing_emails=[]"}},
 	"bronto query check":                     {{"query", "check", "a = 1", "-d", "ds"}},
 	"bronto search":                          {{"search", "-d", "ds", "--eq", "a=1"}, {"search", "--saved", "s1"}, {"search", "--url", "-d", "ds"}},
 	"bronto tail":                            {{"tail", "-d", "ds"}},

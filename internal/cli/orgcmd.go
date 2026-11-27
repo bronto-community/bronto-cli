@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"encoding/json"
 	"net/http"
+	"strings"
 
+	"github.com/bronto-community/bronto-cli/internal/clierr"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +30,7 @@ func newOrgCmd() *cobra.Command {
 	update := &cobra.Command{
 		Use:   "update",
 		Short: "Update the organization's name and billing emails",
-		Long:  "Changes the customer record. The API takes customer_name and billing_emails, and documents both as required: send the current value of the one you keep (see 'bronto org show').",
+		Long:  "Changes the customer record. The API takes customer_name and billing_emails, and both are required: send the current value of the one you keep (see 'bronto org show').",
 		Example: "  bronto org update -f customer_name=<name> -f 'billing_emails=[\"<email>\"]'\n" +
 			"  bronto org update --input org.json",
 		Args: cobra.NoArgs,
@@ -38,6 +41,9 @@ func newOrgCmd() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		if err := checkOrgBody(b); err != nil {
+			return err
+		}
 		app, err := NewApp(cmd)
 		if err != nil {
 			return err
@@ -46,4 +52,27 @@ func newOrgCmd() *cobra.Command {
 	}
 	cmd.AddCommand(update)
 	return cmd
+}
+
+// checkOrgBody refuses an org update body without customer_name or
+// billing_emails before any request: the API answers 400 ("provided
+// object should contain property billing_emails", live 2026-11-27).
+func checkOrgBody(body []byte) error {
+	var obj map[string]any
+	_ = json.Unmarshal(body, &obj)
+	if obj == nil {
+		return nil // not a JSON object: let the API report it
+	}
+	var missing []string
+	for _, k := range []string{"customer_name", "billing_emails"} {
+		if _, ok := obj[k]; !ok {
+			missing = append(missing, k)
+		}
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return clierr.New("usage_missing_fields", "org update needs both customer_name and billing_emails: the body lacks "+strings.Join(missing, ", ")).
+		WithHint("Send both: bronto org update -f customer_name=<name> -f 'billing_emails=[\"<email>\"]'. " +
+			"'bronto org show' prints the current values.")
 }
