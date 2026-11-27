@@ -7,7 +7,7 @@ toolchain go1.26.11
 require (
 	github.com/creack/pty v1.1.24
 	github.com/itchyny/gojq v0.12.20
-	github.com/klauspost/compress v1.20.4
+	github.com/klauspost/compress v1.20.5
 	github.com/mattn/go-isatty v0.0.24
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/rogpeppe/go-internal v1.16.0
