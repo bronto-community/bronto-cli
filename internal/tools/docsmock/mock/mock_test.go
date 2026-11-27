@@ -114,6 +114,8 @@ func TestMockWorld(t *testing.T) {
 	for path, name := range map[string]string{
 		"/monitors": "High 5xx rate on checkout", "/dashboards": "Checkout overview",
 		"/users": "ada@example.com", "/groups": "oncall",
+		"/integrations/webhooks": "oncall-pager", "/integrations/slack": "checkout-alerts",
+		"/integrations/slack/workspaces": "example-eng", "/integrations/providers": "PagerDuty",
 	} {
 		code, body := do(t, s, http.MethodGet, path, nil)
 		b, _ := json.Marshal(body)
@@ -219,5 +221,84 @@ func TestTemplatePreview(t *testing.T) {
 	}
 	if ws, _ := body["widgets"].([]any); len(ws) != 2 {
 		t.Fatalf("preview widgets = %v", body["widgets"])
+	}
+}
+
+// TestIntegrations pins the routes behind `bronto webhooks`, `bronto slack`
+// and `bronto providers`: the export endpoints answer HCL as text/plain,
+// and a provider's secret is write-only.
+func TestIntegrations(t *testing.T) {
+	s, rec := newTestServer(t)
+	get := func(path string) (*httptest.ResponseRecorder, string) {
+		r := httptest.NewRequest(http.MethodGet, path, nil)
+		r.Header.Set("X-BRONTO-API-KEY", APIKey)
+		w := httptest.NewRecorder()
+		s.ServeHTTP(w, r)
+		return w, w.Body.String()
+	}
+	for base, resource := range map[string]string{
+		"/integrations/webhooks":  "bronto_webhook_integration",
+		"/integrations/slack":     "bronto_slack_integration",
+		"/integrations/providers": "bronto_provider_integration",
+	} {
+		code, body := do(t, s, http.MethodGet, base, nil)
+		rows, _ := body["integrations"].([]any)
+		if code != http.StatusOK || len(rows) == 0 {
+			t.Fatalf("GET %s = %d %v", base, code, body)
+		}
+		for _, row := range rows {
+			id, _ := row.(map[string]any)["id"].(string)
+			for _, format := range []string{"terraform", "opentofu"} {
+				w, hcl := get(base + "/" + id + "/export?format=" + format)
+				if w.Code != http.StatusOK || w.Header().Get("Content-Type") != "text/plain" ||
+					!strings.HasPrefix(hcl, "# exported from ") || !strings.Contains(hcl, "\nresource \""+resource+"\" \"") {
+					t.Errorf("GET %s/%s/export?format=%s = %d %q %q", base, id, format, w.Code, w.Header().Get("Content-Type"), hcl)
+				}
+				if strings.Contains(hcl, "secret =") {
+					t.Errorf("export of %s/%s carries a secret: %s", base, id, hcl)
+				}
+			}
+			if w, _ := get(base + "/" + id + "/export?format=yaml"); w.Code != http.StatusBadRequest {
+				t.Errorf("export?format=yaml = %d, want 400", w.Code)
+			}
+		}
+	}
+	// An export without a fixture is unhandled, not an empty list printed as HCL.
+	if w, _ := get("/monitors/a1f3c9d2-4b6e-4f81-9c2d-7e5b3a8f1c01/export?format=terraform"); w.Code != http.StatusNotFound {
+		t.Errorf("export without a fixture = %d, want 404", w.Code)
+	}
+	if len(rec.lines) == 0 || !strings.Contains(rec.lines[len(rec.lines)-1], "unhandled GET /monitors/") {
+		t.Errorf("log = %v, want an unhandled line", rec.lines)
+	}
+
+	_, ws := do(t, s, http.MethodGet, "/integrations/slack/workspaces", nil)
+	wsRows, _ := ws["slack_workspaces"].([]any)
+	if len(wsRows) != 1 {
+		t.Fatalf("slack workspaces = %v", ws)
+	}
+	wsID, _ := wsRows[0].(map[string]any)["id"].(string)
+	if code, _ := do(t, s, http.MethodDelete, "/integrations/slack/workspaces/"+wsID, nil); code != http.StatusNoContent {
+		t.Errorf("DELETE workspace = %d, want 204", code)
+	}
+	_, slack := do(t, s, http.MethodGet, "/integrations/slack", nil)
+	if got := slack["integrations"].([]any)[0].(map[string]any)["workspace_id"]; got != wsID {
+		t.Errorf("slack integration workspace_id = %v, want the workspace %s", got, wsID)
+	}
+
+	// The secret is never returned: reads carry has_secret instead.
+	_, providers := do(t, s, http.MethodGet, "/integrations/providers", nil)
+	b, _ := json.Marshal(providers)
+	if strings.Contains(string(b), `"secret"`) {
+		t.Errorf("provider fixtures carry a secret: %s", b)
+	}
+	id, _ := providers["integrations"].([]any)[0].(map[string]any)["id"].(string)
+	for _, req := range []struct{ method, path string }{
+		{http.MethodPost, "/integrations/providers"},
+		{http.MethodPut, "/integrations/providers/" + id},
+	} {
+		_, body := do(t, s, req.method, req.path, map[string]any{"url": "https://example.com/x", "secret": "s3"})
+		if _, ok := body["secret"]; ok || body["has_secret"] != true || body["url"] != "https://example.com/x" {
+			t.Errorf("%s %s = %v, want has_secret and no secret", req.method, req.path, body)
+		}
 	}
 }

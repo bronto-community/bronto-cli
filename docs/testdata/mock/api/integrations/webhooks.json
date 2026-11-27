@@ -1,0 +1,9 @@
+{
+  "integrations": [
+    {
+      "id": "4e6a8c0d-2f3b-4c5e-8a7d-9f1b3d5e7a19",
+      "name": "oncall-pager",
+      "url": "https://example.com/hooks/oncall"
+    }
+  ]
+}

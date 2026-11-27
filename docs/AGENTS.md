@@ -203,6 +203,14 @@ in terms of this data:
 - Monitors: `High 5xx rate on checkout`, `Payments latency p95`. Dashboards:
   `Checkout overview`. Users: `ada@example.com`, `grace@example.com`. Groups:
   `oncall`.
+- Alert integrations: webhook `oncall-pager`; Slack integration
+  `checkout-alerts` in the workspace `example-eng`; provider integrations
+  `PagerDuty` and `Rootly`. Their `export` answers one HCL fixture
+  (`export.tf` next to the resource's id) for both formats.
+- Writes change nothing: `create` echoes the body back with the id
+  `00000000-0000-4000-8000-000000000001`, `update` answers the merged row
+  and `delete` succeeds, but the next command sees the same world. So a
+  snippet can't delete what it just created; delete a fixture by name.
 - Time is frozen: every log event and span falls between
   `2026-07-19 09:00 UTC` and `09:30 UTC`. The mock ignores the requested time
   range, so `--since 1h` always returns this data. These keep tables

@@ -241,12 +241,17 @@ var idKeys = []string{"id", "log_id", "group_id", "role_id", "metric_id", "expor
 //
 //	GET    /a/b         -> api/a/b.json
 //	GET    /a/<id>      -> the row of api/a.json whose id is <id>
+//	GET    /a/<id>/export?format=terraform|opentofu
+//	                    -> api/a/<id>/export.tf as text/plain
 //	POST   /a           -> 201, body echoed back with a fixed new id
 //	POST   /a/<id>/preview -> 200, api/a/<id>/preview.json
 //	PUT/PATCH /a/<id>   -> 200, the row merged with the body
 //	DELETE /a/<id>      -> 204
 //	POST/PUT/PATCH a sub-resource of a known row (/monitors/<id>/status,
 //	/groups/<id>/members, ...) -> 200 {}
+//
+// A "secret" in a create or update body is write-only, as in the API: the
+// answer carries has_secret instead.
 func (s *Server) serveResource(w http.ResponseWriter, r *http.Request) {
 	clean := strings.Trim(r.URL.Path, "/")
 	if clean == "" || strings.Contains(clean, "..") {
@@ -260,6 +265,22 @@ func (s *Server) serveResource(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// The export endpoints answer HCL, not JSON. One fixture serves both
+	// formats. Without a fixture the route is unhandled, so an export never
+	// prints the empty list a fixture-less sub-resource gets below.
+	if r.Method == http.MethodGet && strings.HasSuffix(clean, "/export") {
+		hcl, err := os.ReadFile(strings.TrimSuffix(file, ".json") + ".tf") // #nosec G304 G703 -- ".." rejected above; stays under the fixture dir
+		switch f := r.URL.Query().Get("format"); {
+		case err != nil:
+			s.unhandled(w, r)
+		case f != "terraform" && f != "opentofu":
+			writeError(w, http.StatusBadRequest, fmt.Sprintf("format %q is not one of terraform, opentofu", f))
+		default:
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = w.Write(hcl) // #nosec G705 -- a fixture file served as text/plain, not HTML
+		}
+		return
+	}
 	// A read-only POST with a fixture of its own, such as
 	// /dashboards/templates/<id>/preview, answers with that fixture.
 	if r.Method == http.MethodPost && strings.HasSuffix(clean, "/preview") {
@@ -272,7 +293,7 @@ func (s *Server) serveResource(w http.ResponseWriter, r *http.Request) {
 	// Collection-level create.
 	if r.Method == http.MethodPost {
 		if _, err := os.Stat(file); err == nil { // #nosec G703 -- ".." rejected above; stays under the fixture dir
-			body := readBodyObject(r)
+			body := writeOnlySecret(readBodyObject(r))
 			body["id"] = "00000000-0000-4000-8000-000000000001"
 			writeJSON(w, http.StatusCreated, body)
 			return
@@ -294,7 +315,7 @@ func (s *Server) serveResource(w http.ResponseWriter, r *http.Request) {
 		case len(rest) == 0 && r.Method == http.MethodGet:
 			writeJSON(w, http.StatusOK, row)
 		case len(rest) == 0 && (r.Method == http.MethodPut || r.Method == http.MethodPatch):
-			for k, v := range readBodyObject(r) {
+			for k, v := range writeOnlySecret(readBodyObject(r)) {
 				row[k] = v
 			}
 			writeJSON(w, http.StatusOK, row)
@@ -315,6 +336,16 @@ func (s *Server) serveResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.unhandled(w, r)
+}
+
+// writeOnlySecret replaces a body's secret with has_secret, the way the
+// API answers a provider integration's create and update.
+func writeOnlySecret(body map[string]any) map[string]any {
+	if _, ok := body["secret"]; ok {
+		delete(body, "secret")
+		body["has_secret"] = true
+	}
+	return body
 }
 
 // findRow returns the row (in any top-level array of doc) whose id field

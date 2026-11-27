@@ -217,6 +217,20 @@ $ bronto webhooks create -f name=pager -f url=https://example.com/hook \
   "method": "POST",
   "path": "/integrations/webhooks"
 }
+$ bronto providers create -f name=Rootly-staging -f provider=rootly -f auth_type=hmac \
+    -f url=https://example.com/rootly/staging -f secret=example-signing-secret --dry-run
+{
+  "body": {
+    "auth_type": "hmac",
+    "name": "Rootly-staging",
+    "provider": "rootly",
+    "secret": "REDACTED",
+    "url": "https://example.com/rootly/staging"
+  },
+  "dry_run": true,
+  "method": "POST",
+  "path": "/integrations/providers"
+}
 ```
 
 ## Commands beyond CRUD
@@ -331,7 +345,30 @@ an id or a name like `get` does:
 ```sh
 bronto monitors export "Payments latency p95" > monitor.tf
 bronto monitors export <id> --include-dependencies
-bronto users export ada@example.com --format opentofu
+```
+
+{/* test: tty */}
+```console
+$ bronto webhooks export oncall-pager
+# exported from webhook integration 4e6a8c0d-2f3b-4c5e-8a7d-9f1b3d5e7a19
+import {
+  to = bronto_webhook_integration.oncall_pager
+  id = "4e6a8c0d-2f3b-4c5e-8a7d-9f1b3d5e7a19"
+}
+resource "bronto_webhook_integration" "oncall_pager" {
+  name = "oncall-pager"
+  url = "https://example.com/hooks/oncall"
+}
+$ bronto slack export checkout-alerts --format opentofu
+...
+resource "bronto_slack_integration" "checkout_alerts" {
+  name = "checkout-alerts"
+...
+$ bronto providers export PagerDuty
+...
+resource "bronto_provider_integration" "pagerduty" {
+  name = "PagerDuty"
+...
 ```
 
 `--format` is `terraform` (the default) or `opentofu`. The output is HCL text, so `-o`
@@ -356,6 +393,78 @@ bronto sso mappings export > sso_mappings.tf
 
 These commands are unrelated to `bronto exports`, which downloads log events
 ([guide](/cli/guides/exports)).
+
+## Alert integrations
+
+Monitors send their alerts through integrations: `bronto webhooks`, `bronto slack`, and
+`bronto providers`. A provider integration's `secret` is write-only. Bronto stores it and
+reports `has_secret` instead:
+
+{/* test: tty */}
+```console
+$ bronto providers list
+NAME       PROVIDER   URL                                     AUTH_TYPE  HAS_SECRET  ID
+PagerDuty  pagerduty  https://example.com/pagerduty/checkout  api_key    true        5f7b9d1e-3a4c-4d6f-9b8e-0a2c4e6f8b20
+Rootly     rootly     https://example.com/rootly/payments     hmac       true        6a8c0e2f-4b5d-4e7a-8c9f-1b3d5f7a9c22
+$ bronto providers get PagerDuty
+{
+  "auth_type": "api_key",
+  "has_secret": true,
+  "id": "5f7b9d1e-3a4c-4d6f-9b8e-0a2c4e6f8b20",
+  "name": "PagerDuty",
+  "provider": "pagerduty",
+  "url": "https://example.com/pagerduty/checkout"
+}
+```
+
+`create` answers with the new integration, again without the secret. This example passes
+a fake secret with `-f`. Keep a real one
+[off the command line](#keep-secrets-off-the-command-line):
+
+{/* test: tty */}
+```console
+$ bronto providers create -f name=Rootly-staging -f provider=rootly -f auth_type=hmac \
+    -f url=https://example.com/rootly/staging -f secret=example-signing-secret
+{
+  "auth_type": "hmac",
+  "has_secret": true,
+  "id": "00000000-0000-4000-8000-000000000001",
+  "name": "Rootly-staging",
+  "provider": "rootly",
+  "url": "https://example.com/rootly/staging"
+}
+$ bronto providers delete Rootly --yes 2>&1
+Deleted provider integration Rootly.
+```
+
+A Slack integration names its channels and the connected workspace it posts to.
+Workspaces are connected in the web app, so `bronto slack workspaces` only lists and
+deletes them. Deleting one doesn't uninstall the Bronto app from Slack:
+
+{/* test: tty */}
+```console
+$ bronto slack get checkout-alerts
+{
+  "channels": [
+    {
+      "include_graph_image": true,
+      "name": "checkout-alerts"
+    },
+    {
+      "include_graph_image": false,
+      "name": "oncall"
+    }
+  ],
+  "id": "3d5f7b9c-1e2a-4b4d-9f6c-8e0a2c4d6f18",
+  "name": "checkout-alerts",
+  "workspace_id": "2c4e6a8b-0d1f-4a3c-8e5b-7d9f1b3c5e17"
+}
+$ bronto slack workspaces list
+ID                                    NAME
+2c4e6a8b-0d1f-4a3c-8e5b-7d9f1b3c5e17  example-eng
+$ bronto slack workspaces delete example-eng --yes 2>&1
+Deleted Slack workspace example-eng.
+```
 
 ## API keys
 
