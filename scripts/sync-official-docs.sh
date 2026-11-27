@@ -11,7 +11,8 @@
 # The target's cli/ folder is replaced as a whole, so pages deleted here are
 # deleted there too. Never edit cli/ in the official docs: the next sync
 # overwrites it. The script does not commit, push, or open a pull request;
-# it prints a suggested commit message.
+# it prints a suggested commit message. On a release, the docs-sync
+# workflow runs it and opens the pull request.
 #
 # One-time setup in the official docs: add the CLI tab to docs.json with
 #
