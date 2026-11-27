@@ -251,7 +251,7 @@ func TestIntegrations(t *testing.T) {
 			for _, format := range []string{"terraform", "opentofu"} {
 				w, hcl := get(base + "/" + id + "/export?format=" + format)
 				if w.Code != http.StatusOK || w.Header().Get("Content-Type") != "text/plain" ||
-					!strings.HasPrefix(hcl, `resource "`+resource+`" "`) {
+					!strings.HasPrefix(hcl, "# exported from ") || !strings.Contains(hcl, "\nresource \""+resource+"\" \"") {
 					t.Errorf("GET %s/%s/export?format=%s = %d %q %q", base, id, format, w.Code, w.Header().Get("Content-Type"), hcl)
 				}
 				if strings.Contains(hcl, "secret =") {

@@ -349,28 +349,26 @@ bronto monitors export <id> --include-dependencies
 
 {/* test: tty */}
 ```console
-$ bronto providers export PagerDuty
-resource "bronto_provider_integration" "pagerduty" {
-  name          = "PagerDuty"
-  provider_type = "pagerduty"
-  url           = "https://example.com/pagerduty/checkout"
-  auth_type     = "api_key"
-  # The secret is not exported. Set it by hand.
-}
-$ bronto slack export checkout-alerts --format opentofu
-resource "bronto_slack_integration" "checkout_alerts" {
-  name         = "checkout-alerts"
-  workspace_id = "2c4e6a8b-0d1f-4a3c-8e5b-7d9f1b3c5e17"
-  channels = [
-    { name = "checkout-alerts", include_graph_image = true },
-    { name = "oncall", include_graph_image = false },
-  ]
-}
 $ bronto webhooks export oncall-pager
+# exported from webhook integration 4e6a8c0d-2f3b-4c5e-8a7d-9f1b3d5e7a19
+import {
+  to = bronto_webhook_integration.oncall_pager
+  id = "4e6a8c0d-2f3b-4c5e-8a7d-9f1b3d5e7a19"
+}
 resource "bronto_webhook_integration" "oncall_pager" {
   name = "oncall-pager"
-  url  = "https://example.com/hooks/oncall"
+  url = "https://example.com/hooks/oncall"
 }
+$ bronto slack export checkout-alerts --format opentofu
+...
+resource "bronto_slack_integration" "checkout_alerts" {
+  name = "checkout-alerts"
+...
+$ bronto providers export PagerDuty
+...
+resource "bronto_provider_integration" "pagerduty" {
+  name = "PagerDuty"
+...
 ```
 
 `--format` is `terraform` (the default) or `opentofu`. The output is HCL text, so `-o`
