@@ -218,14 +218,14 @@ $ bronto webhooks create -f name=pager -f url=https://example.com/hook \
   "path": "/integrations/webhooks"
 }
 $ bronto providers create -f name=Rootly-staging -f provider=rootly -f auth_type=hmac \
-    -f url=https://example.com/rootly/staging -f secret=example-signing-secret --dry-run
+    -f url=https://webhooks.rootly.com/webhooks/incoming/staging -f secret=example-signing-secret --dry-run
 {
   "body": {
     "auth_type": "hmac",
     "name": "Rootly-staging",
     "provider": "rootly",
     "secret": "REDACTED",
-    "url": "https://example.com/rootly/staging"
+    "url": "https://webhooks.rootly.com/webhooks/incoming/staging"
   },
   "dry_run": true,
   "method": "POST",
@@ -403,9 +403,9 @@ reports `has_secret` instead:
 {/* test: tty */}
 ```console
 $ bronto providers list
-NAME       PROVIDER   URL                                     AUTH_TYPE  HAS_SECRET  ID
-PagerDuty  pagerduty  https://example.com/pagerduty/checkout  api_key    true        5f7b9d1e-3a4c-4d6f-9b8e-0a2c4e6f8b20
-Rootly     rootly     https://example.com/rootly/payments     hmac       true        6a8c0e2f-4b5d-4e7a-8c9f-1b3d5f7a9c22
+NAME       PROVIDER   URL                                                     AUTH_TYPE  HAS_SECRET  ID
+PagerDuty  pagerduty  https://events.pagerduty.com/v2/enqueue                 api_key    true        5f7b9d1e-3a4c-4d6f-9b8e-0a2c4e6f8b20
+Rootly     rootly     https://webhooks.rootly.com/webhooks/incoming/payments  hmac       true        6a8c0e2f-4b5d-4e7a-8c9f-1b3d5f7a9c22
 $ bronto providers get PagerDuty
 {
   "auth_type": "api_key",
@@ -413,9 +413,13 @@ $ bronto providers get PagerDuty
   "id": "5f7b9d1e-3a4c-4d6f-9b8e-0a2c4e6f8b20",
   "name": "PagerDuty",
   "provider": "pagerduty",
-  "url": "https://example.com/pagerduty/checkout"
+  "url": "https://events.pagerduty.com/v2/enqueue"
 }
 ```
+
+The API accepts only each provider's own endpoint as `url` (for example
+`https://events.pagerduty.com/v2/enqueue` for PagerDuty, a `webhooks.rootly.com` URL for
+Rootly) and answers 400 with the expected host otherwise.
 
 `create` answers with the new integration, again without the secret. This example passes
 a fake secret with `-f`. Keep a real one
@@ -424,14 +428,14 @@ a fake secret with `-f`. Keep a real one
 {/* test: tty */}
 ```console
 $ bronto providers create -f name=Rootly-staging -f provider=rootly -f auth_type=hmac \
-    -f url=https://example.com/rootly/staging -f secret=example-signing-secret
+    -f url=https://webhooks.rootly.com/webhooks/incoming/staging -f secret=example-signing-secret
 {
   "auth_type": "hmac",
   "has_secret": true,
   "id": "00000000-0000-4000-8000-000000000001",
   "name": "Rootly-staging",
   "provider": "rootly",
-  "url": "https://example.com/rootly/staging"
+  "url": "https://webhooks.rootly.com/webhooks/incoming/staging"
 }
 $ bronto providers delete Rootly --yes 2>&1
 Deleted provider integration Rootly.

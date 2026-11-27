@@ -6,6 +6,6 @@ import {
 resource "bronto_provider_integration" "pagerduty" {
   name = "PagerDuty"
   provider_type = "pagerduty"
-  url = "https://example.com/pagerduty/checkout"
+  url = "https://events.pagerduty.com/v2/enqueue"
   auth_type = "api_key"
 }

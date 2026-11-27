@@ -6,6 +6,6 @@ import {
 resource "bronto_provider_integration" "rootly" {
   name = "Rootly"
   provider_type = "rootly"
-  url = "https://example.com/rootly/payments"
+  url = "https://webhooks.rootly.com/webhooks/incoming/payments"
   auth_type = "hmac"
 }
