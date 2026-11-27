@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/bronto-community/bronto-cli/internal/clierr"
+	"github.com/bronto-community/bronto-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -121,12 +122,16 @@ func accessMembers(payload any) []map[string]any {
 	for _, item := range items {
 		rows = append(rows, rowsFromPayload(item, "members")...)
 	}
-	// The spec spells the timestamp createdAt; live it is created_at,
-	// which is the column the table shows.
+	return rows
+}
+
+// accessCreatedAt is the access list's table/csv polish: the spec spells
+// the timestamp createdAt, live it is created_at, which is the column
+// shown. json and jsonl keep the API's key.
+func accessCreatedAt(rows []map[string]any, _ output.Format) []map[string]any {
 	for _, row := range rows {
 		if v, ok := row["createdAt"]; ok && row["created_at"] == nil {
 			row["created_at"] = v
-			delete(row, "createdAt")
 		}
 	}
 	return rows
@@ -163,7 +168,7 @@ email, groups by id or name, roles by id or display name.`,
 			if err != nil {
 				return err
 			}
-			return printPolishedRows(app, accessMembers(payload), []string{"type", "id", "roles", "status", "created_at"})
+			return printPolishedRows(app, accessMembers(payload), []string{"type", "id", "roles", "status", "created_at"}, accessCreatedAt)
 		},
 	}
 	lt.orgFlag(list)
@@ -298,8 +303,8 @@ func newUserAccessCmd() *cobra.Command {
 
 // printPolishedRows prints rows as a list: readable timestamps in a
 // table or csv, the API's values in json.
-func printPolishedRows(app *App, rows []map[string]any, columns []string) error {
-	p, rows, err := humanRows(app, rows, resourceListPolish)
+func printPolishedRows(app *App, rows []map[string]any, columns []string, first ...rowPolish) error {
+	p, rows, err := humanRows(app, rows, append(first, resourceListPolish)...)
 	if err != nil {
 		return err
 	}

@@ -124,6 +124,11 @@ func TestAccessListShapes(t *testing.T) {
 		if lines[0] != "type,id,roles,status,created_at" || len(lines) < 2 || !strings.HasSuffix(lines[1], ",2026-07-17T09:25:08Z") {
 			t.Errorf("%s: csv = %q, want a created_at column with a readable time", name, out)
 		}
+		// json keeps the API's own key.
+		raw, _, err := runResource(t, accessOrgStub(`{}`, payload, &got), "", "access", "list", "--org", "o1", "-o", "json")
+		if key := map[string]string{"live": `"created_at"`, "spec": `"createdAt"`}[name]; err != nil || !strings.Contains(raw, key) {
+			t.Errorf("%s: json = %q (err %v), want the key %s kept", name, raw, err, key)
+		}
 		if name == "spec" && (len(lines) != 3 || lines[2] != "group,g1,,invited,") {
 			t.Errorf("spec: csv = %q, want the second item's member as a row", out)
 		}
