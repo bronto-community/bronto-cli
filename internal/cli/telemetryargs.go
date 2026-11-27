@@ -109,6 +109,12 @@ var flagClasses = map[string]argClass{
 	"ingest-url": argURL,
 
 	"api-key": argSecret,
+
+	// signup: personal data
+	"email":      argName,
+	"first-name": argName,
+	"last-name":  argName,
+	"org":        argName,
 }
 
 // argPlaceholders classifies positional arguments by the placeholder that
@@ -146,6 +152,8 @@ var argPlaceholders = map[string]argClass{
 	"query": argQuery,
 
 	"path": argURL,
+
+	"link-or-code": argSecret, // signup confirm: an email confirmation code
 }
 
 // Attribute keys for the root span. bronto.flags lists the flags that were
